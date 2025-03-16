@@ -5,7 +5,7 @@ import os
 app = FastAPI()
 
 # Directory where maps are stored
-MAPS_DIR = os.path.join(os.path.dirname(__file__), "src", "output", "maps")
+MAPS_DIR = os.path.join(os.path.dirname(__file__), "output", "maps")
 
 @app.get("/map/{map_type}")
 async def get_map(map_type: str):
