@@ -1,0 +1,17 @@
+{
+    "KINGDOM_1": {
+      "name": "Revenor",
+      "duchies": ["DUCHY_1", "DUCHY_2", "DUCHY_3"],
+      "rgb": "140,69,56"
+    },
+    "KINGDOM_2": {
+      "name": "Domenia",
+      "duchies": ["DUCHY_4", "DUCHY_5", "DUCHY_6"],
+      "rgb": "62,111,130"
+    },
+    "KINGDOM_3": {
+      "name": "Sabarissa",
+      "duchies": ["DUCHY_7", "DUCHY_8", "DUCHY_9"],
+      "rgb": "24,128,34"
+    }
+}
