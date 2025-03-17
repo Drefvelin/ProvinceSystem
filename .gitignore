@@ -1,0 +1,41 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node.js dependencies
+node_modules/
+.next/
+out/
+dist/
+.vscode/
+.idea/
+.DS_Store
+
+# Python dependencies
+__pycache__/
+*.py[cod]
+*.so
+venv/
+.env/
+Pipfile
+Pipfile.lock
+
+# Docker
+docker-compose.override.yml
+docker/data/
+*.db
+
+# VSCode & JetBrains IDE
+.vscode/
+*.iml
+.idea/
