@@ -20,18 +20,18 @@ const MapViewer = () => {
         <option value="kingdom">Kingdom Map</option>
       </select>
 
-      {/* Image Container for Overlay */}
+      {/* Map Display Container */}
       <div className="relative w-full max-w-4xl mt-6">
-        {/* Base Map (Background) */}
+        {/* Base Map (Static Background) */}
         <img
-          src={`http://localhost:8000/map`}
+          src="http://localhost:8000/map"  // Base Map is always displayed
           alt="Base Map"
           className="w-full h-auto"
         />
 
         {/* Overlay Map (Foreground) */}
         <img
-          src={`http://localhost:8000/map/${mapType}`}
+          src={`http://localhost:8000/map/png/${mapType}`}  // Selected Map (County, Duchy, Kingdom)
           alt={`${mapType} map`}
           className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
         />
