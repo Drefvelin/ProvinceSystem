@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageEnhance
 import os
 from ..util.border_paint import paint_borders
 from ..util.flood_fill import flood_fill
@@ -18,10 +18,24 @@ def draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_
         new_img_data = new_img.load()
         color = province_to_color[pixel_color]
         flood_fill(x, y, pixel_color, color, visited_pixels, img_data, new_img_data, width, height)
+
         painted_colour.add(province_to_color[pixel_color])
         new_img.save(new_image_path, "PNG")
     except Exception as e:
         print(f"Error saving {new_image_path}: {e}")
+
+def lighten_image(image_path, hover_image_path):
+    """
+    Opens an image, increases brightness, and saves it as a hover version.
+    """
+    try:
+        img = Image.open(image_path).convert("RGBA")
+        enhancer = ImageEnhance.Brightness(img)
+        lighter_img = enhancer.enhance(1.4)  # Increase brightness by 40%
+        lighter_img.save(hover_image_path, "PNG")
+        print(f"Hover image created: {hover_image_path}")
+    except Exception as e:
+        print(f"Error generating hover image {hover_image_path}: {e}")
 
 def generate_regions(mode, borders):
     """
@@ -40,12 +54,10 @@ def generate_regions(mode, borders):
     output_folder = os.path.join(os.path.dirname(__file__), "..", "..", "output", "regions", mode)
     os.makedirs(output_folder, exist_ok=True)
 
-    # Caching loaded images
-    processed_images = {}
-
     painted_colour = set()
     visited_pixels = set()
 
+    # === STEP 1: Generate normal images ===
     for y in range(height):
         for x in range(width):
             pixel_color = img_data[x, y][:3]
@@ -57,34 +69,37 @@ def generate_regions(mode, borders):
                 if color_code not in painted_colour:
                     new_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
                     draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_pixels, img_data, width, height, painted_colour)
-                    processed_images[color_code] = new_img  # Cache the new image
-                    print(f"New image saved as {new_image_path}")
+                    painted_colour.add(color_code)
+                    print(f"New image saved: {new_image_path}")
                 else:
-                    # Load from cache if available
-                    if color_code in processed_images:
-                        new_img = processed_images[color_code]
-                    else:
-                        if os.path.exists(new_image_path):
-                            new_img = Image.open(new_image_path).convert("RGBA")
-                            processed_images[color_code] = new_img  # Store it in cache
-                        else:
-                            print(f"Warning: {new_image_path} does not exist.")
-                            continue
-                    
+                    new_img = Image.open(new_image_path)
                     draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_pixels, img_data, width, height, painted_colour)
-                    print(f"Image edited and saved as {new_image_path}")
+                    print(f"Edited: {new_image_path}")
 
-    # Paint Borders
+    # === STEP 2: Generate hover versions by lightening existing images ===
+    for color in painted_colour:
+        filename = sanitize_filename(color) + ".png"
+        filename_hover = sanitize_filename(color) + "_hover.png"
+        normal_image_path = os.path.join(output_folder, filename)
+        hover_image_path = os.path.join(output_folder, filename_hover)
+
+        if os.path.exists(normal_image_path):
+            lighten_image(normal_image_path, hover_image_path)
+        else:
+            print(f"Warning: {normal_image_path} not found, hover version skipped.")
+
+    # === STEP 3: Paint Borders ===
     if borders:
         for color in painted_colour:
-            filename = sanitize_filename(color) + ".png"
-            new_image_path = os.path.join(output_folder, filename)
+            for i in range(2):  # Process both normal and hover images
+                filename = sanitize_filename(color) + ("_hover.png" if i > 0 else ".png")
+                new_image_path = os.path.join(output_folder, filename)
 
-            if os.path.exists(new_image_path):
-                new_img = Image.open(new_image_path).convert("RGBA")
-                new_img_data = new_img.load()
-                paint_borders(True, False, new_img_data, width, height)
-                new_img.save(new_image_path, "PNG")
-                print(f"Borders painted for {new_image_path}")
-            else:
-                print(f"Warning: {new_image_path} not found for border painting.")
+                if os.path.exists(new_image_path):
+                    new_img = Image.open(new_image_path).convert("RGBA")
+                    new_img_data = new_img.load()
+                    paint_borders(True, False, new_img_data, width, height)
+                    new_img.save(new_image_path, "PNG")
+                    print(f"Borders painted for {new_image_path}")
+                else:
+                    print(f"Warning: {new_image_path} not found for border painting.")
