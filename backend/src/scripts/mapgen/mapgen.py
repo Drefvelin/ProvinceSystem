@@ -5,7 +5,7 @@ from ..util.border_paint import paint_borders
 from ..util.flood_fill import flood_fill
 
 
-def create_map(mode, filename):
+def create_map(mode, filename, frontend_save):
     # Create a lookup dictionary for province color -> kingdom color
     province_to_color = build_color_mapping(mode)
 
@@ -28,10 +28,15 @@ def create_map(mode, filename):
                 kingdom_color = province_to_color[pixel_color]
                 flood_fill(x, y, pixel_color, kingdom_color, visited_pixels, img_data, new_img_data, width, height)
 
+    if frontend_save:
+        frontend_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "servermap", "data", f"{filename}.png")
+        new_img.save(frontend_image_path, "PNG")
+        print(f"New image generated for the frontend and saved as {frontend_image_path}")
+
     paint_borders(True, True, new_img_data, width, height)
 
     # Save the new image
     new_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "output", "maps", f"{filename}.png")
     new_img.save(new_image_path, "PNG")
 
-    print(f"New image with kingdom colors saved as {new_image_path}")
+    print(f"New image generated for the backend and saved as {new_image_path}")
