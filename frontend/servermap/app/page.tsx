@@ -182,7 +182,7 @@ const MapViewer = () => {
             </p>
 
             {/* Overlord Status */}
-            {regionInfo.size && (
+            {mapType === "nation" && (
               <p className="text-md text-gray-400 font-semibold">
                 <span className="text-gray-400">Type:</span> 
                 <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
@@ -190,7 +190,7 @@ const MapViewer = () => {
             )}
 
             {/* Realm Size */}
-            {regionInfo.size && (
+            {mapType === "nation" && (
               <p className="text-md text-gray-400 font-semibold">
                 <span className="text-gray-400">Realm Size:</span> 
                 <span className="text-gray-600">{regionInfo.subject_size > 0 ? ` ${regionInfo.size} (${regionInfo.subject_size} from subjects)`: ` ${regionInfo.size}`}</span>
@@ -198,7 +198,7 @@ const MapViewer = () => {
             )}
 
             {/* Subjects List (Only if the nation has subjects) */}
-            {regionInfo.subjects && regionInfo.subjects.length > 0 && (
+            {mapType === "nation" && regionInfo.subjects && regionInfo.subjects.length > 0 && (
               <div className="mt-2">
                 <p className="text-md text-gray-400 font-semibold">Subjects:</p>
                 <ul className="list-disc list-inside text-gray-600">
