@@ -5,25 +5,57 @@ from ..util.flood_fill import flood_fill
 from ..util.colour_mapping import build_color_mapping
 from ..util.colour_mapping import get_color_overrides
 
+def is_overlord(rgb_tuple, overrides):
+    """
+    Checks if a given RGB tuple is an overlord (i.e., appears as a value in the overrides dictionary).
+    
+    :param rgb_tuple: The RGB tuple to check (e.g., (255, 0, 0))
+    :param overrides: The overrides dictionary mapping regions to their overlords.
+    :return: True if the RGB tuple is an overlord, False otherwise.
+    """
+    return rgb_tuple in overrides.values()
+
 def sanitize_filename(color_tuple):
     """
     Converts an RGB tuple to a safe filename (e.g., (255, 0, 0) -> "255_0_0").
     """
     return "_".join(map(str, color_tuple)).replace("(", "").replace(")", "").replace(",", "").replace(" ", "")
 
-def draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_pixels, img_data, width, height, painted_colour, overrides):
+def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder):
     """
     Fills and saves an image for a region.
     """
     try:
         new_img_data = new_img.load()
-        color = province_to_color[pixel_color]
-        if province_to_color[pixel_color] in overrides:
-            color = overrides[province_to_color[pixel_color]]
         flood_fill(x, y, pixel_color, color, visited_pixels, img_data, new_img_data, width, height)
-
-        painted_colour.add(province_to_color[pixel_color])
+        painted_colour.add(color)
         new_img.save(new_image_path, "PNG")
+        if is_overlord(color, overrides):
+            nested_filename = sanitize_filename(color) + "_nested.png"
+            nested_image_path = os.path.join(output_folder, nested_filename)
+            nested_img = None
+            if not os.path.exists(nested_image_path):
+                nested_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
+                print(f"New overlord nested image saved: {new_image_path}")
+            else:
+                nested_img = Image.open(nested_image_path)
+                print(f"Edited Overlord: {new_image_path}")
+            nested_img_data = nested_img.load()
+            flood_fill(x, y, pixel_color, color, set(), img_data, nested_img_data, width, height)
+            nested_img.save(nested_image_path, "PNG")
+        if color in overrides:
+            overlord_color = overrides[color]
+            overlord_filename = sanitize_filename(overlord_color) + ".png"
+            overlord_image_path = os.path.join(output_folder, overlord_filename)
+            if overlord_color not in painted_colour:
+                overlord_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
+                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder)
+                print(f"New overlord image saved: {new_image_path}")
+            else:
+                overlord_img = Image.open(overlord_image_path)
+                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder)
+                print(f"Edited Overlord: {new_image_path}")
+
     except Exception as e:
         print(f"Error saving {new_image_path}: {e}")
 
@@ -39,6 +71,7 @@ def lighten_image(image_path, hover_image_path):
         print(f"Lightened image: {hover_image_path}")
     except Exception as e:
         print(f"Error lightening image {hover_image_path}: {e}")
+
 
 def generate_regions(mode, borders, frontend_save):
     """
@@ -76,25 +109,35 @@ def generate_regions(mode, borders, frontend_save):
 
                 if color_code not in painted_colour:
                     new_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                    draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_pixels, img_data, width, height, painted_colour, overrides)
-                    painted_colour.add(color_code)
+                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder)
                     print(f"New image saved: {new_image_path}")
+                    
+
                 else:
                     new_img = Image.open(new_image_path)
-                    draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_pixels, img_data, width, height, painted_colour, overrides)
+                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder)
                     print(f"Edited: {new_image_path}")
 
     # === STEP 2: Generate hover versions by lightening existing images ===
-    for color in painted_colour:
-        filename = sanitize_filename(color)+".png"
-        hover_filename = sanitize_filename(color)+"_hover.png"
-        normal_image_path = os.path.join(output_folder, filename)
+    for file_name in os.listdir(output_folder):
+    # Skip files that already have "_hover" in their name
+        if "_hover" in file_name:
+            continue
+
+        # Generate hover filename by appending "_hover" before the extension
+        base_name, ext = os.path.splitext(file_name)  # Split filename and extension
+        hover_filename = f"{base_name}_hover{ext}"
+
+        # Define full paths
+        normal_image_path = os.path.join(output_folder, file_name)
         hover_image_path = os.path.join(output_folder, hover_filename)
 
-        if os.path.exists(normal_image_path):
+        # Ensure it's a valid image before processing
+        if os.path.exists(normal_image_path) and ext.lower() in [".png", ".jpg", ".jpeg"]:
             lighten_image(normal_image_path, hover_image_path)
         else:
-            print(f"Warning: {normal_image_path} not found, lightening skipped.")
+            print(f"Skipping non-image file: {normal_image_path}")
+
 
     # === STEP 3: Paint Borders ===
     if borders:
