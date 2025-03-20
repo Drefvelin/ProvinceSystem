@@ -21,7 +21,7 @@ def sanitize_filename(color_tuple):
     """
     return "_".join(map(str, color_tuple)).replace("(", "").replace(")", "").replace(",", "").replace(" ", "")
 
-def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder):
+def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, first):
     """
     Fills and saves an image for a region.
     """
@@ -30,16 +30,16 @@ def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_
         flood_fill(x, y, pixel_color, color, visited_pixels, img_data, new_img_data, width, height)
         painted_colour.add(color)
         new_img.save(new_image_path, "PNG")
-        if is_overlord(color, overrides):
+        if is_overlord(color, overrides) and first:
             nested_filename = sanitize_filename(color) + "_nested.png"
             nested_image_path = os.path.join(output_folder, nested_filename)
             nested_img = None
             if not os.path.exists(nested_image_path):
                 nested_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                print(f"New overlord nested image saved: {new_image_path}")
+                print(f"New overlord nested image saved: {nested_image_path}")
             else:
                 nested_img = Image.open(nested_image_path)
-                print(f"Edited Overlord: {new_image_path}")
+                print(f"Edited nested Overlord: {nested_image_path}")
             nested_img_data = nested_img.load()
             flood_fill(x, y, pixel_color, color, set(), img_data, nested_img_data, width, height)
             nested_img.save(nested_image_path, "PNG")
@@ -49,11 +49,11 @@ def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_
             overlord_image_path = os.path.join(output_folder, overlord_filename)
             if overlord_color not in painted_colour:
                 overlord_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder)
+                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder, False)
                 print(f"New overlord image saved: {new_image_path}")
             else:
                 overlord_img = Image.open(overlord_image_path)
-                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder)
+                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder, False)
                 print(f"Edited Overlord: {new_image_path}")
 
     except Exception as e:
@@ -109,13 +109,13 @@ def generate_regions(mode, borders, frontend_save):
 
                 if color_code not in painted_colour:
                     new_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder)
+                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, True)
                     print(f"New image saved: {new_image_path}")
                     
 
                 else:
                     new_img = Image.open(new_image_path)
-                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder)
+                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, True)
                     print(f"Edited: {new_image_path}")
 
     # === STEP 2: Generate hover versions by lightening existing images ===
