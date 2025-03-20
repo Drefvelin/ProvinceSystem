@@ -6,7 +6,14 @@ const MapViewer = () => {
   const [mapType, setMapType] = useState<string>("county");
   const [regionData, setRegionData] = useState<Record<string, any> | null>(null); // JSON Data
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
-  const [regionInfo, setRegionInfo] = useState<{ title: string; tier: string; description: string } | null>(null);
+  const [regionInfo, setRegionInfo] = useState<{
+    title: string;
+    tier: string;
+    size: number;
+    overlord: string;
+    subjects: string[]; // ✅ Correct typing for an array of strings
+    description: string;
+  } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
@@ -56,7 +63,8 @@ const MapViewer = () => {
         console.error("Error loading overlay image:", error);
       }
     };
-
+    setHoveredColor(null);
+    setRegionInfo(null);
     drawImage();
   }, [mapType]);
 
@@ -88,14 +96,19 @@ const MapViewer = () => {
     
 
     if (foundRegion) {
-      const regionImagePath = `/data/regions/${rgbString}_hover.png`;
+      const regionImagePath = `/data/regions/${mapType}/${rgbString}.png`;
       setHoveredColor(regionImagePath);
 
       const capitalizedTier = mapType.charAt(0).toUpperCase() + mapType.slice(1);
 
+      const overlordName = foundRegion.overlord ? regionData[foundRegion.overlord]?.name : null;
+
       setRegionInfo({
         title: foundRegion.name,
-        tier: capitalizedTier, // Use the copied & capitalized string
+        tier: capitalizedTier,
+        size: foundRegion.size,
+        overlord: overlordName, 
+        subjects: foundRegion.subjects ?? [],
         description: foundRegion.description || `A ${capitalizedTier} in Calavorn`,
       });
     } else {
@@ -114,6 +127,7 @@ const MapViewer = () => {
           value={mapType}
           className="w-full p-2 text-md border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
+          <option value="nation">Nation Map</option>
           <option value="county">County Map</option>
           <option value="duchy">Duchy Map</option>
           <option value="kingdom">Kingdom Map</option>
@@ -158,9 +172,39 @@ const MapViewer = () => {
         {regionInfo && (
           <div className="bg-white shadow-lg rounded-lg p-4 transition-opacity duration-300 ease-in-out">
             <h2 className="text-xl font-bold text-gray-800">{regionInfo.title}</h2>
+
+            {/* Tier Display */}
             <p className="text-md text-gray-400 font-semibold">
-              <span className="text-gray-400">Tier:</span> <span className="uppercase text-gray-600">{regionInfo.tier}</span>
+              <span className="text-gray-400">Tier:</span> 
+              <span className="text-gray-600"> {regionInfo.tier}</span>
             </p>
+
+            {/* Overlord Status */}
+            <p className="text-md text-gray-400 font-semibold">
+              <span className="text-gray-400">Type:</span> 
+              <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
+            </p>
+
+            {/* Realm Size */}
+            <p className="text-md text-gray-400 font-semibold">
+              <span className="text-gray-400">Realm Size:</span> 
+              <span className="text-gray-600"> {regionInfo.size}</span>
+            </p>
+
+            {/* Subjects List (Only if the nation has subjects) */}
+            {regionInfo.subjects && regionInfo.subjects.length > 0 && (
+              <div className="mt-2">
+                <p className="text-md text-gray-400 font-semibold">Subjects:</p>
+                <ul className="list-disc list-inside text-gray-600">
+                  {regionInfo.subjects.map((subjectId) => {
+                    // Lookup the subject's name from regionData, fallback to the ID if not found
+                    const subjectName = regionData?.[subjectId]?.name || subjectId;
+                    return <li key={subjectId}>{subjectName}</li>;
+                  })}
+                </ul>
+              </div>
+            )}
+            {/* Description */}
             <p className="text-sm text-gray-500 mt-2">{regionInfo.description}</p>
           </div>
         )}

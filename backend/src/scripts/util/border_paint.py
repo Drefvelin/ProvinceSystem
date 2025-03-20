@@ -34,3 +34,4 @@ def paint_borders(outline, between, new_img_data, height, width):
     # Apply the border color to all detected border pixels
     for x, y in borders:
         new_img_data[x, y] = border_color
+    return new_img_data
