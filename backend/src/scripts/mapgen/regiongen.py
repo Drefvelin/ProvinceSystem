@@ -27,7 +27,7 @@ def draw(x, y, new_img, new_image_path, pixel_color, province_to_color, visited_
     except Exception as e:
         print(f"Error saving {new_image_path}: {e}")
 
-def lighten_image(image_path):
+def lighten_image(image_path, hover_image_path):
     """
     Opens an image, increases brightness, and saves it as a hover version.
     """
@@ -35,10 +35,10 @@ def lighten_image(image_path):
         img = Image.open(image_path).convert("RGBA")
         enhancer = ImageEnhance.Brightness(img)
         lighter_img = enhancer.enhance(1.4)  # Increase brightness by 40%
-        lighter_img.save(image_path, "PNG")
-        print(f"Lightened image: {image_path}")
+        lighter_img.save(hover_image_path, "PNG")
+        print(f"Lightened image: {hover_image_path}")
     except Exception as e:
-        print(f"Error lightening image {image_path}: {e}")
+        print(f"Error lightening image {hover_image_path}: {e}")
 
 def generate_regions(mode, borders, frontend_save):
     """
@@ -86,19 +86,20 @@ def generate_regions(mode, borders, frontend_save):
 
     # === STEP 2: Generate hover versions by lightening existing images ===
     for color in painted_colour:
-        filename = sanitize_filename(color) + ".png"
+        filename = sanitize_filename(color)+".png"
+        hover_filename = sanitize_filename(color)+"_hover.png"
         normal_image_path = os.path.join(output_folder, filename)
+        hover_image_path = os.path.join(output_folder, hover_filename)
 
         if os.path.exists(normal_image_path):
-            lighten_image(normal_image_path)
+            lighten_image(normal_image_path, hover_image_path)
         else:
             print(f"Warning: {normal_image_path} not found, lightening skipped.")
 
     # === STEP 3: Paint Borders ===
     if borders:
-        for color in painted_colour:
-            filename = sanitize_filename(color) + ".png"
-            new_image_path = os.path.join(output_folder, filename)
+        for file_name in os.listdir(output_folder):
+            new_image_path = os.path.join(output_folder, file_name)
 
             if os.path.exists(new_image_path):
                 new_img = Image.open(new_image_path).convert("RGBA")
@@ -115,13 +116,12 @@ def generate_regions(mode, borders, frontend_save):
             file_path = os.path.join(DIR, file_name)
             if os.path.isfile(file_path):
                 os.remove(file_path)
-        for color in painted_colour:
-            filename = sanitize_filename(color) + ".png"
-            new_image_path = os.path.join(output_folder, filename)
+        for file_name in os.listdir(DIR):
+            new_image_path = os.path.join(output_folder, file_name)
             if os.path.exists(new_image_path):
                 new_img = Image.open(new_image_path).convert("RGBA")
                 new_img_data = new_img.load()
-                frontend_image_path = os.path.join(DIR, f"{filename}")
+                frontend_image_path = os.path.join(DIR, f"{file_name}")
                 new_img.save(frontend_image_path, "PNG")
                 print(f"Region copied for the frontend and saved as {frontend_image_path}")
             else:

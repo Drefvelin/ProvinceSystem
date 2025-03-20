@@ -4,23 +4,26 @@ import { useState, useEffect, useRef } from "react";
 
 const MapViewer = () => {
   const [mapType, setMapType] = useState<string>("county");
-  const [regionData, setRegionData] = useState<Record<string, any> | null>(null); // JSON Data
+  const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [regionInfo, setRegionInfo] = useState<{
     title: string;
     tier: string;
     size: number;
-    subject_size: number,
+    subject_size: number;
     overlord: string;
-    subjects: string[]; // ✅ Correct typing for an array of strings
+    subjects: string[];
     description: string;
   } | null>(null);
+  const [overlayImages, setOverlayImages] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState<boolean>(true); // Initially true
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
-  // 📡 Fetch JSON Data from API when mapType changes
+  // Fetch JSON Data from API when mapType changes
   useEffect(() => {
     const fetchRegionData = async () => {
+      setLoading(true); // Start loading before fetching
       try {
         const response = await fetch(`http://localhost:8000/data/${mapType}`);
         if (!response.ok) throw new Error("Failed to fetch region data");
@@ -35,8 +38,29 @@ const MapViewer = () => {
     fetchRegionData();
   }, [mapType]);
 
+  // Generate overlay image paths
+  useEffect(() => {
+    if (!regionData) return;
+    
+    setLoading(true); // Ensure loading stays true while processing overlays
+
+    const overlays = Object.values(regionData)
+      .map((region: any) => region.rgb)
+      .filter(Boolean) // Ensure only valid RGB values
+      .reduce((acc: Record<string, string>, rgb: string) => {
+        const rgbKey = rgb.replace(/,/g, "_"); // Convert "r,g,b" -> "r_g_b"
+        acc[rgbKey] = `/data/regions/${mapType}/${rgbKey}.png`;
+        return acc;
+      }, {});
+
+    setOverlayImages(overlays);
+    setLoading(false); // Done loading once overlays are ready
+  }, [regionData, mapType]);
+
   // 🎨 Draw the map onto the hidden canvas
   useEffect(() => {
+    if (loading) return;
+
     const drawImage = async () => {
       try {
         const imageUrl = `/data/${mapType}_map.png`;
@@ -64,13 +88,16 @@ const MapViewer = () => {
         console.error("Error loading overlay image:", error);
       }
     };
+
     setHoveredColor(null);
     setRegionInfo(null);
     drawImage();
-  }, [mapType]);
+  }, [mapType, loading]);
 
   // 🖱️ Get pixel color & find region in JSON
   const getPixelColor = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (loading) return;
+
     const canvas = canvasRef.current;
     if (!canvas || !regionData) return;
 
@@ -88,20 +115,18 @@ const MapViewer = () => {
     const rgbString = `${pixel[0]}_${pixel[1]}_${pixel[2]}`;
     const regionRGB = `${pixel[0]},${pixel[1]},${pixel[2]}`;
     const foundRegion = Object.values(regionData).find((region: any) => region.rgb === regionRGB);
-    // Ignore black pixels (0,0,0) and transparent pixels (alpha = 0)
+
     if (rgbString === "0_0_0" || !foundRegion) {
       setHoveredColor(null);
       setRegionInfo(null);
       return;
     }
-    
 
     if (foundRegion) {
-      const regionImagePath = `/data/regions/${mapType}/${rgbString}.png`;
+      const regionImagePath = `/data/regions/${mapType}/${rgbString}_hover.png`;
       setHoveredColor(regionImagePath);
 
       const capitalizedTier = mapType.charAt(0).toUpperCase() + mapType.slice(1);
-
       const overlordName = foundRegion.overlord ? regionData[foundRegion.overlord]?.name : null;
 
       setRegionInfo({
@@ -109,7 +134,7 @@ const MapViewer = () => {
         tier: capitalizedTier,
         size: foundRegion.size,
         subject_size: foundRegion.subject_size,
-        overlord: overlordName, 
+        overlord: overlordName,
         subjects: foundRegion.subjects ?? [],
         description: foundRegion.description || `A ${capitalizedTier} in Calavorn`,
       });
@@ -118,6 +143,15 @@ const MapViewer = () => {
       setRegionInfo(null);
     }
   };
+
+  // Prevent rendering the map while loading
+  if (loading) {
+    return (
+      <div className="w-full flex justify-center items-center min-h-screen bg-gray-100">
+        <p className="text-lg font-semibold text-gray-700">Loading Map...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-row justify-center items-start min-h-screen bg-gray-100 p-6 gap-6">
@@ -138,82 +172,13 @@ const MapViewer = () => {
 
       {/* Center: Map Viewer */}
       <div className="relative w-3/5 max-w-4xl" onMouseMove={getPixelColor}>
-        {/* Base Map */}
-        <img
-          src={`http://localhost:8000/map`}
-          alt="Base Map"
-          className="w-full h-auto"
-        />
+        <img src={`http://localhost:8000/map`} alt="Base Map" className="w-full h-auto" />
+        <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
 
-        {/* Overlay Map */}
-        <img
-          src={`http://localhost:8000/map/${mapType}`}
-          alt={`${mapType} map`}
-          className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
-        />
-
-        {/* 🔹 Hidden Canvas (Used for Pixel Checking) */}
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none"
-        />
-
-        {/* 🖼️ Hovered Region Overlay */}
-        {hoveredColor && (
-          <img
-            ref={hoveredRegionRef}
-            src={hoveredColor}
-            alt="Hovered Region"
-            className="absolute top-0 left-0 w-full h-auto opacity-100 pointer-events-none"
-          />
-        )}
-      </div>
-
-      {/* Right Side: Region Info Panel */}
-      <div className="w-1/5">
-        {regionInfo && (
-          <div className="bg-white shadow-lg rounded-lg p-4 transition-opacity duration-300 ease-in-out">
-            <h2 className="text-xl font-bold text-gray-800">{regionInfo.title}</h2>
-
-            {/* Tier Display */}
-            <p className="text-md text-gray-400 font-semibold">
-              <span className="text-gray-400">Tier:</span> 
-              <span className="text-gray-600"> {regionInfo.tier}</span>
-            </p>
-
-            {/* Overlord Status */}
-            {mapType === "nation" && (
-              <p className="text-md text-gray-400 font-semibold">
-                <span className="text-gray-400">Type:</span> 
-                <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
-              </p>
-            )}
-
-            {/* Realm Size */}
-            {mapType === "nation" && (
-              <p className="text-md text-gray-400 font-semibold">
-                <span className="text-gray-400">Realm Size:</span> 
-                <span className="text-gray-600">{regionInfo.subject_size > 0 ? ` ${regionInfo.size} (${regionInfo.subject_size} from subjects)`: ` ${regionInfo.size}`}</span>
-              </p>
-            )}
-
-            {/* Subjects List (Only if the nation has subjects) */}
-            {mapType === "nation" && regionInfo.subjects && regionInfo.subjects.length > 0 && (
-              <div className="mt-2">
-                <p className="text-md text-gray-400 font-semibold">Subjects:</p>
-                <ul className="list-disc list-inside text-gray-600">
-                  {regionInfo.subjects.map((subjectId) => {
-                    // Lookup the subject's name from regionData, fallback to the ID if not found
-                    const subjectName = regionData?.[subjectId]?.name || subjectId;
-                    return <li key={subjectId}>{subjectName}</li>;
-                  })}
-                </ul>
-              </div>
-            )}
-            {/* Description */}
-            <p className="text-sm text-gray-500 mt-2">{regionInfo.description}</p>
-          </div>
-        )}
+        {hoveredColor && <img ref={hoveredRegionRef} src={hoveredColor} alt="Hovered Region" className="absolute top-0 left-0 w-full h-auto opacity-100 pointer-events-none" />}
+        {Object.entries(overlayImages).map(([rgbKey, overlaySrc]) => (
+          <img key={rgbKey} id={rgbKey} src={overlaySrc} alt={`Overlay ${rgbKey}`} className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none" onError={(e) => (e.currentTarget.style.display = "none")} />
+        ))}
       </div>
     </div>
   );
