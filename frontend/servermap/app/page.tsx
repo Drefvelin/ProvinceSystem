@@ -10,6 +10,7 @@ const MapViewer = () => {
     title: string;
     tier: string;
     size: number;
+    subject_size: number,
     overlord: string;
     subjects: string[]; // ✅ Correct typing for an array of strings
     description: string;
@@ -107,6 +108,7 @@ const MapViewer = () => {
         title: foundRegion.name,
         tier: capitalizedTier,
         size: foundRegion.size,
+        subject_size: foundRegion.subject_size,
         overlord: overlordName, 
         subjects: foundRegion.subjects ?? [],
         description: foundRegion.description || `A ${capitalizedTier} in Calavorn`,
@@ -180,16 +182,20 @@ const MapViewer = () => {
             </p>
 
             {/* Overlord Status */}
-            <p className="text-md text-gray-400 font-semibold">
-              <span className="text-gray-400">Type:</span> 
-              <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
-            </p>
+            {regionInfo.size && (
+              <p className="text-md text-gray-400 font-semibold">
+                <span className="text-gray-400">Type:</span> 
+                <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
+              </p>
+            )}
 
             {/* Realm Size */}
-            <p className="text-md text-gray-400 font-semibold">
-              <span className="text-gray-400">Realm Size:</span> 
-              <span className="text-gray-600"> {regionInfo.size}</span>
-            </p>
+            {regionInfo.size && (
+              <p className="text-md text-gray-400 font-semibold">
+                <span className="text-gray-400">Realm Size:</span> 
+                <span className="text-gray-600">{regionInfo.subject_size > 0 ? ` ${regionInfo.size} (${regionInfo.subject_size} from subjects)`: ` ${regionInfo.size}`}</span>
+              </p>
+            )}
 
             {/* Subjects List (Only if the nation has subjects) */}
             {regionInfo.subjects && regionInfo.subjects.length > 0 && (

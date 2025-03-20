@@ -14,7 +14,8 @@
         ],
         "rgb": "27,150,130",
         "subjects": [],
-        "size": 9
+        "size": 9,
+        "subject_size": 0
     },
     "NATION_2": {
         "name": "New Akken",
@@ -23,7 +24,8 @@
         ],
         "rgb": "62,111,130",
         "subjects": [],
-        "size": 1
+        "size": 1,
+        "subject_size": 0
     },
     "NATION_3": {
         "name": "Kondar",
@@ -34,7 +36,8 @@
         ],
         "rgb": "24,128,34",
         "subjects": [],
-        "size": 3
+        "size": 3,
+        "subject_size": 0
     },
     "NATION_4": {
         "name": "Jakuran Tribes",
@@ -51,7 +54,8 @@
         "subjects": [
             "NATION_5"
         ],
-        "size": 11
+        "size": 11,
+        "subject_size": 4
     },
     "NATION_5": {
         "name": "Ojani Tribes",
@@ -65,7 +69,8 @@
         "subjects": [
             "NATION_6"
         ],
-        "size": 4
+        "size": 4,
+        "subject_size": 1
     },
     "NATION_6": {
         "name": "Gejj",
@@ -75,6 +80,7 @@
         ],
         "rgb": "160,154,115",
         "subjects": [],
-        "size": 1
+        "size": 1,
+        "subject_size": 0
     }
 }
