@@ -180,6 +180,53 @@ const MapViewer = () => {
           <img key={rgbKey} id={rgbKey} src={overlaySrc} alt={`Overlay ${rgbKey}`} className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none" onError={(e) => (e.currentTarget.style.display = "none")} />
         ))}
       </div>
+
+      {/* Right Side: Region Info Panel */}
+      <div className="w-1/5">
+        {regionInfo && (
+          <div className="bg-white shadow-lg rounded-lg p-4 transition-opacity duration-300 ease-in-out">
+            <h2 className="text-xl font-bold text-gray-800">{regionInfo.title}</h2>
+
+            {/* Tier Display */}
+            <p className="text-md text-gray-400 font-semibold">
+              <span className="text-gray-400">Tier:</span> 
+              <span className="text-gray-600"> {regionInfo.tier}</span>
+            </p>
+
+            {/* Overlord Status */}
+            {mapType === "nation" && (
+              <p className="text-md text-gray-400 font-semibold">
+                <span className="text-gray-400">Type:</span> 
+                <span className="text-gray-600"> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</span>
+              </p>
+            )}
+
+            {/* Realm Size */}
+            {mapType === "nation" && (
+              <p className="text-md text-gray-400 font-semibold">
+                <span className="text-gray-400">Realm Size:</span> 
+                <span className="text-gray-600">{regionInfo.subject_size > 0 ? ` ${regionInfo.size} (${regionInfo.subject_size} from subjects)`: ` ${regionInfo.size}`}</span>
+              </p>
+            )}
+
+            {/* Subjects List (Only if the nation has subjects) */}
+            {mapType === "nation" && regionInfo.subjects && regionInfo.subjects.length > 0 && (
+              <div className="mt-2">
+                <p className="text-md text-gray-400 font-semibold">Subjects:</p>
+                <ul className="list-disc list-inside text-gray-600">
+                  {regionInfo.subjects.map((subjectId) => {
+                    // Lookup the subject's name from regionData, fallback to the ID if not found
+                    const subjectName = regionData?.[subjectId]?.name || subjectId;
+                    return <li key={subjectId}>{subjectName}</li>;
+                  })}
+                </ul>
+              </div>
+            )}
+            {/* Description */}
+            <p className="text-sm text-gray-500 mt-2">{regionInfo.description}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -116,7 +116,7 @@ def generate_regions(mode, borders, frontend_save):
             file_path = os.path.join(DIR, file_name)
             if os.path.isfile(file_path):
                 os.remove(file_path)
-        for file_name in os.listdir(DIR):
+        for file_name in os.listdir(output_folder):
             new_image_path = os.path.join(output_folder, file_name)
             if os.path.exists(new_image_path):
                 new_img = Image.open(new_image_path).convert("RGBA")
