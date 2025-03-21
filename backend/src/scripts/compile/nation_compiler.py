@@ -22,13 +22,16 @@ def process_nations():
     def calculate_size(nation_id):
         nation = nations[nation_id]
         total_size = len(nation.get("provinces", []))  # Own provinces
+        subject_size = 0
 
         # Add sizes of all subjects
         for subject_id in nation.get("subjects", []):
-            total_size += calculate_size(subject_id)
+            subject_size += calculate_size(subject_id)
+            total_size += subject_size
 
         # Store computed size in the nation
         nation["size"] = total_size
+        nation["subject_size"] = subject_size
         return total_size
 
     # Compute sizes for all nations
