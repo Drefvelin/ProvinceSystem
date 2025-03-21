@@ -35,9 +35,11 @@
             13
         ],
         "rgb": "24,128,34",
-        "subjects": [],
-        "size": 3,
-        "subject_size": 0
+        "subjects": [
+            "NATION_7"
+        ],
+        "size": 4,
+        "subject_size": 1
     },
     "NATION_4": {
         "name": "Jakuran Tribes",
@@ -54,8 +56,8 @@
         "subjects": [
             "NATION_5"
         ],
-        "size": 11,
-        "subject_size": 4
+        "size": 12,
+        "subject_size": 5
     },
     "NATION_5": {
         "name": "Ojani Tribes",
@@ -63,13 +65,14 @@
         "provinces": [
             274,
             280,
-            273
+            273,
+            275
         ],
         "rgb": "131,100,22",
         "subjects": [
             "NATION_6"
         ],
-        "size": 4,
+        "size": 5,
         "subject_size": 1
     },
     "NATION_6": {
@@ -79,6 +82,17 @@
             282
         ],
         "rgb": "160,154,115",
+        "subjects": [],
+        "size": 1,
+        "subject_size": 0
+    },
+    "NATION_7": {
+        "name": "City of Ankid",
+        "overlord": "NATION_3",
+        "provinces": [
+            57
+        ],
+        "rgb": "128,20,20",
         "subjects": [],
         "size": 1,
         "subject_size": 0

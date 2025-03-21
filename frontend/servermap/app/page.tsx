@@ -21,6 +21,7 @@ const MapViewer = () => {
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
   const { mapObjects, loadData, getHoverRegion, drillDownRegion  } = useMapObjects(); // Import hover logic
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [drillStack, setDrillStack] = useState<string[]>([]);
 
   // Fetch JSON Data from API when mapType changes
   useEffect(() => {
@@ -143,6 +144,18 @@ const MapViewer = () => {
       });
     }
   };
+
+  const getAncestryChain = (regionId: string, data: Record<string, any>): string[] => {
+    const chain: string[] = [];
+    let currentId: string | null = regionId;
+  
+    while (currentId && data[currentId]) {
+      chain.push(currentId);
+      currentId = data[currentId].overlord || null;
+    }
+    console.log(chain)
+    return chain;
+  };
   
 
   // Prevent rendering the map while loading
@@ -176,8 +189,33 @@ const MapViewer = () => {
         className="relative w-3/5 max-w-4xl"
         onMouseMove={getPixelColor}
         onClick={() => {
-          if (selectedRegionId && regionInfo?.subjects && regionInfo?.subjects.length > 0) {
-            drillDownRegion(selectedRegionId, regionData!);
+          if (!selectedRegionId || !regionData) return;
+        
+          const region = regionData[selectedRegionId];
+        
+          if (region?.subjects?.length > 0) {
+            const ancestryChain = getAncestryChain(selectedRegionId, regionData);
+        
+            const isInsideCurrentStack = ancestryChain.some(ancestorId =>
+              drillStack.includes(regionData[ancestorId]?.name)
+            );
+
+            console.log(isInsideCurrentStack);
+        
+            if (!isInsideCurrentStack) {
+              loadData(regionData); // reset visibility
+              setDrillStack([]);    // clear drill path
+            }
+        
+            drillDownRegion(selectedRegionId, regionData);
+        
+            const selectedName = regionData[selectedRegionId]?.name || selectedRegionId;
+            setDrillStack(prev => {
+              if (!prev.includes(selectedName)) {
+                return [...prev, selectedName];
+              }
+              return prev;
+            });
           }
         }}
       >
@@ -243,6 +281,27 @@ const MapViewer = () => {
             )}
             {/* Description */}
             <p className="text-sm text-gray-500 mt-2">{regionInfo.description}</p>
+          </div>
+        )}
+        {drillStack.length > 0 && regionData && (
+          <div className="mt-6 bg-white p-4 rounded-lg shadow-inner">
+            <h3 className="text-md font-semibold text-gray-700 mb-2">Layers</h3>
+            <ul className="space-y-1">
+              {drillStack.map((label, index) => (
+                <li key={index} className="text-sm text-gray-600">
+                  Inspecting {label}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => {
+                setDrillStack([]);
+                loadData(regionData); // Resets visibility
+              }}
+              className="mt-4 text-sm text-blue-500 hover:underline"
+            >
+              Reset View
+            </button>
           </div>
         )}
       </div>

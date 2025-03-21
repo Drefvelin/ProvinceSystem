@@ -22,7 +22,7 @@
     "NATION_5": {
       "name": "Ojani Tribes",
       "overlord": "NATION_4",
-      "provinces": [274, 280, 273],
+      "provinces": [274, 280, 273, 275],
       "rgb": "131,100,22"
     },
     "NATION_6": {
@@ -30,5 +30,11 @@
       "overlord": "NATION_5",
       "provinces": [282],
       "rgb": "160,154,115"
+    },
+    "NATION_7": {
+      "name": "City of Ankid",
+      "overlord": "NATION_3",
+      "provinces": [57],
+      "rgb": "128,20,20"
     }
 }
