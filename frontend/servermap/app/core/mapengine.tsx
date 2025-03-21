@@ -1,17 +1,39 @@
-let mapObjects: { id: string; visible: boolean }[] = [];
+import { useState } from "react";
 
-const createMapObjects = (regionData: Record<string, any>): { id: string; visible: boolean }[] => {
-  return Object.keys(regionData).map((regionId) => ({
-    id: regionId, // Use the region's ID
-    visible: true, // Default to visible (you can modify this logic)
-  }));
-};
+let mapObjectsState: { id: string; visible: boolean; path: string }[] = [];
 
-export function loadData(regionData: any) {
-  mapObjects = createMapObjects(regionData); // Update mapObjects
+export function useMapObjects() {
+  const [mapObjects, setMapObjects] = useState(mapObjectsState);
+
+  const loadData = (regionData: Record<string, any>) => {
+    const objects = Object.keys(regionData).flatMap((regionId) => {
+      const region = regionData[regionId];
+      const entries: { id: string; visible: boolean; path: string }[] = [];
+
+      const rgbPath = region.rgb.replace(/,/g, "_");
+
+      // Add main layer
+      entries.push({
+        id: regionId,
+        visible: !region.overlord, // hide if it's a subject
+        path: rgbPath,
+      });
+
+      // Only add nested layer if the region has subjects
+      if (Array.isArray(region.subjects) && region.subjects.length > 0) {
+        entries.push({
+          id: `${regionId}_nested`,
+          visible: false, // nested version also starts hidden if it's a subject
+          path: `${rgbPath}_nested`,
+        });
+      }
+
+      return entries;
+    });
+
+    setMapObjects(objects);
+    mapObjectsState = objects; // Ensure consistency across renders
+  };
+
+  return { mapObjects, loadData };
 }
-
-export default mapObjects;
-
-
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useMapObjects } from "./core/mapengine";
 
 const MapViewer = () => {
   const [mapType, setMapType] = useState<string>("county");
@@ -15,45 +16,42 @@ const MapViewer = () => {
     subjects: string[];
     description: string;
   } | null>(null);
-  const [overlayImages, setOverlayImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true); // Initially true
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
+  const { mapObjects, loadData } = useMapObjects(); // Use mapObjects state
 
   // Fetch JSON Data from API when mapType changes
   useEffect(() => {
     const fetchRegionData = async () => {
-      setLoading(true); // Start loading before fetching
+      setLoading(true);
       try {
         const response = await fetch(`http://localhost:8000/data/${mapType}`);
         if (!response.ok) throw new Error("Failed to fetch region data");
         const data = await response.json();
         setRegionData(data);
+        loadData(data); // Load the map objects dynamically
       } catch (error) {
         console.error("Error fetching region data:", error);
         setRegionData(null);
       }
+      setLoading(false);
     };
 
     fetchRegionData();
   }, [mapType]);
+
+  useEffect(() => {
+    console.log("Map Objects Updated:", mapObjects);
+  }, [mapObjects]);
 
   // Generate overlay image paths
   useEffect(() => {
     if (!regionData) return;
     
     setLoading(true); // Ensure loading stays true while processing overlays
-
-    const overlays = Object.values(regionData)
-      .map((region: any) => region.rgb)
-      .filter(Boolean) // Ensure only valid RGB values
-      .reduce((acc: Record<string, string>, rgb: string) => {
-        const rgbKey = rgb.replace(/,/g, "_"); // Convert "r,g,b" -> "r_g_b"
-        acc[rgbKey] = `/data/regions/${mapType}/${rgbKey}.png`;
-        return acc;
-      }, {});
-
-    setOverlayImages(overlays);
+    loadData(regionData);
+    console.log(mapObjects);
     setLoading(false); // Done loading once overlays are ready
   }, [regionData, mapType]);
 
@@ -176,8 +174,18 @@ const MapViewer = () => {
         <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
 
         {hoveredColor && <img ref={hoveredRegionRef} src={hoveredColor} alt="Hovered Region" className="absolute top-0 left-0 w-full h-auto opacity-100 pointer-events-none" />}
-        {Object.entries(overlayImages).map(([rgbKey, overlaySrc]) => (
-          <img key={rgbKey} id={rgbKey} src={overlaySrc} alt={`Overlay ${rgbKey}`} className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none" onError={(e) => (e.currentTarget.style.display = "none")} />
+        {/* Render only images where visible === true */}
+        {mapObjects
+          .filter((obj) => obj.visible) // Only show visible images
+          .map((obj) => (
+            <img
+              key={obj.id}
+              id={obj.id}
+              src={`/data/regions/${mapType}/${obj.path}.png`}
+              alt={`Overlay ${obj.id}`}
+              className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
         ))}
       </div>
 
