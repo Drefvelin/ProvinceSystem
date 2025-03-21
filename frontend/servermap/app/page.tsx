@@ -19,7 +19,8 @@ const MapViewer = () => {
   const [loading, setLoading] = useState<boolean>(true); // Initially true
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
-  const { mapObjects, loadData } = useMapObjects(); // Use mapObjects state
+  const { mapObjects, loadData, getHoverRegion, drillDownRegion  } = useMapObjects(); // Import hover logic
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
 
   // Fetch JSON Data from API when mapType changes
   useEffect(() => {
@@ -95,52 +96,54 @@ const MapViewer = () => {
   // 🖱️ Get pixel color & find region in JSON
   const getPixelColor = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (loading) return;
-
+  
     const canvas = canvasRef.current;
     if (!canvas || !regionData) return;
-
+  
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
+  
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-
+  
     const x = Math.floor((event.clientX - rect.left) * scaleX);
     const y = Math.floor((event.clientY - rect.top) * scaleY);
-
+  
     const pixel = ctx.getImageData(x, y, 1, 1).data;
-    const rgbString = `${pixel[0]}_${pixel[1]}_${pixel[2]}`;
     const regionRGB = `${pixel[0]},${pixel[1]},${pixel[2]}`;
-    const foundRegion = Object.values(regionData).find((region: any) => region.rgb === regionRGB);
-
-    if (rgbString === "0_0_0" || !foundRegion) {
+    const foundRegion = Object.keys(regionData).find(
+      (regionId) => regionData[regionId].rgb === regionRGB
+    );
+  
+    if (!foundRegion) {
       setHoveredColor(null);
       setRegionInfo(null);
       return;
     }
+  
+    // Get the correct hover image AND region info (fallback to overlord if needed)
+    const { imagePath, region } = getHoverRegion(mapType, foundRegion, regionData);
 
-    if (foundRegion) {
-      const regionImagePath = `/data/regions/${mapType}/${rgbString}_hover.png`;
-      setHoveredColor(regionImagePath);
-
+    setHoveredColor(imagePath);
+    setSelectedRegionId(foundRegion); // track real region ID for drill-down
+  
+    if (region) {
       const capitalizedTier = mapType.charAt(0).toUpperCase() + mapType.slice(1);
-      const overlordName = foundRegion.overlord ? regionData[foundRegion.overlord]?.name : null;
-
+      const overlordName = region.overlord ? regionData[region.overlord]?.name : null;
+  
       setRegionInfo({
-        title: foundRegion.name,
+        title: region.name,
         tier: capitalizedTier,
-        size: foundRegion.size,
-        subject_size: foundRegion.subject_size,
+        size: region.size,
+        subject_size: region.subject_size,
         overlord: overlordName,
-        subjects: foundRegion.subjects ?? [],
-        description: foundRegion.description || `A ${capitalizedTier} in Calavorn`,
+        subjects: region.subjects ?? [],
+        description: region.description || `A ${capitalizedTier} in Calavorn`,
       });
-    } else {
-      setHoveredColor(null);
-      setRegionInfo(null);
     }
   };
+  
 
   // Prevent rendering the map while loading
   if (loading) {
@@ -169,7 +172,15 @@ const MapViewer = () => {
       </div>
 
       {/* Center: Map Viewer */}
-      <div className="relative w-3/5 max-w-4xl" onMouseMove={getPixelColor}>
+      <div
+        className="relative w-3/5 max-w-4xl"
+        onMouseMove={getPixelColor}
+        onClick={() => {
+          if (selectedRegionId && regionInfo?.subjects && regionInfo?.subjects.length > 0) {
+            drillDownRegion(selectedRegionId, regionData!);
+          }
+        }}
+      >
         <img src={`http://localhost:8000/map`} alt="Base Map" className="w-full h-auto" />
         <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
 
