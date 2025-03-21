@@ -25,6 +25,13 @@ const MapViewer = () => {
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
   const { mapObjects, loadData, getHoverRegion, drillDownRegion } = useMapEngine();
+
+  {/* Vote Links Array */}
+  const voteLinks = [
+    { name: "Website 1", url: "https://example-vote1.com" },
+    { name: "Website 2", url: "https://example-vote2.com" },
+    { name: "Website 3", url: "https://example-vote3.com" },
+  ];
   
 
   // === Fetch Region Data on mapType change ===
@@ -225,9 +232,29 @@ const MapViewer = () => {
   return (
     <div className="font-serif text-gray-900">
       {/* Sticky Header */}
-      <div className="w-full h-16 bg-[#2f3327] sticky top-0 z-50 border-b border-[#2b2218] shadow-md relative">
+      <div className="w-full h-16 bg-[#2f3327] sticky top-0 z-50 border-b border-[#2b2218] shadow-md relative flex items-center px-6">
         {/* Logo Inside Header */}
-        <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+        <div className="ml-auto flex items-center gap-6">
+          {/* Patreon Icon with Hover Effect */}
+          <a
+            href="https://patreon.com/TFMCRP"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform transform hover:scale-110"
+          >
+            <img src="/patreon.png" alt="Patreon" className="h-32 w-auto drop-shadow-md" />
+          </a>
+          {/* Discord Icon with Hover Effect */}
+          <a
+            href="https://discord.gg/tfmc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform transform hover:scale-110"
+          >
+            <img src="/discord.png" alt="Discord" className="h-10 w-auto drop-shadow-md" />
+          </a>
+
+          {/* Main Logo */}
           <img src="/logo.png" alt="Logo" className="h-14 w-auto drop-shadow-md" />
         </div>
       </div>
@@ -246,10 +273,10 @@ const MapViewer = () => {
       </div>
   
       {/* Main Layout */}
-      <div className="flex flex-row justify-center items-start min-h-screen bg-[#d4cfb4] p-8 gap-10">
+      <div className="flex flex-row justify-center items-start min-h-screen bg-gradient-to-t from-[#8f8b7e] to-[#bab6ab] p-8 gap-6">
         {/* Center: Map Display */}
         <div
-          className="relative w-[70%] max-w-5xl rounded-xl border-12 border-[#2b2218] shadow-lg overflow-hidden"
+          className="relative w-[90%] max-w-5xl rounded-xl border-12 border-[#2b2218] shadow-lg overflow-hidden"
           onMouseMove={getPixelColor}
           onClick={handleClick}
         >
@@ -277,7 +304,34 @@ const MapViewer = () => {
         </div>
   
         {/* Right Panel */}
-        <div className="w-[25%] space-y-6">
+        <div className="w-[18%] space-y-6">
+          {/* Vote for TFMC Panel */ }
+          <div className="bg-[#657c4c] border border-[#3a2f23] shadow-inner rounded-lg p-5">
+            <h2 className="text-lg font-bold text-[#f0eed9] mb-3 tracking-wide">Vote for TFMC</h2>
+            <ul className="space-y-2 text-sm">
+              {voteLinks.map((link, index) => (
+                <li key={index}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#f0eed9] hover:text-[#3a2f23] transition"
+                  >
+                    {link.name}: Vote Here
+                  </a>
+                </li>
+              ))}
+            </ul>
+            {/* Join Discord Button */}
+            <a
+              href="https://discord.gg/tfmc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-6 p-3 bg-[#948b69] rounded-md shadow-md text-center text-[#f0eed9] font-semibold tracking-wide transition-transform transform hover:scale-105 hover:bg-[#2b2218]"
+            >
+              Join our Discord to Play!
+            </a>
+          </div>
           {/* Map Mode Selector */}
           <div className="bg-[#657c4c] border border-[#3a2f23] shadow-inner rounded-lg p-5">
             <h2 className="text-lg font-bold text-gray-100 mb-3 tracking-wide">Map Mode</h2>
@@ -330,11 +384,38 @@ const MapViewer = () => {
               </>
             )}
           </div>
+          {/* Drill Stack (Active Layers) */}
+          {drillStack.length > 0 && (
+            <div className="bg-[#657c4c] border border-[#3a2f23] p-5 rounded-lg shadow-md">
+              <h3 className="text-md font-semibold text-[#f0eed9] mb-3">Active Layers</h3>
+              <ul className="divide-y divide-[#3a2f23]">
+                {drillStack.map((label, index) => (
+                  <li key={index} className="py-2 text-sm text-gray-200 flex items-center gap-2">
+                    {/* 🔴 Fix: Proper Dot Color */}
+                    <span className="inline-block w-2 h-2 bg-[#2b2218] rounded-full"></span>
+                    <span>
+                      Inspecting
+                    </span>
+                    <span className="font-medium text-[#c7c185]">{label}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* ✅ Fix: Correct Button Background Color */}
+              <button
+                onClick={() => {
+                  setDrillStack([]);
+                  if (regionData) loadData(regionData);
+                }}
+                className="mt-4 w-full bg-[#f0eed9] hover:bg-[#cfcdba] text-gray text-sm font-medium py-2 px-4 rounded-lg shadow transition duration-200"
+              >
+                Reset View
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-  
 };
 
 export default MapViewer;
