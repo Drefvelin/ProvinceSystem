@@ -61,16 +61,19 @@ def build_color_mapping(mode):
 
 def get_overlord_rgb(nation, nations):
     """
-    Recursively finds the topmost overlord's RGB color.
-    If a nation has no overlord, returns its own color.
+    Retrieves the RGB color of the immediate overlord of a nation.
     """
-    if "overlord" in nations[nation] and nations[nation]["overlord"] in nations:
-        return get_overlord_rgb(nations[nation]["overlord"], nations)  # Recursively go up the chain
-    return tuple(map(int, nations[nation]["rgb"].split(",")))  # Return top overlord's color
+    overlord_name = nations.get(nation, {}).get("overlord")  # Get overlord's name
+
+    if overlord_name and overlord_name in nations:
+        return tuple(map(int, nations[overlord_name]["rgb"].split(",")))  # Get overlord's RGB
+    
+    return None  # No overlord found
+
 
 def get_color_overrides(mode):
     """
-    Builds a dictionary that maps nation colors to their overlord's color.
+    Builds a dictionary that maps nation colors to their immediate overlord's color.
     Used to "fix" the nation map after making the canvas.
     """
     overrides = {}
@@ -84,9 +87,10 @@ def get_color_overrides(mode):
     for nation, data in nations.items():
         nation_color = tuple(map(int, data["rgb"].split(",")))
 
-        # Check if the nation has an overlord
-        if "overlord" in data and data["overlord"] in nations:
-            overlord_rgb = get_overlord_rgb(nation, nations)
-            overrides[nation_color] = overlord_rgb  # Nation color -> Overlord color mapping
+        # Check if the nation has an immediate overlord
+        overlord_rgb = get_overlord_rgb(nation, nations)
+        if overlord_rgb:
+            overrides[nation_color] = overlord_rgb  # Map nation color -> immediate overlord color
 
     return overrides
+
