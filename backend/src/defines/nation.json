@@ -54,10 +54,11 @@
         ],
         "rgb": "192,159,77",
         "subjects": [
-            "NATION_5"
+            "NATION_5",
+            "NATION_8"
         ],
-        "size": 12,
-        "subject_size": 5
+        "size": 21,
+        "subject_size": 9
     },
     "NATION_5": {
         "name": "Ojani Tribes",
@@ -93,6 +94,32 @@
             57
         ],
         "rgb": "128,20,20",
+        "subjects": [],
+        "size": 1,
+        "subject_size": 0
+    },
+    "NATION_8": {
+        "name": "Unvan Tribes",
+        "overlord": "NATION_4",
+        "provinces": [
+            271,
+            272,
+            270
+        ],
+        "rgb": "109,62,19",
+        "subjects": [
+            "NATION_9"
+        ],
+        "size": 4,
+        "subject_size": 1
+    },
+    "NATION_9": {
+        "name": "Ilian",
+        "overlord": "NATION_8",
+        "provinces": [
+            28
+        ],
+        "rgb": "25,60,48",
         "subjects": [],
         "size": 1,
         "subject_size": 0

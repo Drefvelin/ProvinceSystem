@@ -36,5 +36,17 @@
       "overlord": "NATION_3",
       "provinces": [57],
       "rgb": "128,20,20"
+    },
+    "NATION_8": {
+      "name": "Unvan Tribes",
+      "overlord": "NATION_4",
+      "provinces": [271, 272, 270],
+      "rgb": "109,62,19"
+    },
+    "NATION_9": {
+      "name": "Ilian",
+      "overlord": "NATION_8",
+      "provinces": [28],
+      "rgb": "25,60,48"
     }
 }

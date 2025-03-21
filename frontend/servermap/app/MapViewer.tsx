@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMapEngine } from "./core/MapEngineContext";
 
 const MapViewer = () => {
-  const [mapType, setMapType] = useState<string>("county");
+  const [mapType, setMapType] = useState<string>("nation");
   const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
@@ -223,107 +223,118 @@ const MapViewer = () => {
   }
 
   return (
-    <div className="flex flex-row justify-center items-start min-h-screen bg-gray-100 p-6 gap-6">
-      {/* Center: Map Display */}
-      <div
-        className="relative w-7/8 max-w-4xl"
-        onMouseMove={getPixelColor}
-        onClick={handleClick}
-      >
-        <img src={`http://localhost:8000/map`} alt="Base Map" className="w-full h-auto" />
-        <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
-        {hoveredColor && (
-          <img
-            ref={hoveredRegionRef}
-            src={hoveredColor}
-            alt="Hovered Region"
-            className="absolute top-0 left-0 w-full h-auto opacity-100 pointer-events-none"
-          />
-        )}
-        {mapObjects
-          .filter(obj => obj.visible)
-          .map(obj => (
-            <img
-              key={obj.id}
-              src={`/data/regions/${mapType}/${obj.path}.png`}
-              alt={`Overlay ${obj.id}`}
-              className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          ))}
-      </div>
-
-      {/* Right: Info Panel */}
-      <div className="w-1/8">
-        {/* Left: Map Selector */}
-        <div className="bg-white shadow-md rounded-lg p-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-2">Map Mode</h2>
-          <select
-            onChange={(e) => setMapType(e.target.value)}
-            value={mapType}
-            className="w-full p-2 text-md border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="nation">Nation Map</option>
-            <option value="county">County Map</option>
-            <option value="duchy">Duchy Map</option>
-            <option value="kingdom">Kingdom Map</option>
-          </select>
+    <div className="font-serif text-gray-900">
+      {/* Sticky Header */}
+      <div className="w-full h-16 bg-[#2f3327] sticky top-0 z-50 border-b border-[#2b2218] shadow-md relative">
+        {/* Logo Inside Header */}
+        <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+          <img src="/logo.png" alt="Logo" className="h-14 w-auto drop-shadow-md" />
         </div>
-        {regionInfo && (
-          <div className="mt-6 bg-white shadow-lg rounded-lg p-4">
-            <h2 className="text-xl font-bold text-gray-800">{regionInfo.title}</h2>
-            <p className="text-md text-gray-500"><strong>Tier:</strong> {regionInfo.tier}</p>
-            {mapType === "nation" && (
+      </div>
+  
+      {/* Banner with Logo Overlay */}
+      <div className="w-full h-[350px] overflow-hidden relative">
+        <img
+          src="/background.png"
+          alt="Banner"
+          className="w-full h-full object-cover object-center opacity-90"
+        />
+        {/* Logo Overlay Centered */}
+        <div className="absolute left-1/9 top-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60">
+          <img src="/logo.png" alt="Logo" className="h-60 w-auto drop-shadow-lg" />
+        </div>
+      </div>
+  
+      {/* Main Layout */}
+      <div className="flex flex-row justify-center items-start min-h-screen bg-[#d4cfb4] p-8 gap-10">
+        {/* Center: Map Display */}
+        <div
+          className="relative w-[70%] max-w-5xl rounded-xl border-12 border-[#2b2218] shadow-lg overflow-hidden"
+          onMouseMove={getPixelColor}
+          onClick={handleClick}
+        >
+          <img src={`http://localhost:8000/map`} alt="Base Map" className="w-full h-auto" />
+          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
+          {hoveredColor && (
+            <img
+              ref={hoveredRegionRef}
+              src={hoveredColor}
+              alt="Hovered Region"
+              className="absolute top-0 left-0 w-full h-auto opacity-100 pointer-events-none"
+            />
+          )}
+          {mapObjects
+            .filter(obj => obj.visible)
+            .map(obj => (
+              <img
+                key={obj.id}
+                src={`/data/regions/${mapType}/${obj.path}.png`}
+                alt={`Overlay ${obj.id}`}
+                className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            ))}
+        </div>
+  
+        {/* Right Panel */}
+        <div className="w-[25%] space-y-6">
+          {/* Map Mode Selector */}
+          <div className="bg-[#657c4c] border border-[#3a2f23] shadow-inner rounded-lg p-5">
+            <h2 className="text-lg font-bold text-gray-100 mb-3 tracking-wide">Map Mode</h2>
+            <select
+              onChange={(e) => setMapType(e.target.value)}
+              value={mapType}
+              className="w-full p-2 text-md rounded-md border border-[#3a2f23] bg-[#f0eed9] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#3a2f23] shadow-sm"
+            >
+              <option value="nation">Nation Map</option>
+              <option value="county">County Map</option>
+              <option value="duchy">Duchy Map</option>
+              <option value="kingdom">Kingdom Map</option>
+            </select>
+          </div>
+  
+          {/* Region Info Panel */}
+          <div
+            className={`bg-[#657c4c] border border-[#3a2f23] rounded-lg shadow-md overflow-hidden transition-all duration-500 ${
+              regionInfo ? "max-h-[600px] opacity-100 p-5" : "max-h-0 opacity-0 p-0"
+            }`}
+          >
+            {regionInfo && (
               <>
-                <p className="text-md text-gray-500"><strong>Type:</strong> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}</p>
-                <p className="text-md text-gray-500"><strong>Realm Size:</strong> {regionInfo.subject_size > 0 ? `${regionInfo.size} (${regionInfo.subject_size} from subjects)` : regionInfo.size}</p>
+                <h2 className="text-xl font-bold text-[#e7e2c2]">{regionInfo.title}</h2>
+                <p className="text-md text-gray-200 mt-1"><strong>Tier:</strong> {regionInfo.tier}</p>
+  
+                {mapType === "nation" && (
+                  <>
+                    <p className="text-md text-gray-200">
+                      <strong>Type:</strong> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}
+                    </p>
+                    <p className="text-md text-gray-200">
+                      <strong>Realm Size:</strong> {regionInfo.subject_size > 0 ? `${regionInfo.size} (${regionInfo.subject_size} from subjects)` : regionInfo.size}
+                    </p>
+                  </>
+                )}
+  
+                {regionInfo.subjects?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-md font-semibold text-gray-100">Subjects:</p>
+                    <ul className="list-disc list-inside text-gray-200">
+                      {regionInfo.subjects.map((id) => (
+                        <li key={id}>{regionData?.[id]?.name || id}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+  
+                <p className="text-sm text-gray-200 mt-3">{regionInfo.description}</p>
               </>
             )}
-            {regionInfo.subjects?.length > 0 && (
-              <div className="mt-2">
-                <p className="text-md font-semibold text-gray-600">Subjects:</p>
-                <ul className="list-disc list-inside text-gray-700">
-                  {regionInfo.subjects.map(id => (
-                    <li key={id}>{regionData?.[id]?.name || id}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-sm text-gray-600 mt-2">{regionInfo.description}</p>
           </div>
-        )}
-
-        {/* Drill Stack UI */}
-        {drillStack.length > 0 && (
-          <div className="mt-6 bg-white p-4 rounded-xl shadow-lg border border-gray-200">
-            <h3 className="text-md font-semibold text-gray-800 mb-3">Active Layers</h3>
-
-            <ul className="divide-y divide-gray-200">
-              {drillStack.map((label, index) => (
-                <li
-                  key={index}
-                  className="py-2 text-sm text-gray-700 flex items-center gap-2"
-                >
-                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>Inspecting <span className="font-medium text-gray-900">{label}</span></span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => {
-                setDrillStack([]);
-                if (regionData) loadData(regionData);
-              }}
-              className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg shadow transition duration-200"
-            >
-              Reset View
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
+  
 };
 
 export default MapViewer;
