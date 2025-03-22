@@ -153,7 +153,7 @@ def generate_regions(mode, borders, frontend_save):
             else:
                 print(f"Warning: {new_image_path} not found for border painting.")
     if frontend_save:
-        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "servermap", "public", "data", "regions", f"{mode}")
+        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", "regions", f"{mode}")
         os.makedirs(DIR, exist_ok=True)
         for file_name in os.listdir(DIR):
             file_path = os.path.join(DIR, file_name)

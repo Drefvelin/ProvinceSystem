@@ -31,7 +31,7 @@ def create_map(mode, filename, frontend_save):
                 flood_fill(x, y, pixel_color, kingdom_color, visited_pixels, img_data, new_img_data, width, height)
 
     if frontend_save:
-        frontend_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "servermap", "public", "data", f"{filename}.png")
+        frontend_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", f"{filename}.png")
         new_img.save(frontend_image_path, "PNG")
         print(f"New image generated for the frontend and saved as {frontend_image_path}")
 
