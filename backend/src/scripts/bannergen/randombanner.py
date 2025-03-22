@@ -85,15 +85,20 @@ def get_contrasting_color(used_colors, all_colors, dye_rgb_map):
         return random.choice(unused) if unused else random.choice(all_colors)
 
 def get_similar_color(used_colors, all_colors, dye_rgb_map, threshold=80):
-    similar = [
-        color for color in all_colors
-        if any(color_distance(dye_rgb_map[color.lower()], dye_rgb_map[used.lower()]) < threshold for used in used_colors)
-    ]
+    color_usage = {color: used_colors.count(color) for color in all_colors}
 
-    if similar:
-        return random.choice(similar)
+    # Build a weighted list of similar colors with weights decreasing on repeated use
+    weighted_similar = []
+    for color in all_colors:
+        if any(color_distance(dye_rgb_map[color.lower()], dye_rgb_map[used.lower()]) < threshold for used in used_colors):
+            usage_count = color_usage.get(color, 0)
+            weight = max(1, 3 - usage_count)  # First use = weight 3, second = 2, third+ = 1
+            weighted_similar.extend([color] * weight)
+
+    if weighted_similar:
+        return random.choice(weighted_similar)
     else:
-        # fallback to any unused color
+        # fallback to unused or any available color
         unused = [c for c in all_colors if c not in used_colors]
         return random.choice(unused) if unused else random.choice(all_colors)
 
