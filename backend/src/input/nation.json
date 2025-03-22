@@ -2,7 +2,13 @@
     "NATION_1": {
       "name": "Lonyan Republic",
       "provinces": [2, 3, 4, 5, 6, 7, 8, 9, 10],
-      "rgb": "27,150,130"
+      "rgb": "27,150,130",
+      "banner":[
+        "RED.BASE",
+        "CYAN.STRIPE_TOP",
+        "GRAY.HALF_HORIZONTAL_BOTTOM",
+        "CYAN.STRIPE_BOTTOM"
+      ]
     },
     "NATION_2": {
       "name": "New Akken",
@@ -12,7 +18,12 @@
     "NATION_3": {
       "name": "Kondar",
       "provinces": [11, 12, 13],
-      "rgb": "24,128,34"
+      "rgb": "24,128,34",
+      "banner":[
+        "GREEN.BASE",
+        "BLACK.STRIPE_DOWNRIGHT",
+        "CYAN.RHOMBUS"
+      ]
     },
     "NATION_4": {
       "name": "Jakuran Tribes",
@@ -36,5 +47,17 @@
       "overlord": "NATION_3",
       "provinces": [57],
       "rgb": "128,20,20"
+    },
+    "NATION_8": {
+      "name": "Unvan Tribes",
+      "overlord": "NATION_4",
+      "provinces": [271, 272, 270],
+      "rgb": "109,62,19"
+    },
+    "NATION_9": {
+      "name": "Ilian",
+      "overlord": "NATION_8",
+      "provinces": [28],
+      "rgb": "25,60,48"
     }
 }

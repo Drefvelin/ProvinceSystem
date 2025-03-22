@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import json
+from src.scripts.bannergen.randombanner import generate_random_banner
 
 app = FastAPI()
 
@@ -51,6 +52,10 @@ async def get_map(map_type: str):
         return JSONResponse(content=data)  # Return JSON directly
 
     return JSONResponse(content={"error": "Data not found"}, status_code=404)
+
+@app.get("/generator/banner")
+async def generate_banner():
+    return JSONResponse(content=generate_random_banner())
 
 if __name__ == "__main__":
     import uvicorn
