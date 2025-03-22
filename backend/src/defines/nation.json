@@ -13,6 +13,7 @@
             10
         ],
         "rgb": "27,150,130",
+        "banner": "27_150_130",
         "subjects": [],
         "size": 9,
         "subject_size": 0
@@ -25,7 +26,8 @@
         "rgb": "62,111,130",
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "banner": "62_111_130"
     },
     "NATION_3": {
         "name": "Kondar",
@@ -35,6 +37,7 @@
             13
         ],
         "rgb": "24,128,34",
+        "banner": "24_128_34",
         "subjects": [
             "NATION_7"
         ],
@@ -58,7 +61,8 @@
             "NATION_8"
         ],
         "size": 21,
-        "subject_size": 9
+        "subject_size": 9,
+        "banner": "192_159_77"
     },
     "NATION_5": {
         "name": "Ojani Tribes",
@@ -74,7 +78,8 @@
             "NATION_6"
         ],
         "size": 5,
-        "subject_size": 1
+        "subject_size": 1,
+        "banner": "131_100_22"
     },
     "NATION_6": {
         "name": "Gejj",
@@ -85,7 +90,8 @@
         "rgb": "160,154,115",
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "banner": "160_154_115"
     },
     "NATION_7": {
         "name": "City of Ankid",
@@ -96,7 +102,8 @@
         "rgb": "128,20,20",
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "banner": "128_20_20"
     },
     "NATION_8": {
         "name": "Unvan Tribes",
@@ -111,7 +118,8 @@
             "NATION_9"
         ],
         "size": 4,
-        "subject_size": 1
+        "subject_size": 1,
+        "banner": "109_62_19"
     },
     "NATION_9": {
         "name": "Ilian",
@@ -122,6 +130,7 @@
         "rgb": "25,60,48",
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "banner": "25_60_48"
     }
 }

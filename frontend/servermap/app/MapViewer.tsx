@@ -11,6 +11,7 @@ const MapViewer = () => {
   const [regionInfo, setRegionInfo] = useState<{
     title: string;
     tier: string;
+    banner: string;
     size: number;
     subject_size: number;
     overlord: string;
@@ -136,6 +137,7 @@ const MapViewer = () => {
       setRegionInfo({
         title: region.name,
         tier: capitalizedTier,
+        banner: region.banner,
         size: region.size,
         subject_size: region.subject_size,
         overlord: region.overlord ? regionData[region.overlord]?.name : null,
@@ -354,34 +356,57 @@ const MapViewer = () => {
             }`}
           >
             {regionInfo && (
-              <>
-                <h2 className="text-xl font-bold text-[#e7e2c2]">{regionInfo.title}</h2>
-                <p className="text-md text-gray-200 mt-1"><strong>Tier:</strong> {regionInfo.tier}</p>
-  
-                {mapType === "nation" && (
-                  <>
-                    <p className="text-md text-gray-200">
-                      <strong>Type:</strong> {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}
-                    </p>
-                    <p className="text-md text-gray-200">
-                      <strong>Realm Size:</strong> {regionInfo.subject_size > 0 ? `${regionInfo.size} (${regionInfo.subject_size} from subjects)` : regionInfo.size}
-                    </p>
-                  </>
-                )}
-  
-                {regionInfo.subjects?.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-md font-semibold text-gray-100">Subjects:</p>
-                    <ul className="list-disc list-inside text-gray-200">
-                      {regionInfo.subjects.map((id) => (
-                        <li key={id}>{regionData?.[id]?.name || id}</li>
-                      ))}
-                    </ul>
+              <div className="flex">
+                {/* Left: All Text Content */}
+                <div className="flex-1 pr-4">
+                  <h2 className="text-xl font-bold text-[#e7e2c2]">{regionInfo.title}</h2>
+                  <p className="text-md text-gray-200 mt-1">
+                    <strong>Tier:</strong> {regionInfo.tier}
+                  </p>
+
+                  {mapType === "nation" && (
+                    <>
+                      <p className="text-md text-gray-200">
+                        <strong>Type:</strong>{" "}
+                        {regionInfo.overlord ? `Subject of ${regionInfo.overlord}` : "Independent"}
+                      </p>
+                      <p className="text-md text-gray-200">
+                        <strong>Realm Size:</strong>{" "}
+                        {regionInfo.subject_size > 0
+                          ? `${regionInfo.size} (${regionInfo.subject_size} from subjects)`
+                          : regionInfo.size}
+                      </p>
+                    </>
+                  )}
+
+                  {/* Subjects */}
+                  {regionInfo.subjects?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-md font-semibold text-gray-100">Subjects:</p>
+                      <ul className="list-disc list-inside text-gray-200">
+                        {regionInfo.subjects.map((id) => (
+                          <li key={id}>{regionData?.[id]?.name || id}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  <p className="text-sm text-gray-200 mt-3">{regionInfo.description}</p>
+                </div>
+
+                {/* Right: Flag Image */}
+                {regionInfo.banner && (
+                  <div className="flex flex-col items-center w-28 mt-1">
+                    <img
+                      src={`/data/banners/${mapType}/${regionInfo.banner}.png`}
+                      alt={`${regionInfo.title} Banner`}
+                      className="w-24 h-auto border border-[#3a2f23] rounded-md shadow-md image-render-pixel"
+                    />
+                    <p className="text-xs text-[#f0eed9] mt-1 text-center">Official Flag</p>
                   </div>
                 )}
-  
-                <p className="text-sm text-gray-200 mt-3">{regionInfo.description}</p>
-              </>
+              </div>
             )}
           </div>
           {/* Drill Stack (Active Layers) */}
