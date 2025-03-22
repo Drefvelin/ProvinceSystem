@@ -20,9 +20,9 @@
       "provinces": [11, 12, 13],
       "rgb": "24,128,34",
       "banner":[
-        "GREEN.BASE",
-        "BLACK.STRIPE_DOWNRIGHT",
-        "CYAN.RHOMBUS"
+        "WHITE.BASE",
+        "RED.STRIPE_DOWNRIGHT",
+        "BLACK.CROWNS"
       ]
     },
     "NATION_4": {
