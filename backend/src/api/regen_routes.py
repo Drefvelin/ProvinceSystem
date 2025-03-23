@@ -2,9 +2,7 @@ import asyncio
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 from src.scripts.util.auth import HASHED_KEY
-from src.scripts.mapgen.mapgen import create_map
-from src.scripts.mapgen.regiongen import generate_regions
-from src.scripts.compile.nation_compiler import process_nations
+from src.scripts.util.regeneration import run_regeneration
 from src.scripts.util.task_lock import regen_lock
 
 import concurrent.futures
@@ -24,19 +22,7 @@ async def regenerate_map(
     if regen_lock.locked():
         raise HTTPException(status_code=429, detail="Regeneration already in progress.")
 
-    async def background_job():
-        async with regen_lock:
-            def sync_task():
-                if mode.lower() == "nation":
-                    process_nations()
-                queued = regen_type.lower() != "fullregen"
-                create_map(mode, mode + "_map", True)
-                generate_regions(mode, borders=True, frontend_save=True, queued_regen=queued)
-
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(executor, sync_task)
-
-    asyncio.create_task(background_job())
+    asyncio.create_task(run_regeneration(mode, regen_type))
 
     return JSONResponse(content={
         "success": True,

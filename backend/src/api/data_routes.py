@@ -1,9 +1,17 @@
+import asyncio
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 import os
 import json
 
+from src.scripts.util.task_lock import regen_lock
+from src.scripts.util.regeneration import run_regeneration
+
+import concurrent.futures
+
+
 router = APIRouter()
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)  # Optional: tune this if needed
 
 INPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "input")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "defines")
@@ -23,11 +31,28 @@ async def get_map(map_type: str):
 @router.post("/data/upload/nation")
 async def upload_nation_data(request: Request):
     try:
-        data = await request.json()  # Parse incoming JSON
-        target_path = os.path.join(INPUTS_DIR, "nation.json")
+        payload = await request.json()
 
+        # Save nation.json
+        target_path = os.path.join(INPUTS_DIR, "nation.json")
         with open(target_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+        # Check for regeneration trigger
+        if payload.get("regenerate"):
+            mode = payload.get("mode", "nation")  # Default to nation
+            regen_type = payload.get("regen_type", "queued")  # Optional: default to queued
+
+            if regen_lock.locked():
+                raise HTTPException(status_code=429, detail="Regeneration already in progress.")
+
+            asyncio.create_task(run_regeneration(mode, regen_type))
+
+            return JSONResponse(content={
+                "message": "Nation data saved and regeneration started.",
+                "regen_type": regen_type,
+                "mode": mode
+            }, status_code=200)
 
         return JSONResponse(content={"message": "Nation data saved successfully."}, status_code=200)
 
