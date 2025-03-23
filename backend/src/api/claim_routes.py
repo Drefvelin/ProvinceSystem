@@ -62,8 +62,7 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
             return JSONResponse(
                 content={
                         "province_id": 0,
-                    },
-                status_code=404,
+                    }
             )
 
         # 3. Load existing nation data
@@ -79,8 +78,7 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
                 return JSONResponse(
                     content={
                         "province_id": -1,
-                    },
-                    status_code=409,
+                    }
                 )
 
         # 5. Match or create nation entry by RGB
