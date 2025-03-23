@@ -20,12 +20,15 @@ def process_nations():
 
     # Initialize "subjects" field
     for nation_id, data in nations.items():
-        data.setdefault("subjects", [])  # Ensure "subjects" exists
+        if not isinstance(data, dict):
+            print(f"⚠️ Skipping invalid nation entry: {nation_id} (value: {data})")
+            continue
+        data.setdefault("subjects", [])
 
         # If the nation has an overlord, add it to the overlord's "subjects" list
         if "overlord" in data:
             overlord_id = data["overlord"]
-            if overlord_id in nations:
+            if overlord_id in nations and isinstance(nations[overlord_id], dict):
                 nations[overlord_id].setdefault("subjects", []).append(nation_id)
 
     # Recursive function to calculate size (provinces + subjects' provinces)
