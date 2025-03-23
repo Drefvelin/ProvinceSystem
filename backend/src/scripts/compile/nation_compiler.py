@@ -69,7 +69,7 @@ def process_nations():
                 new_img = Image.open(new_image_path).convert("RGBA")
                 frontend_image_path = os.path.join(DIR, f"{file_name}")
                 new_img.save(frontend_image_path, "PNG")
-                print(f"Region copied for the frontend and saved as {frontend_image_path}")
+                print(f"Banner copied for the frontend and saved as {frontend_image_path}")
             else:
                 print(f"Warning: {new_image_path} not found for frontend copy.")
 
