@@ -1,29 +1,23 @@
 from PIL import Image
-from ..loader.provinces import load_provinces
 import os
 
-def get_province(x, y):
+provinces_cache = None
+image_cache = None
 
-    provinces = load_provinces()
+def find_province(x, y):
+    global provinces_cache, image_cache
 
-    # Open the image
-    provinces_path = os.path.join(os.path.dirname(__file__), "..", "..", "input", "provinces.png")
-    image = Image.open(provinces_path)
+    if provinces_cache is None:
+        from ..loader.provinces import load_provinces
+        provinces_cache = load_provinces()
 
-    # Get pixel color at specific coordinates
-    pixel_color = image.getpixel((x, y))
+    if image_cache is None:
+        provinces_path = os.path.join(os.path.dirname(__file__), "..", "..", "input", "provinces.png")
+        image_cache = Image.open(provinces_path)
 
-    # If the pixel has an alpha channel, remove it (use only the first three values)
-    if len(pixel_color) == 4:  # RGBA
-        pixel_color = pixel_color[:3]  # Keep only RGB
+    pixel_color = image_cache.getpixel((x, y))
+    if len(pixel_color) == 4:
+        pixel_color = pixel_color[:3]
 
-    # Print the RGB value of the pixel
-    print(f"Pixel RGB Color: {pixel_color}")
-
-    # Check if the pixel color matches any of the province colors
-    if pixel_color in provinces:
-        province_id = provinces[pixel_color]
-        return province_id
-    else:
-        return 0
+    return provinces_cache.get(pixel_color, 0)
 

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 import os
 import json
 
-from src.scripts.util.imagechecker import get_province
+from src.scripts.util.imagechecker import find_province
 from src.scripts.util.queue import enqueue
 from src.scripts.util.auth import HASHED_KEY, NATION_JSON_PATH
 
@@ -56,7 +56,7 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
         # 2. Parse coordinates
         x_str, z_str = coords.split(",")
         x, z = int(x_str), int(z_str)
-        province_id = get_province(x, z)
+        province_id = find_province(x, z)
 
         if province_id == 0:
             return JSONResponse(

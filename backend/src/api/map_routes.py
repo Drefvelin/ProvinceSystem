@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 import os
+import time
 
 router = APIRouter()
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "output", "maps")
 INPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "input")
 
-from src.scripts.util.imagechecker import get_province
+from src.scripts.util.imagechecker import find_province
 
 @router.get("/map/{map_type}")
 async def get_map(map_type: str):
@@ -21,12 +22,12 @@ async def get_base_map():
 
 @router.get("/map/province/{coords}")
 async def get_province(coords: str):
-
     try:
+        start = time.time()
         # 2. Parse coordinates
         x_str, z_str = coords.split(",")
         x, z = int(x_str), int(z_str)
-        province_id = get_province(x, z)
+        province_id = find_province(x, z)
 
         if province_id == 0:
             return JSONResponse(
@@ -35,7 +36,8 @@ async def get_province(coords: str):
                     },
                 status_code=404,
             )
-
+        duration = time.time() - start
+        print(f"Province lookup took {duration:.3f} seconds")
         return JSONResponse(
             content={
                 "province_id": province_id,
