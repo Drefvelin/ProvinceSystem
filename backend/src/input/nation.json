@@ -1,63 +1,104 @@
 {
-    "NATION_1": {
-      "name": "Lonyan Republic",
-      "provinces": [2, 3, 4, 5, 6, 7, 8, 9, 10],
-      "rgb": "27,150,130",
-      "banner":[
-        "RED.BASE",
-        "CYAN.STRIPE_TOP",
-        "GRAY.HALF_HORIZONTAL_BOTTOM",
-        "CYAN.STRIPE_BOTTOM"
-      ]
-    },
-    "NATION_2": {
-      "name": "New Akken",
-      "provinces": [1],
-      "rgb": "62,111,130"
-    },
-    "NATION_3": {
-      "name": "Kondar",
-      "provinces": [11, 12, 13],
-      "rgb": "24,128,34",
-      "banner":[
-        "WHITE.BASE",
-        "RED.STRIPE_DOWNRIGHT",
-        "BLACK.CROWNS"
-      ]
-    },
-    "NATION_4": {
-      "name": "Jakuran Tribes",
-      "provinces": [284, 283, 316, 315, 312, 313, 305],
-      "rgb": "192,159,77"
-    },
-    "NATION_5": {
-      "name": "Ojani Tribes",
-      "overlord": "NATION_4",
-      "provinces": [274, 280, 273, 275],
-      "rgb": "131,100,22"
-    },
-    "NATION_6": {
-      "name": "Gejj",
-      "overlord": "NATION_5",
-      "provinces": [282],
-      "rgb": "160,154,115"
-    },
-    "NATION_7": {
-      "name": "City of Ankid",
-      "overlord": "NATION_3",
-      "provinces": [57],
-      "rgb": "128,20,20"
-    },
-    "NATION_8": {
-      "name": "Unvan Tribes",
-      "overlord": "NATION_4",
-      "provinces": [271, 272, 270],
-      "rgb": "109,62,19"
-    },
-    "NATION_9": {
-      "name": "Ilian",
-      "overlord": "NATION_8",
-      "provinces": [28],
-      "rgb": "25,60,48"
-    }
+  "NATION_1": {
+    "name": "Lonyan Republic",
+    "provinces": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "rgb": "27,150,130",
+    "banner": [
+      "RED.BASE",
+      "CYAN.STRIPE_TOP",
+      "GRAY.HALF_HORIZONTAL_BOTTOM",
+      "CYAN.STRIPE_BOTTOM"
+    ]
+  },
+  "NATION_2": {
+    "name": "New Akken",
+    "provinces": [
+      1
+    ],
+    "rgb": "62,111,130"
+  },
+  "NATION_3": {
+    "name": "Kondar",
+    "provinces": [
+      11,
+      12,
+      13
+    ],
+    "rgb": "24,128,34",
+    "banner": [
+      "WHITE.BASE",
+      "RED.STRIPE_DOWNRIGHT",
+      "BLACK.CROWNS"
+    ]
+  },
+  "NATION_4": {
+    "name": "Jakuran Tribes",
+    "provinces": [
+      284,
+      283,
+      316,
+      315,
+      312,
+      313,
+      305,
+      19
+    ],
+    "rgb": "192,159,77"
+  },
+  "NATION_5": {
+    "name": "Ojani Tribes",
+    "overlord": "NATION_4",
+    "provinces": [
+      274,
+      280,
+      273,
+      275
+    ],
+    "rgb": "131,100,22"
+  },
+  "NATION_6": {
+    "name": "Gejj",
+    "overlord": "NATION_5",
+    "provinces": [
+      282
+    ],
+    "rgb": "160,154,115"
+  },
+  "NATION_7": {
+    "name": "City of Ankid",
+    "overlord": "NATION_3",
+    "provinces": [
+      57
+    ],
+    "rgb": "128,20,20"
+  },
+  "NATION_8": {
+    "name": "Unvan Tribes",
+    "overlord": "NATION_4",
+    "provinces": [
+      271,
+      272,
+      270,
+      20
+    ],
+    "rgb": "109,62,19"
+  },
+  "NATION_9": {
+    "name": "Ilian",
+    "overlord": "NATION_8",
+    "provinces": [
+      28
+    ],
+    "rgb": "25,60,48"
+  }
 }
