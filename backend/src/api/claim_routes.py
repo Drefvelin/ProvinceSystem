@@ -23,7 +23,9 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
 
         if province_id == 0:
             return JSONResponse(
-                content={"success": False, "message": "No province found at coordinates."},
+                content={
+                        "province_id": 0,
+                    },
                 status_code=404,
             )
 
@@ -39,9 +41,7 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
             if province_id in nation_info.get("provinces", []):
                 return JSONResponse(
                     content={
-                        "success": False,
-                        "province_id": province_id,
-                        "message": "Province already claimed."
+                        "province_id": -1,
                     },
                     status_code=409,
                 )
@@ -72,11 +72,7 @@ async def claim_province(hashed_key: str, nation_rgb: str, coords: str):
 
         return JSONResponse(
             content={
-                "success": True,
                 "province_id": province_id,
-                "nation_id": found_nation_id,
-                "nation_rgb": nation_rgb,
-                "message": f"Province {province_id} claimed by {found_nation_id} and added to queue."
             }
         )
 
