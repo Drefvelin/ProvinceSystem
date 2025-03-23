@@ -73,7 +73,7 @@ def lighten_image(image_path, hover_image_path):
         print(f"Error lightening image {hover_image_path}: {e}")
 
 
-def generate_regions(mode, borders, frontend_save):
+def generate_regions(mode, borders, frontend_save, queued_regen=False):
     """
     Generate separate images for each region (county, duchy, kingdom).
     """
@@ -90,10 +90,29 @@ def generate_regions(mode, borders, frontend_save):
     # Create output folder
     output_folder = os.path.join(os.path.dirname(__file__), "..", "..", "output", "regions", mode)
     os.makedirs(output_folder, exist_ok=True)
-    for file_name in os.listdir(output_folder):
-        file_path = os.path.join(output_folder, file_name)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
+    if queued_regen:
+        from ..util.queue import load_queue, compile_queue
+        compile_queue()
+        queue = load_queue(mode)
+        print(queue)
+        queued = set(queue)
+        for file_name in os.listdir(output_folder):
+            base_name = file_name.replace("_hover", "").replace("_nested", "")
+            if base_name.endswith(".png"):
+                base_name = base_name[:-4]
+            if base_name in queued:
+                file_path = os.path.join(output_folder, file_name)
+                try:
+                    # Make sure to close any open file before removing
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except PermissionError:
+                    print(f"Could not delete {file_path}. Is it open in another program?")
+    else:
+        for file_name in os.listdir(output_folder):
+            file_path = os.path.join(output_folder, file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
     painted_colour = set()
     visited_pixels = set()
@@ -104,6 +123,8 @@ def generate_regions(mode, borders, frontend_save):
             pixel_color = img_data[x, y][:3]
             if pixel_color in province_to_color and (x, y) not in visited_pixels:
                 color_code = province_to_color[pixel_color]
+                if queued_regen and sanitize_filename(color_code) not in queued:
+                    continue
                 filename = sanitize_filename(color_code) + ".png"
                 new_image_path = os.path.join(output_folder, filename)
 
@@ -120,30 +141,41 @@ def generate_regions(mode, borders, frontend_save):
 
     # === STEP 2: Generate hover versions by lightening existing images ===
     for file_name in os.listdir(output_folder):
-    # Skip files that already have "_hover" in their name
+        # Skip already-hover files
         if "_hover" in file_name:
             continue
 
-        # Generate hover filename by appending "_hover" before the extension
-        base_name, ext = os.path.splitext(file_name)  # Split filename and extension
-        hover_filename = f"{base_name}_hover{ext}"
+        # Split base and extension
+        base_name, ext = os.path.splitext(file_name)
 
-        # Define full paths
+        # Determine hover filename
+        if "_nested" in base_name:
+            hover_filename = base_name + "_hover" + ext  # results in something like 255_0_0_nested_hover.png
+        else:
+            hover_filename = base_name + "_hover" + ext  # results in 255_0_0_hover.png
+
+        if queued_regen and base_name not in queued and not base_name.replace("_nested", "") in queued:
+            continue
+
+        # Define paths
         normal_image_path = os.path.join(output_folder, file_name)
         hover_image_path = os.path.join(output_folder, hover_filename)
 
-        # Ensure it's a valid image before processing
         if os.path.exists(normal_image_path) and ext.lower() in [".png", ".jpg", ".jpeg"]:
             lighten_image(normal_image_path, hover_image_path)
         else:
             print(f"Skipping non-image file: {normal_image_path}")
 
 
+
     # === STEP 3: Paint Borders ===
     if borders:
         for file_name in os.listdir(output_folder):
             new_image_path = os.path.join(output_folder, file_name)
-
+            base_name, ext = os.path.splitext(file_name)
+            clean_name = base_name.replace("_hover", "").replace("_nested", "")
+            if queued_regen and clean_name not in queued:
+                continue
             if os.path.exists(new_image_path):
                 new_img = Image.open(new_image_path).convert("RGBA")
                 new_img_data = new_img.load()
@@ -169,3 +201,6 @@ def generate_regions(mode, borders, frontend_save):
                 print(f"Region copied for the frontend and saved as {frontend_image_path}")
             else:
                 print(f"Warning: {new_image_path} not found for frontend copy.")
+    #if queued_regen:
+    #    from ..util.queue import clear_mode
+    #   clear_mode(mode)

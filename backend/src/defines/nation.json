@@ -53,15 +53,16 @@
             315,
             312,
             313,
-            305
+            305,
+            19
         ],
         "rgb": "192,159,77",
         "subjects": [
             "NATION_5",
             "NATION_8"
         ],
-        "size": 21,
-        "subject_size": 9,
+        "size": 23,
+        "subject_size": 10,
         "banner": "192_159_77"
     },
     "NATION_5": {
@@ -111,13 +112,14 @@
         "provinces": [
             271,
             272,
-            270
+            270,
+            20
         ],
         "rgb": "109,62,19",
         "subjects": [
             "NATION_9"
         ],
-        "size": 4,
+        "size": 5,
         "subject_size": 1,
         "banner": "109_62_19"
     },

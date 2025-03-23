@@ -1,12 +1,15 @@
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-import json
-from src.scripts.bannergen.randombanner import generate_random_banner
+
+from src.api.map_routes import router as map_router
+from src.api.data_routes import router as data_router
+from src.api.banner_routes import router as banner_router
+from src.api.claim_routes import router as claim_router
+from src.api.regen_routes import router as regen_router
 
 app = FastAPI()
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,48 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Directories
-INPUTS_DIR = os.path.join(os.path.dirname(__file__), "src", "input")
-MAPS_DIR = os.path.join(os.path.dirname(__file__), "src", "output", "maps")
-DATA_DIR = os.path.join(os.path.dirname(__file__), "src", "defines")
-
-@app.get("/map/{map_type}")
-async def get_map(map_type: str):
-    filename = f"{map_type}_map.png"
-    file_path = os.path.join(MAPS_DIR, filename)
-
-    if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="image/png")
-
-    return JSONResponse(content={"error": "Map not found"}, status_code=404)
-
-@app.get("/map")
-async def get_base_map():
-    """Serve the base map image."""
-    filename = "map.png"
-    file_path = os.path.join(INPUTS_DIR, filename)
-
-    if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="image/png")
-
-    return JSONResponse(content={"error": "Map not found"}, status_code=404)
-
-@app.get("/data/{map_type}")
-async def get_map(map_type: str):
-    filename = f"{map_type}.json"
-    file_path = os.path.join(DATA_DIR, filename)
-
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as file:
-            data = json.load(file)  # Load JSON content
-        return JSONResponse(content=data)  # Return JSON directly
-
-    return JSONResponse(content={"error": "Data not found"}, status_code=404)
-
-@app.get("/generator/banner")
-async def generate_banner():
-    return JSONResponse(content=generate_random_banner())
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Register routers
+app.include_router(map_router)
+app.include_router(data_router)
+app.include_router(banner_router)
+app.include_router(claim_router)
+app.include_router(regen_router)

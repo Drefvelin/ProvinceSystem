@@ -69,16 +69,10 @@ def process_nations():
                 new_img = Image.open(new_image_path).convert("RGBA")
                 frontend_image_path = os.path.join(DIR, f"{file_name}")
                 new_img.save(frontend_image_path, "PNG")
-                print(f"Region copied for the frontend and saved as {frontend_image_path}")
+                print(f"Banner copied for the frontend and saved as {frontend_image_path}")
             else:
                 print(f"Warning: {new_image_path} not found for frontend copy.")
 
     # Save modified JSON
     with open(os.path.join(OUTPUT_DIR, "nation.json"), "w", encoding="utf-8") as file:
         json.dump(nations, file, indent=4)
-
-
-# Run the processing function
-process_nations()
-
-print("nations.json has been generated!")
