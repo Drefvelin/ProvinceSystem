@@ -76,9 +76,3 @@ def process_nations():
     # Save modified JSON
     with open(os.path.join(OUTPUT_DIR, "nation.json"), "w", encoding="utf-8") as file:
         json.dump(nations, file, indent=4)
-
-
-# Run the processing function
-process_nations()
-
-print("nations.json has been generated!")
