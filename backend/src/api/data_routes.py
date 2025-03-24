@@ -1,11 +1,7 @@
-import asyncio
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 import os
 import json
-
-from src.scripts.util.task_lock import regen_lock
-from src.scripts.util.regeneration import run_regeneration
 
 import concurrent.futures
 
@@ -28,33 +24,20 @@ async def get_map(map_type: str):
 
     return JSONResponse(content={"error": "Data not found"}, status_code=404)
 
-@router.post("/data/upload/nation")
-async def upload_nation_data(request: Request):
+@router.post("/data/upload/{mode}")
+async def upload_region_data(mode: str, request: Request):
     try:
         payload = await request.json()
 
-        # Save nation.json
-        target_path = os.path.join(INPUTS_DIR, "nation.json")
+        # Save the region file to input/{mode}.json
+        if mode == "nation" or mode == "queue":
+            target_path = os.path.join(INPUTS_DIR, f"{mode}.json")
+        else:
+            target_path = os.path.join(DATA_DIR, f"{mode}.json")
         with open(target_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
-        # Check for regeneration trigger
-        if payload.get("regenerate"):
-            mode = payload.get("mode", "nation")  # Default to nation
-            regen_type = payload.get("regen_type", "queued")  # Optional: default to queued
-
-            if regen_lock.locked():
-                raise HTTPException(status_code=429, detail="Regeneration already in progress.")
-
-            asyncio.create_task(run_regeneration(mode, regen_type))
-
-            return JSONResponse(content={
-                "message": "Nation data saved and regeneration started.",
-                "regen_type": regen_type,
-                "mode": mode
-            }, status_code=200)
-
-        return JSONResponse(content={"message": "Nation data saved successfully."}, status_code=200)
+        return JSONResponse(content={"message": f"{mode.capitalize()} data saved successfully."}, status_code=200)
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

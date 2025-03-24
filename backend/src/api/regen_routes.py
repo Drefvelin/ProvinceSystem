@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from src.scripts.util.auth import HASHED_KEY
 from src.scripts.util.regeneration import run_regeneration
@@ -10,10 +10,9 @@ import concurrent.futures
 router = APIRouter()
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)  # Optional: tune this if needed
 
-@router.get("/{hashed_key}/api/regenerate/{mode}/{regen_type}")
+@router.get("/{hashed_key}/api/regenerate/{regen_type}")
 async def regenerate_map(
     hashed_key: str,
-    mode: str,
     regen_type: str
 ):
     if hashed_key != HASHED_KEY:
@@ -22,13 +21,12 @@ async def regenerate_map(
     if regen_lock.locked():
         raise HTTPException(status_code=429, detail="Regeneration already in progress.")
 
-    asyncio.create_task(run_regeneration(mode, regen_type))
+    asyncio.create_task(run_regeneration(regen_type))
 
     return JSONResponse(content={
         "success": True,
-        "mode": mode,
         "regen_type": regen_type,
-        "message": f"{'Queued' if regen_type != 'fullregen' else 'Full'} regeneration started for {mode}."
+        "message": f"{'Queued' if regen_type != 'fullregen' else 'Full'} regeneration started."
     })
 
 
