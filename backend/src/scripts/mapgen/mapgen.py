@@ -32,6 +32,7 @@ def create_map(mode, filename, frontend_save):
 
     if frontend_save:
         frontend_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", f"{filename}.png")
+        os.makedirs(os.path.dirname(frontend_image_path), exist_ok=True)
         new_img.save(frontend_image_path, "PNG")
         print(f"New image generated for the frontend and saved as {frontend_image_path}")
 
@@ -47,6 +48,7 @@ def create_map(mode, filename, frontend_save):
 
     # Save the new image
     new_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "output", "maps", f"{filename}.png")
+    os.makedirs(os.path.dirname(new_image_path), exist_ok=True)
     new_img.save(new_image_path, "PNG")
 
     print(f"New image generated for the backend and saved as {new_image_path}")

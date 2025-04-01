@@ -1,47 +1,47 @@
 {
   "DUCHY_1": {
     "name": "Valoris",
-    "counties": ["COUNTY_1", "COUNTY_2", "COUNTY_3"],
+    "titles": ["COUNTY_1", "COUNTY_2", "COUNTY_3"],
     "rgb": "150,80,80"
   },
   "DUCHY_2": {
     "name": "Ivrium",
-    "counties": ["COUNTY_4", "COUNTY_5", "COUNTY_6"],
+    "titles": ["COUNTY_4", "COUNTY_5", "COUNTY_6"],
     "rgb": "170,30,30"
   },
   "DUCHY_3": {
     "name": "Baldria",
-    "counties": ["COUNTY_7", "COUNTY_8", "COUNTY_9"],
+    "titles": ["COUNTY_7", "COUNTY_8", "COUNTY_9"],
     "rgb": "140,50,50"
   },
   "DUCHY_4": {
     "name": "Doulons",
-    "counties": ["COUNTY_10", "COUNTY_11", "COUNTY_12"],
+    "titles": ["COUNTY_10", "COUNTY_11", "COUNTY_12"],
     "rgb": "60,60,100"
   },
   "DUCHY_5": {
     "name": "Justinia",
-    "counties": ["COUNTY_13", "COUNTY_14", "COUNTY_15"],
+    "titles": ["COUNTY_13", "COUNTY_14", "COUNTY_15"],
     "rgb": "80,80,170"
   },
   "DUCHY_6": {
     "name": "Arves",
-    "counties": ["COUNTY_16", "COUNTY_17", "COUNTY_18"],
+    "titles": ["COUNTY_16", "COUNTY_17", "COUNTY_18"],
     "rgb": "90,90,140"
   },
   "DUCHY_7": {
     "name": "Histom",
-    "counties": ["COUNTY_19", "COUNTY_20", "COUNTY_21"],
+    "titles": ["COUNTY_19", "COUNTY_20", "COUNTY_21"],
     "rgb": "90,120,90"
   },
   "DUCHY_8": {
     "name": "Faunon",
-    "counties": ["COUNTY_22", "COUNTY_23", "COUNTY_27"],
+    "titles": ["COUNTY_22", "COUNTY_23", "COUNTY_27"],
     "rgb": "50,135,50"
   },
   "DUCHY_9": {
     "name": "Nerresia",
-    "counties": ["COUNTY_24", "COUNTY_25", "COUNTY_26"],
+    "titles": ["COUNTY_24", "COUNTY_25", "COUNTY_26"],
     "rgb": "40,190,40"
   }
 }

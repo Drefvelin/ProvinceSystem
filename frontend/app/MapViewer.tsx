@@ -346,6 +346,7 @@ const MapViewer = () => {
               <option value="county">County Map</option>
               <option value="duchy">Duchy Map</option>
               <option value="kingdom">Kingdom Map</option>
+              <option value="empire">Empire Map</option>
             </select>
           </div>
   
