@@ -29,9 +29,9 @@ const MapViewer = () => {
 
   {/* Vote Links Array */}
   const voteLinks = [
-    { name: "Website 1", url: "https://example-vote1.com" },
-    { name: "Website 2", url: "https://example-vote2.com" },
-    { name: "Website 3", url: "https://example-vote3.com" },
+    { name: "Website 1", url: "https://www.tfminecraft.net" },
+    { name: "Website 2", url: "https://www.tfminecraft.net" },
+    { name: "Website 3", url: "https://www.tfminecraft.net" },
   ];
   
 
@@ -40,7 +40,7 @@ const MapViewer = () => {
     const fetchRegionData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:8000/data/${mapType}`);
+        const response = await fetch(`/api/data/${mapType}`);
         if (!response.ok) throw new Error("Failed to fetch region data");
         const data = await response.json();
         setRegionData(data);
@@ -133,16 +133,16 @@ const MapViewer = () => {
     setHoveredColor(imagePath);
 
     if (region) {
-      const capitalizedTier = mapType.charAt(0).toUpperCase() + mapType.slice(1);
+      const tierName = region.tier ?? (mapType.charAt(0).toUpperCase() + mapType.slice(1));
       setRegionInfo({
         title: region.name,
-        tier: capitalizedTier,
+        tier: tierName,
         banner: region.banner,
         size: region.size,
         subject_size: region.subject_size,
         overlord: region.overlord ? regionData[region.overlord]?.name : null,
         subjects: region.subjects ?? [],
-        description: region.description || `A ${capitalizedTier} in Calavorn`,
+        description: region.description || `A ${(mapType.charAt(0).toUpperCase() + mapType.slice(1))} in Calavorn`,
       });
     }
   };
@@ -282,7 +282,7 @@ const MapViewer = () => {
           onMouseMove={getPixelColor}
           onClick={handleClick}
         >
-          <img src={`http://localhost:8000/map`} alt="Base Map" className="w-full h-auto" />
+          <img src={`/api/map`} alt="Base Map" className="w-full h-auto" />
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
           {hoveredColor && (
             <img
