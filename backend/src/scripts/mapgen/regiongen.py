@@ -201,6 +201,6 @@ def generate_regions(mode, borders, frontend_save, queued_regen=False):
                 print(f"Region copied for the frontend and saved as {frontend_image_path}")
             else:
                 print(f"Warning: {new_image_path} not found for frontend copy.")
-    #if queued_regen:
-    #    from ..util.queue import clear_mode
-    #   clear_mode(mode)
+    if queued_regen:
+        from ..util.queue import clear_mode
+        clear_mode(mode)

@@ -1,0 +1,5 @@
+docker-compose down --volumes --remove-orphans
+docker-compose rm -f
+docker rmi provincesystem_backend provincesystem_frontend
+docker-compose build --no-cache
+docker-compose up

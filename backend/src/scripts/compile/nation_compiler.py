@@ -4,8 +4,19 @@ from ..bannergen.randombanner import generate_random_banner
 from PIL import Image
 import json
 import os
+import re
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "defines")
+
+def clean_name(name: str) -> str:
+    # Remove Minecraft color codes (e.g. §f, §c)
+    name = re.sub(r"§.", "", name)
+    # Remove hex codes like #ffffff
+    name = re.sub(r"#(?:[0-9a-fA-F]{6})", "", name)
+    return name.strip()
+
+def clean_banner_patterns(patterns: list) -> list:
+    return [pattern.replace("tfmc:", "") for pattern in patterns]
 
 def process_nations():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -20,13 +31,26 @@ def process_nations():
 
     # Initialize "subjects" field
     for nation_id, data in nations.items():
-        data.setdefault("subjects", [])  # Ensure "subjects" exists
+        if not isinstance(data, dict):
+            print(f"⚠️ Skipping invalid nation entry: {nation_id} (value: {data})")
+            continue
+        data.setdefault("subjects", [])
 
         # If the nation has an overlord, add it to the overlord's "subjects" list
         if "overlord" in data:
             overlord_id = data["overlord"]
-            if overlord_id in nations:
+            if overlord_id in nations and isinstance(nations[overlord_id], dict):
                 nations[overlord_id].setdefault("subjects", []).append(nation_id)
+        
+        # Inside the for nation_id, data in nations.items():
+        data["name"] = clean_name(data.get("name", ""))
+
+        if "banner" not in data:
+            data["banner"] = generate_random_banner()
+
+        # Sanitize patterns
+        if "banner patterns" in data:
+            data["banner patterns"] = clean_banner_patterns(data["banner patterns"])
 
     # Recursive function to calculate size (provinces + subjects' provinces)
     def calculate_size(nation_id):
@@ -57,7 +81,7 @@ def process_nations():
         nation["banner"] = id
     
     if True:
-        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "servermap", "public", "data", "banners", "nation")
+        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", "banners", "nation")
         os.makedirs(DIR, exist_ok=True)
         for file_name in os.listdir(DIR):
             file_path = os.path.join(DIR, file_name)

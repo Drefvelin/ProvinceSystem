@@ -39,3 +39,8 @@ docker/data/
 .vscode/
 *.iml
 .idea/
+
+
+# deploy
+
+__deploy_temp__/
