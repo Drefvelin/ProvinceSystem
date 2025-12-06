@@ -6,10 +6,10 @@ from src.scripts.util.task_lock import regen_lock
 
 import concurrent.futures
 
-router = APIRouter()
+regen_router = APIRouter()
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)  # Optional: tune this if needed
 
-@router.get("/{hashed_key}/api/regenerate/{regen_type}")
+@regen_router.get("/{hashed_key}/api/regenerate/{regen_type}")
 async def regenerate_map(
     hashed_key: str,
     regen_type: str,

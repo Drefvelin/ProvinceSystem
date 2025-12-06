@@ -6,7 +6,7 @@ from ..util.flood_fill import flood_fill
 from ..util.colour_mapping import get_color_overrides
 
 
-def create_map(mode, filename, frontend_save):
+def create_map(mode, filename):
     # Create a lookup dictionary for province color -> kingdom color
     province_to_color = build_color_mapping(mode)
     overrides = get_color_overrides(mode)
@@ -29,12 +29,6 @@ def create_map(mode, filename, frontend_save):
             if pixel_color in province_to_color and (x, y) not in visited_pixels:
                 kingdom_color = province_to_color[pixel_color]
                 flood_fill(x, y, pixel_color, kingdom_color, visited_pixels, img_data, new_img_data, width, height)
-
-    if frontend_save:
-        frontend_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", f"{filename}.png")
-        os.makedirs(os.path.dirname(frontend_image_path), exist_ok=True)
-        new_img.save(frontend_image_path, "PNG")
-        print(f"New image generated for the frontend and saved as {frontend_image_path}")
 
     new_img_data = paint_borders(True, True, new_img_data, width, height)
 

@@ -52,10 +52,10 @@ def run_regeneration(regen_type: str):
 
                 print(f"🛠️ Processing mode: {mode}")
 
-                create_map(mode, f"{mode}_map", True)
+                create_map(mode, f"{mode}_map")
                 print(f"🗺️ Map generated for {mode}")
 
-                generate_regions(mode, borders=True, frontend_save=True, queued_regen=(regen_type.lower() != "fullregen"))
+                generate_regions(mode, borders=True, queued_regen=(regen_type.lower() != "fullregen"))
                 print(f"🎨 Regions generated for {mode}")
 
         print("✅ Regeneration complete.")

@@ -6,13 +6,13 @@ import json
 import concurrent.futures
 
 
-router = APIRouter()
+data_router = APIRouter()
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)  # Optional: tune this if needed
 
 INPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "input")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "defines")
 
-@router.get("/data/{map_type}")
+@data_router.get("/data/{map_type}")
 async def get_map(map_type: str):
     filename = f"{map_type}.json"
     file_path = os.path.join(DATA_DIR, filename)
@@ -24,7 +24,7 @@ async def get_map(map_type: str):
 
     return JSONResponse(content={"error": "Data not found"}, status_code=404)
 
-@router.post("/data/upload/{mode}")
+@data_router.post("/data/upload/{mode}")
 async def upload_region_data(mode: str, request: Request):
     try:
         payload = await request.json()

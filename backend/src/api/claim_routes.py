@@ -6,9 +6,9 @@ import json
 from src.scripts.util.auth import HASHED_KEY
 from src.scripts.util.queue import RAW_QUEUE_PATH
 
-router = APIRouter()
+claim_router = APIRouter()
 
-@router.post("/{hashed_key}/api/queue/upload")
+@claim_router.post("/{hashed_key}/api/queue/upload")
 async def upload_queue(hashed_key: str, request: Request):
     # 1. Validate Hash
     if hashed_key != HASHED_KEY:

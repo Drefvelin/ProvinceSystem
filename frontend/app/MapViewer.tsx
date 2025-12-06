@@ -40,7 +40,7 @@ const MapViewer = () => {
     const fetchRegionData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/data/${mapType}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/data/${mapType}`);
         if (!response.ok) throw new Error("Failed to fetch region data");
         const data = await response.json();
         setRegionData(data);
@@ -66,7 +66,8 @@ const MapViewer = () => {
         if (!ctx) return;
 
         const img = new Image();
-        img.src = `/data/${mapType}_map.png`;
+        img.crossOrigin = "anonymous";
+        img.src = `${process.env.NEXT_PUBLIC_API_URL}/mapdata/${mapType}`;
         img.onload = () => {
           canvas.width = img.width;
           canvas.height = img.height;
@@ -282,7 +283,7 @@ const MapViewer = () => {
           onMouseMove={getPixelColor}
           onClick={handleClick}
         >
-          <img src={`/api/map`} alt="Base Map" className="w-full h-auto" />
+          <img src={`${process.env.NEXT_PUBLIC_API_URL}/map`} alt="Base Map" className="w-full h-auto" />
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
           {hoveredColor && (
             <img
@@ -297,7 +298,8 @@ const MapViewer = () => {
             .map(obj => (
               <img
                 key={obj.id}
-                src={`/data/regions/${mapType}/${obj.path}.png`}
+                crossOrigin="anonymous"
+                src={`${process.env.NEXT_PUBLIC_API_URL}/regions/${mapType}/${obj.path}.png`}
                 alt={`Overlay ${obj.id}`}
                 className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
                 onError={(e) => (e.currentTarget.style.display = "none")}
@@ -400,7 +402,7 @@ const MapViewer = () => {
                 {regionInfo.banner && (
                   <div className="flex flex-col items-center w-28 mt-1">
                     <img
-                      src={`/data/banners/${mapType}/${regionInfo.banner}.png`}
+                      src={`${process.env.NEXT_PUBLIC_API_URL}/banners/${mapType}/${regionInfo.banner}.png`}
                       alt={`${regionInfo.title} Banner`}
                       className="w-24 h-auto border border-[#3a2f23] rounded-md shadow-md image-render-pixel"
                     />

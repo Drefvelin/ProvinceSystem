@@ -3,24 +3,27 @@ from fastapi.responses import FileResponse, JSONResponse
 import os
 import time
 
-router = APIRouter()
+map_router = APIRouter()
 
 MAPS_DIR = os.path.join(os.path.dirname(__file__), "..", "output", "maps")
 INPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "input")
 
 from src.scripts.util.imagechecker import find_province
 
-@router.get("/map/{map_type}")
-async def get_map(map_type: str):
-    file_path = os.path.join(MAPS_DIR, f"{map_type}_map.png")
-    return FileResponse(file_path) if os.path.exists(file_path) else JSONResponse({"error": "Map not found"}, status_code=404)
+from fastapi.responses import FileResponse, Response
 
-@router.get("/map")
+def add_cors(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    return response
+
+@map_router.get("/map")
 async def get_base_map():
     file_path = os.path.join(INPUTS_DIR, "map.png")
-    return FileResponse(file_path) if os.path.exists(file_path) else JSONResponse({"error": "Map not found"}, status_code=404)
+    return add_cors(FileResponse(file_path) if os.path.exists(file_path) else JSONResponse({"error": "Map not found"}, status_code=404))
 
-@router.get("/map/province/{coords}")
+@map_router.get("/map/province/{coords}")
 async def get_province(coords: str):
     try:
         start = time.time()

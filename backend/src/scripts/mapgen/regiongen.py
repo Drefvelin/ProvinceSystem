@@ -73,7 +73,7 @@ def lighten_image(image_path, hover_image_path):
         print(f"Error lightening image {hover_image_path}: {e}")
 
 
-def generate_regions(mode, borders, frontend_save, queued_regen=False):
+def generate_regions(mode, borders, queued_regen=False):
     """
     Generate separate images for each region (county, duchy, kingdom).
     """
@@ -184,23 +184,6 @@ def generate_regions(mode, borders, frontend_save, queued_regen=False):
                 print(f"Borders painted for {new_image_path}")
             else:
                 print(f"Warning: {new_image_path} not found for border painting.")
-    if frontend_save:
-        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", "regions", f"{mode}")
-        os.makedirs(DIR, exist_ok=True)
-        for file_name in os.listdir(DIR):
-            file_path = os.path.join(DIR, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        for file_name in os.listdir(output_folder):
-            new_image_path = os.path.join(output_folder, file_name)
-            if os.path.exists(new_image_path):
-                new_img = Image.open(new_image_path).convert("RGBA")
-                new_img_data = new_img.load()
-                frontend_image_path = os.path.join(DIR, f"{file_name}")
-                new_img.save(frontend_image_path, "PNG")
-                print(f"Region copied for the frontend and saved as {frontend_image_path}")
-            else:
-                print(f"Warning: {new_image_path} not found for frontend copy.")
     if queued_regen:
         from ..util.queue import clear_mode
         clear_mode(mode)
