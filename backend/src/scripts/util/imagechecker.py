@@ -1,23 +1,44 @@
 from PIL import Image
 import os
 
-provinces_cache = None
-image_cache = None
+from .dirs import (
+    input_file,
+    validate_map
+)
 
-def find_province(x, y):
-    global provinces_cache, image_cache
+# Per-map caches
+_provinces_cache: dict[str, dict] = {}
+_image_cache: dict[str, Image.Image] = {}
 
-    if provinces_cache is None:
+
+def find_province(map_name: str, x: int, y: int) -> int:
+    """
+    Returns province ID at (x, y) for the given map.
+    Returns 0 if no province is found.
+    """
+    validate_map(map_name)
+
+    # Load provinces data if not cached
+    if map_name not in _provinces_cache:
         from ..loader.provinces import load_provinces
-        provinces_cache = load_provinces()
+        _provinces_cache[map_name] = load_provinces(map_name)
 
-    if image_cache is None:
-        provinces_path = os.path.join(os.path.dirname(__file__), "..", "..", "input", "provinces.png")
-        image_cache = Image.open(provinces_path)
+    # Load province mask image if not cached
+    if map_name not in _image_cache:
+        provinces_path = input_file(map_name, "provinces.png")
 
-    pixel_color = image_cache.getpixel((x, y))
-    if len(pixel_color) == 4:
-        pixel_color = pixel_color[:3]
+        if not os.path.exists(provinces_path):
+            raise FileNotFoundError(f"provinces.png not found for map '{map_name}'")
 
-    return provinces_cache.get(pixel_color, 0)
+        _image_cache[map_name] = Image.open(provinces_path).convert("RGB")
 
+    image = _image_cache[map_name]
+    provinces = _provinces_cache[map_name]
+
+    # Bounds check (important for safety)
+    if x < 0 or y < 0 or x >= image.width or y >= image.height:
+        return 0
+
+    pixel_color = image.getpixel((x, y))  # (R, G, B)
+
+    return provinces.get(pixel_color, 0)

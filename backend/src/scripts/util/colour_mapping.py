@@ -4,44 +4,48 @@ from ..loader.duchies import load_duchies
 from ..loader.kingdoms import load_kingdoms
 from ..loader.nations import load_nations
 from ..loader.empires import load_empires
+from ..util.dirs import validate_map
 
-def build_color_mapping(mode):
+
+def build_color_mapping(map_name: str, mode: str):
     """
-    Builds a dictionary that maps province colors to nation, county, duchy, kingdom, or empire colors
-    based on the selected mode.
+    Builds a dictionary mapping province RGB -> target RGB
+    based on the selected mode and map.
     """
-    # Load base data
-    provinces = load_provinces()
-    counties = load_counties()
-    duchies = load_duchies()
-    kingdoms = load_kingdoms()
-    nations = load_nations()
-    empires = load_empires()  # <-- New!
+    validate_map(map_name)
+
+    provinces = load_provinces(map_name)
+    counties = load_counties(map_name)
+    duchies = load_duchies(map_name)
+    kingdoms = load_kingdoms(map_name)
+    nations = load_nations(map_name)
+    empires = load_empires(map_name)
 
     province_to_color = {}
 
     if mode == "empire":
-        # Map kingdoms to empire RGB
         kingdom_to_empire = {
             kingdom: tuple(map(int, empires[e]["rgb"].split(",")))
-            for e in empires for kingdom in empires[e].get("titles", [])
+            for e in empires
+            for kingdom in empires[e].get("titles", [])
         }
 
         for kingdom, data in kingdoms.items():
-            empire_color = kingdom_to_empire.get(kingdom, (0, 0, 0))  # Default to black
+            empire_color = kingdom_to_empire.get(kingdom, (0, 0, 0))
             for duchy in data.get("titles", []):
                 if duchy in duchies:
                     for county in duchies[duchy].get("titles", []):
                         if county in counties:
                             for province_id in counties[county].get("provinces", []):
-                                for province_rgb, p_id in provinces.items():
-                                    if p_id == province_id:
-                                        province_to_color[province_rgb] = empire_color
+                                for rgb, pid in provinces.items():
+                                    if pid == province_id:
+                                        province_to_color[rgb] = empire_color
 
     elif mode == "kingdom":
         duchy_to_kingdom = {
             duchy: tuple(map(int, kingdoms[k]["rgb"].split(",")))
-            for k in kingdoms for duchy in kingdoms[k].get("titles", [])
+            for k in kingdoms
+            for duchy in kingdoms[k].get("titles", [])
         }
 
         for duchy, data in duchies.items():
@@ -49,74 +53,69 @@ def build_color_mapping(mode):
             for county in data.get("titles", []):
                 if county in counties:
                     for province_id in counties[county].get("provinces", []):
-                        for province_rgb, p_id in provinces.items():
-                            if p_id == province_id:
-                                province_to_color[province_rgb] = kingdom_color
+                        for rgb, pid in provinces.items():
+                            if pid == province_id:
+                                province_to_color[rgb] = kingdom_color
 
     elif mode == "duchy":
         county_to_duchy = {
             county: tuple(map(int, duchies[d]["rgb"].split(",")))
-            for d in duchies for county in duchies[d].get("titles", [])
+            for d in duchies
+            for county in duchies[d].get("titles", [])
         }
 
         for county, data in counties.items():
             duchy_color = county_to_duchy.get(county, (0, 0, 0))
             for province_id in data.get("provinces", []):
-                for province_rgb, p_id in provinces.items():
-                    if p_id == province_id:
-                        province_to_color[province_rgb] = duchy_color
+                for rgb, pid in provinces.items():
+                    if pid == province_id:
+                        province_to_color[rgb] = duchy_color
 
     elif mode == "county":
         for county, data in counties.items():
             county_color = tuple(map(int, data["rgb"].split(",")))
             for province_id in data.get("provinces", []):
-                for province_rgb, p_id in provinces.items():
-                    if p_id == province_id:
-                        province_to_color[province_rgb] = county_color
+                for rgb, pid in provinces.items():
+                    if pid == province_id:
+                        province_to_color[rgb] = county_color
 
     elif mode == "nation":
         for nation, data in nations.items():
             nation_color = tuple(map(int, data["rgb"].split(",")))
             for province_id in data.get("provinces", []):
-                for province_rgb, p_id in provinces.items():
-                    if p_id == province_id:
-                        province_to_color[province_rgb] = nation_color
+                for rgb, pid in provinces.items():
+                    if pid == province_id:
+                        province_to_color[rgb] = nation_color
 
     return province_to_color
 
 
-def get_overlord_rgb(nation, nations):
-    """
-    Retrieves the RGB color of the immediate overlord of a nation.
-    """
-    overlord_name = nations.get(nation, {}).get("overlord")  # Get overlord's name
-
-    if overlord_name and overlord_name in nations:
-        return tuple(map(int, nations[overlord_name]["rgb"].split(",")))  # Get overlord's RGB
-    
-    return None  # No overlord found
+def get_overlord_rgb(nation: str, nations: dict):
+    overlord = nations.get(nation, {}).get("overlord")
+    if overlord and overlord in nations:
+        return tuple(map(int, nations[overlord]["rgb"].split(",")))
+    return None
 
 
-def get_color_overrides(mode):
+def get_color_overrides(map_name: str, mode: str):
     """
-    Builds a dictionary that maps nation colors to their immediate overlord's color.
-    Used to "fix" the nation map after making the canvas.
+    Maps nation RGB -> immediate overlord RGB.
+    Only applies to nation mode.
     """
+    validate_map(map_name)
+
     overrides = {}
 
     if mode != "nation":
         return overrides
 
-    # Load nation data
-    nations = load_nations()
+    nations = load_nations(map_name)
 
     for nation, data in nations.items():
         nation_color = tuple(map(int, data["rgb"].split(",")))
-
-        # Check if the nation has an immediate overlord
         overlord_rgb = get_overlord_rgb(nation, nations)
+
         if overlord_rgb:
-            overrides[nation_color] = overlord_rgb  # Map nation color -> immediate overlord color
+            overrides[nation_color] = overlord_rgb
 
     return overrides
-

@@ -1,18 +1,24 @@
-# Use an official Node.js image
-FROM node:18-alpine
+# --- BUILD STAGE ---
+FROM node:22-alpine AS builder
 
-# Set working directory
-WORKDIR /app/frontend
+WORKDIR /app
 
-# Copy package.json and install dependencies
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci --only=production
 
-# Copy the entire project
 COPY . .
+RUN npm run build
 
-# Expose Next.js default port
+# --- RUNTIME STAGE ---
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+# Create non-root user
+RUN adduser -D -H appuser
+USER appuser
+
+COPY --from=builder /app ./
+
 EXPOSE 3000
 
-# Start Next.js
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

@@ -1,7 +1,10 @@
-from ..mapgen import create_map
+from ...mapgen import create_map
 from ..regiongen import generate_regions
 
-create_map("county", "county_map")
-generate_regions("county", True)
+
+MAP = "main"  # default manual map
+
+create_map(MAP, "county", "county_map")
+generate_regions(MAP, "county", borders=True)
 
 

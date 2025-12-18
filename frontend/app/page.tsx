@@ -1,10 +1,5 @@
-import { MapEngineProvider } from "./core/MapEngineContext";
-import MapViewer from "./MapViewer";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <MapEngineProvider>
-      <MapViewer />
-    </MapEngineProvider>
-  );
+  redirect("/map/main");
 }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from src.scripts.bannergen.randombanner import generate_random_banner
+from ..scripts.bannergen.randombanner import generate_random_banner
 
 banner_router = APIRouter()
 

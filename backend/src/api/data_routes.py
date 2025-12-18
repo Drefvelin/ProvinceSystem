@@ -1,43 +1,59 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-import os
 import json
+import os
 
-import concurrent.futures
-
+from ..scripts.util.dirs import (
+    input_file,
+    defines_file,
+    validate_map
+)
 
 data_router = APIRouter()
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)  # Optional: tune this if needed
 
-INPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "input")
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "defines")
-
-@data_router.get("/data/{map_type}")
-async def get_map(map_type: str):
-    filename = f"{map_type}.json"
-    file_path = os.path.join(DATA_DIR, filename)
-
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as file:
-            data = json.load(file)  # Load JSON content
-        return JSONResponse(content=data)  # Return JSON directly
-
-    return JSONResponse(content={"error": "Data not found"}, status_code=404)
-
-@data_router.post("/data/upload/{mode}")
-async def upload_region_data(mode: str, request: Request):
+@data_router.get("/{map}/data/{file}")
+async def get_map_data(map: str, file: str):
     try:
+        validate_map(map)
+
+        file_path = defines_file(map, f"{file}.json")
+
+        if not os.path.exists(file_path):
+            return JSONResponse({"error": "Data not found"}, status_code=404)
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return JSONResponse(content=data)
+
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@data_router.post("/{map}/data/upload/{mode}")
+async def upload_region_data(map: str, mode: str, request: Request):
+    try:
+        validate_map(map)
+
         payload = await request.json()
 
-        # Save the region file to input/{mode}.json
-        if mode == "nation" or mode == "queue":
-            target_path = os.path.join(INPUTS_DIR, f"{mode}.json")
+        if mode in {"nation", "queue"}:
+            target_path = input_file(map, f"{mode}.json")
         else:
-            target_path = os.path.join(DATA_DIR, f"{mode}.json")
+            target_path = defines_file(map, f"{mode}.json")
+
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
         with open(target_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
-        return JSONResponse(content={"message": f"{mode.capitalize()} data saved successfully."}, status_code=200)
+        return JSONResponse(
+            {"message": f"{mode} data saved successfully for map '{map}'"},
+            status_code=200
+        )
+
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
