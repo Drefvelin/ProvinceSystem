@@ -12,7 +12,7 @@ TERRAINS = {
     "mountain": (0, 5),
     "bog": (0, 5),
     "drylands": (0, 5),
-    "river": (0, 0),
+    "water": (0, 0),
     "sea": (0, 0)
 }
 def hex_to_rgb(hex_code: str):
