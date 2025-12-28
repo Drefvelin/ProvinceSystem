@@ -91,7 +91,7 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
                 continue
 
             color = fertility_to_color(int(fertility))
-            overlay_data[x, y] = (*color, 160)  # alpha controls overlay strength
+            overlay_data[x, y] = (*color, 255)  # alpha controls overlay strength
             painted += 1
 
             # Inline progress update (every ~1M pixels)
