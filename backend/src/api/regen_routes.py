@@ -6,6 +6,8 @@ from ..scripts.util.regeneration import run_regeneration
 from ..scripts.util.task_lock import regen_lock
 from ..scripts.util.dirs import validate_map
 
+import secrets
+
 regen_router = APIRouter()
 
 @regen_router.get("/{map}/{hashed_key}/api/regenerate/{regen_type}")
@@ -15,7 +17,11 @@ async def regenerate_map(
     regen_type: str,
     background_tasks: BackgroundTasks
 ):
-    
+    if not secrets.compare_digest(hashed_key, HASHED_KEY):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key"
+        )
 
     # 2. Validate map
     try:
