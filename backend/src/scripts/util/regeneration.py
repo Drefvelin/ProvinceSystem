@@ -1,62 +1,82 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from src.scripts.compile.nation_compiler import process_nations
-from src.scripts.mapgen.mapgen import create_map
-from src.scripts.mapgen.regiongen import generate_regions
-from src.scripts.util.queue import load_queue, compile_queue
+
+from ..compile.nation_compiler import process_nations
+from ..mapgen.mapgen import create_map
+from ..mapgen.regiongen import generate_regions
+from .queue import load_queue, compile_queue
+from .dirs import (
+    validate_map,
+    input_file,
+    defines_file
+)
+
 import os
 import json
 
 executor = ThreadPoolExecutor()
 regen_lock = asyncio.Lock()
 
-RAW_QUEUE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "input", "queue.json")
-COMPILED_QUEUE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "defines", "queue.json")
 
-def print_queues():
-    print("📥 RAW QUEUE (input/queue.json):")
-    if os.path.exists(RAW_QUEUE_PATH):
-        with open(RAW_QUEUE_PATH, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-            print(json.dumps(raw, indent=2))
+def print_queues(map_name: str):
+    raw_path = input_file(map_name, "queue.json")
+    compiled_path = defines_file(map_name, "queue.json")
+
+    print(f"📥 RAW QUEUE ({raw_path}):")
+    if os.path.exists(raw_path):
+        with open(raw_path, "r", encoding="utf-8") as f:
+            print(json.dumps(json.load(f), indent=2))
     else:
         print("❌ No raw queue file found.")
 
-    print("\n📦 COMPILED QUEUE (defines/queue.json):")
-    if os.path.exists(COMPILED_QUEUE_PATH):
-        with open(COMPILED_QUEUE_PATH, "r", encoding="utf-8") as f:
-            compiled = json.load(f)
-            print(json.dumps(compiled, indent=2))
+    print(f"\n📦 COMPILED QUEUE ({compiled_path}):")
+    if os.path.exists(compiled_path):
+        with open(compiled_path, "r", encoding="utf-8") as f:
+            print(json.dumps(json.load(f), indent=2))
     else:
         print("❌ No compiled queue file found.")
 
-def run_regeneration(regen_type: str):
-    print("🔁 Regeneration task started")  # ✅ debug
+
+def run_regeneration(map_name: str, regen_type: str):
+    validate_map(map_name)
+
+    print(f"🔁 Regeneration started for map '{map_name}'")
 
     def sync_task():
         print("🔧 Sync task starting...")
+
         modes = ["nation", "duchy", "kingdom", "county", "empire"]
-        process_nations()
 
-        compile_queue()
+        # 1. Compile nation data
+        process_nations(map_name)
+
+        # 2. Compile queue
+        compile_queue(map_name)
         print("✅ Queue compiled")
-        print_queues()  # 👈 Add this here
+        print_queues(map_name)
 
+        # 3. Generate maps + regions
         if regen_type.lower() != "textonly":
             for mode in modes:
-                queue = load_queue(mode)
-                if regen_type.lower() != "fullregen":
-                    if not queue:
-                        print(f"⚠️ Skipping {mode}: Empty queue")
-                        continue
+                queue = load_queue(map_name, mode)
 
-                print(f"🛠️ Processing mode: {mode}")
+                if regen_type.lower() != "fullregen" and not queue:
+                    print(f"⚠️ Skipping {mode}: Empty queue")
+                    continue
 
-                create_map(mode, f"{mode}_map")
-                print(f"🗺️ Map generated for {mode}")
+                print(f"🛠️ [{map_name}] Processing mode: {mode}")
 
-                generate_regions(mode, borders=True, queued_regen=(regen_type.lower() != "fullregen"))
-                print(f"🎨 Regions generated for {mode}")
+                create_map(map_name, mode, f"{mode}_map")
+                print(f"🗺️ [{map_name}] Map generated for {mode}")
 
-        print("✅ Regeneration complete.")
+                generate_regions(
+                    map_name,
+                    mode,
+                    borders=True,
+                    queued_regen=(regen_type.lower() != "fullregen")
+                )
+                print(f"🎨 [{map_name}] Regions generated for {mode}")
+
+        print(f"✅ Regeneration complete for map '{map_name}'")
+
     sync_task()

@@ -12,7 +12,7 @@ type MapObject = {
 type MapEngineContextType = {
   mapObjects: MapObject[];
   loadData: (regionData: Record<string, any>) => void;
-  getHoverRegion: (mapType: string, regionId: string, regionData: Record<string, any>) => { imagePath: string | null; region: any };
+  getHoverRegion: (mapType: string, mapId: string, regionId: string, regionData: Record<string, any>) => { imagePath: string | null; region: any };
   drillDownRegion: (regionId: string, regionData: Record<string, any>) => void;
 };
 
@@ -48,7 +48,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMapObjects(objects);
   };
 
-  const getHoverRegion = (mapType: string, regionId: string, regionData: Record<string, any>) => {
+  const getHoverRegion = (mapType: string, mapId: string, regionId: string, regionData: Record<string, any>) => {
     let currentRegionId = regionId;
 
     while (currentRegionId) {
@@ -58,7 +58,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const main = mapObjects.find(obj => obj.id === currentRegionId);
       if (main?.visible) {
         return {
-          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/regions/${mapType}/${main.path}_hover.png`,
+          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${main.path}_hover.png`,
           region,
         };
       }
@@ -67,7 +67,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const nested = mapObjects.find(obj => obj.id === nestedId);
       if (nested?.visible) {
         return {
-          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/regions/${mapType}/${nested.path}_hover.png`,
+          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${nested.path}_hover.png`,
           region,
         };
       }

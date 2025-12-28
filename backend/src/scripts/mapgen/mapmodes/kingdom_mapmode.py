@@ -1,5 +1,7 @@
 from ..mapgen import create_map
 from ..regiongen import generate_regions
 
-create_map("kingdom", "kingdom_map")
-generate_regions("kingdom", True)
+MAP = "main"  # default manual map
+
+create_map(MAP, "kingdom", "kingdom_map")
+generate_regions(MAP, "kingdom", True)

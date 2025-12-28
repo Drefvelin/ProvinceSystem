@@ -1,7 +1,11 @@
-import os
 import json
+from ..util.dirs import defines_file, validate_map
 
-def load_kingdoms():
-    kingdom_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "defines", "kingdom.json")
-    with open(kingdom_file_path, "r") as file:
+
+def load_kingdoms(map_name: str) -> dict:
+    validate_map(map_name)
+
+    file_path = defines_file(map_name, "kingdom.json")
+
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)

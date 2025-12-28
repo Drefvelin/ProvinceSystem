@@ -6,14 +6,25 @@ app = FastAPI()
 # --------------------------------
 # CORS MUST BE ADDED BEFORE ROUTERS
 # --------------------------------
+
+origins = [
+    "https://www.tfminecraft.net",
+    "https://tfminecraft.net",  # optional
+    "http://localhost:3000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],  # required for images
 )
+
+@app.get("/ping")
+def ping():
+    return {"ok": True}
 
 # Now import routers
 from src.api.map_routes import map_router
