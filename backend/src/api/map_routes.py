@@ -71,3 +71,34 @@ async def get_province(map: str, coords: str):
             status_code=500,
             detail=f"Internal error: {str(e)}"
         )
+
+@map_router.get("/{map}/province/{coords}/meta")
+async def get_province_meta(map: str, coords: str):
+    try:
+        validate_map(map)
+
+        x_str, z_str = coords.split(",")
+        x, z = int(x_str), int(z_str)
+
+        province_id = find_province(map, x, z)
+
+        if province_id == 0:
+            return JSONResponse(
+                content={"province_id": 0},
+                status_code=404
+            )
+
+        # Load metadata (cached internally if possible)
+        from ..scripts.loader.province_metadata import load_province_metadata
+        meta = load_province_metadata(map).get(province_id, {})
+
+        return JSONResponse(content={
+            "province_id": province_id,
+            "terrain": meta.get("terrain"),
+            "fertility": meta.get("fertility"),
+        })
+
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid coordinates")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

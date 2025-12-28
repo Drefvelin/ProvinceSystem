@@ -9,6 +9,7 @@ TERRAINS = {
     "forest": (30, 40),
     "jungle": (70, 90),
     "hills": (15, 30),
+    "highlands": (20, 35),
     "mountain": (0, 5),
     "bog": (0, 5),
     "drylands": (0, 5),

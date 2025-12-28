@@ -31,6 +31,19 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
+  // 🔑 NEW: province meta cache
+  const provinceMetaCacheRef = useRef<Record<number, any>>({});
+  const lastProvinceIdRef = useRef<number | null>(null);
+
+  const [cursorTooltip, setCursorTooltip] = useState<{
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
+
+  const capitalize = (value: string) =>
+    value.charAt(0).toUpperCase() + value.slice(1);
+
   const { mapObjects, loadData, getHoverRegion, drillDownRegion } = useMapEngine();
 
   {/* Vote Links Array */}
@@ -44,18 +57,25 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     { name: "PlanetMinecraft", url: "https://tinyurl.com/yc5av8rd" },
   ];
 
-  
-
   // === Fetch Region Data on mapType change ===
   useEffect(() => {
+    if (mapType === "terrain" || mapType === "fertility") {
+      setLoading(false);
+      setRegionData(null);
+      loadData({});
+      return;
+    }
+
     const fetchRegionData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/${mapType}`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/${mapType}`
+        );
         if (!response.ok) throw new Error("Failed to fetch region data");
         const data = await response.json();
         setRegionData(data);
-        loadData(data); // ⬅️ context-driven
+        loadData(data);
       } catch (error) {
         console.error("Error fetching region data:", error);
         setRegionData(null);
@@ -66,54 +86,53 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     fetchRegionData();
   }, [mapType]);
 
+  useEffect(() => {
+      if (!pendingDrillId || !regionData) return;
+
+      // Perform delayed drill-down
+      drillDownRegion(pendingDrillId, regionData);
+
+      const region = regionData[pendingDrillId];
+      const name = region?.name || pendingDrillId;
+
+      setDrillStack([name]);
+
+      // Clear pending state
+      setPendingDrillId(null);
+    }, [pendingDrillId, regionData, drillDownRegion]);
+
   // === Draw base map on canvas ===
   useEffect(() => {
     if (loading) return;
-    const drawImage = async () => {
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
 
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/mapdata/${mapType}`;
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-        };
-        img.onerror = () => console.error("Failed to load base map");
-      } catch (e) {
-        console.error("Error drawing base image:", e);
-      }
+    const drawImage = async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/mapdata/${mapType}`;
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
     };
+
+    setCursorTooltip(null);
+    
     setDrillStack([]);
     setHoveredColor(null);
     setRegionInfo(null);
     drawImage();
   }, [mapType, loading]);
 
-  useEffect(() => {
-    if (pendingDrillId && regionData) {
-      drillDownRegion(pendingDrillId, regionData);
-  
-      const region = regionData[pendingDrillId];
-      const name = region?.name || pendingDrillId;
-  
-      setDrillStack(prev =>
-        prev.includes(name) ? prev : [...prev, name]
-      );
-  
-      setPendingDrillId(null); // clear
-    }
-  }, [mapObjects, pendingDrillId, regionData]);
-
-  // === Hover logic (uses getHoverRegion from context) ===
+  // === Hover logic ===
   const getPixelColor = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (loading || !regionData) return;
+    if (loading) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -127,12 +146,65 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const x = Math.floor((event.clientX - rect.left) * scaleX);
     const y = Math.floor((event.clientY - rect.top) * scaleY);
 
+    // === TERRAIN / FERTILITY MODES ===
+    if (mapType === "terrain" || mapType === "fertility") {
+      const coords = `${x},${y}`;
+
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${coords}/meta`)
+        .then(res => res.json())
+        .then(data => {
+          const pid = data?.province_id;
+          if (!pid) {
+            setCursorTooltip(null);
+            return;
+          }
+
+          // cache guard
+          if (lastProvinceIdRef.current === pid) return;
+          lastProvinceIdRef.current = pid;
+
+          const meta = provinceMetaCacheRef.current[pid] ?? data;
+          provinceMetaCacheRef.current[pid] = meta;
+
+          // 🚫 skip sea / water
+          const value =
+            mapType === "terrain" ? meta.terrain : meta.fertility;
+
+          if (
+            meta.terrain === "sea" ||
+            meta.terrain === "water"
+          ) {
+            setCursorTooltip(null);
+            return;
+          }
+
+          const label =
+            mapType === "terrain"
+              ? `Terrain: ${capitalize(value)}`
+              : `Fertility: ${value}`;
+
+          setCursorTooltip({
+            x: event.clientX,
+            y: event.clientY,
+            text: label,
+          });
+        });
+
+      // ❌ disable right panel in these modes
+      setRegionInfo(null);
+      return;
+    }
+
+    // === POLITICAL MODES (unchanged) ===
+    if (!regionData) return;
+
     const pixel = ctx.getImageData(x, y, 1, 1).data;
     const regionRGB = `${pixel[0]},${pixel[1]},${pixel[2]}`;
 
     const foundRegionId = Object.keys(regionData).find(
-      (id) => regionData[id].rgb === regionRGB
+      id => regionData[id].rgb === regionRGB
     );
+
     if (!foundRegionId) {
       setHoveredColor(null);
       setRegionInfo(null);
@@ -141,20 +213,33 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
     setSelectedRegionId(foundRegionId);
 
-    const { imagePath, region } = getHoverRegion(mapType, mapId, foundRegionId, regionData);
+    const { imagePath, region } = getHoverRegion(
+      mapType,
+      mapId,
+      foundRegionId,
+      regionData
+    );
+
     setHoveredColor(imagePath);
 
     if (region) {
-      const tierName = region.tier ?? (mapType.charAt(0).toUpperCase() + mapType.slice(1));
+      const tierName =
+        region.tier ??
+        mapType.charAt(0).toUpperCase() + mapType.slice(1);
+
       setRegionInfo({
         title: region.name,
         tier: tierName,
         banner: region.banner,
         size: region.size,
         subject_size: region.subject_size,
-        overlord: region.overlord ? regionData[region.overlord]?.name : null,
+        overlord: region.overlord
+          ? regionData[region.overlord]?.name
+          : null,
         subjects: region.subjects ?? [],
-        description: region.description || `A ${(mapType.charAt(0).toUpperCase() + mapType.slice(1))} in ${mapDisplayName}`,
+        description:
+          region.description ||
+          `A ${tierName} in ${mapDisplayName}`,
       });
     }
   };
@@ -294,8 +379,27 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           onMouseMove={getPixelColor}
           onClick={handleClick}
         >
+          {cursorTooltip && (
+            <div
+              className="fixed z-50 pointer-events-none bg-[#2b2218] text-[#f0eed9] text-sm px-3 py-1 rounded-md shadow-lg"
+              style={{
+                left: cursorTooltip.x + 12,
+                top: cursorTooltip.y + 12,
+              }}
+            >
+              {cursorTooltip.text}
+            </div>
+          )}
           <img src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/map`} alt="Base Map" className="w-full h-auto" />
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
+          {/* Terrain / Fertility Overlay */}
+          {(mapType === "terrain" || mapType === "fertility") && (
+            <img
+              src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/mapdata/${mapType}`}
+              alt={`${mapType} overlay`}
+              className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
+            />
+          )}
           {hoveredColor && (
             <img
               ref={hoveredRegionRef}
@@ -360,6 +464,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               <option value="duchy">Duchy Map</option>
               <option value="kingdom">Kingdom Map</option>
               <option value="empire">Empire Map</option>
+              <option value="terrain">Terrain</option>
+              <option value="fertility">Fertility</option>
             </select>
           </div>
   
@@ -369,7 +475,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               regionInfo ? "max-h-[600px] opacity-100 p-5" : "max-h-0 opacity-0 p-0"
             }`}
           >
-            {regionInfo && (
+            {mapType !== "terrain" && mapType !== "fertility" && regionInfo && (
               <div className="flex">
                 {/* Left: All Text Content */}
                 <div className="flex-1 pr-4">

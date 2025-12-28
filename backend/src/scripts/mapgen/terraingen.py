@@ -18,6 +18,7 @@ TERRAIN_COLORS: dict[str, tuple[int, int, int]] = {
     "drylands": (170, 90, 40),
     "bog": (40, 109, 86),
     "farmland": (189, 41, 41),
+    "highlands": (73, 113, 73),
 }
 
 
