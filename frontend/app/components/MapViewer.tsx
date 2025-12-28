@@ -26,6 +26,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const mapDisplayName = mapId === "dev" ? "Adavaar" : "Calavorn";
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
@@ -152,7 +154,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         subject_size: region.subject_size,
         overlord: region.overlord ? regionData[region.overlord]?.name : null,
         subjects: region.subjects ?? [],
-        description: region.description || `A ${(mapType.charAt(0).toUpperCase() + mapType.slice(1))} in Calavorn`,
+        description: region.description || `A ${(mapType.charAt(0).toUpperCase() + mapType.slice(1))} in ${mapDisplayName}`,
       });
     }
   };

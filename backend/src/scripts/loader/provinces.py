@@ -4,6 +4,7 @@ import os
 def load_provinces(map_name: str) -> dict[tuple[int, int, int], int]:
     """
     Loads province RGB -> province_id mappings for a given map.
+    Backward-compatible with old and new provinces.txt formats.
     """
     validate_map(map_name)
 
@@ -16,19 +17,30 @@ def load_provinces(map_name: str) -> dict[tuple[int, int, int], int]:
         )
 
     with open(province_file_path, "r", encoding="utf-8") as file:
-        for line in file:
+        for line_num, line in enumerate(file, start=1):
             line = line.strip()
 
             if not line or line.startswith("##"):
                 continue
 
             try:
-                province_id, rgb_values = line.split(" = ")
-                rgb = tuple(map(int, rgb_values.split(",")))
-                provinces[rgb] = int(province_id)
-            except ValueError:
+                # Split province id from rest
+                province_id_str, rest = line.split("=", 1)
+                province_id = int(province_id_str.strip())
+
+                # RGB is always the first field (before any ;)
+                rgb_part = rest.split(";", 1)[0].strip()
+                rgb = tuple(map(int, rgb_part.split(",")))
+
+                if len(rgb) != 3:
+                    raise ValueError("RGB must have exactly 3 values")
+
+                provinces[rgb] = province_id
+
+            except Exception as e:
                 raise ValueError(
-                    f"Invalid line in {province_file_path}: {line}"
-                )
+                    f"Invalid line in {province_file_path} "
+                    f"(line {line_num}): {line}"
+                ) from e
 
     return provinces

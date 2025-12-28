@@ -4,11 +4,11 @@ from PIL import Image, ImageTk
 import json
 import numpy as np
 
-PURPLE = np.array((160, 80, 200))
-BLACK = (0, 0, 0)
+SELECT_COLOR = np.array((160, 80, 200), dtype=np.uint8)
+
 
 # -----------------------------
-# Load provinces.txt
+# Utilities
 # -----------------------------
 def load_provinces_txt(path):
     color_to_id = {}
@@ -29,19 +29,28 @@ def load_provinces_txt(path):
     return color_to_id, id_to_color
 
 
-# -----------------------------
-# Compute county RGB
-# -----------------------------
-def compute_county_rgb(province_ids, id_to_color):
-    colors = [np.array(id_to_color[pid]) for pid in province_ids if pid in id_to_color]
-    if not colors:
-        return "128,0,128"
+def parse_rgb(rgb_str):
+    return np.array(list(map(int, rgb_str.split(","))), dtype=np.uint8)
 
-    avg = np.mean(colors, axis=0)
-    blended = avg * 0.6 + PURPLE * 0.4
-    blended = np.clip(blended.astype(int), 0, 255)
 
-    return f"{blended[0]},{blended[1]},{blended[2]}"
+def rgb_to_str(rgb):
+    return f"{int(rgb[0])},{int(rgb[1])},{int(rgb[2])}"
+
+
+def tweak_rgb_near(base_rgb, used_rgb):
+    base = np.array(base_rgb, dtype=np.int16)
+    if tuple(base) not in used_rgb:
+        return base.astype(np.uint8)
+
+    for d in [1, -1, 2, -2, 3, -3, 5, -5, 8, -8, 10, -10]:
+        for axis in range(3):
+            cand = base.copy()
+            cand[axis] += d
+            cand = np.clip(cand, 0, 255).astype(np.uint8)
+            if tuple(cand) not in used_rgb:
+                return cand
+
+    return base.astype(np.uint8)
 
 
 # -----------------------------
@@ -52,25 +61,37 @@ class CountyCreator:
         self.root = root
         self.root.title("County Creator")
 
+        # Data
         self.color_to_id = {}
         self.id_to_color = {}
+        self.counties = {}
+        self.county_path = None
+        self.province_to_county = {}
 
+        # Images
         self.image = None
         self.image_np = None
-        self.display_img = None
+        self.province_map = None
+        self.rendered_map = None
 
-        self.county_path = None
-        self.counties = {}
+        # Selection
+        self.selected_provinces = []
+        self.selected_set = set()
 
-        self.selected_provinces = set()
+        # Modes
+        self.delete_mode = False
 
-        # View state
+        # View
         self.zoom = 1.0
-        self.min_zoom = 0.2
-        self.max_zoom = 6.0
         self.offset_x = 0
         self.offset_y = 0
         self.drag_start = None
+
+        # Tk
+        self.canvas = None
+        self.canvas_img = None
+        self.display_img = None
+        self.initialized = False
 
         self.build_ui()
 
@@ -79,26 +100,17 @@ class CountyCreator:
     # -----------------------------
     def build_ui(self):
         top = ttk.Frame(self.root, padding=5)
-        top.pack()
+        top.pack(fill="x")
 
         ttk.Button(top, text="Load provinces.txt", command=self.load_provinces).grid(row=0, column=0)
         ttk.Button(top, text="Load provinces.png", command=self.load_map).grid(row=0, column=1)
-        ttk.Button(top, text="Load county.json", command=self.load_county_file).grid(row=0, column=2)
+        ttk.Button(top, text="Load county.json", command=self.load_counties).grid(row=0, column=2)
 
-        form = ttk.Frame(self.root, padding=5)
-        form.pack()
+        self.init_btn = ttk.Button(top, text="Init", command=self.init_app, state="disabled")
+        self.init_btn.grid(row=0, column=3, padx=10)
 
-        ttk.Label(form, text="County ID:").grid(row=0, column=0, sticky="e")
-        self.county_id_entry = ttk.Entry(form, width=25)
-        self.county_id_entry.grid(row=0, column=1)
-
-        ttk.Label(form, text="County Name:").grid(row=1, column=0, sticky="e")
-        self.county_name_entry = ttk.Entry(form, width=25)
-        self.county_name_entry.grid(row=1, column=1)
-
-        ttk.Button(form, text="Add County", command=self.add_county).grid(
-            row=2, column=0, columnspan=2, pady=6
-        )
+        ttk.Button(top, text="Add County", command=self.add_county).grid(row=0, column=4)
+        ttk.Button(top, text="Delete County", command=self.enable_delete_mode).grid(row=0, column=5)
 
         self.canvas = tk.Canvas(self.root, bg="black")
         self.canvas.pack(expand=True, fill="both")
@@ -114,171 +126,223 @@ class CountyCreator:
     # Loaders
     # -----------------------------
     def load_provinces(self):
-        path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-        if not path:
+        p = filedialog.askopenfilename(filetypes=[("Text", "*.txt")])
+        if not p:
             return
-        self.color_to_id, self.id_to_color = load_provinces_txt(path)
-        messagebox.showinfo("Loaded", "provinces.txt loaded")
+        self.color_to_id, self.id_to_color = load_provinces_txt(p)
+        self.check_ready()
 
     def load_map(self):
-        path = filedialog.askopenfilename(filetypes=[("PNG files", "*.png")])
-        if not path:
+        p = filedialog.askopenfilename(filetypes=[("PNG", "*.png")])
+        if not p:
             return
-        self.image = Image.open(path).convert("RGB")
+        self.image = Image.open(p).convert("RGB")
         self.image_np = np.array(self.image)
+        self.offset_x = self.offset_y = 0
         self.zoom = 1.0
-        self.offset_x = 0
-        self.offset_y = 0
-        self.refresh_map()
+        self.check_ready()
 
-    def load_county_file(self):
-        path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
-        if not path:
+    def load_counties(self):
+        p = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
+        if not p:
             return
-
-        self.county_path = path
-        with open(path, "r", encoding="utf-8") as f:
+        self.county_path = p
+        with open(p, "r", encoding="utf-8") as f:
             self.counties = json.load(f) or {}
+        self.check_ready()
 
-        messagebox.showinfo("Loaded", f"Loaded {len(self.counties)} counties")
-        self.refresh_map()
-
-    # -----------------------------
-    # Interaction
-    # -----------------------------
-    def on_click(self, event):
-        if self.image_np is None:
-            return
-
-        ix = int(event.x / self.zoom + self.offset_x)
-        iy = int(event.y / self.zoom + self.offset_y)
-
-        if iy < 0 or ix < 0 or iy >= self.image_np.shape[0] or ix >= self.image_np.shape[1]:
-            return
-
-        color = tuple(self.image_np[iy, ix])
-        if color == BLACK or color not in self.color_to_id:
-            return
-
-        pid = self.color_to_id[color]
-
-        if pid in self.selected_provinces:
-            self.selected_provinces.remove(pid)
-        else:
-            self.selected_provinces.add(pid)
-
-        self.refresh_map()
+    def check_ready(self):
+        if self.color_to_id and self.image_np is not None and self.county_path:
+            self.init_btn.config(state="normal")
 
     # -----------------------------
-    # County creation
+    # INIT
     # -----------------------------
-    def add_county(self):
-        if not self.county_path:
-            messagebox.showerror("Error", "Load county.json first")
-            return
+    def init_app(self):
+        self.build_province_map()
+        self.rebuild_province_to_county()
+        self.assign_county_colors()
+        self.rebuild_rendered_map()
 
-        cid = self.county_id_entry.get().strip()
-        name = self.county_name_entry.get().strip()
+        self.initialized = True
+        self.init_btn.config(state="disabled")
+        self.refresh_view()
 
-        if not cid or not name:
-            messagebox.showerror("Error", "County ID and name are required")
-            return
+    def build_province_map(self):
+        h, w, _ = self.image_np.shape
+        self.province_map = np.full((h, w), -1, dtype=np.int32)
 
-        if cid in self.counties:
-            messagebox.showerror("Error", f"County ID '{cid}' already exists")
-            return
+        packed = (
+            (self.image_np[:, :, 0].astype(np.int32) << 16)
+            | (self.image_np[:, :, 1].astype(np.int32) << 8)
+            | self.image_np[:, :, 2].astype(np.int32)
+        )
 
-        for c in self.counties.values():
-            if c.get("name") == name:
-                messagebox.showerror("Error", f"County name '{name}' already exists")
-                return
+        lookup = {(r << 16) | (g << 8) | b: pid for (r, g, b), pid in self.color_to_id.items()}
+        for c, pid in lookup.items():
+            self.province_map[packed == c] = pid
 
-        if not self.selected_provinces:
-            messagebox.showerror("Error", "No provinces selected")
-            return
+    def rebuild_province_to_county(self):
+        self.province_to_county.clear()
+        for cid, c in self.counties.items():
+            for pid in c.get("provinces", []):
+                self.province_to_county[int(pid)] = cid
 
-        rgb = compute_county_rgb(self.selected_provinces, self.id_to_color)
-
-        self.counties[cid] = {
-            "name": name,
-            "provinces": sorted(self.selected_provinces),
-            "rgb": rgb
-        }
+    def assign_county_colors(self):
+        used = set()
+        for cid, county in self.counties.items():
+            provs = county.get("provinces", [])
+            base = self.id_to_color.get(int(provs[0]), (128, 0, 128)) if provs else (128, 0, 128)
+            rgb = tweak_rgb_near(base, used)
+            used.add(tuple(rgb))
+            county["rgb"] = rgb_to_str(rgb)
 
         with open(self.county_path, "w", encoding="utf-8") as f:
             json.dump(self.counties, f, indent=2)
 
+    def rebuild_rendered_map(self):
+        self.rendered_map = self.image_np.copy()
+        for pid, cid in self.province_to_county.items():
+            self.rendered_map[self.province_map == pid] = parse_rgb(self.counties[cid]["rgb"])
+
+    # -----------------------------
+    # Interaction
+    # -----------------------------
+    def enable_delete_mode(self):
+        if not self.initialized:
+            return
+        self.delete_mode = True
+        self.canvas.config(cursor="X_cursor")
+
+    def on_click(self, e):
+        if not self.initialized:
+            return
+
+        cw, ch = self.canvas.winfo_width(), self.canvas.winfo_height()
+        vw, vh = int(cw / self.zoom), int(ch / self.zoom)
+
+        x0 = int(max(0, min(self.offset_x, self.image.width - vw)))
+        y0 = int(max(0, min(self.offset_y, self.image.height - vh)))
+
+        ix = x0 + int(e.x * vw / cw)
+        iy = y0 + int(e.y * vh / ch)
+
+        pid = int(self.province_map[iy, ix])
+        if pid == -1:
+            return
+
+        # DELETE MODE
+        if self.delete_mode:
+            cid = self.province_to_county.get(pid)
+            if not cid:
+                self.exit_delete_mode()
+                return
+
+            if not messagebox.askyesno("Delete County", f"Delete {cid}?"):
+                self.exit_delete_mode()
+                return
+
+            del self.counties[cid]
+            self.rebuild_province_to_county()
+            self.assign_county_colors()
+            self.rebuild_rendered_map()
+            self.refresh_view()
+
+            self.exit_delete_mode()
+            return
+
+        # NORMAL SELECTION
+        if pid in self.province_to_county:
+            return
+
+        if pid in self.selected_set:
+            self.selected_set.remove(pid)
+            self.selected_provinces.remove(pid)
+        else:
+            self.selected_set.add(pid)
+            self.selected_provinces.append(pid)
+
+        self.refresh_view()
+
+    def exit_delete_mode(self):
+        self.delete_mode = False
+        self.canvas.config(cursor="")
+
+    def add_county(self):
+        if not self.selected_provinces:
+            messagebox.showerror("Error", "No provinces selected")
+            return
+
+        cid = f"COUNTY_{len(self.counties) + 1}"
+        self.counties[cid] = {
+            "name": cid,
+            "provinces": list(self.selected_provinces),
+            "rgb": "0,0,0",
+        }
+
         self.selected_provinces.clear()
-        self.county_id_entry.delete(0, tk.END)
-        self.county_name_entry.delete(0, tk.END)
-        self.refresh_map()
+        self.selected_set.clear()
 
-        messagebox.showinfo("Added", f"County '{name}' added")
+        self.rebuild_province_to_county()
+        self.assign_county_colors()
+        self.rebuild_rendered_map()
+        self.refresh_view()
+
+        with open(self.county_path, "w", encoding="utf-8") as f:
+            json.dump(self.counties, f, indent=2)
+
+        messagebox.showinfo("Added", f"{cid} added")
 
     # -----------------------------
-    # Pan / Zoom
+    # View
     # -----------------------------
-    def start_pan(self, event):
-        self.drag_start = (event.x, event.y)
+    def start_pan(self, e):
+        self.drag_start = (e.x, e.y)
 
-    def pan(self, event):
-        dx = event.x - self.drag_start[0]
-        dy = event.y - self.drag_start[1]
+    def pan(self, e):
+        dx, dy = e.x - self.drag_start[0], e.y - self.drag_start[1]
         self.offset_x -= dx / self.zoom
         self.offset_y -= dy / self.zoom
-        self.drag_start = (event.x, event.y)
-        self.refresh_map()
+        self.drag_start = (e.x, e.y)
+        self.refresh_view()
 
-    def on_zoom(self, event):
-        factor = 1.1 if (event.num == 4 or event.delta > 0) else 0.9
-        new_zoom = max(self.min_zoom, min(self.max_zoom, self.zoom * factor))
+    def on_zoom(self, e):
+        factor = 1.1 if (getattr(e, "delta", 0) > 0 or e.num == 4) else 0.9
+        nz = max(0.2, min(6.0, self.zoom * factor))
 
-        cx, cy = event.x, event.y
+        cx, cy = e.x, e.y
         ix = cx / self.zoom + self.offset_x
         iy = cy / self.zoom + self.offset_y
 
-        self.zoom = new_zoom
+        self.zoom = nz
         self.offset_x = ix - cx / self.zoom
         self.offset_y = iy - cy / self.zoom
-        self.refresh_map()
+        self.refresh_view()
 
-    # -----------------------------
-    # Rendering
-    # -----------------------------
-    def refresh_map(self):
-        if self.image is None:
+    def refresh_view(self):
+        if not self.initialized:
             return
 
-        assigned = set()
-        for c in self.counties.values():
-            assigned.update(c["provinces"])
+        cw, ch = self.canvas.winfo_width(), self.canvas.winfo_height()
+        vw, vh = int(cw / self.zoom), int(ch / self.zoom)
 
-        img_w, img_h = self.image.size
-        canvas_w = max(1, self.canvas.winfo_width())
-        canvas_h = max(1, self.canvas.winfo_height())
+        x0 = int(max(0, min(self.offset_x, self.image.width - vw)))
+        y0 = int(max(0, min(self.offset_y, self.image.height - vh)))
 
-        view_w = int(canvas_w / self.zoom)
-        view_h = int(canvas_h / self.zoom)
+        img = self.rendered_map[y0:y0 + vh, x0:x0 + vw]
 
-        x0 = int(max(0, min(self.offset_x, img_w - view_w)))
-        y0 = int(max(0, min(self.offset_y, img_h - view_h)))
-        x1 = min(img_w, x0 + view_w)
-        y1 = min(img_h, y0 + view_h)
+        if self.selected_provinces:
+            vis = self.province_map[y0:y0 + vh, x0:x0 + vw]
+            img = img.copy()
+            img[np.isin(vis, self.selected_provinces)] = SELECT_COLOR
 
-        img_np = np.array(self.image)[y0:y1, x0:x1]
-
-        for pid in assigned.union(self.selected_provinces):
-            if pid in self.id_to_color:
-                mask = (img_np == self.id_to_color[pid]).all(axis=2)
-                img_np[mask] = PURPLE
-
-        img = Image.fromarray(img_np).resize(
-            (canvas_w, canvas_h), Image.NEAREST
-        )
-
+        img = Image.fromarray(img).resize((cw, ch), Image.NEAREST)
         self.display_img = ImageTk.PhotoImage(img)
-        self.canvas.delete("all")
-        self.canvas.create_image(0, 0, anchor="nw", image=self.display_img)
+
+        if self.canvas_img is None:
+            self.canvas_img = self.canvas.create_image(0, 0, anchor="nw", image=self.display_img)
+        else:
+            self.canvas.itemconfig(self.canvas_img, image=self.display_img)
 
 
 # -----------------------------

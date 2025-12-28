@@ -65,7 +65,9 @@ def build_color_mapping(map_name: str, mode: str):
         }
 
         for county, data in counties.items():
-            duchy_color = county_to_duchy.get(county, (0, 0, 0))
+            if county not in county_to_duchy:
+                continue
+            duchy_color = county_to_duchy[county]
             for province_id in data.get("provinces", []):
                 for rgb, pid in provinces.items():
                     if pid == province_id:
