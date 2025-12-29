@@ -1,4 +1,4 @@
-import { MapEngineProvider } from "../.././core/MapEngineContext";
+import { MapEngineProvider } from "../../core/MapEngineContext";
 import MapViewer from "../../components/MapViewer";
 
 export default function Page() {

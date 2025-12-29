@@ -464,8 +464,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               <option value="duchy">Duchy Map</option>
               <option value="kingdom">Kingdom Map</option>
               <option value="empire">Empire Map</option>
-              <option value="terrain">Terrain</option>
-              <option value="fertility">Fertility</option>
+              {mapId === "dev" && (
+                <>
+                  <option value="terrain">Terrain</option>
+                  <option value="fertility">Fertility</option>
+                </>
+              )}
             </select>
           </div>
   
