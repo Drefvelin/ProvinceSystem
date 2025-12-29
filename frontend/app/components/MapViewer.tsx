@@ -165,34 +165,37 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
     const coordLabel = `x: ${x}  z: ${y}`;
 
-    // === TERRAIN / FERTILITY MODES ===
     if (mapType === "terrain" || mapType === "fertility") {
       const coords = `${x},${y}`;
 
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${coords}/meta`)
-        .then(res => res.json())
-        .then(data => {
-          const pid = data?.province_id;
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${coords}/meta`, {
+        cache: "no-store",
+      })
+        .then((res) => {
+          // 🧼 Out of bounds / no province
+          if (!res.ok) {
+            setCursorTooltip(null);
+            lastProvinceIdRef.current = null;
+            return null;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
 
-          // If no province, show coords only
+          const pid = data.province_id;
+
+          // 🚫 No province → hide tooltip
           if (!pid) {
-            setCursorTooltip({
-              x: event.clientX,
-              y: event.clientY,
-              text: coordLabel,
-            });
+            setCursorTooltip(null);
+            lastProvinceIdRef.current = null;
             return;
           }
 
-          // cache guard
-          if (lastProvinceIdRef.current === pid) return;
-          lastProvinceIdRef.current = pid;
-
-          const meta =
-            provinceMetaCacheRef.current[pid] ?? data;
+          const meta = provinceMetaCacheRef.current[pid] ?? data;
           provinceMetaCacheRef.current[pid] = meta;
 
-          // 🚫 skip sea / water extra info
+          // 🚫 Water / sea → coords only
           if (meta.terrain === "sea" || meta.terrain === "water") {
             setCursorTooltip({
               x: event.clientX,
@@ -203,20 +206,21 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           }
 
           const value =
-            mapType === "terrain"
-              ? meta.terrain
-              : meta.fertility;
+            mapType === "terrain" ? meta.terrain : meta.fertility;
 
           const extraLabel =
             mapType === "terrain"
               ? `Terrain: ${capitalize(value)}`
               : `Fertility: ${value}`;
 
+          // ✅ Final tooltip update
           setCursorTooltip({
             x: event.clientX,
             y: event.clientY,
             text: `${coordLabel}\n${extraLabel}`,
           });
+
+          lastProvinceIdRef.current = pid;
         });
 
       setRegionInfo(null);

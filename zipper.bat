@@ -1,34 +1,42 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
 
-:: === Config ===
+:: ==============================
+:: Configuration
+:: ==============================
 set ZIP_NAME=project.zip
 set TEMP_DIR=__deploy_temp__
 
-:: === Exclude list (top-level folders/files to ignore) ===
-set EXCLUDES=.git;.next;node_modules;.vscode;dist;.gitignore;README.md
+:: Top-level excludes
+set EXCLUDES=.git .next node_modules .vscode dist .gitignore README.md
 
-:: === Cleanup old zip ===
-if exist %ZIP_NAME% (
+:: Docker bind-mounted runtime folders (relative paths)
+set RUNTIME_EXCLUDES=backend\src\output backend\src\input backend\src\defines
+
+:: ==============================
+:: Cleanup old artifacts
+:: ==============================
+if exist "%ZIP_NAME%" (
     echo Deleting old %ZIP_NAME%...
-    del %ZIP_NAME%
+    del "%ZIP_NAME%"
 )
 
-:: === Remove old temp folder ===
-if exist %TEMP_DIR% (
+if exist "%TEMP_DIR%" (
     echo Cleaning old temp folder...
-    rmdir /S /Q %TEMP_DIR%
+    rmdir /S /Q "%TEMP_DIR%"
 )
 
-:: === Create temp folder ===
-mkdir %TEMP_DIR%
+mkdir "%TEMP_DIR%"
 
-:: === Copy top-level files ===
+:: ==============================
+:: Copy top-level files
+:: ==============================
 for /f "delims=" %%F in ('dir /b /a-d') do (
     set "SKIP=0"
     for %%E in (%EXCLUDES%) do (
         if /I "%%F"=="%%E" set "SKIP=1"
     )
+
     if !SKIP!==1 (
         echo Skipping file: %%F
     ) else (
@@ -37,12 +45,15 @@ for /f "delims=" %%F in ('dir /b /a-d') do (
     )
 )
 
-:: === Copy folders recursively ===
+:: ==============================
+:: Copy folders recursively
+:: ==============================
 for /f "delims=" %%D in ('dir /b /ad') do (
     set "SKIP=0"
     for %%E in (%EXCLUDES%) do (
         if /I "%%D"=="%%E" set "SKIP=1"
     )
+
     if !SKIP!==1 (
         echo Skipping folder: %%D
     ) else (
@@ -51,15 +62,33 @@ for /f "delims=" %%D in ('dir /b /ad') do (
     )
 )
 
-:: === Cleanup nested folders we want to exclude ===
-echo Cleaning nested excludes inside %TEMP_DIR%...
-for %%E in (%EXCLUDES%) do (
-    for /d /r "%TEMP_DIR%" %%X in (%%E) do (
-        echo Removing folder: %%X
-        rmdir /S /Q "%%X"
+:: ==============================
+:: Remove Docker runtime folders
+:: ==============================
+echo.
+echo Removing Docker runtime folders from deploy package...
+for %%R in (%RUNTIME_EXCLUDES%) do (
+    if exist "%TEMP_DIR%\%%R" (
+        echo Removing runtime folder: %%R
+        rmdir /S /Q "%TEMP_DIR%\%%R"
     )
 )
 
-:: === Skip zipping for now ===
-echo Skipping zip creation. Review copied files inside %TEMP_DIR%
+:: ==============================
+:: Final verification
+:: ==============================
+echo.
+echo =====================================
+echo VERIFY: backend/src contents
+echo =====================================
+if exist "%TEMP_DIR%\backend\src" (
+    dir "%TEMP_DIR%\backend\src"
+) else (
+    echo backend/src not found (unexpected)
+)
+echo =====================================
+
+echo.
+echo Deployment files prepared in %TEMP_DIR%
+echo Review before zipping or uploading.
 pause
