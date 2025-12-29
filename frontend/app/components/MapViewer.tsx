@@ -146,6 +146,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const x = Math.floor((event.clientX - rect.left) * scaleX);
     const y = Math.floor((event.clientY - rect.top) * scaleY);
 
+    const coordLabel = `x: ${x}  z: ${y}`;
+
     // === TERRAIN / FERTILITY MODES ===
     if (mapType === "terrain" || mapType === "fertility") {
       const coords = `${x},${y}`;
@@ -154,10 +156,9 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         .then(res => res.json())
         .then(data => {
           const pid = data?.province_id;
-          if (!pid) {
-            setCursorTooltip(null);
-            return;
-          }
+
+          // If no province, keep coords-only tooltip
+          if (!pid) return;
 
           // cache guard
           if (lastProvinceIdRef.current === pid) return;
@@ -166,19 +167,13 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           const meta = provinceMetaCacheRef.current[pid] ?? data;
           provinceMetaCacheRef.current[pid] = meta;
 
-          // 🚫 skip sea / water
+          // 🚫 skip sea / water extra info
+          if (meta.terrain === "sea" || meta.terrain === "water") return;
+
           const value =
             mapType === "terrain" ? meta.terrain : meta.fertility;
 
-          if (
-            meta.terrain === "sea" ||
-            meta.terrain === "water"
-          ) {
-            setCursorTooltip(null);
-            return;
-          }
-
-          const label =
+          const extraLabel =
             mapType === "terrain"
               ? `Terrain: ${capitalize(value)}`
               : `Fertility: ${value}`;
@@ -186,13 +181,18 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           setCursorTooltip({
             x: event.clientX,
             y: event.clientY,
-            text: label,
+            text: `${coordLabel}\n${extraLabel}`,
           });
         });
 
-      // ❌ disable right panel in these modes
       setRegionInfo(null);
       return;
+    } else {
+      setCursorTooltip({
+        x: event.clientX,
+        y: event.clientY,
+        text: coordLabel,
+      });
     }
 
     // === POLITICAL MODES (unchanged) ===
