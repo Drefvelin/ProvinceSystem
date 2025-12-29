@@ -7,11 +7,17 @@ type MapViewerProps = {
   mapId: "main" | "dev";
 };
 
+const MAP_BOUNDS: Record<string, number> = {
+  main: 4096,
+  dev: 6400,
+};
+
 const MapViewer = ({ mapId }: MapViewerProps) => {
   const [mapType, setMapType] = useState<string>("nation");
   const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const DEFAULT_MAP_SIZE = 6400;
   const [regionInfo, setRegionInfo] = useState<{
     title: string;
     tier: string;
@@ -141,10 +147,21 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.floor((event.clientX - rect.left) * scaleX);
-    const y = Math.floor((event.clientY - rect.top) * scaleY);
+
+    const mapSize =
+      MAP_BOUNDS[mapId] ?? DEFAULT_MAP_SIZE;
+
+    const scaleX = mapSize / rect.width;
+    const scaleY = mapSize / rect.height;
+
+    const clamp = (v: number) =>
+      Math.max(0, Math.min(mapSize - 1, v));
+
+    const rawX = (event.clientX - rect.left) * scaleX;
+    const rawY = (event.clientY - rect.top) * scaleY;
+
+    const x = clamp(Math.floor(rawX));
+    const y = clamp(Math.floor(rawY));
 
     const coordLabel = `x: ${x}  z: ${y}`;
 
@@ -157,21 +174,38 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         .then(data => {
           const pid = data?.province_id;
 
-          // If no province, keep coords-only tooltip
-          if (!pid) return;
+          // If no province, show coords only
+          if (!pid) {
+            setCursorTooltip({
+              x: event.clientX,
+              y: event.clientY,
+              text: coordLabel,
+            });
+            return;
+          }
 
           // cache guard
           if (lastProvinceIdRef.current === pid) return;
           lastProvinceIdRef.current = pid;
 
-          const meta = provinceMetaCacheRef.current[pid] ?? data;
+          const meta =
+            provinceMetaCacheRef.current[pid] ?? data;
           provinceMetaCacheRef.current[pid] = meta;
 
           // 🚫 skip sea / water extra info
-          if (meta.terrain === "sea" || meta.terrain === "water") return;
+          if (meta.terrain === "sea" || meta.terrain === "water") {
+            setCursorTooltip({
+              x: event.clientX,
+              y: event.clientY,
+              text: coordLabel,
+            });
+            return;
+          }
 
           const value =
-            mapType === "terrain" ? meta.terrain : meta.fertility;
+            mapType === "terrain"
+              ? meta.terrain
+              : meta.fertility;
 
           const extraLabel =
             mapType === "terrain"
@@ -188,6 +222,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       setRegionInfo(null);
       return;
     } else {
+      // Non-terrain modes always show coords
       setCursorTooltip({
         x: event.clientX,
         y: event.clientY,
@@ -377,6 +412,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         <div
           className="relative w-[90%] max-w-5xl rounded-xl border-12 border-[#2b2218] shadow-lg overflow-hidden"
           onMouseMove={getPixelColor}
+          onMouseLeave={() => {
+            setCursorTooltip(null);
+            setHoveredColor(null);
+            setRegionInfo(null);
+            lastProvinceIdRef.current = null;
+          }}
           onClick={handleClick}
         >
           {cursorTooltip && (
