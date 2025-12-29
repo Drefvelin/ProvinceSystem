@@ -274,7 +274,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         subjects: region.subjects ?? [],
         description:
           region.description ||
-          `A ${tierName} in ${mapDisplayName}`,
+          `A ${mapType == "nation" ? "Nation" : tierName} in ${mapDisplayName}`,
       });
     }
   };

@@ -18,6 +18,12 @@ def add_cors(response: Response):
     response.headers["Access-Control-Allow-Methods"] = "*"
     return response
 
+def add_no_cache(response: Response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 
 @map_router.get("/{map}/map")
 async def get_base_map(map: str):
@@ -29,7 +35,11 @@ async def get_base_map(map: str):
         if not os.path.exists(file_path):
             return JSONResponse({"error": "Map not found"}, status_code=404)
 
-        return add_cors(FileResponse(file_path, media_type="image/png"))
+        response = FileResponse(file_path, media_type="image/png")
+        add_cors(response)
+        add_no_cache(response)
+        return response
+
 
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=400)

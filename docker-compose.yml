@@ -6,9 +6,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - tfminecraft_output:/app/src/output
-      - tfminecraft_input:/app/src/input
-      - tfminecraft_defines:/app/src/defines
+      - ./backend/src/output:/app/src/output
+      - ./backend/src/input:/app/src/input
+      - ./backend/src/defines:/app/src/defines
     security_opt:
       - no-new-privileges:true
     restart: always
@@ -24,8 +24,3 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: always
-
-volumes:
-  tfminecraft_output:
-  tfminecraft_input:
-  tfminecraft_defines:
