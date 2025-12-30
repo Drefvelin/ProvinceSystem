@@ -151,17 +151,30 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const mapSize =
       MAP_BOUNDS[mapId] ?? DEFAULT_MAP_SIZE;
 
+    // mouse position relative to element
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    if (
+      mouseX < 0 ||
+      mouseY < 0 ||
+      mouseX >= rect.width ||
+      mouseY >= rect.height
+    ) {
+      setCursorTooltip(null);
+      lastProvinceIdRef.current = null;
+      return null;
+    }
+
+    // scale only AFTER bounds check
     const scaleX = mapSize / rect.width;
     const scaleY = mapSize / rect.height;
 
-    const clamp = (v: number) =>
-      Math.max(0, Math.min(mapSize - 1, v));
+    const rawX = mouseX * scaleX;
+    const rawY = mouseY * scaleY;
 
-    const rawX = (event.clientX - rect.left) * scaleX;
-    const rawY = (event.clientY - rect.top) * scaleY;
-
-    const x = clamp(Math.floor(rawX));
-    const y = clamp(Math.floor(rawY));
+    const x = Math.floor(rawX);
+    const y = Math.floor(rawY);
 
     const coordLabel = `x: ${x}  z: ${y}`;
 
@@ -173,7 +186,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       })
         .then((res) => {
           // 🧼 Out of bounds / no province
-          if (!res.ok) {
+          if (!res.ok || (
+                mouseX < 0 ||
+                mouseY < 0 ||
+                mouseX >= rect.width ||
+                mouseY >= rect.height
+              )) {
             setCursorTooltip(null);
             lastProvinceIdRef.current = null;
             return null;
