@@ -11,10 +11,21 @@ from ..util.dirs import (
     defines_file,
     validate_map
 )
+import re
 
 def clean_name(name: str) -> str:
+    if not name:
+        return ""
+
+    # Handle UTF-8 mangled section sign
+    name = name.replace("Â§", "§")
+
+    # Remove classic MC formatting (§a, §x, etc)
     name = re.sub(r"§.", "", name)
+
+    # Remove hex color leftovers (#ffffff)
     name = re.sub(r"#(?:[0-9a-fA-F]{6})", "", name)
+
     return name.strip()
 
 def clean_banner_patterns(patterns: list) -> list:
@@ -99,28 +110,6 @@ def process_nations(map: str):
         )
 
         nation["banner"] = banner_id
-
-    # === Copy banners to frontend (map-scoped) ===
-    frontend_dir = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..", "..", "..", "..",
-            "frontend", "public", "data", "banners", map, "nation"
-        )
-    )
-    os.makedirs(frontend_dir, exist_ok=True)
-
-    for file_name in os.listdir(frontend_dir):
-        file_path = os.path.join(frontend_dir, file_name)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-
-    for file_name in os.listdir(banner_folder):
-        src = os.path.join(banner_folder, file_name)
-        dst = os.path.join(frontend_dir, file_name)
-
-        if os.path.exists(src):
-            Image.open(src).convert("RGBA").save(dst, "PNG")
 
     # === Save final JSON ===
     with open(output_path, "w", encoding="utf-8") as f:

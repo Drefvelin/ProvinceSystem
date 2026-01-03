@@ -3,78 +3,66 @@ import os
 
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.border_paint import paint_borders
-from ..util.flood_fill import flood_fill
-from ..util.dirs import (
-    input_file,
-    validate_map
-)
+from ..util.dirs import input_file, validate_map
 
 
 def create_map(map_name: str, mode: str, filename: str):
     validate_map(map_name)
 
-    # Create lookup dictionaries
+    # -------------------------------------------------
+    # Build mappings
+    # -------------------------------------------------
     province_to_color = build_color_mapping(map_name, mode)
     overrides = get_color_overrides(map_name, mode)
 
-    # Load province map image
-    image_path = input_file(map_name, "provinces.png")
-    original_img = Image.open(image_path).convert("RGBA")
+    # -------------------------------------------------
+    # Load province map
+    # -------------------------------------------------
+    base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")
+    src = base_img.load()
+    width, height = base_img.size
 
-    img_data = original_img.load()
-    width, height = original_img.size
+    out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    dst = out.load()
 
-    # Create a new transparent image
-    new_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    new_img_data = new_img.load()
+    # -------------------------------------------------
+    # FAST SINGLE-PASS PAINT
+    # -------------------------------------------------
+    if overrides:
+        # Nation mode (overrides exist)
+        for y in range(height):
+            for x in range(width):
+                rgb = src[x, y][:3]
+                color = province_to_color.get(rgb)
+                if not color:
+                    continue
 
-    # Process provinces (handle islands)
-    visited_pixels = set()
-    for y in range(height):
-        for x in range(width):
-            pixel_color = img_data[x, y][:3]
-            if pixel_color in province_to_color and (x, y) not in visited_pixels:
-                target_color = province_to_color[pixel_color]
-                flood_fill(
-                    x, y,
-                    pixel_color,
-                    target_color,
-                    visited_pixels,
-                    img_data,
-                    new_img_data,
-                    width,
-                    height
-                )
+                # Apply override if present
+                color = overrides.get(color, color)
+                dst[x, y] = (*color, 255)
+    else:
+        # All other modes (fast path)
+        for y in range(height):
+            for x in range(width):
+                color = province_to_color.get(src[x, y][:3])
+                if color:
+                    dst[x, y] = (*color, 255)
 
-    # Paint borders
-    new_img_data = paint_borders(True, True, new_img_data, width, height)
+    # -------------------------------------------------
+    # Borders
+    # -------------------------------------------------
+    paint_borders(True, True, dst, width, height)
 
-    # Apply overrides
-    visited_pixels.clear()
-    for y in range(height):
-        for x in range(width):
-            pixel_color = img_data[x, y][:3]
-            if pixel_color in overrides and (x, y) not in visited_pixels:
-                override_color = overrides[pixel_color]
-                flood_fill(
-                    x, y,
-                    pixel_color,
-                    override_color,
-                    visited_pixels,
-                    new_img_data,
-                    new_img_data,
-                    width,
-                    height
-                )
-
+    # -------------------------------------------------
     # Save output
-    output_path = os.path.join(
-        os.path.dirname(input_file(map_name, "dummy")),
-        "..", "..", "output", map_name, "maps", f"{filename}.png"
+    # -------------------------------------------------
+    output_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(input_file(map_name, "dummy")),
+            "..", "..", "output", map_name, "maps", f"{filename}.png"
+        )
     )
-    output_path = os.path.abspath(output_path)
-
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    new_img.save(output_path, "PNG")
+    out.save(output_path, "PNG")
 
     print(f"🗺️ Map generated for '{map_name}' → {output_path}")

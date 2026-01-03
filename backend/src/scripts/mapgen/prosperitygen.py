@@ -1,9 +1,13 @@
 from PIL import Image
 import os
+import json
 
 from ..loader.provinces import load_provinces
 from ..loader.province_metadata import load_province_metadata
 from ..util.dirs import input_file, validate_map
+
+
+SKIP_TERRAINS = {"water", "sea"}
 
 
 # -----------------------------
@@ -21,32 +25,44 @@ def lerp_color(c1, c2, t: float):
     )
 
 
-def fertility_to_color(fertility: int):
-    fertility = max(0, min(100, fertility))
-
-    if fertility <= 10:
-        return lerp_color((120, 0, 0), (200, 0, 0), fertility / 10)
-    if fertility <= 20:
-        return lerp_color((200, 0, 0), (230, 180, 0), (fertility - 10) / 10)
-    if fertility <= 50:
-        return lerp_color((230, 180, 0), (90, 120, 40), (fertility - 20) / 30)
-    return lerp_color((90, 120, 40), (80, 255, 80), (fertility - 50) / 50)
-
-
-SKIP_TERRAINS = {"water", "sea"}
+def prosperity_to_color(norm: float):
+    if norm <= 0.33:
+        return lerp_color((120, 0, 0), (220, 0, 0), norm / 0.33)
+    if norm <= 0.66:
+        return lerp_color((220, 0, 0), (230, 180, 0), (norm - 0.33) / 0.33)
+    return lerp_color((230, 180, 0), (80, 255, 80), (norm - 0.66) / 0.34)
 
 
 # -----------------------------
 # FAST generator
 # -----------------------------
-def create_fertility_map(map_name: str, filename: str = "fertility"):
+def create_prosperity_map(map_name: str, filename: str = "prosperity"):
     validate_map(map_name)
 
     province_rgb_to_id = load_provinces(map_name)
     province_meta = load_province_metadata(map_name)
 
+    with open(input_file(map_name, "province_data.json"), "r") as f:
+        province_data = json.load(f)
+
+    province_by_id = {p["id"]: p for p in province_data}
+
     # -------------------------------------------------
-    # Precompute province_rgb -> RGBA
+    # Compute max prosperity
+    # -------------------------------------------------
+    max_prosperity = max(
+        (p.get("prosperity", 0) for p in province_data),
+        default=1.0
+    )
+
+    if max_prosperity <= 0:
+        print("⚠ No prosperity data found")
+        return
+
+    inv_max = 1.0 / max_prosperity
+
+    # -------------------------------------------------
+    # Precompute province_rgb -> RGBA color
     # -------------------------------------------------
     rgb_to_rgba = {}
 
@@ -59,11 +75,16 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
         if not terrain or terrain in SKIP_TERRAINS:
             continue
 
-        fertility = meta.get("fertility")
-        if fertility is None:
+        pdata = province_by_id.get(pid)
+        if not pdata:
             continue
 
-        color = fertility_to_color(int(fertility))
+        prosperity = pdata.get("prosperity", 0)
+        if prosperity <= 0:
+            continue
+
+        norm = prosperity * inv_max
+        color = prosperity_to_color(norm)
         rgb_to_rgba[rgb] = (*color, 255)
 
     # -------------------------------------------------
@@ -88,7 +109,7 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
                 painted += 1
 
     # -------------------------------------------------
-    # Save output (PNG compression kept)
+    # Save (keep PNG compression)
     # -------------------------------------------------
     output_path = os.path.abspath(
         os.path.join(
@@ -101,6 +122,6 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
     out.save(output_path, "PNG")
 
     print(
-        f"🌱 Fertility map generated → {output_path} | "
-        f"painted: {painted:,}"
+        f"🔥 Prosperity map generated → {output_path} | "
+        f"max={max_prosperity:.2f} | painted={painted:,}"
     )

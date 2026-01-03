@@ -281,8 +281,9 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
     if (region) {
       const tierName =
-        region.tier ??
-        mapType.charAt(0).toUpperCase() + mapType.slice(1);
+        mapType === "trade"
+          ? "Trade Sphere"
+          : region.tier ?? capitalize(mapType);
 
       setRegionInfo({
         title: region.name,
@@ -529,6 +530,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               <option value="empire">Empire Map</option>
               {mapId === "dev" && (
                 <>
+                  <option value="trade">Trade</option>
                   <option value="terrain">Terrain</option>
                   <option value="fertility">Fertility</option>
                 </>
@@ -586,7 +588,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
                 {regionInfo.banner && (
                   <div className="flex flex-col items-center w-28 mt-1">
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/banners/${regionInfo.banner}.png`}
+                      src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/banners/${mapType}/${regionInfo.banner}.png`}
                       alt={`${regionInfo.title} Banner`}
                       className="w-24 h-auto border border-[#3a2f23] rounded-md shadow-md image-render-pixel"
                     />

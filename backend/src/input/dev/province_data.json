@@ -1,0 +1,10762 @@
+[
+  {
+    "id": 1,
+    "prosperity": 47.8,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.18,
+        "production": 5.44
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.37,
+        "production": 9.38
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.37,
+        "production": 4.02
+      },
+      "Estuaar": {
+        "trade": 10.5,
+        "production": 13.44
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 12.13,
+        "production": 15.52
+      }
+    }
+  },
+  {
+    "id": 2,
+    "prosperity": 47.13,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.18,
+        "production": 5.44
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.96,
+        "production": 8.91
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.96,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 10.5,
+        "production": 13.44
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 12.13,
+        "production": 15.52
+      }
+    }
+  },
+  {
+    "id": 3,
+    "prosperity": 22.71,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.05,
+        "production": 0.92
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.12,
+        "production": 7.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.98,
+        "production": 2.39
+      },
+      "Estuaar": {
+        "trade": 8.92,
+        "production": 11.42
+      }
+    }
+  },
+  {
+    "id": 4,
+    "prosperity": 23.71,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.17,
+        "production": 1.03
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.02,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 5,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 6,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 7,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 8,
+    "prosperity": 23.71,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.17,
+        "production": 1.03
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.02,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 9,
+    "prosperity": 23.71,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.17,
+        "production": 1.03
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.02,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 10,
+    "prosperity": 23.71,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.17,
+        "production": 1.03
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.02,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 11,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.42,
+        "production": 7.19
+      },
+      "Estuaar": {
+        "trade": 8.48,
+        "production": 10.85
+      }
+    }
+  },
+  {
+    "id": 12,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.42,
+        "production": 7.19
+      },
+      "Estuaar": {
+        "trade": 8.48,
+        "production": 10.85
+      }
+    }
+  },
+  {
+    "id": 13,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 14,
+    "prosperity": 46.49,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.18,
+        "production": 5.44
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 10.5,
+        "production": 13.44
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 12.13,
+        "production": 15.52
+      }
+    }
+  },
+  {
+    "id": 15,
+    "prosperity": 29.5,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.28,
+        "production": 4.65
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 16,
+    "prosperity": 29.5,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.28,
+        "production": 4.65
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 17,
+    "prosperity": 25.62,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.02,
+        "production": 8.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.42,
+        "production": 3.08
+      },
+      "Estuaar": {
+        "trade": 10.59,
+        "production": 13.55
+      }
+    }
+  },
+  {
+    "id": 18,
+    "prosperity": 19.16,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.82,
+        "production": 7.64
+      },
+      "Estuaar": {
+        "trade": 9.0,
+        "production": 11.52
+      }
+    }
+  },
+  {
+    "id": 19,
+    "prosperity": 13.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.57,
+        "production": 7.13
+      }
+    }
+  },
+  {
+    "id": 20,
+    "prosperity": 13.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.57,
+        "production": 7.13
+      }
+    }
+  },
+  {
+    "id": 21,
+    "prosperity": 29.5,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.28,
+        "production": 4.65
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      }
+    }
+  },
+  {
+    "id": 22,
+    "prosperity": 23.85,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.05,
+        "production": 0.92
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.18,
+        "production": 8.04
+      },
+      "Ironroot_Covenant": {
+        "trade": 5.74,
+        "production": 2.76
+      },
+      "Estuaar": {
+        "trade": 9.47,
+        "production": 12.13
+      }
+    }
+  },
+  {
+    "id": 23,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.42,
+        "production": 7.19
+      },
+      "Estuaar": {
+        "trade": 8.48,
+        "production": 10.85
+      }
+    }
+  },
+  {
+    "id": 24,
+    "prosperity": 22.92,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.18,
+        "production": 8.04
+      },
+      "Ironroot_Covenant": {
+        "trade": 5.74,
+        "production": 2.76
+      },
+      "Estuaar": {
+        "trade": 9.47,
+        "production": 12.13
+      }
+    }
+  },
+  {
+    "id": 25,
+    "prosperity": 56.49,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.27,
+        "production": 6.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 13.0,
+        "production": 16.64
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.02,
+        "production": 19.22
+      }
+    }
+  },
+  {
+    "id": 26,
+    "prosperity": 48.45,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.5,
+        "production": 5.72
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 10.5,
+        "production": 13.44
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.44,
+        "production": 17.2
+      }
+    }
+  },
+  {
+    "id": 27,
+    "prosperity": 53.2,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.65,
+        "production": 6.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.56,
+        "production": 8.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.56,
+        "production": 3.63
+      },
+      "Estuaar": {
+        "trade": 11.05,
+        "production": 14.14
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.81,
+        "production": 20.24
+      }
+    }
+  },
+  {
+    "id": 28,
+    "prosperity": 13.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.57,
+        "production": 7.13
+      }
+    }
+  },
+  {
+    "id": 29,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 30,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 31,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 32,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 33,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 34,
+    "prosperity": 11.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.09,
+        "production": 4.58
+      },
+      "Estuaar": {
+        "trade": 5.4,
+        "production": 6.91
+      }
+    }
+  },
+  {
+    "id": 35,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 36,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 37,
+    "prosperity": 11.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.01,
+        "production": 4.49
+      },
+      "Estuaar": {
+        "trade": 5.29,
+        "production": 6.78
+      }
+    }
+  },
+  {
+    "id": 38,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 39,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 40,
+    "prosperity": 6.83,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.23,
+        "production": 4.13
+      }
+    }
+  },
+  {
+    "id": 41,
+    "prosperity": 16.59,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.11,
+        "production": 2.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      }
+    }
+  },
+  {
+    "id": 42,
+    "prosperity": 18.25,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.42,
+        "production": 3.01
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.65,
+        "production": 5.2
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.72,
+        "production": 1.78
+      },
+      "Estuaar": {
+        "trade": 6.45,
+        "production": 8.26
+      }
+    }
+  },
+  {
+    "id": 43,
+    "prosperity": 7.4,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.56,
+        "production": 2.86
+      },
+      "Estuaar": {
+        "trade": 3.55,
+        "production": 4.54
+      }
+    }
+  },
+  {
+    "id": 44,
+    "prosperity": 18.25,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.42,
+        "production": 3.01
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.65,
+        "production": 5.2
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.72,
+        "production": 1.78
+      },
+      "Estuaar": {
+        "trade": 6.45,
+        "production": 8.26
+      }
+    }
+  },
+  {
+    "id": 45,
+    "prosperity": 19.91,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.73,
+        "production": 3.28
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.07,
+        "production": 5.68
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.05,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 7.04,
+        "production": 9.01
+      }
+    }
+  },
+  {
+    "id": 46,
+    "prosperity": 19.91,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.73,
+        "production": 3.28
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.07,
+        "production": 5.68
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.05,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 7.04,
+        "production": 9.01
+      }
+    }
+  },
+  {
+    "id": 47,
+    "prosperity": 10.08,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.59,
+        "production": 4.02
+      },
+      "Estuaar": {
+        "trade": 4.74,
+        "production": 6.06
+      }
+    }
+  },
+  {
+    "id": 48,
+    "prosperity": 16.59,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.11,
+        "production": 2.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      }
+    }
+  },
+  {
+    "id": 49,
+    "prosperity": 8.08,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.79,
+        "production": 3.12
+      },
+      "Estuaar": {
+        "trade": 3.87,
+        "production": 4.96
+      }
+    }
+  },
+  {
+    "id": 50,
+    "prosperity": 4.44,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.53,
+        "production": 1.72
+      },
+      "Estuaar": {
+        "trade": 2.13,
+        "production": 2.73
+      }
+    }
+  },
+  {
+    "id": 51,
+    "prosperity": 4.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      },
+      "Estuaar": {
+        "trade": 1.94,
+        "production": 2.48
+      }
+    }
+  },
+  {
+    "id": 52,
+    "prosperity": 7.34,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.53,
+        "production": 2.84
+      },
+      "Estuaar": {
+        "trade": 3.52,
+        "production": 4.51
+      }
+    }
+  },
+  {
+    "id": 53,
+    "prosperity": 7.34,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.53,
+        "production": 2.84
+      },
+      "Estuaar": {
+        "trade": 3.52,
+        "production": 4.51
+      }
+    }
+  },
+  {
+    "id": 54,
+    "prosperity": 18.25,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.42,
+        "production": 3.01
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.65,
+        "production": 5.2
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.72,
+        "production": 1.78
+      },
+      "Estuaar": {
+        "trade": 6.45,
+        "production": 8.26
+      }
+    }
+  },
+  {
+    "id": 55,
+    "prosperity": 6.73,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Estuaar": {
+        "trade": 3.23,
+        "production": 4.13
+      }
+    }
+  },
+  {
+    "id": 56,
+    "prosperity": 16.59,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.11,
+        "production": 2.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      }
+    }
+  },
+  {
+    "id": 57,
+    "prosperity": 17.8,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.11,
+        "production": 2.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "TestFaction": {
+        "trade": 1.69,
+        "production": 0.54
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      },
+      "TestGuild": {
+        "trade": 1.39,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 58,
+    "prosperity": 19.58,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.42,
+        "production": 3.01
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.65,
+        "production": 5.2
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.72,
+        "production": 1.78
+      },
+      "TestFaction": {
+        "trade": 1.86,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 6.45,
+        "production": 8.26
+      },
+      "TestGuild": {
+        "trade": 1.53,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 59,
+    "prosperity": 17.8,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.11,
+        "production": 2.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.22,
+        "production": 4.73
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.38,
+        "production": 1.62
+      },
+      "TestFaction": {
+        "trade": 1.69,
+        "production": 0.54
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      },
+      "TestGuild": {
+        "trade": 1.39,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 60,
+    "prosperity": 32.82,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.36,
+        "production": 3.84
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.33,
+        "production": 5.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 5.33,
+        "production": 2.56
+      },
+      "Estuaar": {
+        "trade": 7.41,
+        "production": 9.48
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 8.56,
+        "production": 10.96
+      }
+    }
+  },
+  {
+    "id": 61,
+    "prosperity": 32.82,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.36,
+        "production": 3.84
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.33,
+        "production": 5.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 5.33,
+        "production": 2.56
+      },
+      "Estuaar": {
+        "trade": 7.41,
+        "production": 9.48
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 8.56,
+        "production": 10.96
+      }
+    }
+  },
+  {
+    "id": 62,
+    "prosperity": 27.35,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.63,
+        "production": 3.2
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.45,
+        "production": 4.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.45,
+        "production": 2.13
+      },
+      "Estuaar": {
+        "trade": 6.18,
+        "production": 7.9
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 7.13,
+        "production": 9.13
+      }
+    }
+  },
+  {
+    "id": 63,
+    "prosperity": 28.78,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.5,
+        "production": 3.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.78,
+        "production": 4.23
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.36,
+        "production": 1.61
+      },
+      "Estuaar": {
+        "trade": 5.53,
+        "production": 7.07
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.3,
+        "production": 11.9
+      }
+    }
+  },
+  {
+    "id": 64,
+    "prosperity": 16.47,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.25,
+        "production": 1.98
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.67,
+        "production": 2.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.68,
+        "production": 0.81
+      },
+      "Estuaar": {
+        "trade": 3.7,
+        "production": 4.74
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 4.65,
+        "production": 5.95
+      }
+    }
+  },
+  {
+    "id": 65,
+    "prosperity": 32.82,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.36,
+        "production": 3.84
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.33,
+        "production": 5.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 5.33,
+        "production": 2.56
+      },
+      "Estuaar": {
+        "trade": 7.41,
+        "production": 9.48
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 8.56,
+        "production": 10.96
+      }
+    }
+  },
+  {
+    "id": 66,
+    "prosperity": 21.36,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 3.73,
+        "production": 3.28
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.07,
+        "production": 5.68
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.05,
+        "production": 1.95
+      },
+      "TestFaction": {
+        "trade": 2.03,
+        "production": 0.65
+      },
+      "Estuaar": {
+        "trade": 7.04,
+        "production": 9.01
+      },
+      "TestGuild": {
+        "trade": 1.67,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 67,
+    "prosperity": 9.95,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "TestFaction": {
+        "trade": 4.5,
+        "production": 1.44
+      },
+      "Estuaar": {
+        "trade": 3.23,
+        "production": 4.13
+      },
+      "TestGuild": {
+        "trade": 3.7,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 68,
+    "prosperity": 10.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.53,
+        "production": 2.84
+      },
+      "TestFaction": {
+        "trade": 4.5,
+        "production": 1.44
+      },
+      "Estuaar": {
+        "trade": 3.52,
+        "production": 4.51
+      },
+      "TestGuild": {
+        "trade": 3.7,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 69,
+    "prosperity": 9.57,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.79,
+        "production": 3.12
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.01,
+        "production": 0.16
+      },
+      "TestFaction": {
+        "trade": 1.86,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 3.87,
+        "production": 4.96
+      },
+      "TestGuild": {
+        "trade": 1.53,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 70,
+    "prosperity": 16.47,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.25,
+        "production": 1.98
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.67,
+        "production": 2.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.68,
+        "production": 0.81
+      },
+      "Estuaar": {
+        "trade": 3.7,
+        "production": 4.74
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 4.65,
+        "production": 5.95
+      }
+    }
+  },
+  {
+    "id": 71,
+    "prosperity": 6.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.85,
+        "production": 0.3
+      },
+      "TestFaction": {
+        "trade": 1.69,
+        "production": 0.54
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.72,
+        "production": 0.69
+      },
+      "Estuaar": {
+        "trade": 1.94,
+        "production": 2.48
+      },
+      "TestGuild": {
+        "trade": 1.39,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 72,
+    "prosperity": 7.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.27,
+        "production": 1.42
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.85,
+        "production": 0.3
+      },
+      "TestFaction": {
+        "trade": 4.5,
+        "production": 1.44
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.72,
+        "production": 0.69
+      },
+      "Estuaar": {
+        "trade": 1.76,
+        "production": 2.25
+      },
+      "TestGuild": {
+        "trade": 3.7,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 73,
+    "prosperity": 10.92,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.27,
+        "production": 1.42
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.53,
+        "production": 0.24
+      },
+      "TestFaction": {
+        "trade": 9.0,
+        "production": 2.88
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.43,
+        "production": 0.57
+      },
+      "Estuaar": {
+        "trade": 1.76,
+        "production": 2.25
+      },
+      "TestGuild": {
+        "trade": 7.4,
+        "production": 3.55
+      }
+    }
+  },
+  {
+    "id": 74,
+    "prosperity": 6.38,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.2,
+        "production": 0.35
+      },
+      "TestFaction": {
+        "trade": 5.4,
+        "production": 1.73
+      },
+      "Silverwake_Dominion": {
+        "trade": 2.05,
+        "production": 0.82
+      },
+      "Estuaar": {
+        "trade": 1.06,
+        "production": 1.35
+      },
+      "TestGuild": {
+        "trade": 4.44,
+        "production": 2.13
+      }
+    }
+  },
+  {
+    "id": 75,
+    "prosperity": 14.21,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.48,
+        "production": 2.18
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.85,
+        "production": 2.07
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.85,
+        "production": 0.89
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.01,
+        "production": 0.16
+      },
+      "Estuaar": {
+        "trade": 1.85,
+        "production": 2.37
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.12,
+        "production": 6.55
+      }
+    }
+  },
+  {
+    "id": 76,
+    "prosperity": 25.12,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.5,
+        "production": 3.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.36,
+        "production": 3.76
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.36,
+        "production": 1.61
+      },
+      "Estuaar": {
+        "trade": 3.04,
+        "production": 3.89
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.3,
+        "production": 11.9
+      }
+    }
+  },
+  {
+    "id": 77,
+    "prosperity": 3.69,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 3.66,
+        "production": 0.59
+      },
+      "TestFaction": {
+        "trade": 2.43,
+        "production": 0.78
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.42,
+        "production": 1.37
+      },
+      "TestGuild": {
+        "trade": 2.0,
+        "production": 0.96
+      }
+    }
+  },
+  {
+    "id": 78,
+    "prosperity": 2.42,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.83,
+        "production": 0.29
+      },
+      "TestFaction": {
+        "trade": 2.03,
+        "production": 0.65
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.71,
+        "production": 0.68
+      },
+      "TestGuild": {
+        "trade": 1.67,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 79,
+    "prosperity": 1.82,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.37,
+        "production": 0.22
+      },
+      "TestFaction": {
+        "trade": 1.52,
+        "production": 0.49
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.28,
+        "production": 0.51
+      },
+      "TestGuild": {
+        "trade": 1.25,
+        "production": 0.6
+      }
+    }
+  },
+  {
+    "id": 80,
+    "prosperity": 1.47,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.75,
+        "production": 0.44
+      },
+      "Silverwake_Dominion": {
+        "trade": 2.57,
+        "production": 1.03
+      }
+    }
+  },
+  {
+    "id": 81,
+    "prosperity": 4.84,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 3.05,
+        "production": 0.49
+      },
+      "TestFaction": {
+        "trade": 4.5,
+        "production": 1.44
+      },
+      "Silverwake_Dominion": {
+        "trade": 2.85,
+        "production": 1.14
+      },
+      "TestGuild": {
+        "trade": 3.7,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 82,
+    "prosperity": 5.91,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.12,
+        "production": 1.25
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 3.69,
+        "production": 0.59
+      },
+      "TestFaction": {
+        "trade": 1.86,
+        "production": 0.59
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.45,
+        "production": 1.38
+      },
+      "Estuaar": {
+        "trade": 1.06,
+        "production": 1.36
+      },
+      "TestGuild": {
+        "trade": 1.53,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 83,
+    "prosperity": 27.81,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.95,
+        "production": 4.36
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.69,
+        "production": 4.13
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.69,
+        "production": 1.77
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.12,
+        "production": 0.18
+      },
+      "Estuaar": {
+        "trade": 3.34,
+        "production": 4.28
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 10.23,
+        "production": 13.09
+      }
+    }
+  },
+  {
+    "id": 84,
+    "prosperity": 16.28,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.72,
+        "production": 2.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.03,
+        "production": 2.27
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.03,
+        "production": 0.97
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.03,
+        "production": 0.32
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.9,
+        "production": 0.76
+      },
+      "Estuaar": {
+        "trade": 1.84,
+        "production": 2.35
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.63,
+        "production": 7.2
+      }
+    }
+  },
+  {
+    "id": 85,
+    "prosperity": 4.46,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 6.1,
+        "production": 0.98
+      },
+      "TestFaction": {
+        "trade": 1.69,
+        "production": 0.54
+      },
+      "Silverwake_Dominion": {
+        "trade": 5.7,
+        "production": 2.28
+      },
+      "TestGuild": {
+        "trade": 1.39,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 86,
+    "prosperity": 6.51,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 12.2,
+        "production": 1.95
+      },
+      "Silverwake_Dominion": {
+        "trade": 11.4,
+        "production": 4.56
+      }
+    }
+  },
+  {
+    "id": 87,
+    "prosperity": 3.26,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 6.1,
+        "production": 0.98
+      },
+      "Silverwake_Dominion": {
+        "trade": 5.7,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 88,
+    "prosperity": 2.93,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.01,
+        "production": 1.14
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 3.36,
+        "production": 0.54
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.14,
+        "production": 1.25
+      }
+    }
+  },
+  {
+    "id": 89,
+    "prosperity": 3.28,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.01,
+        "production": 1.13
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 4.03,
+        "production": 0.64
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.76,
+        "production": 1.5
+      }
+    }
+  },
+  {
+    "id": 90,
+    "prosperity": 3.58,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 6.71,
+        "production": 1.07
+      },
+      "Silverwake_Dominion": {
+        "trade": 6.27,
+        "production": 2.51
+      }
+    }
+  },
+  {
+    "id": 91,
+    "prosperity": 2.15,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 4.03,
+        "production": 0.64
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.76,
+        "production": 1.5
+      }
+    }
+  },
+  {
+    "id": 92,
+    "prosperity": 1.79,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 3.36,
+        "production": 0.54
+      },
+      "Silverwake_Dominion": {
+        "trade": 3.14,
+        "production": 1.25
+      }
+    }
+  },
+  {
+    "id": 93,
+    "prosperity": 1.07,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.01,
+        "production": 0.32
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.88,
+        "production": 0.75
+      }
+    }
+  },
+  {
+    "id": 94,
+    "prosperity": 1.47,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.75,
+        "production": 0.44
+      },
+      "Silverwake_Dominion": {
+        "trade": 2.57,
+        "production": 1.03
+      }
+    }
+  },
+  {
+    "id": 95,
+    "prosperity": 2.93,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 5.49,
+        "production": 0.88
+      },
+      "Silverwake_Dominion": {
+        "trade": 5.13,
+        "production": 2.05
+      }
+    }
+  },
+  {
+    "id": 96,
+    "prosperity": 2.93,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 5.49,
+        "production": 0.88
+      },
+      "Silverwake_Dominion": {
+        "trade": 5.13,
+        "production": 2.05
+      }
+    }
+  },
+  {
+    "id": 97,
+    "prosperity": 1.32,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.47,
+        "production": 0.4
+      },
+      "Silverwake_Dominion": {
+        "trade": 2.31,
+        "production": 0.92
+      }
+    }
+  },
+  {
+    "id": 98,
+    "prosperity": 0.66,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.24,
+        "production": 0.2
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.15,
+        "production": 0.46
+      }
+    }
+  },
+  {
+    "id": 99,
+    "prosperity": 2.89,
+    "trade": {
+      "TestFaction": {
+        "trade": 4.05,
+        "production": 1.3
+      },
+      "TestGuild": {
+        "trade": 3.33,
+        "production": 1.6
+      }
+    }
+  },
+  {
+    "id": 100,
+    "prosperity": 5.92,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.05,
+        "production": 1.17
+      },
+      "TestFaction": {
+        "trade": 4.05,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 1.45,
+        "production": 1.86
+      },
+      "TestGuild": {
+        "trade": 3.33,
+        "production": 1.6
+      }
+    }
+  },
+  {
+    "id": 101,
+    "prosperity": 6.59,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.9,
+        "production": 2.13
+      },
+      "TestFaction": {
+        "trade": 1.52,
+        "production": 0.49
+      },
+      "Estuaar": {
+        "trade": 2.64,
+        "production": 3.38
+      },
+      "TestGuild": {
+        "trade": 1.25,
+        "production": 0.6
+      }
+    }
+  },
+  {
+    "id": 102,
+    "prosperity": 2.5,
+    "trade": {
+      "TestFaction": {
+        "trade": 1.37,
+        "production": 0.44
+      },
+      "Estuaar": {
+        "trade": 1.19,
+        "production": 1.52
+      },
+      "TestGuild": {
+        "trade": 1.12,
+        "production": 0.54
+      }
+    }
+  },
+  {
+    "id": 103,
+    "prosperity": 0.98,
+    "trade": {
+      "TestFaction": {
+        "trade": 1.37,
+        "production": 0.44
+      },
+      "TestGuild": {
+        "trade": 1.12,
+        "production": 0.54
+      }
+    }
+  },
+  {
+    "id": 104,
+    "prosperity": 0.98,
+    "trade": {
+      "TestFaction": {
+        "trade": 1.37,
+        "production": 0.44
+      },
+      "TestGuild": {
+        "trade": 1.12,
+        "production": 0.54
+      }
+    }
+  },
+  {
+    "id": 105,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 106,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 107,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 108,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 109,
+    "prosperity": 1.52,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.19,
+        "production": 1.52
+      }
+    }
+  },
+  {
+    "id": 110,
+    "prosperity": 3.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.05,
+        "production": 1.17
+      },
+      "Estuaar": {
+        "trade": 1.45,
+        "production": 1.86
+      }
+    }
+  },
+  {
+    "id": 111,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 112,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 113,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 114,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 115,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 116,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 117,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 118,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 119,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 120,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 121,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 122,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 123,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 124,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 125,
+    "prosperity": 3.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.05,
+        "production": 1.17
+      },
+      "Estuaar": {
+        "trade": 1.45,
+        "production": 1.86
+      }
+    }
+  },
+  {
+    "id": 126,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 127,
+    "prosperity": 3.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.27,
+        "production": 1.42
+      },
+      "Estuaar": {
+        "trade": 1.76,
+        "production": 2.25
+      }
+    }
+  },
+  {
+    "id": 128,
+    "prosperity": 3.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Estuaar": {
+        "trade": 1.67,
+        "production": 2.14
+      }
+    }
+  },
+  {
+    "id": 129,
+    "prosperity": 3.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.27,
+        "production": 1.42
+      },
+      "Estuaar": {
+        "trade": 1.76,
+        "production": 2.25
+      }
+    }
+  },
+  {
+    "id": 130,
+    "prosperity": 3.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Estuaar": {
+        "trade": 1.67,
+        "production": 2.14
+      }
+    }
+  },
+  {
+    "id": 131,
+    "prosperity": 4.97,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 3.09,
+        "production": 0.49
+      },
+      "Estuaar": {
+        "trade": 1.67,
+        "production": 2.14
+      },
+      "Gilded_Horizon": {
+        "trade": 1.23,
+        "production": 0.98
+      }
+    }
+  },
+  {
+    "id": 132,
+    "prosperity": 5.46,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 3.4,
+        "production": 0.54
+      },
+      "Estuaar": {
+        "trade": 1.84,
+        "production": 2.35
+      },
+      "Gilded_Horizon": {
+        "trade": 1.35,
+        "production": 1.08
+      }
+    }
+  },
+  {
+    "id": 133,
+    "prosperity": 5.46,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 3.4,
+        "production": 0.54
+      },
+      "Estuaar": {
+        "trade": 1.84,
+        "production": 2.35
+      },
+      "Gilded_Horizon": {
+        "trade": 1.35,
+        "production": 1.08
+      }
+    }
+  },
+  {
+    "id": 134,
+    "prosperity": 6.09,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.59,
+        "production": 1.78
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 3.4,
+        "production": 0.54
+      },
+      "Estuaar": {
+        "trade": 2.1,
+        "production": 2.68
+      },
+      "Gilded_Horizon": {
+        "trade": 1.35,
+        "production": 1.08
+      }
+    }
+  },
+  {
+    "id": 135,
+    "prosperity": 7.71,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 8.84,
+        "production": 1.41
+      },
+      "Estuaar": {
+        "trade": 1.67,
+        "production": 2.14
+      },
+      "Gilded_Horizon": {
+        "trade": 3.52,
+        "production": 2.81
+      }
+    }
+  },
+  {
+    "id": 136,
+    "prosperity": 9.89,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 3.71,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      },
+      "Gilded_Horizon": {
+        "trade": 1.48,
+        "production": 1.18
+      }
+    }
+  },
+  {
+    "id": 137,
+    "prosperity": 8.28,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.44,
+        "production": 1.62
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 8.84,
+        "production": 1.41
+      },
+      "Estuaar": {
+        "trade": 1.91,
+        "production": 2.44
+      },
+      "Gilded_Horizon": {
+        "trade": 3.52,
+        "production": 2.81
+      }
+    }
+  },
+  {
+    "id": 138,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 139,
+    "prosperity": 10.78,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 5.58,
+        "production": 0.89
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      },
+      "Gilded_Horizon": {
+        "trade": 2.22,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 140,
+    "prosperity": 8.51,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.44,
+        "production": 1.62
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 9.3,
+        "production": 1.49
+      },
+      "Estuaar": {
+        "trade": 1.91,
+        "production": 2.44
+      },
+      "Gilded_Horizon": {
+        "trade": 3.7,
+        "production": 2.96
+      }
+    }
+  },
+  {
+    "id": 141,
+    "prosperity": 4.23,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 8.84,
+        "production": 1.41
+      },
+      "Gilded_Horizon": {
+        "trade": 3.52,
+        "production": 2.81
+      }
+    }
+  },
+  {
+    "id": 142,
+    "prosperity": 4.23,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 8.84,
+        "production": 1.41
+      },
+      "Gilded_Horizon": {
+        "trade": 3.52,
+        "production": 2.81
+      }
+    }
+  },
+  {
+    "id": 143,
+    "prosperity": 4.45,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 9.3,
+        "production": 1.49
+      },
+      "Gilded_Horizon": {
+        "trade": 3.7,
+        "production": 2.96
+      }
+    }
+  },
+  {
+    "id": 144,
+    "prosperity": 2.67,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 5.58,
+        "production": 0.89
+      },
+      "Gilded_Horizon": {
+        "trade": 2.22,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 145,
+    "prosperity": 1.48,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 3.09,
+        "production": 0.49
+      },
+      "Gilded_Horizon": {
+        "trade": 1.23,
+        "production": 0.98
+      }
+    }
+  },
+  {
+    "id": 146,
+    "prosperity": 2.67,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 5.58,
+        "production": 0.89
+      },
+      "Gilded_Horizon": {
+        "trade": 2.22,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 147,
+    "prosperity": 10.24,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 18.6,
+        "production": 2.98
+      },
+      "Estuaar": {
+        "trade": 1.05,
+        "production": 1.34
+      },
+      "Gilded_Horizon": {
+        "trade": 7.4,
+        "production": 5.92
+      }
+    }
+  },
+  {
+    "id": 148,
+    "prosperity": 6.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.44,
+        "production": 1.62
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 5.12,
+        "production": 0.82
+      },
+      "Estuaar": {
+        "trade": 1.91,
+        "production": 2.44
+      },
+      "Gilded_Horizon": {
+        "trade": 2.04,
+        "production": 1.63
+      }
+    }
+  },
+  {
+    "id": 149,
+    "prosperity": 4.89,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 10.23,
+        "production": 1.64
+      },
+      "Gilded_Horizon": {
+        "trade": 4.07,
+        "production": 3.26
+      }
+    }
+  },
+  {
+    "id": 150,
+    "prosperity": 6.23,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 10.23,
+        "production": 1.64
+      },
+      "Estuaar": {
+        "trade": 1.05,
+        "production": 1.34
+      },
+      "Gilded_Horizon": {
+        "trade": 4.07,
+        "production": 3.26
+      }
+    }
+  },
+  {
+    "id": 151,
+    "prosperity": 1.47,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 3.07,
+        "production": 0.49
+      },
+      "Gilded_Horizon": {
+        "trade": 1.22,
+        "production": 0.98
+      }
+    }
+  },
+  {
+    "id": 152,
+    "prosperity": 0.27,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 1.67,
+        "production": 0.27
+      }
+    }
+  },
+  {
+    "id": 153,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 154,
+    "prosperity": 1.47,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 3.07,
+        "production": 0.49
+      },
+      "Gilded_Horizon": {
+        "trade": 1.22,
+        "production": 0.98
+      }
+    }
+  },
+  {
+    "id": 155,
+    "prosperity": 1.47,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 3.07,
+        "production": 0.49
+      },
+      "Gilded_Horizon": {
+        "trade": 1.22,
+        "production": 0.98
+      }
+    }
+  },
+  {
+    "id": 156,
+    "prosperity": 1.33,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 2.79,
+        "production": 0.45
+      },
+      "Gilded_Horizon": {
+        "trade": 1.11,
+        "production": 0.89
+      }
+    }
+  },
+  {
+    "id": 157,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 158,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 159,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 160,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 161,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 162,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 163,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 164,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 165,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 166,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 167,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 168,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 169,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 170,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 171,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 172,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 173,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 174,
+    "prosperity": 4.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.73,
+        "production": 1.94
+      },
+      "Estuaar": {
+        "trade": 2.29,
+        "production": 2.93
+      }
+    }
+  },
+  {
+    "id": 175,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 176,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 177,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 178,
+    "prosperity": 11.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.01,
+        "production": 4.49
+      },
+      "Estuaar": {
+        "trade": 5.29,
+        "production": 6.78
+      }
+    }
+  },
+  {
+    "id": 179,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 180,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 181,
+    "prosperity": 11.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.09,
+        "production": 4.58
+      },
+      "Estuaar": {
+        "trade": 5.4,
+        "production": 6.91
+      }
+    }
+  },
+  {
+    "id": 182,
+    "prosperity": 9.58,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 4.5,
+        "production": 5.76
+      }
+    }
+  },
+  {
+    "id": 183,
+    "prosperity": 6.09,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.73,
+        "production": 1.94
+      },
+      "Estuaar": {
+        "trade": 3.24,
+        "production": 4.15
+      }
+    }
+  },
+  {
+    "id": 184,
+    "prosperity": 8.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.89,
+        "production": 3.24
+      },
+      "Estuaar": {
+        "trade": 3.81,
+        "production": 4.88
+      }
+    }
+  },
+  {
+    "id": 185,
+    "prosperity": 10.61,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Estuaar": {
+        "trade": 5.09,
+        "production": 6.51
+      }
+    }
+  },
+  {
+    "id": 186,
+    "prosperity": 9.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Estuaar": {
+        "trade": 4.36,
+        "production": 5.58
+      }
+    }
+  },
+  {
+    "id": 187,
+    "prosperity": 9.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Estuaar": {
+        "trade": 4.36,
+        "production": 5.58
+      }
+    }
+  },
+  {
+    "id": 188,
+    "prosperity": 5.29,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.73,
+        "production": 1.94
+      },
+      "Estuaar": {
+        "trade": 2.61,
+        "production": 3.35
+      }
+    }
+  },
+  {
+    "id": 189,
+    "prosperity": 9.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Estuaar": {
+        "trade": 4.36,
+        "production": 5.58
+      }
+    }
+  },
+  {
+    "id": 190,
+    "prosperity": 9.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Estuaar": {
+        "trade": 4.36,
+        "production": 5.58
+      }
+    }
+  },
+  {
+    "id": 191,
+    "prosperity": 5.16,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.62,
+        "production": 1.82
+      },
+      "Estuaar": {
+        "trade": 2.61,
+        "production": 3.35
+      }
+    }
+  },
+  {
+    "id": 192,
+    "prosperity": 5.07,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.54,
+        "production": 1.72
+      },
+      "Estuaar": {
+        "trade": 2.61,
+        "production": 3.35
+      }
+    }
+  },
+  {
+    "id": 193,
+    "prosperity": 1.67,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.3,
+        "production": 1.67
+      }
+    }
+  },
+  {
+    "id": 194,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.74,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 3.46,
+        "production": 4.42
+      }
+    }
+  },
+  {
+    "id": 195,
+    "prosperity": 9.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 4.07,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 196,
+    "prosperity": 5.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.71,
+        "production": 1.91
+      },
+      "Estuaar": {
+        "trade": 2.44,
+        "production": 3.12
+      }
+    }
+  },
+  {
+    "id": 197,
+    "prosperity": 4.07,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.15,
+        "production": 1.29
+      },
+      "Estuaar": {
+        "trade": 2.17,
+        "production": 2.78
+      }
+    }
+  },
+  {
+    "id": 198,
+    "prosperity": 4.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.73,
+        "production": 1.94
+      },
+      "Estuaar": {
+        "trade": 2.29,
+        "production": 2.93
+      }
+    }
+  },
+  {
+    "id": 199,
+    "prosperity": 5.83,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 5.12,
+        "production": 0.82
+      },
+      "Estuaar": {
+        "trade": 1.59,
+        "production": 2.03
+      },
+      "Gilded_Horizon": {
+        "trade": 2.04,
+        "production": 1.63
+      }
+    }
+  },
+  {
+    "id": 200,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 201,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 202,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 203,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 204,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 205,
+    "prosperity": 6.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 3.18,
+        "production": 4.07
+      }
+    }
+  },
+  {
+    "id": 206,
+    "prosperity": 4.06,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.44,
+        "production": 1.62
+      },
+      "Estuaar": {
+        "trade": 1.91,
+        "production": 2.44
+      }
+    }
+  },
+  {
+    "id": 207,
+    "prosperity": 1.46,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.14,
+        "production": 1.46
+      }
+    }
+  },
+  {
+    "id": 208,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 209,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 210,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 211,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 212,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 213,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 214,
+    "prosperity": 1.46,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.14,
+        "production": 1.46
+      }
+    }
+  },
+  {
+    "id": 215,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 216,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 217,
+    "prosperity": 1.34,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.05,
+        "production": 1.34
+      }
+    }
+  },
+  {
+    "id": 218,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 219,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 220,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 221,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 222,
+    "prosperity": 6.96,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.76,
+        "production": 3.98
+      },
+      "Estuaar": {
+        "trade": 2.32,
+        "production": 2.97
+      }
+    }
+  },
+  {
+    "id": 223,
+    "prosperity": 8.35,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.32,
+        "production": 4.78
+      },
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 224,
+    "prosperity": 8.35,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.32,
+        "production": 4.78
+      },
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 225,
+    "prosperity": 8.35,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.32,
+        "production": 4.78
+      },
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 226,
+    "prosperity": 1.84,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.28,
+        "production": 1.84
+      }
+    }
+  },
+  {
+    "id": 227,
+    "prosperity": 1.84,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.28,
+        "production": 1.84
+      }
+    }
+  },
+  {
+    "id": 228,
+    "prosperity": 1.69,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.17,
+        "production": 1.69
+      }
+    }
+  },
+  {
+    "id": 229,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 230,
+    "prosperity": 1.69,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.17,
+        "production": 1.69
+      }
+    }
+  },
+  {
+    "id": 231,
+    "prosperity": 7.65,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.04,
+        "production": 4.38
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 232,
+    "prosperity": 2.55,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.77,
+        "production": 2.55
+      }
+    }
+  },
+  {
+    "id": 233,
+    "prosperity": 7.88,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.2,
+        "production": 4.61
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 234,
+    "prosperity": 7.28,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.76,
+        "production": 3.98
+      },
+      "Estuaar": {
+        "trade": 2.58,
+        "production": 3.3
+      }
+    }
+  },
+  {
+    "id": 235,
+    "prosperity": 12.13,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 2.46,
+        "production": 1.97
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      },
+      "Estuaar": {
+        "trade": 1.39,
+        "production": 1.78
+      }
+    }
+  },
+  {
+    "id": 236,
+    "prosperity": 11.51,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.54,
+        "production": 1.23
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 4.85,
+        "production": 6.98
+      },
+      "Estuaar": {
+        "trade": 2.58,
+        "production": 3.3
+      }
+    }
+  },
+  {
+    "id": 237,
+    "prosperity": 7.17,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.91,
+        "production": 4.19
+      },
+      "Estuaar": {
+        "trade": 2.32,
+        "production": 2.97
+      }
+    }
+  },
+  {
+    "id": 238,
+    "prosperity": 9.86,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.84,
+        "production": 1.48
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      }
+    }
+  },
+  {
+    "id": 239,
+    "prosperity": 9.86,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.84,
+        "production": 1.48
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      }
+    }
+  },
+  {
+    "id": 240,
+    "prosperity": 7.96,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 5.53,
+        "production": 7.96
+      }
+    }
+  },
+  {
+    "id": 241,
+    "prosperity": 7.3,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 5.07,
+        "production": 7.3
+      }
+    }
+  },
+  {
+    "id": 242,
+    "prosperity": 17.25,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 4.1,
+        "production": 3.28
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 9.7,
+        "production": 13.97
+      }
+    }
+  },
+  {
+    "id": 243,
+    "prosperity": 5.31,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.45,
+        "production": 1.63
+      },
+      "Estuaar": {
+        "trade": 2.88,
+        "production": 3.69
+      }
+    }
+  },
+  {
+    "id": 244,
+    "prosperity": 14.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 245,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.74,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 3.46,
+        "production": 4.42
+      }
+    }
+  },
+  {
+    "id": 246,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.74,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 3.46,
+        "production": 4.42
+      }
+    }
+  },
+  {
+    "id": 247,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 248,
+    "prosperity": 2.07,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.62,
+        "production": 2.07
+      }
+    }
+  },
+  {
+    "id": 249,
+    "prosperity": 1.67,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.16,
+        "production": 1.67
+      }
+    }
+  },
+  {
+    "id": 250,
+    "prosperity": 7.3,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.32,
+        "production": 3.34
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 251,
+    "prosperity": 14.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 252,
+    "prosperity": 10.8,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.47,
+        "production": 2.76
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.9,
+        "production": 6.27
+      }
+    }
+  },
+  {
+    "id": 253,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 254,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 255,
+    "prosperity": 15.01,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.29,
+        "production": 4.74
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 256,
+    "prosperity": 6.08,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.94,
+        "production": 2.79
+      },
+      "Estuaar": {
+        "trade": 2.58,
+        "production": 3.3
+      }
+    }
+  },
+  {
+    "id": 257,
+    "prosperity": 1.62,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.27,
+        "production": 1.62
+      }
+    }
+  },
+  {
+    "id": 258,
+    "prosperity": 1.72,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.35,
+        "production": 1.72
+      }
+    }
+  },
+  {
+    "id": 259,
+    "prosperity": 13.81,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.84,
+        "production": 1.48
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 260,
+    "prosperity": 9.86,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.84,
+        "production": 1.48
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      }
+    }
+  },
+  {
+    "id": 261,
+    "prosperity": 12.73,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 4.95,
+        "production": 7.12
+      },
+      "Estuaar": {
+        "trade": 4.38,
+        "production": 5.6
+      }
+    }
+  },
+  {
+    "id": 262,
+    "prosperity": 15.01,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.29,
+        "production": 4.74
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 263,
+    "prosperity": 2.76,
+    "trade": {
+      "Estuaar": {
+        "trade": 2.15,
+        "production": 2.76
+      }
+    }
+  },
+  {
+    "id": 264,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 265,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 266,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 267,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 268,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 269,
+    "prosperity": 7.12,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 4.95,
+        "production": 7.12
+      }
+    }
+  },
+  {
+    "id": 270,
+    "prosperity": 5.94,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 4.12,
+        "production": 5.94
+      }
+    }
+  },
+  {
+    "id": 271,
+    "prosperity": 4.19,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.91,
+        "production": 4.19
+      }
+    }
+  },
+  {
+    "id": 272,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 273,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 274,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 275,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 276,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 277,
+    "prosperity": 0.9,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.87,
+        "production": 0.9
+      }
+    }
+  },
+  {
+    "id": 278,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 279,
+    "prosperity": 4.23,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.93,
+        "production": 4.23
+      }
+    }
+  },
+  {
+    "id": 280,
+    "prosperity": 8.21,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.54,
+        "production": 1.23
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 4.85,
+        "production": 6.98
+      }
+    }
+  },
+  {
+    "id": 281,
+    "prosperity": 17.25,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 4.1,
+        "production": 3.28
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 9.7,
+        "production": 13.97
+      }
+    }
+  },
+  {
+    "id": 282,
+    "prosperity": 17.25,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 4.1,
+        "production": 3.28
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 9.7,
+        "production": 13.97
+      }
+    }
+  },
+  {
+    "id": 283,
+    "prosperity": 9.86,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.84,
+        "production": 1.48
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.82,
+        "production": 8.38
+      }
+    }
+  },
+  {
+    "id": 284,
+    "prosperity": 34.5,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 8.2,
+        "production": 6.56
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 19.4,
+        "production": 27.94
+      }
+    }
+  },
+  {
+    "id": 285,
+    "prosperity": 18.97,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 4.51,
+        "production": 3.61
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 10.67,
+        "production": 15.36
+      }
+    }
+  },
+  {
+    "id": 286,
+    "prosperity": 9.04,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.69,
+        "production": 1.35
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.34,
+        "production": 7.68
+      }
+    }
+  },
+  {
+    "id": 287,
+    "prosperity": 5.42,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.01,
+        "production": 0.81
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 3.2,
+        "production": 4.61
+      }
+    }
+  },
+  {
+    "id": 288,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 289,
+    "prosperity": 5.42,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.01,
+        "production": 0.81
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 3.2,
+        "production": 4.61
+      }
+    }
+  },
+  {
+    "id": 290,
+    "prosperity": 2.54,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.76,
+        "production": 2.54
+      }
+    }
+  },
+  {
+    "id": 291,
+    "prosperity": 5.42,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.01,
+        "production": 0.81
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 3.2,
+        "production": 4.61
+      }
+    }
+  },
+  {
+    "id": 292,
+    "prosperity": 9.94,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.86,
+        "production": 1.49
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.87,
+        "production": 8.45
+      }
+    }
+  },
+  {
+    "id": 293,
+    "prosperity": 18.97,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 4.51,
+        "production": 3.61
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 10.67,
+        "production": 15.36
+      }
+    }
+  },
+  {
+    "id": 294,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 295,
+    "prosperity": 4.23,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.93,
+        "production": 4.23
+      }
+    }
+  },
+  {
+    "id": 296,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 297,
+    "prosperity": 0.63,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.32,
+        "production": 0.63
+      }
+    }
+  },
+  {
+    "id": 298,
+    "prosperity": 0.63,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.32,
+        "production": 0.63
+      }
+    }
+  },
+  {
+    "id": 299,
+    "prosperity": 1.05,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.2,
+        "production": 1.05
+      }
+    }
+  },
+  {
+    "id": 300,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 301,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 302,
+    "prosperity": 1.52,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 3.17,
+        "production": 1.52
+      }
+    }
+  },
+  {
+    "id": 303,
+    "prosperity": 3.45,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.92,
+        "production": 2.77
+      },
+      "Sable_Reach_Guild": {
+        "trade": 1.43,
+        "production": 0.68
+      }
+    }
+  },
+  {
+    "id": 304,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 305,
+    "prosperity": 2.3,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.6,
+        "production": 2.3
+      }
+    }
+  },
+  {
+    "id": 306,
+    "prosperity": 1.08,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.24,
+        "production": 1.08
+      }
+    }
+  },
+  {
+    "id": 307,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 308,
+    "prosperity": 1.79,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 3.73,
+        "production": 1.79
+      }
+    }
+  },
+  {
+    "id": 309,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 310,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 311,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 312,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 313,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 314,
+    "prosperity": 4.56,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 7.32,
+        "production": 3.51
+      },
+      "Sable_Reach": {
+        "trade": 2.61,
+        "production": 1.04
+      }
+    }
+  },
+  {
+    "id": 315,
+    "prosperity": 4.56,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 7.32,
+        "production": 3.51
+      },
+      "Sable_Reach": {
+        "trade": 2.61,
+        "production": 1.04
+      }
+    }
+  },
+  {
+    "id": 316,
+    "prosperity": 8.18,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 12.2,
+        "production": 5.86
+      },
+      "Sable_Reach": {
+        "trade": 5.8,
+        "production": 2.32
+      }
+    }
+  },
+  {
+    "id": 317,
+    "prosperity": 3.8,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 6.1,
+        "production": 2.93
+      },
+      "Sable_Reach": {
+        "trade": 2.17,
+        "production": 0.87
+      }
+    }
+  },
+  {
+    "id": 318,
+    "prosperity": 1.46,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 3.05,
+        "production": 1.46
+      }
+    }
+  },
+  {
+    "id": 319,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 320,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 321,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 322,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 323,
+    "prosperity": 4.56,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 7.32,
+        "production": 3.51
+      },
+      "Sable_Reach": {
+        "trade": 2.61,
+        "production": 1.04
+      }
+    }
+  },
+  {
+    "id": 324,
+    "prosperity": 2.11,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 4.39,
+        "production": 2.11
+      }
+    }
+  },
+  {
+    "id": 325,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 326,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 327,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 328,
+    "prosperity": 1.26,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.64,
+        "production": 1.26
+      }
+    }
+  },
+  {
+    "id": 329,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 330,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 331,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 332,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 333,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 334,
+    "prosperity": 0.76,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 1.58,
+        "production": 0.76
+      }
+    }
+  },
+  {
+    "id": 335,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 336,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 337,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 338,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 339,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 340,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 341,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 342,
+    "prosperity": 2.77,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.92,
+        "production": 2.77
+      }
+    }
+  },
+  {
+    "id": 343,
+    "prosperity": 2.77,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 1.92,
+        "production": 2.77
+      }
+    }
+  },
+  {
+    "id": 344,
+    "prosperity": 6.53,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 4.53,
+        "production": 6.53
+      }
+    }
+  },
+  {
+    "id": 345,
+    "prosperity": 3.07,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.13,
+        "production": 3.07
+      }
+    }
+  },
+  {
+    "id": 346,
+    "prosperity": 7.3,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 5.07,
+        "production": 7.3
+      }
+    }
+  },
+  {
+    "id": 347,
+    "prosperity": 3.07,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.13,
+        "production": 3.07
+      }
+    }
+  },
+  {
+    "id": 348,
+    "prosperity": 3.07,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 2.13,
+        "production": 3.07
+      }
+    }
+  },
+  {
+    "id": 349,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 350,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 351,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 352,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 353,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 354,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 355,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 356,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 357,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 358,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 359,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 360,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 361,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 362,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 363,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 364,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 365,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 366,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 367,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 368,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 369,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 370,
+    "prosperity": 1.62,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.27,
+        "production": 1.62
+      }
+    }
+  },
+  {
+    "id": 371,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 372,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 373,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 374,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 375,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 376,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 377,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 378,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 379,
+    "prosperity": 5.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 380,
+    "prosperity": 2.6,
+    "trade": {
+      "Estuaar": {
+        "trade": 2.03,
+        "production": 2.6
+      }
+    }
+  },
+  {
+    "id": 381,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 382,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 383,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 384,
+    "prosperity": 1.53,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.19,
+        "production": 1.53
+      }
+    }
+  },
+  {
+    "id": 385,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 386,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 387,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 388,
+    "prosperity": 10.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 389,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 390,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 391,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 392,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 393,
+    "prosperity": 6.45,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 394,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 395,
+    "prosperity": 4.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.23,
+        "production": 1.38
+      },
+      "Estuaar": {
+        "trade": 2.44,
+        "production": 3.12
+      }
+    }
+  },
+  {
+    "id": 396,
+    "prosperity": 1.37,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.07,
+        "production": 1.37
+      }
+    }
+  },
+  {
+    "id": 397,
+    "prosperity": 55.22,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.65,
+        "production": 6.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.81,
+        "production": 9.87
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.81,
+        "production": 4.23
+      },
+      "Estuaar": {
+        "trade": 11.05,
+        "production": 14.14
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.81,
+        "production": 20.24
+      }
+    }
+  },
+  {
+    "id": 398,
+    "prosperity": 31.28,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.5,
+        "production": 3.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.45,
+        "production": 4.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.41,
+        "production": 2.12
+      },
+      "Estuaar": {
+        "trade": 6.5,
+        "production": 8.32
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.3,
+        "production": 11.9
+      }
+    }
+  },
+  {
+    "id": 399,
+    "prosperity": 50.24,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 9.0,
+        "production": 7.92
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.71,
+        "production": 7.52
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.71,
+        "production": 3.22
+      },
+      "Estuaar": {
+        "trade": 6.08,
+        "production": 7.78
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 18.6,
+        "production": 23.81
+      }
+    }
+  },
+  {
+    "id": 400,
+    "prosperity": 56.33,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.65,
+        "production": 6.73
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 10.37,
+        "production": 11.61
+      },
+      "Ironroot_Covenant": {
+        "trade": 10.37,
+        "production": 4.98
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.81,
+        "production": 20.24
+      }
+    }
+  },
+  {
+    "id": 401,
+    "prosperity": 49.79,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.5,
+        "production": 5.72
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.81,
+        "production": 9.87
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.81,
+        "production": 4.23
+      },
+      "Estuaar": {
+        "trade": 9.97,
+        "production": 12.76
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.44,
+        "production": 17.2
+      }
+    }
+  },
+  {
+    "id": 402,
+    "prosperity": 35.55,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.59,
+        "production": 4.04
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.32,
+        "production": 8.2
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.32,
+        "production": 3.51
+      },
+      "Estuaar": {
+        "trade": 5.98,
+        "production": 7.66
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.49,
+        "production": 12.14
+      }
+    }
+  },
+  {
+    "id": 403,
+    "prosperity": 14.66,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 1.38,
+        "production": 1.21
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.39,
+        "production": 4.92
+      },
+      "Ironroot_Covenant": {
+        "trade": 4.39,
+        "production": 2.11
+      },
+      "Estuaar": {
+        "trade": 3.59,
+        "production": 4.6
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 1.42,
+        "production": 1.82
+      }
+    }
+  },
+  {
+    "id": 404,
+    "prosperity": 8.61,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.66,
+        "production": 4.1
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.66,
+        "production": 1.76
+      },
+      "Estuaar": {
+        "trade": 2.15,
+        "production": 2.76
+      }
+    }
+  },
+  {
+    "id": 405,
+    "prosperity": 5.17,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.2,
+        "production": 2.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.2,
+        "production": 1.05
+      },
+      "Estuaar": {
+        "trade": 1.29,
+        "production": 1.65
+      }
+    }
+  },
+  {
+    "id": 406,
+    "prosperity": 5.17,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.2,
+        "production": 2.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.2,
+        "production": 1.05
+      },
+      "Estuaar": {
+        "trade": 1.29,
+        "production": 1.65
+      }
+    }
+  },
+  {
+    "id": 407,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 408,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 409,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 410,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 411,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 412,
+    "prosperity": 0.19,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.21,
+        "production": 0.19
+      }
+    }
+  },
+  {
+    "id": 413,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 414,
+    "prosperity": 0.9,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.68,
+        "production": 0.27
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.57,
+        "production": 0.63
+      }
+    }
+  },
+  {
+    "id": 415,
+    "prosperity": 0.16,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.01,
+        "production": 0.16
+      }
+    }
+  },
+  {
+    "id": 416,
+    "prosperity": 1.53,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.21,
+        "production": 1.35
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.11,
+        "production": 0.18
+      }
+    }
+  },
+  {
+    "id": 417,
+    "prosperity": 1.07,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.01,
+        "production": 0.32
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.88,
+        "production": 0.75
+      }
+    }
+  },
+  {
+    "id": 418,
+    "prosperity": 6.79,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.05,
+        "production": 3.42
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.05,
+        "production": 1.46
+      },
+      "Estuaar": {
+        "trade": 1.5,
+        "production": 1.91
+      }
+    }
+  },
+  {
+    "id": 419,
+    "prosperity": 2.86,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.68,
+        "production": 1.88
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.68,
+        "production": 0.81
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.11,
+        "production": 0.18
+      }
+    }
+  },
+  {
+    "id": 420,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.68,
+        "production": 1.88
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.68,
+        "production": 0.81
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.01,
+        "production": 0.32
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.88,
+        "production": 0.75
+      }
+    }
+  },
+  {
+    "id": 421,
+    "prosperity": 6.64,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.05,
+        "production": 3.42
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.05,
+        "production": 1.46
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.01,
+        "production": 0.16
+      },
+      "Estuaar": {
+        "trade": 1.25,
+        "production": 1.6
+      }
+    }
+  },
+  {
+    "id": 422,
+    "prosperity": 17.5,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.72,
+        "production": 2.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.36,
+        "production": 3.76
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.36,
+        "production": 1.61
+      },
+      "Silverwake_Dominion_Guild": {
+        "trade": 1.12,
+        "production": 0.18
+      },
+      "Estuaar": {
+        "trade": 1.84,
+        "production": 2.35
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.63,
+        "production": 7.2
+      }
+    }
+  },
+  {
+    "id": 423,
+    "prosperity": 29.51,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.5,
+        "production": 3.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.1,
+        "production": 6.83
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.1,
+        "production": 2.93
+      },
+      "Estuaar": {
+        "trade": 3.04,
+        "production": 3.89
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.3,
+        "production": 11.9
+      }
+    }
+  },
+  {
+    "id": 424,
+    "prosperity": 20.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.25,
+        "production": 1.98
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.1,
+        "production": 6.83
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.1,
+        "production": 2.93
+      },
+      "Estuaar": {
+        "trade": 2.49,
+        "production": 3.19
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 4.65,
+        "production": 5.95
+      }
+    }
+  },
+  {
+    "id": 425,
+    "prosperity": 21.52,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.25,
+        "production": 1.98
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.1,
+        "production": 6.83
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.1,
+        "production": 2.93
+      },
+      "Estuaar": {
+        "trade": 2.99,
+        "production": 3.83
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 4.65,
+        "production": 5.95
+      }
+    }
+  },
+  {
+    "id": 426,
+    "prosperity": 41.77,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 4.5,
+        "production": 3.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 12.2,
+        "production": 13.66
+      },
+      "Ironroot_Covenant": {
+        "trade": 12.2,
+        "production": 5.86
+      },
+      "Estuaar": {
+        "trade": 4.99,
+        "production": 6.38
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 9.3,
+        "production": 11.9
+      }
+    }
+  },
+  {
+    "id": 427,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 428,
+    "prosperity": 7.15,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.7,
+        "production": 3.03
+      },
+      "Estuaar": {
+        "trade": 3.22,
+        "production": 4.12
+      }
+    }
+  },
+  {
+    "id": 429,
+    "prosperity": 6.79,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.57,
+        "production": 2.88
+      },
+      "Estuaar": {
+        "trade": 3.06,
+        "production": 3.91
+      }
+    }
+  },
+  {
+    "id": 430,
+    "prosperity": 6.79,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.57,
+        "production": 2.88
+      },
+      "Estuaar": {
+        "trade": 3.06,
+        "production": 3.91
+      }
+    }
+  },
+  {
+    "id": 431,
+    "prosperity": 6.93,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.31,
+        "production": 2.59
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 432,
+    "prosperity": 8.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.02,
+        "production": 3.39
+      },
+      "Estuaar": {
+        "trade": 3.99,
+        "production": 5.11
+      }
+    }
+  },
+  {
+    "id": 433,
+    "prosperity": 8.49,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.02,
+        "production": 3.39
+      },
+      "Estuaar": {
+        "trade": 3.99,
+        "production": 5.11
+      }
+    }
+  },
+  {
+    "id": 434,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 435,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 436,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 437,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 438,
+    "prosperity": 3.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 1.78,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 439,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 440,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 441,
+    "prosperity": 3.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 1.78,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 442,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 443,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 444,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 445,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 446,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 447,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 448,
+    "prosperity": 6.79,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.57,
+        "production": 2.88
+      },
+      "Estuaar": {
+        "trade": 3.06,
+        "production": 3.91
+      }
+    }
+  },
+  {
+    "id": 449,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 450,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 451,
+    "prosperity": 7.15,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.7,
+        "production": 3.03
+      },
+      "Estuaar": {
+        "trade": 3.22,
+        "production": 4.12
+      }
+    }
+  },
+  {
+    "id": 452,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 453,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 454,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 455,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 456,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 457,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 458,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 459,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 460,
+    "prosperity": 7.21,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.73,
+        "production": 3.06
+      },
+      "Estuaar": {
+        "trade": 3.25,
+        "production": 4.16
+      }
+    }
+  },
+  {
+    "id": 461,
+    "prosperity": 3.57,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.35,
+        "production": 1.51
+      },
+      "Estuaar": {
+        "trade": 1.61,
+        "production": 2.06
+      }
+    }
+  },
+  {
+    "id": 462,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 463,
+    "prosperity": 3.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.42,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 1.69,
+        "production": 2.17
+      }
+    }
+  },
+  {
+    "id": 464,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 465,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 466,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 467,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 468,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 469,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 470,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 471,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 472,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 473,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 474,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 475,
+    "prosperity": 11.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.56,
+        "production": 1.71
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 476,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 477,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 478,
+    "prosperity": 10.23,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.7,
+        "production": 1.3
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 479,
+    "prosperity": 3.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 1.78,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 480,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 481,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 482,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 483,
+    "prosperity": 22.18,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.91,
+        "production": 2.56
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.94,
+        "production": 4.41
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.94,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 4.69,
+        "production": 6.01
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 5.71,
+        "production": 7.31
+      }
+    }
+  },
+  {
+    "id": 484,
+    "prosperity": 13.88,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 2.49,
+        "production": 2.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.74,
+        "production": 1.8
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 485,
+    "prosperity": 4.7,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.58,
+        "production": 1.77
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.1,
+        "production": 0.53
+      },
+      "Estuaar": {
+        "trade": 1.88,
+        "production": 2.4
+      }
+    }
+  },
+  {
+    "id": 486,
+    "prosperity": 3.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 1.78,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 487,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 488,
+    "prosperity": 4.7,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.58,
+        "production": 1.77
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.1,
+        "production": 0.53
+      },
+      "Estuaar": {
+        "trade": 1.88,
+        "production": 2.4
+      }
+    }
+  },
+  {
+    "id": 489,
+    "prosperity": 4.73,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.58,
+        "production": 1.77
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.17,
+        "production": 0.56
+      },
+      "Estuaar": {
+        "trade": 1.88,
+        "production": 2.4
+      }
+    }
+  },
+  {
+    "id": 490,
+    "prosperity": 7.75,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.93,
+        "production": 3.28
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.93,
+        "production": 1.41
+      },
+      "Estuaar": {
+        "trade": 2.39,
+        "production": 3.06
+      }
+    }
+  },
+  {
+    "id": 491,
+    "prosperity": 3.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.46,
+        "production": 1.64
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.46,
+        "production": 0.7
+      },
+      "Estuaar": {
+        "trade": 1.2,
+        "production": 1.53
+      }
+    }
+  },
+  {
+    "id": 492,
+    "prosperity": 4.65,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.76,
+        "production": 1.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 1.76,
+        "production": 0.84
+      },
+      "Estuaar": {
+        "trade": 1.44,
+        "production": 1.84
+      }
+    }
+  },
+  {
+    "id": 493,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 494,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 495,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 496,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 497,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 498,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 499,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 500,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 501,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 502,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 503,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 504,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 505,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 506,
+    "prosperity": 1.56,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.39,
+        "production": 1.56
+      }
+    }
+  },
+  {
+    "id": 507,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 508,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 509,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 510,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 511,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 512,
+    "prosperity": 1.41,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.26,
+        "production": 1.41
+      }
+    }
+  },
+  {
+    "id": 513,
+    "prosperity": 1.48,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      }
+    }
+  },
+  {
+    "id": 514,
+    "prosperity": 1.41,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.26,
+        "production": 1.41
+      }
+    }
+  },
+  {
+    "id": 515,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.82,
+        "production": 7.64
+      },
+      "Estuaar": {
+        "trade": 8.12,
+        "production": 10.4
+      }
+    }
+  },
+  {
+    "id": 516,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.82,
+        "production": 7.64
+      },
+      "Estuaar": {
+        "trade": 8.12,
+        "production": 10.4
+      }
+    }
+  },
+  {
+    "id": 517,
+    "prosperity": 18.04,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.82,
+        "production": 7.64
+      },
+      "Estuaar": {
+        "trade": 8.12,
+        "production": 10.4
+      }
+    }
+  },
+  {
+    "id": 518,
+    "prosperity": 15.33,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.8,
+        "production": 6.49
+      },
+      "Estuaar": {
+        "trade": 6.9,
+        "production": 8.84
+      }
+    }
+  },
+  {
+    "id": 519,
+    "prosperity": 13.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.93,
+        "production": 5.52
+      },
+      "Estuaar": {
+        "trade": 5.87,
+        "production": 7.51
+      }
+    }
+  },
+  {
+    "id": 520,
+    "prosperity": 5.46,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.69,
+        "production": 1.89
+      },
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 521,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 522,
+    "prosperity": 17.76,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.05,
+        "production": 6.77
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.23,
+        "production": 1.77
+      },
+      "Estuaar": {
+        "trade": 7.2,
+        "production": 9.22
+      }
+    }
+  },
+  {
+    "id": 523,
+    "prosperity": 9.02,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 4.06,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 524,
+    "prosperity": 11.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.41,
+        "production": 4.94
+      },
+      "Estuaar": {
+        "trade": 5.26,
+        "production": 6.73
+      }
+    }
+  },
+  {
+    "id": 525,
+    "prosperity": 5.84,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.21,
+        "production": 2.47
+      },
+      "Estuaar": {
+        "trade": 2.63,
+        "production": 3.36
+      }
+    }
+  },
+  {
+    "id": 526,
+    "prosperity": 9.02,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 4.06,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 527,
+    "prosperity": 9.92,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.75,
+        "production": 4.2
+      },
+      "Estuaar": {
+        "trade": 4.47,
+        "production": 5.72
+      }
+    }
+  },
+  {
+    "id": 528,
+    "prosperity": 7.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.9,
+        "production": 3.25
+      },
+      "Estuaar": {
+        "trade": 3.45,
+        "production": 4.42
+      }
+    }
+  },
+  {
+    "id": 529,
+    "prosperity": 3.57,
+    "trade": {
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 530,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 531,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 532,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 533,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 534,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 535,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 536,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 537,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 538,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 539,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 540,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 541,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 542,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 543,
+    "prosperity": 11.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.41,
+        "production": 4.94
+      },
+      "Estuaar": {
+        "trade": 5.26,
+        "production": 6.73
+      }
+    }
+  },
+  {
+    "id": 544,
+    "prosperity": 11.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.41,
+        "production": 4.94
+      },
+      "Estuaar": {
+        "trade": 5.26,
+        "production": 6.73
+      }
+    }
+  },
+  {
+    "id": 545,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 2.87,
+        "production": 3.67
+      }
+    }
+  },
+  {
+    "id": 546,
+    "prosperity": 4.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.88,
+        "production": 2.1
+      },
+      "Estuaar": {
+        "trade": 2.23,
+        "production": 2.86
+      }
+    }
+  },
+  {
+    "id": 547,
+    "prosperity": 4.51,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.71,
+        "production": 1.91
+      },
+      "Estuaar": {
+        "trade": 2.03,
+        "production": 2.6
+      }
+    }
+  },
+  {
+    "id": 548,
+    "prosperity": 2.1,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.64,
+        "production": 2.1
+      }
+    }
+  },
+  {
+    "id": 549,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 550,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 551,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 552,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 553,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 554,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 555,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 556,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 557,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 558,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 559,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 560,
+    "prosperity": 1.75,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 1.1,
+        "production": 1.75
+      }
+    }
+  },
+  {
+    "id": 561,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 562,
+    "prosperity": 1.75,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 1.1,
+        "production": 1.75
+      }
+    }
+  },
+  {
+    "id": 563,
+    "prosperity": 3.6,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 564,
+    "prosperity": 3.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      },
+      "Estuaar": {
+        "trade": 1.58,
+        "production": 2.02
+      }
+    }
+  },
+  {
+    "id": 565,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 566,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 567,
+    "prosperity": 1.49,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 568,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 569,
+    "prosperity": 1.49,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 570,
+    "prosperity": 1.49,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 571,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 572,
+    "prosperity": 8.95,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 573,
+    "prosperity": 14.16,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 4.38,
+        "production": 7.01
+      },
+      "Stormveil_Union": {
+        "trade": 3.9,
+        "production": 0.31
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 574,
+    "prosperity": 31.24,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 14.6,
+        "production": 23.36
+      },
+      "Stormveil_Union": {
+        "trade": 13.0,
+        "production": 1.04
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 575,
+    "prosperity": 8.81,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 4.38,
+        "production": 7.01
+      },
+      "Stormveil_Union": {
+        "trade": 3.9,
+        "production": 0.31
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 576,
+    "prosperity": 3.62,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 2.19,
+        "production": 3.5
+      },
+      "Stormveil_Union": {
+        "trade": 1.46,
+        "production": 0.12
+      }
+    }
+  },
+  {
+    "id": 577,
+    "prosperity": 8.95,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 578,
+    "prosperity": 30.23,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 5.0,
+        "production": 0.4
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 4.38,
+        "production": 7.01
+      },
+      "Stormveil_Union": {
+        "trade": 3.9,
+        "production": 0.31
+      },
+      "Dawnspire_Realmm": {
+        "trade": 7.4,
+        "production": 5.92
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 12.2,
+        "production": 16.59
+      }
+    }
+  },
+  {
+    "id": 579,
+    "prosperity": 8.95,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 580,
+    "prosperity": 14.16,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 4.38,
+        "production": 7.01
+      },
+      "Stormveil_Union": {
+        "trade": 3.9,
+        "production": 0.31
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 581,
+    "prosperity": 3.6,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 582,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 583,
+    "prosperity": 8.95,
+    "trade": {
+      "Dawnspire_Realm": {
+        "trade": 1.13,
+        "production": 0.09
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.31,
+        "production": 2.1
+      },
+      "Dawnspire_Realmm": {
+        "trade": 2.22,
+        "production": 1.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 3.66,
+        "production": 4.98
+      }
+    }
+  },
+  {
+    "id": 584,
+    "prosperity": 1.49,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 585,
+    "prosperity": 1.49,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 586,
+    "prosperity": 0.8,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.25,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 587,
+    "prosperity": 0.8,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.25,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 588,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 589,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 590,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 591,
+    "prosperity": 0.8,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.25,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 592,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 593,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 594,
+    "prosperity": 3.2,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.38,
+        "production": 2.8
+      },
+      "Verdant_Crown": {
+        "trade": 2.46,
+        "production": 0.39
+      }
+    }
+  },
+  {
+    "id": 595,
+    "prosperity": 10.66,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 14.6,
+        "production": 9.34
+      },
+      "Verdant_Crown": {
+        "trade": 8.2,
+        "production": 1.31
+      }
+    }
+  },
+  {
+    "id": 596,
+    "prosperity": 3.2,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.38,
+        "production": 2.8
+      },
+      "Verdant_Crown": {
+        "trade": 2.46,
+        "production": 0.39
+      }
+    }
+  },
+  {
+    "id": 597,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 598,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 599,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 600,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 601,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 602,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 603,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 604,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 605,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 606,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 607,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 608,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 609,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 610,
+    "prosperity": 0.73,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.14,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 611,
+    "prosperity": 0.67,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.04,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 612,
+    "prosperity": 0.85,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.32,
+        "production": 0.85
+      }
+    }
+  },
+  {
+    "id": 613,
+    "prosperity": 1.4,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.19,
+        "production": 1.4
+      }
+    }
+  },
+  {
+    "id": 614,
+    "prosperity": 1.4,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.19,
+        "production": 1.4
+      }
+    }
+  },
+  {
+    "id": 615,
+    "prosperity": 1.46,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.29,
+        "production": 1.46
+      }
+    }
+  },
+  {
+    "id": 616,
+    "prosperity": 1.46,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.29,
+        "production": 1.46
+      }
+    }
+  },
+  {
+    "id": 617,
+    "prosperity": 0.81,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.26,
+        "production": 0.81
+      }
+    }
+  },
+  {
+    "id": 618,
+    "prosperity": 0.77,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.2,
+        "production": 0.77
+      }
+    }
+  },
+  {
+    "id": 619,
+    "prosperity": 0.81,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.26,
+        "production": 0.81
+      }
+    }
+  },
+  {
+    "id": 620,
+    "prosperity": 0.7,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.1,
+        "production": 0.7
+      }
+    }
+  },
+  {
+    "id": 621,
+    "prosperity": 0.73,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.14,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 622,
+    "prosperity": 5.86,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 8.03,
+        "production": 5.14
+      },
+      "Verdant_Crown": {
+        "trade": 4.51,
+        "production": 0.72
+      }
+    }
+  },
+  {
+    "id": 623,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 624,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 625,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 626,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 627,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 628,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 629,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 630,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 631,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 632,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 633,
+    "prosperity": 2.92,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 1.83,
+        "production": 2.92
+      }
+    }
+  },
+  {
+    "id": 634,
+    "prosperity": 9.41,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 3.65,
+        "production": 5.84
+      },
+      "Stormveil_Union": {
+        "trade": 2.44,
+        "production": 0.2
+      },
+      "Dawnspire_Realmm": {
+        "trade": 1.11,
+        "production": 0.89
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.83,
+        "production": 2.49
+      }
+    }
+  },
+  {
+    "id": 635,
+    "prosperity": 15.58,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 7.3,
+        "production": 11.68
+      },
+      "Stormveil_Union": {
+        "trade": 6.5,
+        "production": 0.52
+      },
+      "Dawnspire_Realmm": {
+        "trade": 1.11,
+        "production": 0.89
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.83,
+        "production": 2.49
+      }
+    }
+  },
+  {
+    "id": 636,
+    "prosperity": 6.04,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 3.65,
+        "production": 5.84
+      },
+      "Stormveil_Union": {
+        "trade": 2.44,
+        "production": 0.2
+      }
+    }
+  },
+  {
+    "id": 637,
+    "prosperity": 3.59,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.04,
+        "production": 0.67
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.83,
+        "production": 2.92
+      }
+    }
+  },
+  {
+    "id": 638,
+    "prosperity": 3.08,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.08,
+        "production": 1.33
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.1,
+        "production": 1.75
+      }
+    }
+  },
+  {
+    "id": 639,
+    "prosperity": 1.33,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.08,
+        "production": 1.33
+      }
+    }
+  },
+  {
+    "id": 640,
+    "prosperity": 0.67,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.04,
+        "production": 0.67
+      }
+    }
+  },
+  {
+    "id": 641,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 642,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 643,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 644,
+    "prosperity": 0.73,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.14,
+        "production": 0.73
+      }
+    }
+  },
+  {
+    "id": 645,
+    "prosperity": 0.8,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.25,
+        "production": 0.8
+      }
+    }
+  },
+  {
+    "id": 646,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 647,
+    "prosperity": 4.2,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 2.63,
+        "production": 4.2
+      }
+    }
+  },
+  {
+    "id": 648,
+    "prosperity": 4.2,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 2.63,
+        "production": 4.2
+      }
+    }
+  },
+  {
+    "id": 649,
+    "prosperity": 5.7,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 2.63,
+        "production": 4.2
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 650,
+    "prosperity": 8.74,
+    "trade": {
+      "Stormveil_Union_Guild": {
+        "trade": 4.38,
+        "production": 7.01
+      },
+      "Stormveil_Union": {
+        "trade": 2.93,
+        "production": 0.23
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 651,
+    "prosperity": 3.38,
+    "trade": {
+      "Dawnspire_Realmm": {
+        "trade": 1.11,
+        "production": 0.89
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.83,
+        "production": 2.49
+      }
+    }
+  },
+  {
+    "id": 652,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 653,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 654,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 655,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 656,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 657,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 658,
+    "prosperity": 2.26,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.57,
+        "production": 2.26
+      }
+    }
+  },
+  {
+    "id": 659,
+    "prosperity": 5.03,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.91,
+        "production": 2.76
+      },
+      "Emberfall_League": {
+        "trade": 1.63,
+        "production": 0.78
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.1,
+        "production": 1.49
+      }
+    }
+  },
+  {
+    "id": 660,
+    "prosperity": 2.95,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.6,
+        "production": 2.3
+      },
+      "Emberfall_League": {
+        "trade": 1.36,
+        "production": 0.65
+      }
+    }
+  },
+  {
+    "id": 661,
+    "prosperity": 6.34,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 3.19,
+        "production": 4.59
+      },
+      "Emberfall_League": {
+        "trade": 3.63,
+        "production": 1.74
+      }
+    }
+  },
+  {
+    "id": 662,
+    "prosperity": 6.61,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.82,
+        "production": 2.62
+      },
+      "Emberfall_League": {
+        "trade": 1.5,
+        "production": 0.72
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 663,
+    "prosperity": 2.26,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.57,
+        "production": 2.26
+      }
+    }
+  },
+  {
+    "id": 664,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 665,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 666,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 667,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 668,
+    "prosperity": 3.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.32,
+        "production": 1.48
+      },
+      "Estuaar": {
+        "trade": 1.58,
+        "production": 2.02
+      }
+    }
+  },
+  {
+    "id": 669,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 670,
+    "prosperity": 7.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.65,
+        "production": 2.97
+      },
+      "Estuaar": {
+        "trade": 3.15,
+        "production": 4.04
+      }
+    }
+  },
+  {
+    "id": 671,
+    "prosperity": 12.73,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 5.73,
+        "production": 7.34
+      }
+    }
+  },
+  {
+    "id": 672,
+    "prosperity": 12.73,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 5.73,
+        "production": 7.34
+      }
+    }
+  },
+  {
+    "id": 673,
+    "prosperity": 7.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.65,
+        "production": 2.97
+      },
+      "Estuaar": {
+        "trade": 3.15,
+        "production": 4.04
+      }
+    }
+  },
+  {
+    "id": 674,
+    "prosperity": 3.85,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.46,
+        "production": 1.63
+      },
+      "Estuaar": {
+        "trade": 1.73,
+        "production": 2.22
+      }
+    }
+  },
+  {
+    "id": 675,
+    "prosperity": 2.26,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.57,
+        "production": 2.26
+      }
+    }
+  },
+  {
+    "id": 676,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 677,
+    "prosperity": 1.57,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.09,
+        "production": 1.57
+      }
+    }
+  },
+  {
+    "id": 678,
+    "prosperity": 6.81,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.98,
+        "production": 2.86
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 679,
+    "prosperity": 5.89,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.82,
+        "production": 2.62
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 680,
+    "prosperity": 8.73,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 2.9,
+        "production": 4.18
+      },
+      "Emberfall_League": {
+        "trade": 3.3,
+        "production": 1.58
+      },
+      "Estuaar": {
+        "trade": 2.32,
+        "production": 2.97
+      }
+    }
+  },
+  {
+    "id": 681,
+    "prosperity": 6.81,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.98,
+        "production": 2.86
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 682,
+    "prosperity": 10.48,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 3.48,
+        "production": 5.01
+      },
+      "Emberfall_League": {
+        "trade": 3.96,
+        "production": 1.9
+      },
+      "Estuaar": {
+        "trade": 2.79,
+        "production": 3.57
+      }
+    }
+  },
+  {
+    "id": 683,
+    "prosperity": 11.52,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 5.8,
+        "production": 8.35
+      },
+      "Emberfall_League": {
+        "trade": 6.6,
+        "production": 3.17
+      }
+    }
+  },
+  {
+    "id": 684,
+    "prosperity": 5.76,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 2.9,
+        "production": 4.18
+      },
+      "Emberfall_League": {
+        "trade": 3.3,
+        "production": 1.58
+      }
+    }
+  },
+  {
+    "id": 685,
+    "prosperity": 5.76,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 2.9,
+        "production": 4.18
+      },
+      "Emberfall_League": {
+        "trade": 3.3,
+        "production": 1.58
+      }
+    }
+  },
+  {
+    "id": 686,
+    "prosperity": 5.76,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 2.9,
+        "production": 4.18
+      },
+      "Emberfall_League": {
+        "trade": 3.3,
+        "production": 1.58
+      }
+    }
+  },
+  {
+    "id": 687,
+    "prosperity": 5.76,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 2.9,
+        "production": 4.18
+      },
+      "Emberfall_League": {
+        "trade": 3.3,
+        "production": 1.58
+      }
+    }
+  },
+  {
+    "id": 688,
+    "prosperity": 6.81,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.91,
+        "production": 2.76
+      },
+      "Emberfall_League": {
+        "trade": 1.63,
+        "production": 0.78
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 689,
+    "prosperity": 5.89,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.82,
+        "production": 2.62
+      },
+      "Estuaar": {
+        "trade": 2.56,
+        "production": 3.27
+      }
+    }
+  },
+  {
+    "id": 690,
+    "prosperity": 6.24,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.82,
+        "production": 2.62
+      },
+      "Estuaar": {
+        "trade": 2.83,
+        "production": 3.63
+      }
+    }
+  },
+  {
+    "id": 691,
+    "prosperity": 12.34,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.67,
+        "production": 3.84
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 692,
+    "prosperity": 12.34,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.67,
+        "production": 3.84
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 693,
+    "prosperity": 12.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.47,
+        "production": 2.76
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.67,
+        "production": 3.84
+      },
+      "Estuaar": {
+        "trade": 4.9,
+        "production": 6.27
+      }
+    }
+  },
+  {
+    "id": 694,
+    "prosperity": 16.06,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.27,
+        "production": 3.27
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 695,
+    "prosperity": 15.57,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.93,
+        "production": 2.78
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 696,
+    "prosperity": 6.67,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.88,
+        "production": 2.71
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 697,
+    "prosperity": 6.67,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.88,
+        "production": 2.71
+      },
+      "Estuaar": {
+        "trade": 3.09,
+        "production": 3.96
+      }
+    }
+  },
+  {
+    "id": 698,
+    "prosperity": 6.11,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.44,
+        "production": 1.62
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.13,
+        "production": 1.63
+      },
+      "Estuaar": {
+        "trade": 2.24,
+        "production": 2.86
+      }
+    }
+  },
+  {
+    "id": 699,
+    "prosperity": 7.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.45,
+        "production": 2.09
+      },
+      "Emberfall_League": {
+        "trade": 1.24,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 700,
+    "prosperity": 7.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.45,
+        "production": 2.09
+      },
+      "Emberfall_League": {
+        "trade": 1.24,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 701,
+    "prosperity": 7.68,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.45,
+        "production": 2.09
+      },
+      "Emberfall_League": {
+        "trade": 1.24,
+        "production": 0.59
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 702,
+    "prosperity": 7.27,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.03,
+        "production": 1.16
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.73,
+        "production": 2.49
+      },
+      "Estuaar": {
+        "trade": 2.83,
+        "production": 3.63
+      }
+    }
+  },
+  {
+    "id": 703,
+    "prosperity": 7.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.6,
+        "production": 1.79
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.47,
+        "production": 2.11
+      },
+      "Estuaar": {
+        "trade": 3.17,
+        "production": 4.06
+      }
+    }
+  },
+  {
+    "id": 704,
+    "prosperity": 9.87,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.13,
+        "production": 3.51
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.11,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 3.73,
+        "production": 4.77
+      }
+    }
+  },
+  {
+    "id": 705,
+    "prosperity": 10.85,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 706,
+    "prosperity": 9.4,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 707,
+    "prosperity": 9.4,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 708,
+    "prosperity": 3.18,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Estuaar": {
+        "trade": 1.43,
+        "production": 1.83
+      }
+    }
+  },
+  {
+    "id": 709,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 2.87,
+        "production": 3.67
+      }
+    }
+  },
+  {
+    "id": 710,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Estuaar": {
+        "trade": 2.87,
+        "production": 3.67
+      }
+    }
+  },
+  {
+    "id": 711,
+    "prosperity": 5.84,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.21,
+        "production": 2.47
+      },
+      "Estuaar": {
+        "trade": 2.63,
+        "production": 3.36
+      }
+    }
+  },
+  {
+    "id": 712,
+    "prosperity": 3.18,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.2,
+        "production": 1.35
+      },
+      "Estuaar": {
+        "trade": 1.43,
+        "production": 1.83
+      }
+    }
+  },
+  {
+    "id": 713,
+    "prosperity": 4.7,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.78,
+        "production": 1.99
+      },
+      "Estuaar": {
+        "trade": 2.12,
+        "production": 2.71
+      }
+    }
+  },
+  {
+    "id": 714,
+    "prosperity": 11.29,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.27,
+        "production": 4.78
+      },
+      "Estuaar": {
+        "trade": 5.08,
+        "production": 6.51
+      }
+    }
+  },
+  {
+    "id": 715,
+    "prosperity": 11.29,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.27,
+        "production": 4.78
+      },
+      "Estuaar": {
+        "trade": 5.08,
+        "production": 6.51
+      }
+    }
+  },
+  {
+    "id": 716,
+    "prosperity": 10.85,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.56,
+        "production": 3.98
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 4.24,
+        "production": 5.42
+      }
+    }
+  },
+  {
+    "id": 717,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 718,
+    "prosperity": 7.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 719,
+    "prosperity": 9.03,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Estuaar": {
+        "trade": 4.07,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 720,
+    "prosperity": 8.97,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 721,
+    "prosperity": 15.25,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.71,
+        "production": 2.46
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 722,
+    "prosperity": 15.25,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.84,
+        "production": 5.42
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.71,
+        "production": 2.46
+      },
+      "Estuaar": {
+        "trade": 5.76,
+        "production": 7.37
+      }
+    }
+  },
+  {
+    "id": 723,
+    "prosperity": 6.0,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.64,
+        "production": 1.84
+      },
+      "Estuaar": {
+        "trade": 3.25,
+        "production": 4.16
+      }
+    }
+  },
+  {
+    "id": 724,
+    "prosperity": 5.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 2.98,
+        "production": 3.82
+      }
+    }
+  },
+  {
+    "id": 725,
+    "prosperity": 7.09,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.11,
+        "production": 1.59
+      },
+      "Estuaar": {
+        "trade": 2.98,
+        "production": 3.82
+      }
+    }
+  },
+  {
+    "id": 726,
+    "prosperity": 5.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 2.98,
+        "production": 3.82
+      }
+    }
+  },
+  {
+    "id": 727,
+    "prosperity": 5.22,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.71,
+        "production": 2.46
+      },
+      "Estuaar": {
+        "trade": 2.15,
+        "production": 2.76
+      }
+    }
+  },
+  {
+    "id": 728,
+    "prosperity": 5.06,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.71,
+        "production": 2.46
+      },
+      "Estuaar": {
+        "trade": 2.03,
+        "production": 2.6
+      }
+    }
+  },
+  {
+    "id": 729,
+    "prosperity": 10.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.32,
+        "production": 2.6
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.71,
+        "production": 2.46
+      },
+      "Estuaar": {
+        "trade": 4.61,
+        "production": 5.9
+      }
+    }
+  },
+  {
+    "id": 730,
+    "prosperity": 11.6,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.59,
+        "production": 2.91
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.46,
+        "production": 2.1
+      },
+      "Estuaar": {
+        "trade": 5.15,
+        "production": 6.59
+      }
+    }
+  },
+  {
+    "id": 731,
+    "prosperity": 4.96,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.31,
+        "production": 1.88
+      },
+      "Estuaar": {
+        "trade": 2.41,
+        "production": 3.08
+      }
+    }
+  },
+  {
+    "id": 732,
+    "prosperity": 6.37,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.74,
+        "production": 1.95
+      },
+      "Estuaar": {
+        "trade": 3.46,
+        "production": 4.42
+      }
+    }
+  },
+  {
+    "id": 733,
+    "prosperity": 2.97,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 1.19,
+        "production": 1.53
+      }
+    }
+  },
+  {
+    "id": 734,
+    "prosperity": 2.97,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 1.19,
+        "production": 1.53
+      }
+    }
+  },
+  {
+    "id": 735,
+    "prosperity": 10.77,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.21,
+        "production": 1.74
+      },
+      "Estuaar": {
+        "trade": 4.07,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 736,
+    "prosperity": 4.5,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.23,
+        "production": 1.38
+      },
+      "Estuaar": {
+        "trade": 2.44,
+        "production": 3.12
+      }
+    }
+  },
+  {
+    "id": 737,
+    "prosperity": 9.33,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.85,
+        "production": 3.19
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.26,
+        "production": 1.81
+      },
+      "Estuaar": {
+        "trade": 3.39,
+        "production": 4.34
+      }
+    }
+  },
+  {
+    "id": 738,
+    "prosperity": 3.07,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.01,
+        "production": 1.45
+      },
+      "Estuaar": {
+        "trade": 1.27,
+        "production": 1.62
+      }
+    }
+  },
+  {
+    "id": 739,
+    "prosperity": 6.81,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.37,
+        "production": 1.53
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.26,
+        "production": 1.81
+      },
+      "Estuaar": {
+        "trade": 2.71,
+        "production": 3.47
+      }
+    }
+  },
+  {
+    "id": 740,
+    "prosperity": 1.07,
+    "trade": {
+      "Silverwake_Dominion_Guild": {
+        "trade": 2.01,
+        "production": 0.32
+      },
+      "Silverwake_Dominion": {
+        "trade": 1.88,
+        "production": 0.75
+      }
+    }
+  },
+  {
+    "id": 741,
+    "prosperity": 19.16,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.82,
+        "production": 7.64
+      },
+      "Estuaar": {
+        "trade": 9.0,
+        "production": 11.52
+      }
+    }
+  },
+  {
+    "id": 742,
+    "prosperity": 13.52,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.81,
+        "production": 5.39
+      },
+      "Estuaar": {
+        "trade": 6.35,
+        "production": 8.13
+      }
+    }
+  },
+  {
+    "id": 743,
+    "prosperity": 10.77,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.41,
+        "production": 3.82
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.21,
+        "production": 1.74
+      },
+      "Estuaar": {
+        "trade": 4.07,
+        "production": 5.2
+      }
+    }
+  },
+  {
+    "id": 744,
+    "prosperity": 3.96,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 1.5,
+        "production": 1.68
+      },
+      "Estuaar": {
+        "trade": 1.78,
+        "production": 2.28
+      }
+    }
+  },
+  {
+    "id": 745,
+    "prosperity": 3.02,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 4.16,
+        "production": 2.66
+      },
+      "Verdant_Crown": {
+        "trade": 2.22,
+        "production": 0.36
+      }
+    }
+  },
+  {
+    "id": 746,
+    "prosperity": 1.54,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.41,
+        "production": 1.54
+      }
+    }
+  },
+  {
+    "id": 747,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 748,
+    "prosperity": 1.33,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.08,
+        "production": 1.33
+      }
+    }
+  },
+  {
+    "id": 749,
+    "prosperity": 1.39,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.17,
+        "production": 1.39
+      }
+    }
+  },
+  {
+    "id": 750,
+    "prosperity": 1.39,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 2.17,
+        "production": 1.39
+      }
+    }
+  },
+  {
+    "id": 751,
+    "prosperity": 10.12,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 13.87,
+        "production": 8.88
+      },
+      "Verdant_Crown": {
+        "trade": 7.79,
+        "production": 1.25
+      }
+    }
+  },
+  {
+    "id": 752,
+    "prosperity": 4.17,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.19,
+        "production": 0.76
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.25,
+        "production": 2.0
+      },
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.04,
+        "production": 1.42
+      }
+    }
+  },
+  {
+    "id": 753,
+    "prosperity": 1.42,
+    "trade": {
+      "Dawnspire_Realm_Guild": {
+        "trade": 1.04,
+        "production": 1.42
+      }
+    }
+  },
+  {
+    "id": 754,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 755,
+    "prosperity": 0.72,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.13,
+        "production": 0.72
+      }
+    }
+  },
+  {
+    "id": 756,
+    "prosperity": 2.76,
+    "trade": {
+      "Verdant_Crown_Guild": {
+        "trade": 1.19,
+        "production": 0.76
+      },
+      "Stormveil_Union_Guild": {
+        "trade": 1.25,
+        "production": 2.0
+      }
+    }
+  },
+  {
+    "id": 757,
+    "prosperity": 24.3,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.02,
+        "production": 8.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.42,
+        "production": 3.08
+      },
+      "Estuaar": {
+        "trade": 9.56,
+        "production": 12.23
+      }
+    }
+  },
+  {
+    "id": 758,
+    "prosperity": 26.39,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.45,
+        "production": 9.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.45,
+        "production": 4.05
+      },
+      "Estuaar": {
+        "trade": 10.06,
+        "production": 12.88
+      }
+    }
+  },
+  {
+    "id": 759,
+    "prosperity": 8.93,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.38,
+        "production": 3.78
+      },
+      "Estuaar": {
+        "trade": 4.02,
+        "production": 5.15
+      }
+    }
+  },
+  {
+    "id": 760,
+    "prosperity": 32.97,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.9,
+        "production": 5.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 10.59,
+        "production": 13.55
+      }
+    }
+  },
+  {
+    "id": 761,
+    "prosperity": 11.16,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.74,
+        "production": 4.19
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.62,
+        "production": 1.26
+      },
+      "Estuaar": {
+        "trade": 4.46,
+        "production": 5.71
+      }
+    }
+  },
+  {
+    "id": 762,
+    "prosperity": 56.4,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.27,
+        "production": 6.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 9.85,
+        "production": 11.03
+      },
+      "Ironroot_Covenant": {
+        "trade": 9.85,
+        "production": 4.73
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.02,
+        "production": 19.22
+      }
+    }
+  },
+  {
+    "id": 763,
+    "prosperity": 56.4,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.27,
+        "production": 6.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 9.36,
+        "production": 10.48
+      },
+      "Ironroot_Covenant": {
+        "trade": 9.36,
+        "production": 4.49
+      },
+      "Estuaar": {
+        "trade": 12.35,
+        "production": 15.81
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.02,
+        "production": 19.22
+      }
+    }
+  },
+  {
+    "id": 764,
+    "prosperity": 55.65,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 7.27,
+        "production": 6.4
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 12.35,
+        "production": 15.81
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 15.02,
+        "production": 19.22
+      }
+    }
+  },
+  {
+    "id": 765,
+    "prosperity": 51.96,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.45,
+        "production": 9.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.45,
+        "production": 4.05
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 766,
+    "prosperity": 9.79,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.41,
+        "production": 2.7
+      },
+      "Gilded_Horizon_Guild": {
+        "trade": 5.88,
+        "production": 0.94
+      },
+      "Estuaar": {
+        "trade": 3.34,
+        "production": 4.28
+      },
+      "Gilded_Horizon": {
+        "trade": 2.34,
+        "production": 1.87
+      }
+    }
+  },
+  {
+    "id": 767,
+    "prosperity": 1.77,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.38,
+        "production": 1.77
+      }
+    }
+  },
+  {
+    "id": 768,
+    "prosperity": 1.68,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.31,
+        "production": 1.68
+      }
+    }
+  },
+  {
+    "id": 769,
+    "prosperity": 1.59,
+    "trade": {
+      "Estuaar": {
+        "trade": 1.24,
+        "production": 1.59
+      }
+    }
+  },
+  {
+    "id": 770,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 771,
+    "prosperity": 3.83,
+    "trade": {
+      "TestFaction": {
+        "trade": 2.89,
+        "production": 0.92
+      },
+      "Estuaar": {
+        "trade": 1.38,
+        "production": 1.77
+      },
+      "TestGuild": {
+        "trade": 2.37,
+        "production": 1.14
+      }
+    }
+  },
+  {
+    "id": 772,
+    "prosperity": 10.77,
+    "trade": {
+      "Gilded_Horizon_Guild": {
+        "trade": 17.67,
+        "production": 2.83
+      },
+      "Estuaar": {
+        "trade": 1.81,
+        "production": 2.32
+      },
+      "Gilded_Horizon": {
+        "trade": 7.03,
+        "production": 5.62
+      }
+    }
+  },
+  {
+    "id": 773,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Estuaar": {
+        "trade": 11.73,
+        "production": 15.02
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 774,
+    "prosperity": 32.98,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.9,
+        "production": 5.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.45,
+        "production": 9.46
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.45,
+        "production": 4.05
+      },
+      "Estuaar": {
+        "trade": 11.15,
+        "production": 14.27
+      }
+    }
+  },
+  {
+    "id": 775,
+    "prosperity": 25.62,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.02,
+        "production": 8.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.42,
+        "production": 3.08
+      },
+      "Estuaar": {
+        "trade": 10.59,
+        "production": 13.55
+      }
+    }
+  },
+  {
+    "id": 776,
+    "prosperity": 25.62,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.02,
+        "production": 8.99
+      },
+      "Ironroot_Covenant": {
+        "trade": 6.42,
+        "production": 3.08
+      },
+      "Estuaar": {
+        "trade": 10.59,
+        "production": 13.55
+      }
+    }
+  },
+  {
+    "id": 777,
+    "prosperity": 7.71,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.74,
+        "production": 3.07
+      },
+      "Estuaar": {
+        "trade": 3.62,
+        "production": 4.64
+      }
+    }
+  },
+  {
+    "id": 778,
+    "prosperity": 16.13,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.1,
+        "production": 6.83
+      },
+      "Estuaar": {
+        "trade": 7.26,
+        "production": 9.3
+      }
+    }
+  },
+  {
+    "id": 779,
+    "prosperity": 16.98,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.42,
+        "production": 7.19
+      },
+      "Estuaar": {
+        "trade": 7.64,
+        "production": 9.79
+      }
+    }
+  },
+  {
+    "id": 780,
+    "prosperity": 19.85,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 6.76,
+        "production": 7.57
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.37,
+        "production": 1.98
+      },
+      "Estuaar": {
+        "trade": 8.05,
+        "production": 10.3
+      }
+    }
+  },
+  {
+    "id": 781,
+    "prosperity": 52.67,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 6.9,
+        "production": 6.08
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 9.36,
+        "production": 10.48
+      },
+      "Ironroot_Covenant": {
+        "trade": 9.36,
+        "production": 4.49
+      },
+      "Estuaar": {
+        "trade": 11.15,
+        "production": 14.27
+      },
+      "Obsidian_Compact_Guild": {
+        "trade": 13.56,
+        "production": 17.35
+      }
+    }
+  },
+  {
+    "id": 782,
+    "prosperity": 34.95,
+    "trade": {
+      "Obsidian_Compact": {
+        "trade": 5.9,
+        "production": 5.19
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 8.89,
+        "production": 9.96
+      },
+      "Ironroot_Covenant": {
+        "trade": 8.89,
+        "production": 4.27
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.37,
+        "production": 1.98
+      },
+      "Estuaar": {
+        "trade": 10.59,
+        "production": 13.55
+      }
+    }
+  },
+  {
+    "id": 783,
+    "prosperity": 8.18,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.48,
+        "production": 3.89
+      },
+      "Ironroot_Covenant": {
+        "trade": 3.48,
+        "production": 1.67
+      },
+      "Estuaar": {
+        "trade": 2.05,
+        "production": 2.62
+      }
+    }
+  },
+  {
+    "id": 784,
+    "prosperity": 6.92,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.3,
+        "production": 3.7
+      },
+      "Ironroot_Covenant": {
+        "trade": 2.31,
+        "production": 1.11
+      },
+      "Estuaar": {
+        "trade": 1.65,
+        "production": 2.12
+      }
+    }
+  },
+  {
+    "id": 785,
+    "prosperity": 3.51,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 3.14,
+        "production": 3.51
+      }
+    }
+  },
+  {
+    "id": 786,
+    "prosperity": 15.63,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 1.75,
+        "production": 1.4
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 5.53,
+        "production": 7.96
+      },
+      "Estuaar": {
+        "trade": 4.89,
+        "production": 6.26
+      }
+    }
+  },
+  {
+    "id": 787,
+    "prosperity": 15.61,
+    "trade": {
+      "Frostmere_Pact": {
+        "trade": 2.92,
+        "production": 2.34
+      },
+      "Frostmere_Pact_Guild": {
+        "trade": 9.21,
+        "production": 13.27
+      }
+    }
+  },
+  {
+    "id": 788,
+    "prosperity": 7.96,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 5.53,
+        "production": 7.96
+      }
+    }
+  },
+  {
+    "id": 789,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 790,
+    "prosperity": 0.0,
+    "trade": {}
+  },
+  {
+    "id": 791,
+    "prosperity": 1.2,
+    "trade": {
+      "Sable_Reach_Guild": {
+        "trade": 2.5,
+        "production": 1.2
+      }
+    }
+  },
+  {
+    "id": 792,
+    "prosperity": 14.02,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.59,
+        "production": 2.91
+      },
+      "Emberfall_League_Guild": {
+        "trade": 3.14,
+        "production": 4.52
+      },
+      "Estuaar": {
+        "trade": 5.15,
+        "production": 6.59
+      }
+    }
+  },
+  {
+    "id": 793,
+    "prosperity": 12.38,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 3.31,
+        "production": 4.76
+      },
+      "Emberfall_League": {
+        "trade": 2.82,
+        "production": 1.35
+      },
+      "Estuaar": {
+        "trade": 4.89,
+        "production": 6.26
+      }
+    }
+  },
+  {
+    "id": 794,
+    "prosperity": 11.3,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 3.14,
+        "production": 4.52
+      },
+      "Emberfall_League": {
+        "trade": 2.35,
+        "production": 1.13
+      },
+      "Estuaar": {
+        "trade": 4.42,
+        "production": 5.65
+      }
+    }
+  },
+  {
+    "id": 795,
+    "prosperity": 24.54,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 7.11,
+        "production": 7.97
+      },
+      "Ironroot_Covenant": {
+        "trade": 7.11,
+        "production": 3.41
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.61,
+        "production": 2.32
+      },
+      "Estuaar": {
+        "trade": 8.47,
+        "production": 10.84
+      }
+    }
+  },
+  {
+    "id": 796,
+    "prosperity": 17.36,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.69,
+        "production": 6.37
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.61,
+        "production": 2.32
+      },
+      "Estuaar": {
+        "trade": 6.78,
+        "production": 8.67
+      }
+    }
+  },
+  {
+    "id": 797,
+    "prosperity": 18.81,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 3.1,
+        "production": 4.46
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.55,
+        "production": 5.1
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.61,
+        "production": 2.32
+      },
+      "Estuaar": {
+        "trade": 5.42,
+        "production": 6.94
+      }
+    }
+  },
+  {
+    "id": 798,
+    "prosperity": 4.26,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.16,
+        "production": 1.67
+      },
+      "Estuaar": {
+        "trade": 2.03,
+        "production": 2.6
+      }
+    }
+  },
+  {
+    "id": 799,
+    "prosperity": 9.67,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.19,
+        "production": 2.45
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.16,
+        "production": 1.67
+      },
+      "Estuaar": {
+        "trade": 4.34,
+        "production": 5.55
+      }
+    }
+  },
+  {
+    "id": 800,
+    "prosperity": 14.35,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.55,
+        "production": 5.1
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.61,
+        "production": 2.32
+      },
+      "Estuaar": {
+        "trade": 5.42,
+        "production": 6.94
+      }
+    }
+  },
+  {
+    "id": 801,
+    "prosperity": 17.94,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 5.69,
+        "production": 6.37
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.01,
+        "production": 2.89
+      },
+      "Estuaar": {
+        "trade": 6.78,
+        "production": 8.67
+      }
+    }
+  },
+  {
+    "id": 802,
+    "prosperity": 15.66,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 4.55,
+        "production": 5.1
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.51,
+        "production": 3.62
+      },
+      "Estuaar": {
+        "trade": 5.42,
+        "production": 6.94
+      }
+    }
+  },
+  {
+    "id": 803,
+    "prosperity": 10.89,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.19,
+        "production": 2.45
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.01,
+        "production": 2.89
+      },
+      "Estuaar": {
+        "trade": 4.34,
+        "production": 5.55
+      }
+    }
+  },
+  {
+    "id": 804,
+    "prosperity": 10.89,
+    "trade": {
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.19,
+        "production": 2.45
+      },
+      "Emberfall_League_Guild": {
+        "trade": 2.01,
+        "production": 2.89
+      },
+      "Estuaar": {
+        "trade": 4.34,
+        "production": 5.55
+      }
+    }
+  },
+  {
+    "id": 805,
+    "prosperity": 4.76,
+    "trade": {
+      "Emberfall_League_Guild": {
+        "trade": 1.61,
+        "production": 2.32
+      },
+      "Estuaar": {
+        "trade": 1.91,
+        "production": 2.44
+      }
+    }
+  },
+  {
+    "id": 806,
+    "prosperity": 19.44,
+    "trade": {
+      "Frostmere_Pact_Guild": {
+        "trade": 5.53,
+        "production": 7.96
+      },
+      "Ironroot_Covenant_Guild": {
+        "trade": 2.59,
+        "production": 2.91
+      },
+      "Emberfall_League_Guild": {
+        "trade": 1.37,
+        "production": 1.98
+      },
+      "Estuaar": {
+        "trade": 5.15,
+        "production": 6.59
+      }
+    }
+  }
+]

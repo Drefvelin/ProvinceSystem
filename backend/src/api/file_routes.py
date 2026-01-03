@@ -37,9 +37,9 @@ async def get_region_file(map: str, type: str, file_name: str):
     return add_cors(FileResponse(file_path, media_type="image/png"))
 
 
-@file_router.get("/{map}/banners/{file_name}")
-async def get_banner_file(map: str, file_name: str):
-    file_path = banner_image(map, file_name)
+@file_router.get("/{map}/banners/{mode}/{file_name}")
+async def get_banner_file(map: str, mode: str, file_name: str):
+    file_path = banner_image(map, mode, file_name)
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Banner not found")

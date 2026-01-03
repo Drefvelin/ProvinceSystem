@@ -1,0 +1,312 @@
+[
+  {
+    "id": "TestFaction",
+    "name": "§x§a§3§a§1§8§4TestFaction",
+    "size": 12,
+    "rgb": "215,203,92",
+    "trade_power": 66.44,
+    "banner": [
+      "RED.BASE",
+      "BROWN.DIAGONAL_UP_LEFT",
+      "CYAN.FIRE",
+      "LIGHT_BLUE.WATER",
+      "BLUE.CHECKER"
+    ]
+  },
+  {
+    "id": "TestGuild",
+    "name": "§x§a§3§a§1§8§4TestGuild",
+    "size": 12,
+    "rgb": "65,93,210",
+    "trade_power": 54.63,
+    "banner": [
+      "GRAY.BASE",
+      "GREEN.DIAGONAL_RIGHT",
+      "YELLOW.RING"
+    ]
+  },
+  {
+    "id": "Sable_Reach_Guild",
+    "name": "Sable Reach Guild",
+    "size": 28,
+    "rgb": "137,28,63",
+    "trade_power": 120.14,
+    "banner": [
+      "GRAY.BASE",
+      "ORANGE.CASTLE"
+    ]
+  },
+  {
+    "id": "Sable_Reach",
+    "name": "Sable Reach",
+    "size": 5,
+    "rgb": "205,141,224",
+    "trade_power": 15.81,
+    "banner": [
+      "WHITE.BASE",
+      "WHITE.SQUARE_TOP_LEFT",
+      "WHITE.STRIPE_TOP",
+      "ORANGE.ARROWS_DOWN"
+    ]
+  },
+  {
+    "id": "Ironroot_Covenant_Guild",
+    "name": "Ironroot Covenant Guild",
+    "size": 41,
+    "rgb": "77,156,164",
+    "trade_power": 1080.64,
+    "banner": [
+      "BROWN.BASE",
+      "BROWN.SQUARE_BOTTOM_LEFT",
+      "GRAY.SMALL_STRIPES_DOWNLEFT",
+      "LIGHT_BLUE.CROWN"
+    ]
+  },
+  {
+    "id": "Ironroot_Covenant",
+    "name": "Ironroot Covenant",
+    "size": 23,
+    "rgb": "79,226,37",
+    "trade_power": 460.34,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.HALF_VERTICAL_RIGHT",
+      "BLACK.SMALL_STRIPES_DOWNLEFT",
+      "RED.MOON",
+      "RED.HEART",
+      "BROWN.SUNBURST"
+    ]
+  },
+  {
+    "id": "Emberfall_League_Guild",
+    "name": "Emberfall League Guild",
+    "size": 37,
+    "rgb": "38,63,101",
+    "trade_power": 118.02,
+    "banner": [
+      "BLACK.BASE",
+      "LIGHT_GRAY.TATTER",
+      "BLUE.RHOMBUS"
+    ]
+  },
+  {
+    "id": "Emberfall_League",
+    "name": "Emberfall League",
+    "size": 11,
+    "rgb": "231,144,175",
+    "trade_power": 40.53,
+    "banner": [
+      "RED.BASE",
+      "BROWN.TRIANGLE_BOTTOM",
+      "GRAY.STRIPE_DOWNLEFT",
+      "WHITE.TRIDENT"
+    ]
+  },
+  {
+    "id": "Gilded_Horizon_Guild",
+    "name": "Gilded Horizon Guild",
+    "size": 23,
+    "rgb": "196,139,193",
+    "trade_power": 153.74,
+    "banner": [
+      "LIGHT_GRAY.BASE",
+      "LIGHT_GRAY.DIAGONAL_LEFT",
+      "LIGHT_GRAY.BORDER",
+      "LIME.TRIDENT",
+      "BLACK.FORK_TOP"
+    ]
+  },
+  {
+    "id": "Gilded_Horizon",
+    "name": "Gilded Horizon",
+    "size": 17,
+    "rgb": "98,148,94",
+    "trade_power": 60.5,
+    "banner": [
+      "WHITE.BASE",
+      "WHITE.DIAGONAL_LEFT",
+      "WHITE.STRIPE_TOP",
+      "GRAY.COMPANION"
+    ]
+  },
+  {
+    "id": "Silverwake_Dominion_Guild",
+    "name": "Silverwake Dominion Guild",
+    "size": 24,
+    "rgb": "221,206,204",
+    "trade_power": 108.52,
+    "banner": [
+      "ORANGE.BASE",
+      "ORANGE.TRIANGLES_TOP",
+      "GREEN.FORK_TOP"
+    ]
+  },
+  {
+    "id": "Silverwake_Dominion",
+    "name": "Silverwake Dominion",
+    "size": 22,
+    "rgb": "176,196,215",
+    "trade_power": 92.34,
+    "banner": [
+      "LIGHT_GRAY.BASE",
+      "LIGHT_GRAY.QUARTER_TOP_LEFT",
+      "LIGHT_GRAY.STRIPE_RIGHT",
+      "GRAY.ARROW_DOWN"
+    ]
+  },
+  {
+    "id": "Stormveil_Union_Guild",
+    "name": "Stormveil Union Guild",
+    "size": 42,
+    "rgb": "210,65,35",
+    "trade_power": 75.99,
+    "banner": [
+      "LIGHT_BLUE.BASE",
+      "CYAN.QUARTER_TOP_RIGHT",
+      "YELLOW.FORK_TOP",
+      "RED.CIRCLE"
+    ]
+  },
+  {
+    "id": "Stormveil_Union",
+    "name": "Stormveil Union",
+    "size": 14,
+    "rgb": "139,83,189",
+    "trade_power": 44.36,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.TRIANGLE_TOP",
+      "LIME.BLAM"
+    ]
+  },
+  {
+    "id": "Frostmere_Pact",
+    "name": "Frostmere Pact",
+    "size": 17,
+    "rgb": "66,144,21",
+    "trade_power": 50.88,
+    "banner": [
+      "GRAY.BASE",
+      "LIGHT_BLUE.FORK_TOP"
+    ]
+  },
+  {
+    "id": "Frostmere_Pact_Guild",
+    "name": "Frostmere Pact Guild",
+    "size": 44,
+    "rgb": "23,224,117",
+    "trade_power": 237.07,
+    "banner": [
+      "GRAY.BASE",
+      "GRAY.TRIANGLE_TOP",
+      "BROWN.STRIPE_LEFT",
+      "ORANGE.RING",
+      "LIGHT_GRAY.CLUBS"
+    ]
+  },
+  {
+    "id": "Verdant_Crown_Guild",
+    "name": "Verdant Crown Guild",
+    "size": 39,
+    "rgb": "103,59,89",
+    "trade_power": 89.56,
+    "banner": [
+      "LIME.BASE",
+      "LIME.SQUARE_TOP_RIGHT",
+      "LIME.STRIPE_CENTER",
+      "BLUE.ARROWS_UP",
+      "LIGHT_GRAY.RIBS"
+    ]
+  },
+  {
+    "id": "Verdant_Crown",
+    "name": "Verdant Crown",
+    "size": 7,
+    "rgb": "143,52,230",
+    "trade_power": 30.95,
+    "banner": [
+      "YELLOW.BASE",
+      "YELLOW.DIAGONAL_UP_LEFT",
+      "YELLOW.STRIPE_DOWNLEFT",
+      "LIME.DIAGONAL_BORDER",
+      "ORANGE.CURTAINS"
+    ]
+  },
+  {
+    "id": "Dawnspire_Realm",
+    "name": "Dawnspire Realm",
+    "size": 0,
+    "rgb": "128,131,164",
+    "trade_power": 12.88,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.SQUARE_TOP_RIGHT",
+      "BLACK.CURLY_BORDER",
+      "LIGHT_BLUE.MOJANG"
+    ]
+  },
+  {
+    "id": "Dawnspire_Realmm",
+    "name": "Dawnspire Realm",
+    "size": 19,
+    "rgb": "128,131,164",
+    "trade_power": 26.27,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.SQUARE_TOP_RIGHT",
+      "BLACK.CURLY_BORDER",
+      "LIGHT_BLUE.MOJANG"
+    ]
+  },
+  {
+    "id": "Dawnspire_Realm_Guild",
+    "name": "Dawnspire Realm Guild",
+    "size": 37,
+    "rgb": "140,115,62",
+    "trade_power": 55.39,
+    "banner": [
+      "BROWN.BASE",
+      "GREEN.SMALL_STRIPES_DOWNLEFT",
+      "LIGHT_GRAY.SUN"
+    ]
+  },
+  {
+    "id": "Obsidian_Compact",
+    "name": "Obsidian Compact",
+    "size": 22,
+    "rgb": "105,40,42",
+    "trade_power": 268.26,
+    "banner": [
+      "LIGHT_GRAY.BASE",
+      "LIGHT_GRAY.QUARTER_TOP_LEFT",
+      "LIGHT_GRAY.STRIPE_LEFT",
+      "YELLOW.CURTAINS",
+      "YELLOW.MOJANG"
+    ]
+  },
+  {
+    "id": "Obsidian_Compact_Guild",
+    "name": "Obsidian Compact Guild",
+    "size": 38,
+    "rgb": "78,160,158",
+    "trade_power": 368.2,
+    "banner": [
+      "ORANGE.BASE",
+      "ORANGE.SQUARE_TOP_RIGHT",
+      "GREEN.CLOVER"
+    ]
+  },
+  {
+    "id": "Estuaar",
+    "name": "§x§a§3§a§1§8§4Estuaar",
+    "size": 45,
+    "rgb": "85,201,216",
+    "trade_power": 1454.11,
+    "banner": [
+      "BLUE.BASE",
+      "CYAN.DIAGONAL_LEFT",
+      "WHITE.CRESCENT",
+      "GRAY.GRADIENT_UP"
+    ]
+  }
+]
