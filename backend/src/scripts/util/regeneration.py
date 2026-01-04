@@ -1,10 +1,12 @@
 import asyncio
 import os
 import json
+import time
 
 from ..compile.nation_compiler import process_nations
 from ..compile.trade_compiler import process_trade
 from ..mapgen.mapgen import create_map
+from ..mapgen.prosperitygen import create_prosperity_map
 from ..mapgen.regiongen import generate_regions
 from .queue import load_queue, compile_queue
 from .dirs import (
@@ -38,8 +40,9 @@ def print_queues(map_name: str):
 # Sync regeneration logic
 # -------------------------
 def _sync_regeneration(map_name: str, regen_type: str):
-    validate_map(map_name)
+    start_time = time.perf_counter()
 
+    validate_map(map_name)
     print(f"🔁 Regeneration started for map '{map_name}'")
 
     modes = ["nation", "duchy", "kingdom", "county", "empire", "trade"]
@@ -64,17 +67,26 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
             print(f"🛠️ [{map_name}] Processing mode: {mode}")
 
-            create_map(map_name, mode, f"{mode}_map")
+            if mode == "trade":
+                create_prosperity_map(map_name, "prosperity_map")
+
+            create_map(map_name, mode, f"{mode}_map", False)
             print(f"🗺️ [{map_name}] Map generated for {mode}")
 
             generate_regions(
                 map_name,
                 mode,
-                borders=True,
+                borders=mode != "trade",
                 queued_regen=(regen_type.lower() != "fullregen" and not mode == "trade")
             )
             print(f"🎨 [{map_name}] Regions generated for {mode}")
 
+    elapsed = time.perf_counter() - start_time
+
+    print(
+        f"⏱️ Regeneration for map '{map_name}' "
+        f"(type: {regen_type}) took {elapsed:.2f} seconds"
+    )
     print(f"✅ Regeneration complete for map '{map_name}'")
 
 
