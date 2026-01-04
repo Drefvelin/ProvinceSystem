@@ -13,6 +13,9 @@ const MAP_BOUNDS: Record<string, number> = {
 };
 
 const MapViewer = ({ mapId }: MapViewerProps) => {
+
+  //TODO GOD PLEASE SOMEONE FIX THIS MESS IT NEEDS TO BE SEPARATED DEAR GOD HELP
+
   const [mapType, setMapType] = useState<string>("nation");
   const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
@@ -41,6 +44,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const provinceMetaCacheRef = useRef<Record<number, any>>({});
   const lastProvinceIdRef = useRef<number | null>(null);
 
+  const guildNameCacheRef = useRef<Record<string, string>>({});
+
   const [cursorTooltip, setCursorTooltip] = useState<{
     x: number;
     y: number;
@@ -63,9 +68,24 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     { name: "PlanetMinecraft", url: "https://tinyurl.com/yc5av8rd" },
   ];
 
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/guilds`)
+      .then(res => res.json())
+      .then((guilds) => {
+        const map: Record<string, string> = {};
+        for (const [id, g] of Object.entries(guilds)) {
+          map[id] = (g as any).name ?? id;
+        }
+        guildNameCacheRef.current = map;
+      })
+      .catch(() => {
+        guildNameCacheRef.current = {};
+      });
+  }, [mapId]);
+
   // === Fetch Region Data on mapType change ===
   useEffect(() => {
-    if (mapType === "terrain" || mapType === "fertility") {
+    if (mapType === "terrain" || mapType === "fertility" || mapType === "prosperity") {
       setLoading(false);
       setRegionData(null);
       loadData({});
@@ -147,11 +167,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
+    const mapSize = MAP_BOUNDS[mapId] ?? DEFAULT_MAP_SIZE;
 
-    const mapSize =
-      MAP_BOUNDS[mapId] ?? DEFAULT_MAP_SIZE;
-
-    // mouse position relative to element
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
@@ -163,97 +180,139 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     ) {
       setCursorTooltip(null);
       lastProvinceIdRef.current = null;
-      return null;
+      return;
     }
 
-    // scale only AFTER bounds check
     const scaleX = mapSize / rect.width;
     const scaleY = mapSize / rect.height;
 
-    const rawX = mouseX * scaleX;
-    const rawY = mouseY * scaleY;
-
-    const x = Math.floor(rawX);
-    const y = Math.floor(rawY);
+    const x = Math.floor(mouseX * scaleX);
+    const y = Math.floor(mouseY * scaleY);
 
     const coordLabel = `x: ${x}  z: ${y}`;
 
-    if (mapType === "terrain" || mapType === "fertility") {
+    // -------------------------------------------------
+    // PROVINCE-BASED TOOLTIP (terrain / fertility / prosperity / trade)
+    // -------------------------------------------------
+    const needsProvinceTooltip =
+      mapType === "terrain" ||
+      mapType === "fertility" ||
+      mapType === "prosperity" ||
+      mapType === "trade";
+
+    if (needsProvinceTooltip) {
       const coords = `${x},${y}`;
 
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${coords}/meta`, {
         cache: "no-store",
       })
-        .then((res) => {
-          // 🧼 Out of bounds / no province
-          if (!res.ok || (
-                mouseX < 0 ||
-                mouseY < 0 ||
-                mouseX >= rect.width ||
-                mouseY >= rect.height
-              )) {
-            setCursorTooltip(null);
-            lastProvinceIdRef.current = null;
-            return null;
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (!data) return;
-
-          const pid = data.province_id;
-
-          // 🚫 No province → hide tooltip
-          if (!pid) {
+        .then(res => (res.ok ? res.json() : null))
+        .then(pixelData => {
+          if (!pixelData?.province_id) {
             setCursorTooltip(null);
             lastProvinceIdRef.current = null;
             return;
           }
 
-          const meta = provinceMetaCacheRef.current[pid] ?? data;
-          provinceMetaCacheRef.current[pid] = meta;
+          const pid = pixelData.province_id;
 
-          // 🚫 Water / sea → coords only
-          if (meta.terrain === "sea" || meta.terrain === "water") {
+          const renderTooltip = (meta: any) => {
+            if (!meta) return;
+
+            if (meta.terrain === "sea" || meta.terrain === "water") {
+              setCursorTooltip({
+                x: event.clientX,
+                y: event.clientY,
+                text: coordLabel,
+              });
+              return;
+            }
+
+            const lines: string[] = [coordLabel];
+
+            if (mapType === "terrain") {
+              lines.push(`Terrain: ${capitalize(meta.terrain)}`);
+            }
+
+            if (mapType === "fertility") {
+              lines.push(`Fertility: ${meta.fertility}`);
+            }
+
+            if (mapType === "prosperity") {
+              lines.push(`Prosperity: ${meta.prosperity ?? 0}`);
+            }
+
+            if (mapType === "trade" || mapType === "prosperity" && meta.trade_shares) {
+              const entries = Object.entries(
+                meta.trade_shares as Record<string, number>
+              ).sort((a, b) => b[1] - a[1]);
+
+              let used = 0;
+              const max = Math.min(5, entries.length);
+
+              lines.push("Trade:");
+
+              for (let i = 0; i < max; i++) {
+                const [guild, ratio] = entries[i];
+                used += ratio;
+                const name =
+                  guildNameCacheRef.current[guild] ??
+                  guild.replace(/_/g, " ");
+
+                lines.push(`• ${name}: ${(ratio * 100).toFixed(1)}%`);
+              }
+
+              const remaining = 1 - used;
+              if (remaining > 0.01) {
+                lines.push(`• Other: ${(remaining * 100).toFixed(1)}%`);
+              }
+            }
+
             setCursorTooltip({
               x: event.clientX,
               y: event.clientY,
-              text: coordLabel,
+              text: lines.join("\n"),
             });
-            return;
+
+            lastProvinceIdRef.current = pid;
+          };
+
+          // Cache compiled province data
+          if (!provinceMetaCacheRef.current[pid]) {
+            fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/compiled_data/provinces`,
+              { cache: "no-store" }
+            )
+              .then(res => res.json())
+              .then(compiled => {
+                provinceMetaCacheRef.current = compiled;
+                renderTooltip(compiled[pid]);
+              });
+          } else {
+            renderTooltip(provinceMetaCacheRef.current[pid]);
           }
-
-          const value =
-            mapType === "terrain" ? meta.terrain : meta.fertility;
-
-          const extraLabel =
-            mapType === "terrain"
-              ? `Terrain: ${capitalize(value)}`
-              : `Fertility: ${value}`;
-
-          // ✅ Final tooltip update
-          setCursorTooltip({
-            x: event.clientX,
-            y: event.clientY,
-            text: `${coordLabel}\n${extraLabel}`,
-          });
-
-          lastProvinceIdRef.current = pid;
         });
-
-      setRegionInfo(null);
-      return;
-    } else {
-      // Non-terrain modes always show coords
-      setCursorTooltip({
-        x: event.clientX,
-        y: event.clientY,
-        text: coordLabel,
-      });
     }
 
-    // === POLITICAL MODES (unchanged) ===
+    // -------------------------------------------------
+    // REGION HOVER (political + trade)
+    // -------------------------------------------------
+    if (
+      mapType === "terrain" ||
+      mapType === "fertility" ||
+      mapType === "prosperity"
+    ) {
+      setRegionInfo(null);
+      return;
+    }
+
     if (!regionData) return;
+
+    setCursorTooltip({
+      x: event.clientX,
+      y: event.clientY,
+      text: coordLabel,
+    });
 
     const pixel = ctx.getImageData(x, y, 1, 1).data;
     const regionRGB = `${pixel[0]},${pixel[1]},${pixel[2]}`;
@@ -280,10 +339,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setHoveredColor(imagePath);
 
     if (region) {
-      const tierName =
-        mapType === "trade"
-          ? "Trade Sphere"
-          : region.tier ?? capitalize(mapType);
+      const tierName = region.tier ?? capitalize(mapType);
 
       setRegionInfo({
         title: region.name,
@@ -296,8 +352,9 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           : null,
         subjects: region.subjects ?? [],
         description:
-          region.description ||
-          `A ${mapType == "nation" ? "Nation" : tierName} in ${mapDisplayName}`,
+          mapType === "trade"
+            ? `The area of ${mapDisplayName} where ${region.name} dominates trade`
+            : `A ${tierName} in ${mapDisplayName}`,
       });
     }
   };
@@ -445,7 +502,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         >
           {cursorTooltip && (
             <div
-              className="fixed z-50 pointer-events-none bg-[#2b2218] text-[#f0eed9] text-sm px-3 py-1 rounded-md shadow-lg"
+              className="fixed z-50 pointer-events-none bg-[#2b2218] text-[#f0eed9] text-sm px-3 py-1 rounded-md shadow-lg whitespace-pre-line"
               style={{
                 left: cursorTooltip.x + 12,
                 top: cursorTooltip.y + 12,
@@ -457,7 +514,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           <img src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/map`} alt="Base Map" className="w-full h-auto" />
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none" />
           {/* Terrain / Fertility Overlay */}
-          {(mapType === "terrain" || mapType === "fertility") && (
+          {(mapType === "terrain" || mapType === "fertility" || mapType === "prosperity") && (
             <img
               src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/mapdata/${mapType}`}
               alt={`${mapType} overlay`}
@@ -531,6 +588,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               {mapId === "dev" && (
                 <>
                   <option value="trade">Trade</option>
+                  <option value="prosperity">Prosperity</option>
                   <option value="terrain">Terrain</option>
                   <option value="fertility">Fertility</option>
                 </>
@@ -550,7 +608,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
                 <div className="flex-1 pr-4">
                   <h2 className="text-xl font-bold text-[#e7e2c2]">{regionInfo.title}</h2>
                   <p className="text-md text-gray-200 mt-1">
-                    <strong>Tier:</strong> {regionInfo.tier}
+                    <strong>{mapType === "trade" ? "Type:" : "Tier:"}</strong> {regionInfo.tier}
                   </p>
 
                   {mapType === "nation" && (

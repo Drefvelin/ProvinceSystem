@@ -13,6 +13,7 @@ def load_guilds(map_name: str) -> dict:
         g["id"]: {
             "rgb": tuple(map(int, g["rgb"].split(","))),
             "name": g.get("name"),
+            "type": g.get("type"),
             "size": g.get("size"),
             "trade_power": g.get("trade_power"),
             "banner": g.get("banner"),  # ✅ ADD THIS

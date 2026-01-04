@@ -92,7 +92,7 @@ def process_trade(map_name: str):
         trade_regions[guild_id] = {
             "name": clean_name(guild.get("name", guild_id)),
             "rgb": f"{rgb[0]},{rgb[1]},{rgb[2]}",
-            "tier": "trade",
+            "tier": clean_name(guild.get("type", guild_id)),
             "size": 0,
             "subjects": [],
             "overlord": None,

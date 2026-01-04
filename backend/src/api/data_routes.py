@@ -1,59 +1,98 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
-import json
-import os
+import json, os, time
 
-from ..scripts.util.dirs import (
-    input_file,
-    defines_file,
-    validate_map
-)
+from ..scripts.util.dirs import input_file, defines_file, validate_map
+from ..scripts.loader.province_metadata import load_province_metadata
 
 data_router = APIRouter()
 
-@data_router.get("/{map}/data/{file}")
-async def get_map_data(map: str, file: str):
-    try:
-        validate_map(map)
+CACHE_TTL = 300
+_province_cache = {}
 
-        file_path = defines_file(map, f"{file}.json")
+def add_cors(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    return response;
 
-        if not os.path.exists(file_path):
-            return JSONResponse({"error": "Data not found"}, status_code=404)
+def compute_trade_shares(trade: dict):
+    total = sum(v.get("trade", 0) for v in trade.values())
+    if total <= 0:
+        return {}, None, 0.0
 
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+    shares, dominant, best = {}, None, 0.0
+    for g, d in trade.items():
+        v = d.get("trade", 0)
+        r = v / total
+        shares[g] = r
+        if v > best:
+            best, dominant = v, g
+    return shares, dominant, best / total
 
-        return JSONResponse(content=data)
+def build_compiled_provinces(map_name: str):
+    meta = load_province_metadata(map_name)
 
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
+    with open(input_file(map_name, "province_data.json"), encoding="utf-8") as f:
+        pdata = json.load(f)
 
+    by_id = {p["id"]: p for p in pdata}
+    out = {}
 
-@data_router.post("/{map}/data/upload/{mode}")
-async def upload_region_data(map: str, mode: str, request: Request):
-    try:
-        validate_map(map)
+    for pid, m in meta.items():
+        p = by_id.get(pid, {})
+        trade = p.get("trade") or {}
+        shares, dom, ratio = compute_trade_shares(trade)
 
-        payload = await request.json()
+        out[pid] = {
+            **m,
+            "province_id": pid,
+            "prosperity": p.get("prosperity", 0),
+            "trade": trade,
+            "trade_total": sum(v.get("trade", 0) for v in trade.values()),
+            "trade_shares": shares,
+            "dominant_guild": dom,
+            "dominance_ratio": ratio,
+        }
 
-        if mode in {"nation", "queue"}:
-            target_path = input_file(map, f"{mode}.json")
-        else:
-            target_path = defines_file(map, f"{mode}.json")
+    return out
 
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+@data_router.get("/{map_name}/compiled_data/provinces")
+async def get_compiled_provinces(map_name: str):
+    validate_map(map_name)
+    now = time.time()
+    cached = _province_cache.get(map_name)
 
-        with open(target_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
+    if cached and now - cached["ts"] < CACHE_TTL:
+        return JSONResponse(cached["data"])
 
-        return JSONResponse(
-            {"message": f"{mode} data saved successfully for map '{map}'"},
-            status_code=200
-        )
+    data = build_compiled_provinces(map_name)
+    _province_cache[map_name] = {"ts": now, "data": data}
+    return JSONResponse(data)
 
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
+@data_router.get("/{map_name}/data/{file}")
+async def get_map_name_data(map_name: str, file: str):
+    validate_map(map_name)
+    path = defines_file(map_name, f"{file}.json")
+    if not os.path.exists(path):
+        return JSONResponse({"error": "Data not found"}, 404)
+    with open(path, encoding="utf-8") as f:
+        return JSONResponse(json.load(f))
 
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+@data_router.post("/{map_name}/data/upload/{mode}")
+async def upload_region_data(map_name: str, mode: str, request: Request):
+    validate_map(map_name)
+    payload = await request.json()
+
+    path = (
+        input_file(map_name, f"{mode}.json")
+        if mode in {"nation", "guilds", "province_data", "queue"}
+        else defines_file(map_name, f"{mode}.json")
+    )
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    _province_cache.pop(map_name, None)
+    return JSONResponse({"message": f"{mode} data saved for '{map_name}'"})

@@ -9,15 +9,9 @@ from ..util.dirs import input_file, validate_map
 def create_map(map_name: str, mode: str, filename: str):
     validate_map(map_name)
 
-    # -------------------------------------------------
-    # Build mappings
-    # -------------------------------------------------
     province_to_color = build_color_mapping(map_name, mode)
     overrides = get_color_overrides(map_name, mode)
 
-    # -------------------------------------------------
-    # Load province map
-    # -------------------------------------------------
     base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")
     src = base_img.load()
     width, height = base_img.size
@@ -25,37 +19,24 @@ def create_map(map_name: str, mode: str, filename: str):
     out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     dst = out.load()
 
-    # -------------------------------------------------
-    # FAST SINGLE-PASS PAINT
-    # -------------------------------------------------
     if overrides:
-        # Nation mode (overrides exist)
         for y in range(height):
             for x in range(width):
                 rgb = src[x, y][:3]
                 color = province_to_color.get(rgb)
                 if not color:
                     continue
-
-                # Apply override if present
                 color = overrides.get(color, color)
                 dst[x, y] = (*color, 255)
     else:
-        # All other modes (fast path)
         for y in range(height):
             for x in range(width):
                 color = province_to_color.get(src[x, y][:3])
                 if color:
                     dst[x, y] = (*color, 255)
 
-    # -------------------------------------------------
-    # Borders
-    # -------------------------------------------------
     paint_borders(True, True, dst, width, height)
 
-    # -------------------------------------------------
-    # Save output
-    # -------------------------------------------------
     output_path = os.path.abspath(
         os.path.join(
             os.path.dirname(input_file(map_name, "dummy")),

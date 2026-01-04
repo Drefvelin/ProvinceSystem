@@ -12,29 +12,71 @@ import json
 SKIP_TERRAINS = {
     "water",
     "sea",
-    # "lake",
-    # "ocean",
-    # "ice",
 }
 
 
 def get_dominant_guild(trade: dict):
     best_guild = None
     best_value = 0.0
-
     for guild, data in trade.items():
         value = data.get("trade", 0)
         if value > best_value:
             best_value = value
             best_guild = guild
-
     return best_guild, best_value
+
+
+def get_trade_ratio(trade: dict):
+    total = sum(d.get("trade", 0) for d in trade.values())
+    if total <= 0:
+        return 0.0
+    _, best = get_dominant_guild(trade)
+    return best / total
+
+
+def mix_trade_color(trade: dict, guilds: dict) -> tuple[int, int, int] | None:
+    """
+    Weighted RGB mix of all guild shares in this province.
+    Returns None if no valid guild contributions.
+    """
+    total = 0.0
+    for gid, data in trade.items():
+        if gid in guilds:
+            total += float(data.get("trade", 0) or 0)
+
+    if total <= 0:
+        return None
+
+    r = g = b = 0.0
+    used = False
+
+    for gid, data in trade.items():
+        if gid not in guilds:
+            continue
+        v = float(data.get("trade", 0) or 0)
+        if v <= 0:
+            continue
+
+        w = v / total
+        cr, cg, cb = guilds[gid]["rgb"]
+        r += cr * w
+        g += cg * w
+        b += cb * w
+        used = True
+
+    if not used:
+        return None
+
+    return (int(r + 0.5), int(g + 0.5), int(b + 0.5))
 
 
 def build_color_mapping(map_name: str, mode: str):
     """
-    Builds a dictionary mapping province RGB -> target RGB
-    based on the selected mode and map.
+    Returns:
+        province_to_color: dict[(prov_rgb)] -> (target_rgb)  (always)
+    Side-channels (only for trade mode):
+        build_color_mapping.trade_strength: dict[(prov_rgb)] -> float [0..1] dominance ratio
+        build_color_mapping.trade_mixed:    dict[(prov_rgb)] -> (r,g,b) weighted mix color
     """
     validate_map(map_name)
 
@@ -46,7 +88,12 @@ def build_color_mapping(map_name: str, mode: str):
     empires = load_empires(map_name)
 
     province_to_color = {}
-    province_meta = load_province_metadata(map_name)
+
+    # Clear any stale side-channels from previous calls
+    if hasattr(build_color_mapping, "trade_strength"):
+        delattr(build_color_mapping, "trade_strength")
+    if hasattr(build_color_mapping, "trade_mixed"):
+        delattr(build_color_mapping, "trade_mixed")
 
     if mode == "empire":
         kingdom_to_empire = {
@@ -113,8 +160,8 @@ def build_color_mapping(map_name: str, mode: str):
                 for rgb, pid in provinces.items():
                     if pid == province_id:
                         province_to_color[rgb] = nation_color
-    
-    elif mode == "guild":
+
+    elif mode == "trade":
         guilds = load_guilds(map_name)
         province_meta = load_province_metadata(map_name)
 
@@ -123,8 +170,11 @@ def build_color_mapping(map_name: str, mode: str):
 
         province_by_id = {p["id"]: p for p in province_data}
 
-        for rgb, pid in provinces.items():
-            # --- terrain filter ---
+        # Side-channels
+        build_color_mapping.trade_strength = {}
+        build_color_mapping.trade_mixed = {}
+
+        for prov_rgb, pid in provinces.items():
             meta = province_meta.get(pid, {})
             terrain = (meta.get("terrain") or "").lower()
             if terrain in SKIP_TERRAINS:
@@ -142,7 +192,19 @@ def build_color_mapping(map_name: str, mode: str):
             if not dominant or dominant not in guilds:
                 continue
 
-            province_to_color[rgb] = guilds[dominant]["rgb"]
+            # Base (identity) color: dominant guild
+            base_color = guilds[dominant]["rgb"]
+            province_to_color[prov_rgb] = base_color
+
+            # Dominance ratio (optional)
+            build_color_mapping.trade_strength[prov_rgb] = get_trade_ratio(trade)
+
+            # Mixed muddy color: weighted blend of all guild shares
+            mixed = mix_trade_color(trade, guilds)
+            if mixed is not None:
+                build_color_mapping.trade_mixed[prov_rgb] = mixed
+            else:
+                build_color_mapping.trade_mixed[prov_rgb] = base_color
 
     return province_to_color
 
@@ -155,14 +217,9 @@ def get_overlord_rgb(nation: str, nations: dict):
 
 
 def get_color_overrides(map_name: str, mode: str):
-    """
-    Maps nation RGB -> immediate overlord RGB.
-    Only applies to nation mode.
-    """
     validate_map(map_name)
 
     overrides = {}
-
     if mode != "nation":
         return overrides
 
@@ -171,7 +228,6 @@ def get_color_overrides(map_name: str, mode: str):
     for nation, data in nations.items():
         nation_color = tuple(map(int, data["rgb"].split(",")))
         overlord_rgb = get_overlord_rgb(nation, nations)
-
         if overlord_rgb:
             overrides[nation_color] = overlord_rgb
 

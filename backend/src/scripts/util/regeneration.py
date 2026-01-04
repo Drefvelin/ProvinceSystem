@@ -3,6 +3,7 @@ import os
 import json
 
 from ..compile.nation_compiler import process_nations
+from ..compile.trade_compiler import process_trade
 from ..mapgen.mapgen import create_map
 from ..mapgen.regiongen import generate_regions
 from .queue import load_queue, compile_queue
@@ -41,10 +42,11 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
     print(f"🔁 Regeneration started for map '{map_name}'")
 
-    modes = ["nation", "duchy", "kingdom", "county", "empire"]
+    modes = ["nation", "duchy", "kingdom", "county", "empire", "trade"]
 
     # 1. Compile nation data
     process_nations(map_name)
+    process_trade(map_name)
 
     # 2. Compile queue
     compile_queue(map_name)
@@ -56,7 +58,7 @@ def _sync_regeneration(map_name: str, regen_type: str):
         for mode in modes:
             queue = load_queue(map_name, mode)
 
-            if regen_type.lower() != "fullregen" and not queue:
+            if regen_type.lower() != "fullregen" and not mode == "trade" and not queue:
                 print(f"⚠️ Skipping {mode}: Empty queue")
                 continue
 
@@ -69,7 +71,7 @@ def _sync_regeneration(map_name: str, regen_type: str):
                 map_name,
                 mode,
                 borders=True,
-                queued_regen=(regen_type.lower() != "fullregen")
+                queued_regen=(regen_type.lower() != "fullregen" and not mode == "trade")
             )
             print(f"🎨 [{map_name}] Regions generated for {mode}")
 

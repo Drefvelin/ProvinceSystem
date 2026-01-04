@@ -33,6 +33,19 @@ def prosperity_to_color(norm: float):
     return lerp_color((230, 180, 0), (80, 255, 80), (norm - 0.66) / 0.34)
 
 
+def prosperity_to_alpha(norm: float) -> int:
+    """
+    Lower prosperity = more transparent
+    Higher prosperity = more opaque
+    """
+    norm = max(0.0, min(1.0, norm))
+
+    # Soft curve so low prosperity barely shows
+    alpha = 40 + int(215 * (norm ** 0.8))
+
+    return min(255, max(0, alpha))
+
+
 # -----------------------------
 # FAST generator
 # -----------------------------
@@ -62,7 +75,7 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
     inv_max = 1.0 / max_prosperity
 
     # -------------------------------------------------
-    # Precompute province_rgb -> RGBA color
+    # Precompute province_rgb -> RGBA
     # -------------------------------------------------
     rgb_to_rgba = {}
 
@@ -84,8 +97,11 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
             continue
 
         norm = prosperity * inv_max
+
         color = prosperity_to_color(norm)
-        rgb_to_rgba[rgb] = (*color, 255)
+        alpha = prosperity_to_alpha(norm)
+
+        rgb_to_rgba[rgb] = (*color, alpha)
 
     # -------------------------------------------------
     # Load base image
@@ -109,7 +125,7 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
                 painted += 1
 
     # -------------------------------------------------
-    # Save (keep PNG compression)
+    # Save (PNG compression kept)
     # -------------------------------------------------
     output_path = os.path.abspath(
         os.path.join(
