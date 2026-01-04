@@ -23,8 +23,8 @@ def defines_file(map_name: str, filename: str) -> str:
 def map_image(map_name: str, map_type: str) -> str:
     return os.path.join(OUTPUT_DIR, map_name, "maps", f"{map_type}_map.png")
 
-def region_image(map_name: str, type: str, filename: str) -> str:
-    return os.path.join(OUTPUT_DIR, map_name, "regions", type, filename)
+def region_image(map_name: str, map_type: str, filename: str) -> str:
+    return os.path.join(OUTPUT_DIR, map_name, "regions", map_type, filename)
 
 def banner_image(map_name: str, mode: str, filename: str) -> str:
     return os.path.join(OUTPUT_DIR, map_name, "banners", mode, filename)
