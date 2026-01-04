@@ -7,6 +7,30 @@ from ..scripts.util.imagechecker import find_province
 
 map_router = APIRouter()
 
+# province_meta_cache.py
+import time
+
+_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+_PROVINCE_META_CACHE: dict[str, dict] = {}
+
+def get_province_meta_cached(map_name: str) -> dict[int, dict]:
+    now = time.time()
+
+    entry = _PROVINCE_META_CACHE.get(map_name)
+
+    if (
+        entry is None or
+        now - entry["loaded_at"] > _CACHE_TTL_SECONDS
+    ):
+        from ..scripts.loader.province_metadata import load_province_metadata
+        _PROVINCE_META_CACHE[map_name] = {
+            "data": load_province_metadata(map_name),
+            "loaded_at": now,
+        }
+
+    return _PROVINCE_META_CACHE[map_name]["data"]
+
 def add_cors(r: Response):
     r.headers["Access-Control-Allow-Origin"] = "*"
     r.headers["Access-Control-Allow-Headers"] = "*"
@@ -47,6 +71,7 @@ async def get_province(map_name: str, coords: str):
 @map_router.get("/{map_name}/province/{coords}/meta")
 async def get_province_meta(map_name: str, coords: str):
     validate_map(map_name)
+
     try:
         x, z = map(int, coords.split(","))
     except ValueError:
@@ -54,12 +79,14 @@ async def get_province_meta(map_name: str, coords: str):
 
     pid = find_province(map_name, x, z)
     if pid == 0:
-        return JSONResponse({"province_id": 0}, 404)
+        return JSONResponse({"province_id": 0}, status_code=404)
 
-    from ..scripts.loader.province_metadata import load_province_metadata
-    meta = load_province_metadata(map_name).get(pid, {})
-    return add_cors(JSONResponse({
+    meta = get_province_meta_cached(map_name).get(pid)
+    if not meta:
+        return JSONResponse({"province_id": pid})
+
+    return JSONResponse({
         "province_id": pid,
         "terrain": meta.get("terrain"),
         "fertility": meta.get("fertility"),
-    }))
+    })

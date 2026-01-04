@@ -48,20 +48,13 @@ def process_trade(map_name: str):
 
     # === Load data ===
     guilds = load_guilds(map_name)
-    guilds_output_path = defines_file(map_name, "guilds.json")
-    # === Save original guilds.json to defines ===
-    os.makedirs(os.path.dirname(guilds_output_path), exist_ok=True)
-    with open(guilds_output_path, "w", encoding="utf-8") as f:
-        json.dump(guilds, f, indent=4)
-
-    print(f"🏷️ Guilds definitions saved for map '{map_name}' → {guilds_output_path}")
 
     with open(input_file(map_name, "province_data.json"), "r") as f:
         province_data = json.load(f)
 
     # === Prepare output paths ===
     output_path = defines_file(map_name, "trade.json")
-
+    
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     banner_folder = os.path.abspath(

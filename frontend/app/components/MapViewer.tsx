@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMapEngine } from "../core/MapEngineContext";
+import { useMapHover } from "../hooks/useMapHover";
+import { useMapModeData } from "../hooks/useMapModeData";
+import { useGuildCache } from "../hooks/useGuildCache";
 
 type MapViewerProps = {
   mapId: "main" | "dev";
@@ -17,10 +20,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   //TODO GOD PLEASE SOMEONE FIX THIS MESS IT NEEDS TO BE SEPARATED DEAR GOD HELP
 
   const [mapType, setMapType] = useState<string>("nation");
-  const [regionData, setRegionData] = useState<Record<string, any> | null>(null);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const DEFAULT_MAP_SIZE = 6400;
   const [regionInfo, setRegionInfo] = useState<{
     title: string;
     tier: string;
@@ -33,18 +34,15 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   } | null>(null);
   const [drillStack, setDrillStack] = useState<string[]>([]);
   const [pendingDrillId, setPendingDrillId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
 
   const mapDisplayName = mapId === "dev" ? "Adavaar" : "Calavorn";
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoveredRegionRef = useRef<HTMLImageElement | null>(null);
 
-  // 🔑 NEW: province meta cache
-  const provinceMetaCacheRef = useRef<Record<number, any>>({});
   const lastProvinceIdRef = useRef<number | null>(null);
 
-  const guildNameCacheRef = useRef<Record<string, string>>({});
+  const guildNameCacheRef = useGuildCache(mapId);
 
   const [cursorTooltip, setCursorTooltip] = useState<{
     x: number;
@@ -52,10 +50,14 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     text: string;
   } | null>(null);
 
-  const capitalize = (value: string) =>
-    value.charAt(0).toUpperCase() + value.slice(1);
-
   const { mapObjects, loadData, getHoverRegion, drillDownRegion } = useMapEngine();
+  const { regionData, loading } = useMapModeData({
+    mapId,
+    mapType,
+    loadData,
+  });
+
+  
 
   {/* Vote Links Array */}
   const voteLinks = [
@@ -67,50 +69,6 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     { name: "Minebrowse", url: "https://tinyurl.com/5f8pnddn" },
     { name: "PlanetMinecraft", url: "https://tinyurl.com/yc5av8rd" },
   ];
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/guilds`)
-      .then(res => res.json())
-      .then((guilds) => {
-        const map: Record<string, string> = {};
-        for (const [id, g] of Object.entries(guilds)) {
-          map[id] = (g as any).name ?? id;
-        }
-        guildNameCacheRef.current = map;
-      })
-      .catch(() => {
-        guildNameCacheRef.current = {};
-      });
-  }, [mapId]);
-
-  // === Fetch Region Data on mapType change ===
-  useEffect(() => {
-    if (mapType === "terrain" || mapType === "fertility" || mapType === "prosperity") {
-      setLoading(false);
-      setRegionData(null);
-      loadData({});
-      return;
-    }
-
-    const fetchRegionData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/${mapType}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch region data");
-        const data = await response.json();
-        setRegionData(data);
-        loadData(data);
-      } catch (error) {
-        console.error("Error fetching region data:", error);
-        setRegionData(null);
-      }
-      setLoading(false);
-    };
-
-    fetchRegionData();
-  }, [mapType]);
 
   useEffect(() => {
       if (!pendingDrillId || !regionData) return;
@@ -157,207 +115,20 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   }, [mapType, loading]);
 
   // === Hover logic ===
-  const getPixelColor = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (loading) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mapSize = MAP_BOUNDS[mapId] ?? DEFAULT_MAP_SIZE;
-
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    if (
-      mouseX < 0 ||
-      mouseY < 0 ||
-      mouseX >= rect.width ||
-      mouseY >= rect.height
-    ) {
-      setCursorTooltip(null);
-      lastProvinceIdRef.current = null;
-      return;
-    }
-
-    const scaleX = mapSize / rect.width;
-    const scaleY = mapSize / rect.height;
-
-    const x = Math.floor(mouseX * scaleX);
-    const y = Math.floor(mouseY * scaleY);
-
-    const coordLabel = `x: ${x}  z: ${y}`;
-
-    // -------------------------------------------------
-    // PROVINCE-BASED TOOLTIP (terrain / fertility / prosperity / trade)
-    // -------------------------------------------------
-    const needsProvinceTooltip =
-      mapType === "terrain" ||
-      mapType === "fertility" ||
-      mapType === "prosperity" ||
-      mapType === "trade";
-
-    if (needsProvinceTooltip) {
-      const coords = `${x},${y}`;
-
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${coords}/meta`, {
-        cache: "no-store",
-      })
-        .then(res => (res.ok ? res.json() : null))
-        .then(pixelData => {
-          if (!pixelData?.province_id) {
-            setCursorTooltip(null);
-            lastProvinceIdRef.current = null;
-            return;
-          }
-
-          const pid = pixelData.province_id;
-
-          const renderTooltip = (meta: any) => {
-            if (!meta) return;
-
-            if (meta.terrain === "sea" || meta.terrain === "water") {
-              setCursorTooltip({
-                x: event.clientX,
-                y: event.clientY,
-                text: coordLabel,
-              });
-              return;
-            }
-
-            const lines: string[] = [coordLabel];
-
-            if (mapType === "terrain") {
-              lines.push(`Terrain: ${capitalize(meta.terrain)}`);
-            }
-
-            if (mapType === "fertility") {
-              lines.push(`Fertility: ${meta.fertility}`);
-            }
-
-            if (mapType === "prosperity") {
-              lines.push(`Prosperity: ${meta.prosperity ?? 0}`);
-            }
-
-            if (mapType === "trade" || mapType === "prosperity" && meta.trade_shares) {
-              const entries = Object.entries(
-                meta.trade_shares as Record<string, number>
-              ).sort((a, b) => b[1] - a[1]);
-
-              let used = 0;
-              const max = Math.min(5, entries.length);
-
-              lines.push("Trade:");
-
-              for (let i = 0; i < max; i++) {
-                const [guild, ratio] = entries[i];
-                used += ratio;
-                const name =
-                  guildNameCacheRef.current[guild] ??
-                  guild.replace(/_/g, " ");
-
-                lines.push(`• ${name}: ${(ratio * 100).toFixed(1)}%`);
-              }
-
-              const remaining = 1 - used;
-              if (remaining > 0.01) {
-                lines.push(`• Other: ${(remaining * 100).toFixed(1)}%`);
-              }
-            }
-
-            setCursorTooltip({
-              x: event.clientX,
-              y: event.clientY,
-              text: lines.join("\n"),
-            });
-
-            lastProvinceIdRef.current = pid;
-          };
-
-          // Cache compiled province data
-          if (!provinceMetaCacheRef.current[pid]) {
-            fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/compiled_data/provinces`,
-              { cache: "no-store" }
-            )
-              .then(res => res.json())
-              .then(compiled => {
-                provinceMetaCacheRef.current = compiled;
-                renderTooltip(compiled[pid]);
-              });
-          } else {
-            renderTooltip(provinceMetaCacheRef.current[pid]);
-          }
-        });
-    }
-
-    // -------------------------------------------------
-    // REGION HOVER (political + trade)
-    // -------------------------------------------------
-    if (
-      mapType === "terrain" ||
-      mapType === "fertility" ||
-      mapType === "prosperity"
-    ) {
-      setRegionInfo(null);
-      return;
-    }
-
-    if (!regionData) return;
-
-    setCursorTooltip({
-      x: event.clientX,
-      y: event.clientY,
-      text: coordLabel,
-    });
-
-    const pixel = ctx.getImageData(x, y, 1, 1).data;
-    const regionRGB = `${pixel[0]},${pixel[1]},${pixel[2]}`;
-
-    const foundRegionId = Object.keys(regionData).find(
-      id => regionData[id].rgb === regionRGB
-    );
-
-    if (!foundRegionId) {
-      setHoveredColor(null);
-      setRegionInfo(null);
-      return;
-    }
-
-    setSelectedRegionId(foundRegionId);
-
-    const { imagePath, region } = getHoverRegion(
-      mapType,
-      mapId,
-      foundRegionId,
-      regionData
-    );
-
-    setHoveredColor(imagePath);
-
-    if (region) {
-      const tierName = region.tier ?? capitalize(mapType);
-
-      setRegionInfo({
-        title: region.name,
-        tier: tierName,
-        banner: region.banner,
-        size: region.size,
-        subject_size: region.subject_size,
-        overlord: region.overlord
-          ? regionData[region.overlord]?.name
-          : null,
-        subjects: region.subjects ?? [],
-        description:
-          mapType === "trade"
-            ? `The area of ${mapDisplayName} where ${region.name} dominates trade`
-            : `A ${tierName} in ${mapDisplayName}`,
-      });
-    }
-  };
+  const { onMouseMove } = useMapHover({
+    mapId,
+    mapType,
+    loading,
+    regionData,
+    canvasRef,
+    guildNameCacheRef,
+    setCursorTooltip,
+    setHoveredColor,
+    setRegionInfo,
+    setSelectedRegionId,
+    getHoverRegion,
+    mapDisplayName,
+  });
 
   // === Drill-down click ===
   const getAncestryChain = (regionId: string, data: Record<string, any>): string[] => {
@@ -491,7 +262,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         {/* Center: Map Display */}
         <div
           className="relative w-[90%] max-w-5xl rounded-xl border-12 border-[#2b2218] shadow-lg overflow-hidden"
-          onMouseMove={getPixelColor}
+          onMouseMove={onMouseMove}
           onMouseLeave={() => {
             setCursorTooltip(null);
             setHoveredColor(null);
