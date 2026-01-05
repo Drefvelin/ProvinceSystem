@@ -9,7 +9,7 @@ from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map, map_image
 
 
-def log_progress(message):
+def log_progress(message: str):
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
@@ -19,65 +19,100 @@ def sanitize_filename(color):
 
 
 def lighten_color(rgb):
-    """
-    Approximates:
-      Brightness 1.25
-      Contrast   1.12
-    """
     r, g, b = rgb
-
-    # brightness
     r = min(255, int(r * 1.25))
     g = min(255, int(g * 1.25))
     b = min(255, int(b * 1.25))
 
-    # contrast around midpoint 128
     def contrast(c):
         return min(255, max(0, int((c - 128) * 1.12 + 128)))
 
     return contrast(r), contrast(g), contrast(b)
 
 
-def generate_regions(map_name: str, mode: str, borders: bool, queued_regen: bool = False):
+def build_overlord_chains(overrides):
+    """
+    overrides: vassal_rgb -> direct_overlord_rgb
+    returns:   vassal_rgb -> [overlord, grand_overlord, ...]
+    """
+    chains = {}
+    for vassal in overrides:
+        cur = vassal
+        seen = {vassal}
+        chain = []
+
+        while cur in overrides:
+            nxt = overrides[cur]
+            if nxt in seen:
+                break
+            chain.append(nxt)
+            seen.add(nxt)
+            cur = nxt
+
+        chains[vassal] = chain
+
+    return chains
+
+
+def generate_regions(
+    map_name: str,
+    mode: str,
+    borders: bool,
+    queued_regen: bool = False,
+    border_thickness: int = 2,
+    border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+):
     start_time = time.perf_counter()
     validate_map(map_name)
 
-    image_path = input_file(map_name, "provinces.png")
-    base_img = Image.open(image_path).convert("RGBA")
-    src = base_img.load()
-    width, height = base_img.size
+    img_path = input_file(map_name, "provinces.png")
+    src_img = Image.open(img_path).convert("RGBA")
+    src = src_img.load()
+    width, height = src_img.size
 
     province_to_color = build_color_mapping(map_name, mode)
     if not province_to_color:
-        print(f"No region color mapping for mode '{mode}', skipping generation.")
+        print(f"No mapping for mode '{mode}', skipping.")
         return
-    trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
-    overrides = get_color_overrides(map_name, mode)
 
-    output_folder = os.path.abspath(
+    overrides = get_color_overrides(map_name, mode)
+    has_nesting = bool(overrides)
+    overlord_chains = build_overlord_chains(overrides)
+    overlord_colors = set(overrides.values())
+
+    trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
+
+    output_dir = os.path.abspath(
         os.path.join(
-            os.path.dirname(image_path),
+            os.path.dirname(img_path),
             "..", "..", "output", map_name, "regions", mode
         )
     )
-    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
+    # ------------------------------------------------------------
+    # Queue handling
+    # ------------------------------------------------------------
     queued = None
     if queued_regen:
         compile_queue(map_name)
         queued = set(load_queue(map_name, mode))
-        for fn in os.listdir(output_folder):
-            base = fn.replace("_hover", "").replace(".png", "")
+
+        for fn in os.listdir(output_dir):
+            base = (
+                fn.replace("_hover", "")
+                  .replace("_nested", "")
+                  .replace(".png", "")
+            )
             if base in queued:
-                os.remove(os.path.join(output_folder, fn))
+                os.remove(os.path.join(output_dir, fn))
     else:
-        for fn in os.listdir(output_folder):
-            os.remove(os.path.join(output_folder, fn))
+        for fn in os.listdir(output_dir):
+            os.remove(os.path.join(output_dir, fn))
 
-    # ------------------------------------------------------------------
+    # ------------------------------------------------------------
     # Scan province pixels
-    # ------------------------------------------------------------------
-
+    # ------------------------------------------------------------
     province_pixels = {}
     total_pixels = width * height
     processed = 0
@@ -91,148 +126,185 @@ def generate_regions(map_name: str, mode: str, borders: bool, queued_regen: bool
 
             processed += 1
             if time.time() - last_update > 0.1:
-                percent = (processed / total_pixels) * 100
                 log_progress(
                     f"Scanning pixels: {processed:,}/{total_pixels:,} "
-                    f"({percent:5.1f}%)"
+                    f"({processed / total_pixels * 100:5.1f}%)"
                 )
                 last_update = time.time()
 
     print()
 
-    # ------------------------------------------------------------------
-    # Region buffers (base + hover)
-    # ------------------------------------------------------------------
-
+    # ------------------------------------------------------------
+    # Region buffers
+    # ------------------------------------------------------------
     region_imgs = {}
-    region_data = {}
+    region_px = {}
     light_cache = {}
 
-    def get_region(color_key):
-        if color_key not in region_imgs:
-            base = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-            hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-            region_imgs[color_key] = (base, hover)
-            region_data[color_key] = (base.load(), hover.load())
-        return region_data[color_key]
+    def ensure_region(color):
+        if color in region_imgs:
+            return
 
-    # ------------------------------------------------------------------
-    # Paint regions (base + hover simultaneously)
-    # ------------------------------------------------------------------
+        base = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
-    total_regions = len(province_pixels)
-    current_region = 0
+        nested = nested_hover = None
+        if color in overlord_colors:
+            nested = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            nested_hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
-    for prov_rgb, pixels in province_pixels.items():
-        dominant_color = province_to_color[prov_rgb]
-        name = sanitize_filename(dominant_color)
-
-        if queued is not None and name not in queued:
-            continue
-
-        current_region += 1
-        log_progress(
-            f"Building regions: {current_region}/{total_regions} "
-            f"({(current_region/total_regions)*100:5.1f}%) "
-            f"→ {name}"
+        region_imgs[color] = (base, hover, nested, nested_hover)
+        region_px[color] = (
+            base.load(),
+            hover.load(),
+            nested.load() if nested else None,
+            nested_hover.load() if nested_hover else None,
         )
 
-        if dominant_color not in light_cache:
-            light_cache[dominant_color] = lighten_color(dominant_color)
+    # ------------------------------------------------------------
+    # Paint regions
+    # ------------------------------------------------------------
+    total_regions = len(province_pixels)
+    current = 0
 
-        paint_rgb = dominant_color
-        if trade_mixed is not None:
-            paint_rgb = trade_mixed.get(prov_rgb, dominant_color)
+    for prov_rgb, pixels in province_pixels.items():
+        owner = province_to_color[prov_rgb]
+        name = sanitize_filename(owner)
 
+        if queued and name not in queued:
+            continue
+
+        current += 1
+        log_progress(
+            f"Building regions: {current}/{total_regions} "
+            f"({current / total_regions * 100:5.1f}%) → {name}"
+        )
+
+        ensure_region(owner)
+
+        if owner not in light_cache:
+            light_cache[owner] = lighten_color(owner)
+
+        paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
         pr, pg, pb = paint_rgb
-        lr, lg, lb = light_cache[dominant_color]
+        lr, lg, lb = light_cache[owner]
 
-        base_data, hover_data = get_region(dominant_color)
+        base_px, hover_px, nested_px, nested_hover_px = region_px[owner]
 
         for x, y in pixels:
-            base_data[x, y] = (pr, pg, pb, 255)
-            hover_data[x, y] = (lr, lg, lb, 255)
+            base_px[x, y] = (pr, pg, pb, 255)
+            hover_px[x, y] = (lr, lg, lb, 255)
+            if nested_px:
+                nested_px[x, y] = (pr, pg, pb, 255)
+                nested_hover_px[x, y] = (lr, lg, lb, 255)
 
-        # overrides
-        if dominant_color in overrides:
-            ocolor = overrides[dominant_color]
-            if ocolor not in light_cache:
-                light_cache[ocolor] = lighten_color(ocolor)
+        # Paint into all ancestors
+        for anc in overlord_chains.get(owner, []):
+            ensure_region(anc)
+            if anc not in light_cache:
+                light_cache[anc] = lighten_color(anc)
 
-            or_, og_, ob_ = ocolor
-            olr, olg, olb = light_cache[ocolor]
-
-            obase, ohover = get_region(ocolor)
+            ar, ag, ab = anc
+            alr, alg, alb = light_cache[anc]
+            anc_base, anc_hover, _, _ = region_px[anc]
 
             for x, y in pixels:
-                obase[x, y] = (or_, og_, ob_, 255)
-                ohover[x, y] = (olr, olg, olb, 255)
+                anc_base[x, y] = (ar, ag, ab, 255)
+                anc_hover[x, y] = (alr, alg, alb, 255)
 
     print()
 
-    # ------------------------------------------------------------------
-    # Borders (applied to both images)
-    # ------------------------------------------------------------------
-
+    # ------------------------------------------------------------
+    # Borders
+    # ------------------------------------------------------------
     if borders and region_imgs:
-        ref_img = Image.open(map_image(map_name, mode)).convert("RGBA")
-        border_owners = compute_border_owners(ref_img.load(), width, height)
 
-        total_regions = len(region_imgs)
-        for i, (color_key, (base, hover)) in enumerate(region_imgs.items(), start=1):
-            log_progress(
-                f"Painting borders: {i}/{total_regions} "
-                f"({(i/total_regions)*100:5.1f}%)"
-            )
+        total = len(region_imgs)
+        if not has_nesting:
+            # FAST PATH
+            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
+            border_owners = compute_border_owners(ref.load(), width, height)
 
-            apply_region_borders(
-                base.load(),
-                color_key,
-                border_owners,
-                width,
-                height
-            )
-            apply_region_borders(
-                hover.load(),
-                color_key,
-                border_owners,
-                width,
-                height
-            )
+            for i, (color, (base, hover, _, _)) in enumerate(region_imgs.items(), start=1):
+                log_progress(
+                    f"Painting borders (fast): {i}/{total} "
+                    f"({i / total * 100:5.1f}%)"
+                )
+
+                apply_region_borders(
+                    base.load(), color, border_owners,
+                    width, height, border_color, border_thickness
+                )
+                apply_region_borders(
+                    hover.load(), color, border_owners,
+                    width, height, border_color, border_thickness
+                )
+        else:
+            # SAFE PATH
+            for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+                log_progress(
+                    f"Painting borders (nested): {i}/{total} "
+                    f"({i / total * 100:5.1f}%)"
+                )
+
+                base_bo = compute_border_owners(base.load(), width, height, include_outer=True)
+                apply_region_borders(
+                    base.load(), color, base_bo,
+                    width, height, border_color, border_thickness
+                )
+                apply_region_borders(
+                    hover.load(), color, base_bo,
+                    width, height, border_color, border_thickness
+                )
+
+                if nested:
+                    nested_bo = compute_border_owners(nested.load(), width, height, include_outer=True)
+                    apply_region_borders(
+                        nested.load(), color, nested_bo,
+                        width, height, border_color, border_thickness
+                    )
+                    apply_region_borders(
+                        nested_hover.load(), color, nested_bo,
+                        width, height, border_color, border_thickness
+                    )
 
     print()
 
-    # ------------------------------------------------------------------
-    # Save outputs (single pass)
-    # ------------------------------------------------------------------
-
+    # ------------------------------------------------------------
+    # Save outputs
+    # ------------------------------------------------------------
     total_outputs = len(region_imgs)
-    for i, (color_key, (base, hover)) in enumerate(region_imgs.items(), start=1):
-        name = sanitize_filename(color_key)
-
-        if queued is not None and name not in queued:
+    for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+        name = sanitize_filename(color)
+        if queued and name not in queued:
             continue
 
         log_progress(
             f"Saving images: {i}/{total_outputs} "
-            f"({(i/total_outputs)*100:5.1f}%)"
+            f"({i / total_outputs * 100:5.1f}%) → {name}"
         )
 
-        base.save(os.path.join(output_folder, f"{name}.png"), "PNG")
-        hover.save(os.path.join(output_folder, f"{name}_hover.png"), "PNG")
+        base.save(os.path.join(output_dir, f"{name}.png"), "PNG")
+        hover.save(os.path.join(output_dir, f"{name}_hover.png"), "PNG")
+
+        if nested:
+            nested.save(os.path.join(output_dir, f"{name}_nested.png"), "PNG")
+            nested_hover.save(os.path.join(output_dir, f"{name}_nested_hover.png"), "PNG")
 
         base.close()
         hover.close()
+        if nested:
+            nested.close()
+            nested_hover.close()
 
     print()
 
     if queued_regen:
         clear_mode(map_name, mode)
-    end_time = time.perf_counter()
-    elapsed = end_time - start_time
 
+    elapsed = time.perf_counter() - start_time
     print(
         f"Region generation for mode '{mode}' "
-        f"took {elapsed:.2f} seconds"
+        f"took {elapsed:.2f} seconds "
+        f"(nesting={'yes' if has_nesting else 'no'})"
     )
-

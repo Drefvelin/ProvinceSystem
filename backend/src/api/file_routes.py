@@ -23,9 +23,14 @@ def add_cors(response: Response):
 
 @file_router.get("/{map_name}/mapdata/{map_type}")
 async def get_map_file(map_name: str, map_type: str):
-    file_path = map_image(map_name, map_type)
+    file_path = (
+        OUTPUT_BASE
+        / map_name
+        / "maps"
+        / f"{map_type}_map.png"
+    )
 
-    if not os.path.exists(file_path):
+    if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Map not found")
 
     return add_cors(FileResponse(file_path, media_type="image/png"))

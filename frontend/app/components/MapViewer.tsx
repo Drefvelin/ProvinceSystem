@@ -42,7 +42,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
   const lastProvinceIdRef = useRef<number | null>(null);
 
-  const guildNameCacheRef = useGuildCache(mapId);
+  const guildNameCacheRef = mapId === "dev" ? useGuildCache(mapId) : null;
 
   const [cursorTooltip, setCursorTooltip] = useState<{
     x: number;
@@ -50,7 +50,13 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     text: string;
   } | null>(null);
 
-  const { mapObjects, loadData, getHoverRegion, drillDownRegion } = useMapEngine();
+  const {
+    mapObjects,
+    loadData,
+    resetMapObjects,
+    getHoverRegion,
+    drillDownRegion,
+  } = useMapEngine();
   const { regionData, loading } = useMapModeData({
     mapId,
     mapType,
@@ -112,7 +118,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setHoveredColor(null);
     setRegionInfo(null);
     drawImage();
-  }, [mapType, loading]);
+  }, [mapId, mapType, loading]);
 
   // === Hover logic ===
   const { onMouseMove } = useMapHover({
@@ -306,7 +312,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
               <img
                 key={obj.id}
                 crossOrigin="anonymous"
-                src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${obj.path}.png`}
+                src={`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${obj.path}`}
                 alt={`Overlay ${obj.id}`}
                 className="absolute top-0 left-0 w-full h-auto opacity-80 pointer-events-none"
                 onError={(e) => (e.currentTarget.style.display = "none")}
@@ -347,7 +353,10 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           <div className="bg-[#657c4c] border border-[#3a2f23] shadow-inner rounded-lg p-5">
             <h2 className="text-lg font-bold text-gray-100 mb-3 tracking-wide">Map Mode</h2>
             <select
-              onChange={(e) => setMapType(e.target.value)}
+              onChange={(e) => {
+                resetMapObjects();
+                setMapType(e.target.value);
+              }}
               value={mapType}
               className="w-full p-2 text-md rounded-md border border-[#3a2f23] bg-[#f0eed9] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#3a2f23] shadow-sm"
             >

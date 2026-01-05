@@ -49,7 +49,8 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
     # 1. Compile nation data
     process_nations(map_name)
-    process_trade(map_name)
+    if map_name == "dev":
+       process_trade(map_name)
 
     # 2. Compile queue
     compile_queue(map_name)
@@ -59,6 +60,9 @@ def _sync_regeneration(map_name: str, regen_type: str):
     # 3. Generate maps + regions
     if regen_type.lower() != "textonly":
         for mode in modes:
+            if map_name != "dev" and mode == "trade":
+                print(f"⚠️ Skipping {mode}: Incompatible Map")
+                continue
             queue = load_queue(map_name, mode)
 
             if regen_type.lower() != "fullregen" and not mode == "trade" and not queue:

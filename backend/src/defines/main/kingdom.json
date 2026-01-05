@@ -1,17 +1,86 @@
 {
-    "KINGDOM_1": {
-      "name": "Revenor",
-      "titles": ["DUCHY_1", "DUCHY_2", "DUCHY_3"],
-      "rgb": "140,69,56"
-    },
-    "KINGDOM_2": {
-      "name": "Domenia",
-      "titles": ["DUCHY_4", "DUCHY_5", "DUCHY_6"],
-      "rgb": "62,111,130"
-    },
-    "KINGDOM_3": {
-      "name": "Sabarissa",
-      "titles": ["DUCHY_7", "DUCHY_8", "DUCHY_9"],
-      "rgb": "24,128,34"
-    }
+  "KINGDOM_1": {
+    "name": "Revenor",
+    "titles": [
+      "DUCHY_1",
+      "DUCHY_2",
+      "DUCHY_3"
+    ],
+    "rgb": "140,69,56"
+  },
+  "KINGDOM_2": {
+    "name": "Domenia",
+    "titles": [
+      "DUCHY_4",
+      "DUCHY_5",
+      "DUCHY_6"
+    ],
+    "rgb": "62,111,130"
+  },
+  "KINGDOM_3": {
+    "name": "Sabarissa",
+    "titles": [
+      "DUCHY_7",
+      "DUCHY_8",
+      "DUCHY_9"
+    ],
+    "rgb": "24,128,34"
+  },
+  "Letzebierg": {
+    "name": "Letzebierg",
+    "rgb": "172,88,228",
+    "title-complete": "false",
+    "titles": [
+      "Bockfiels",
+      "Huelmes"
+    ]
+  },
+  "Nordbaum": {
+    "name": "Nordbaum",
+    "rgb": "179,121,175",
+    "title-complete": "false",
+    "titles": [
+      "Mandate_02",
+      "Schneedorf"
+    ]
+  },
+  "The_Kingdom_of_the_Burning_Eye": {
+    "name": "The Kingdom Of The Burning Eye",
+    "rgb": "248,210,163",
+    "title-complete": "false",
+    "titles": [
+      "The_Communion_of_Flame",
+      "Ra's_Land"
+    ]
+  },
+  "Lunareth": {
+    "name": "Lunareth",
+    "rgb": "47,73,199",
+    "title-complete": "false",
+    "titles": [
+      "Wyvern_Pass",
+      "Emberfall"
+    ]
+  },
+  "Mizea": {
+    "name": "Mizea",
+    "rgb": "5,67,47",
+    "title-complete": "false",
+    "titles": [
+      "Dumayu",
+      "Duskvale"
+    ]
+  },
+  "Sudbaum": {
+    "name": "Sudbaum",
+    "rgb": "178,135,151",
+    "title-complete": "false",
+    "provinces": [
+      311
+    ],
+    "titles": [
+      "Trunk_of_The_Tree",
+      "Mandate_01"
+    ]
+  }
 }

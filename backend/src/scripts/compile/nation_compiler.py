@@ -17,16 +17,26 @@ def clean_name(name: str) -> str:
     if not name:
         return ""
 
-    # Handle UTF-8 mangled section sign
+    # Fix UTF-8 mangled section sign
     name = name.replace("Â§", "§")
 
-    # Remove classic MC formatting (§a, §x, etc)
-    name = re.sub(r"§.", "", name)
+    # Normalize broken sequences like "§§x" -> "§x"
+    name = re.sub(r"§{2,}", "§", name)
 
-    # Remove hex color leftovers (#ffffff)
+    # Remove Minecraft hex color sequences: §x§R§R§G§G§B§B
+    name = re.sub(r"§x(?:§[0-9a-fA-F]){6}", "", name)
+
+    # Remove classic formatting codes
+    name = re.sub(r"§[0-9A-FK-ORa-fk-or]", "", name)
+
+    # Remove any remaining stray section signs (do NOT remove next char)
+    name = name.replace("§", "")
+
+    # Remove hex literals if present (#ffffff)
     name = re.sub(r"#(?:[0-9a-fA-F]{6})", "", name)
 
     return name.strip()
+
 
 def clean_banner_patterns(patterns: list) -> list:
     return [pattern.replace("tfmc:", "") for pattern in patterns]

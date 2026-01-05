@@ -1,149 +1,1672 @@
 {
-    "NATION_1": {
-        "name": "Lonyan Republic",
-        "provinces": [
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10
+    "Machinarium_Sovereignty": {
+        "balance": 81.608005,
+        "bank": "true",
+        "banner": "157_176_194",
+        "culture": "Techno-Industrial",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Theocracy",
+        "id": "Machinarium_Sovereignty",
+        "leader": "Zerisian",
+        "members": [
+            "Zerisian"
         ],
-        "rgb": "27,150,130",
-        "banner": "27_150_130",
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Machinarium",
+        "prestige modifiers": [],
+        "provinces": [
+            291,
+            290,
+            289,
+            288,
+            287,
+            286,
+            292,
+            310,
+            299,
+            293,
+            162,
+            58,
+            8,
+            7,
+            57,
+            312,
+            316,
+            311,
+            298
+        ],
+        "relations": [
+            "Verdant_City(none.unfriendly.-20)",
+            "The_NRPA(none.unfriendly.-20)",
+            "The_Pale_Garden(none.friendly.50)",
+            "House_Tenceur(ally.friendly.80)",
+            "Rusvania(none.friendly.50)",
+            "TheDesertCamp(none.friendly.50)",
+            "Selk'haren_Labs(none.unfriendly.-20)",
+            "imperium(none.friendly.50)",
+            "Beatrixian_Island(none.neutral.0)",
+            "Luciliburhuc_Farming_Association(none.friendly.50)",
+            "Mizeareigh(ally.friendly.80)",
+            "Lucilinburhuc(none.friendly.50)",
+            "Nimbus(none.unfriendly.-20)",
+            "HouseGrimshaw(none.friendly.50)",
+            "House_Weston_of_Blossomreach(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "Dawngale(none.friendly.50)"
+        ],
+        "religion": "Maskinarianism",
+        "rgb": "157,176,194",
+        "ruler title": "Ascendant",
+        "tax rate": 0.0,
+        "tier": "Kingdom",
+        "titles": [
+            "Directive_01",
+            "Mandate_01",
+            "Sudbaum"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 143.0,
+        "zPos": 112.0,
         "subjects": [],
-        "size": 9,
+        "size": 19,
         "subject_size": 0
     },
-    "NATION_2": {
-        "name": "New Akken",
-        "provinces": [
-            1
+    "Dawngale": {
+        "balance": 913.642072,
+        "bank": "true",
+        "banner": "255_215_0",
+        "culture": "Cerrith",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Autocracy",
+        "id": "Dawngale",
+        "leader": "Arachni",
+        "members": [
+            "Arachni",
+            "HopedNatalie",
+            "Robbelox",
+            "Rumberjack"
         ],
-        "rgb": "62,111,130",
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "xTxhxex xRxexaxcxh",
+        "overlord": "Nimbus",
+        "prestige modifiers": [
+            "Events(25.0)"
+        ],
+        "provinces": [
+            188,
+            186,
+            202,
+            203,
+            199,
+            190,
+            197,
+            192,
+            191,
+            201
+        ],
+        "relations": [
+            "The_Pale_Garden(none.friendly.50)",
+            "Verdant_City(none.friendly.50)",
+            "The_NRPA(none.friendly.50)",
+            "Beatrixian_Island(none.friendly.50)",
+            "Queendom_of_Eoridcois(none.friendly.50)",
+            "Mizeareigh(none.friendly.50)",
+            "House_Tenceur(ally.friendly.80)",
+            "Nimbus(overlord.unfriendly.-18)",
+            "House_Weston_of_Blossomreach(none.neutral.0)",
+            "Tiayeouph(none.friendly.50)",
+            "Viridia(none.friendly.50)",
+            "imperium(none.unfriendly.-20)"
+        ],
+        "religion": "Diverse",
+        "rgb": "255,215,0",
+        "ruler title": "Brightlord",
+        "tax rate": 0.0,
+        "tier": "Grand City (Duchy)",
+        "tier index": 2.0,
+        "titles": [
+            "Raven's_Reach",
+            "Raven_Home",
+            "Western_Hills"
+        ],
+        "vassal tax rate": 0.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 25.0,
+        "zPos": 204.0,
         "subjects": [],
-        "banner": "62_111_130",
+        "size": 10,
+        "subject_size": 0
+    },
+    "Luciliburhuc_Farming_Association": {
+        "balance": 15.649000000000001,
+        "bank": "true",
+        "banner": "199_56_228",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Luciliburhuc_Farming_Association",
+        "leader": "TheChadCrow",
+        "members": [
+            "TheChadCrow",
+            "FlyingBiscuit23"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Luciliburhuc Farming Association",
+        "overlord": "Lucilinburhuc",
+        "prestige modifiers": [],
+        "provinces": [
+            250,
+            252,
+            241,
+            239,
+            276
+        ],
+        "relations": [
+            "Lucilinburhuc(overlord.friendly.50)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "199,56,228",
+        "ruler title": "Leader",
+        "tax rate": 5.0,
+        "tier": "Duchy",
+        "titles": [
+            "Aischdall",
+            "Waasserbuerg",
+            "Huelmes"
+        ],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 80.0,
+        "zPos": 23.0,
+        "subjects": [],
+        "size": 5,
+        "subject_size": 0
+    },
+    "Rusvania": {
+        "balance": 3646.7785,
+        "bank": "true",
+        "banner": "44_210_212",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Nobility",
+        "id": "Rusvania",
+        "leader": "Accrayer",
+        "members": [
+            "Accrayer"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Rusvania",
+        "prestige modifiers": [],
+        "provinces": [],
+        "relations": [],
+        "religion": "The Church of the Sacred Tree",
+        "rgb": "44,210,212",
+        "ruler title": "Leader",
+        "tax rate": 5.0,
+        "tier": "Landless",
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 70.0,
+        "zPos": 83.0,
+        "subjects": [],
+        "size": 0,
+        "subject_size": 0
+    },
+    "Skrung.Co": {
+        "balance": 1.4108,
+        "bank": "true",
+        "banner": "226_96_184",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Skrung.Co",
+        "leader": "DarthVacour",
+        "members": [
+            "DarthVacour"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Spore.Co",
+        "prestige modifiers": [],
+        "provinces": [],
+        "relations": [
+            "Tiayeouph(none.friendly.50)",
+            "imperium(tributary_of.neutral.-10)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "226,96,184",
+        "ruler title": "Leader",
+        "tax rate": 20.0,
+        "tier": "Landless",
+        "titles": [],
+        "vassal tax rate": 0.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 123.0,
+        "zPos": 195.0,
+        "subjects": [],
+        "size": 0,
+        "subject_size": 0
+    },
+    "Tiayeouph": {
+        "balance": 3080.3028491,
+        "bank": "true",
+        "banner": "151_206_247",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Democratic Triumvirate",
+        "id": "Tiayeouph",
+        "leader": "Mabwy",
+        "members": [
+            "Mabwy",
+            "Avourel",
+            "NaeNaeGoblin318",
+            "zordorrius",
+            "szotka",
+            "QT_Beetle",
+            "EstienneHavenga",
+            "MelMightyena"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "xTxixaxyxexoxuxpxh",
+        "prestige modifiers": [
+            "Events(160.0)",
+            "Canon Dungeon Completion - Mini-Dungeon I(5.0)",
+            "Wars(50.0)"
+        ],
+        "provinces": [
+            153,
+            155,
+            158,
+            152,
+            154,
+            133,
+            161,
+            148,
+            149,
+            150,
+            146,
+            144,
+            126,
+            127,
+            159,
+            147,
+            141,
+            142,
+            265,
+            264,
+            263,
+            262,
+            143,
+            266,
+            260,
+            258,
+            134,
+            145,
+            156,
+            136,
+            140,
+            139,
+            259
+        ],
+        "relations": [
+            "Verdant_City(none.friendly.50)",
+            "Machinarium_Sovereignty(none.friendly.50)",
+            "Cordelia(none.friendly.50)",
+            "TheDesertCamp(none.friendly.50)",
+            "Viridia(none.friendly.50)",
+            "imperium(ally.friendly.80)",
+            "Beatrixian_Island(none.neutral.0)",
+            "Queendom_of_Eoridcois(none.friendly.50)",
+            "Mizeareigh(none.friendly.50)",
+            "Lucilinburhuc(none.friendly.50)",
+            "Nimbus(none.friendly.50)",
+            "HouseGrimshaw(none.friendly.50)",
+            "Dawngale(none.friendly.50)",
+            "Skrung.Co(none.friendly.50)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "151,206,247",
+        "ruler title": "Starost",
+        "tax rate": 0.0,
+        "tier": "Grand Republic (Kingdom)",
+        "tier index": 0.0,
+        "titles": [
+            "COUNTY_27",
+            "COUNTY_22",
+            "DUCHY_8",
+            "COUNTY_25",
+            "COUNTY_26",
+            "KINGDOM_3",
+            "COUNTY_21",
+            "DUCHY_9",
+            "Emberdune",
+            "Ashfall_Hollow"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 178.0,
+        "zPos": 225.0,
+        "subjects": [],
+        "size": 33,
+        "subject_size": 0
+    },
+    "Selk'haren_Labs": {
+        "balance": 2119.110856,
+        "bank": "true",
+        "banner": "0_255_255",
+        "culture": "Egalitarian",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Organiztion",
+        "id": "Selk'haren_Labs",
+        "leader": "JungleFoxGZ",
+        "members": [
+            "JungleFoxGZ",
+            "ArticSkyPlayz",
+            "KingHyperion_",
+            "A_Walnut1"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Selk'haren Labs",
+        "overlord": "Verdant_City",
+        "prestige modifiers": [
+            "Events(25.0)"
+        ],
+        "provinces": [
+            86,
+            85
+        ],
+        "relations": [
+            "Verdant_City(overlord.friendly.50)",
+            "The_Inferni_Consortium(none.friendly.50)",
+            "Machinarium_Sovereignty(none.unfriendly.-20)",
+            "Mizeareigh(none.unfriendly.-20)",
+            "House_Tenceur(none.unfriendly.-20)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "0,255,255",
+        "ruler title": "Overseer",
+        "tax rate": 10.0,
+        "tier": "Province",
+        "titles": [],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 60.0,
+        "zPos": 140.0,
+        "subjects": [],
+        "size": 2,
+        "subject_size": 0
+    },
+    "Azur": {
+        "balance": 7049.482,
+        "bank": "true",
+        "banner": "64_101_225",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Azur",
+        "leader": "TekiAshard",
+        "members": [
+            "TekiAshard"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Azur Clan",
+        "prestige modifiers": [],
+        "provinces": [
+            125
+        ],
+        "relations": [],
+        "religion": "Religious Diversity",
+        "rgb": "64,101,225",
+        "ruler title": "Leader",
+        "tax rate": 60.0,
+        "tier": "Tribe (Province)",
+        "tier index": 1.0,
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 75.0,
+        "zPos": 143.0,
+        "subjects": [],
         "size": 1,
         "subject_size": 0
     },
-    "NATION_3": {
-        "name": "Kondar",
-        "provinces": [
-            11,
-            12,
-            13
+    "TheDesertCamp": {
+        "balance": 609.2607,
+        "bank": "true",
+        "banner": "36_36_36",
+        "culture": "Shared Burdens",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Semi-Nomadic Communalism",
+        "id": "TheDesertCamp",
+        "leader": "CrazySteve4",
+        "members": [
+            "CrazySteve4"
         ],
-        "rgb": "24,128,34",
-        "banner": "24_128_34",
-        "subjects": [
-            "NATION_7"
+        "military": [
+            "professional.0",
+            "militia.6"
         ],
-        "size": 4,
-        "subject_size": 1
-    },
-    "NATION_4": {
-        "name": "Jakuran Tribes",
-        "provinces": [
-            284,
-            283,
-            316,
-            315,
-            312,
-            313,
-            305,
-            19
+        "military queue": [],
+        "name": "NorthernCamp",
+        "prestige modifiers": [
+            "Events(20.0)"
         ],
-        "rgb": "192,159,77",
-        "subjects": [
-            "NATION_5",
-            "NATION_8"
-        ],
-        "banner": "192_159_77",
-        "size": 18,
-        "subject_size": 10
-    },
-    "NATION_5": {
-        "name": "Ojani Tribes",
-        "overlord": "NATION_4",
         "provinces": [
             274,
-            280,
-            273,
-            275
-        ],
-        "rgb": "131,100,22",
-        "subjects": [
-            "NATION_6"
-        ],
-        "banner": "131_100_22",
-        "size": 5,
-        "subject_size": 1
-    },
-    "NATION_6": {
-        "name": "Gejj",
-        "overlord": "NATION_5",
-        "provinces": [
-            282
-        ],
-        "rgb": "160,154,115",
-        "subjects": [],
-        "banner": "160_154_115",
-        "size": 1,
-        "subject_size": 0
-    },
-    "NATION_7": {
-        "name": "City of Ankid",
-        "overlord": "NATION_3",
-        "provinces": [
-            57
-        ],
-        "rgb": "128,20,20",
-        "subjects": [],
-        "banner": "128_20_20",
-        "size": 1,
-        "subject_size": 0
-    },
-    "NATION_8": {
-        "name": "Unvan Tribes",
-        "overlord": "NATION_4",
-        "provinces": [
+            269,
+            268,
             271,
+            283,
+            315,
+            285,
+            284,
+            273,
             272,
             270,
-            20
+            282,
+            317,
+            267,
+            313,
+            280
         ],
-        "rgb": "109,62,19",
-        "subjects": [
-            "NATION_9"
+        "relations": [
+            "Machinarium_Sovereignty(none.friendly.50)",
+            "Mizeareigh(ally.friendly.80)",
+            "Lucilinburhuc(none.friendly.50)",
+            "House_Tenceur(none.friendly.50)",
+            "HouseGrimshaw(none.friendly.50)",
+            "Tiayeouph(none.unfriendly.-20)",
+            "Dawngale(none.friendly.50)"
         ],
-        "banner": "109_62_19",
-        "size": 5,
-        "subject_size": 1
-    },
-    "NATION_9": {
-        "name": "Ilian",
-        "overlord": "NATION_8",
-        "provinces": [
-            28
+        "religion": "Atheist",
+        "rgb": "36,36,36",
+        "ruler title": "Black-Lord",
+        "tax rate": 0.0,
+        "tier": "Kingdom",
+        "titles": [
+            "The_Rivers_upon_Dunes",
+            "Ra's_Land",
+            "The_Kingdom_of_the_Burning_Eye"
         ],
-        "rgb": "25,60,48",
+        "vassal tax rate": 15.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 142.0,
+        "zPos": 45.0,
         "subjects": [],
-        "banner": "25_60_48",
+        "size": 16,
+        "subject_size": 0
+    },
+    "The_Inferni_Consortium": {
+        "balance": 33.42768,
+        "bank": "true",
+        "banner": "210_233_87",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "The_Inferni_Consortium",
+        "leader": "TryHardCamper",
+        "members": [
+            "TryHardCamper",
+            "PaniniTheBread"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "xTxhxex xIxnxfxexrxnxix xCxoxnxsxoxrxtxixuxm",
+        "overlord": "Verdant_City",
+        "prestige modifiers": [],
+        "provinces": [],
+        "relations": [
+            "Verdant_City(overlord.neutral.0)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "210,233,87",
+        "ruler title": "Leader",
+        "tax rate": 0.0,
+        "tier": "Landless",
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 37.0,
+        "zPos": 130.0,
+        "subjects": [],
+        "size": 0,
+        "subject_size": 0
+    },
+    "Beatrixian_Island": {
+        "balance": 14.589,
+        "bank": "true",
+        "banner": "255_255_0",
+        "culture": "Valanaari",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Beatrixian_Island",
+        "leader": "Radgalf",
+        "members": [
+            "Radgalf"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "New Valanaar",
+        "prestige modifiers": [],
+        "provinces": [
+            157
+        ],
+        "relations": [
+            "Tiayeouph(none.neutral.0)",
+            "Dawngale(none.friendly.50)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "255,255,0",
+        "ruler title": "Warden",
+        "tax rate": 0.0,
+        "tier": "Barony (Province)",
+        "tier index": 0.0,
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 225.0,
+        "zPos": 223.0,
+        "subjects": [],
         "size": 1,
         "subject_size": 0
     },
-    "NATION_10": {
-        "rgb": "255,0,0",
-        "provinces": [
-            123
+    "Viridia": {
+        "balance": 2127.9125,
+        "bank": "true",
+        "banner": "229_234_91",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Sagamorism",
+        "id": "Viridia",
+        "leader": "JustinTheOne",
+        "members": [
+            "JustinTheOne"
         ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Viridia",
+        "prestige modifiers": [
+            "Events(20.0)"
+        ],
+        "provinces": [],
+        "relations": [
+            "Tiayeouph(none.friendly.50)",
+            "Dawngale(none.friendly.50)"
+        ],
+        "religion": "Animism",
+        "rgb": "229,234,91",
+        "ruler title": "Sagamore",
+        "tax rate": 5.0,
+        "tier": "Clan (Landless)",
+        "tier index": 2.0,
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 65.0,
+        "zPos": 233.0,
         "subjects": [],
-        "name": "",
-        "banner": "255_0_0",
+        "size": 0,
+        "subject_size": 0
+    },
+    "The_NRPA": {
+        "balance": 0.637314015152,
+        "bank": "true",
+        "banner": "237_206_81",
+        "culture": "Hustle",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Corporation",
+        "id": "The_NRPA",
+        "leader": "coalmoder",
+        "members": [
+            "ROOT_TOOT",
+            "coalmoder"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "xTxhxe xNxRxPxA",
+        "prestige modifiers": [],
+        "provinces": [
+            135,
+            137,
+            138
+        ],
+        "relations": [
+            "Machinarium_Sovereignty(none.neutral.0)",
+            "Cordelia(none.neutral.0)",
+            "Viridia(none.friendly.50)",
+            "imperium(ally.friendly.80)",
+            "Beatrixian_Island(none.friendly.50)",
+            "Queendom_of_Eoridcois(none.friendly.50)",
+            "Rah_Clan(none.friendly.50)",
+            "Mizeareigh(none.unfriendly.-20)",
+            "HouseGrimshaw(none.neutral.0)",
+            "House_Weston_of_Blossomreach(none.friendly.50)",
+            "Tiayeouph(none.neutral.0)",
+            "Dawngale(none.friendly.50)",
+            "Skrung.Co(none.neutral.0)"
+        ],
+        "religion": "n/a",
+        "rgb": "237,206,81",
+        "ruler title": "Executive",
+        "tax rate": 0.0,
+        "tier": "County",
+        "titles": [
+            "COUNTY_23"
+        ],
+        "vassal tax rate": 10.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 170.0,
+        "zPos": 188.0,
+        "subjects": [],
+        "size": 3,
+        "subject_size": 0
+    },
+    "House_Tenceur": {
+        "balance": 886.72495,
+        "bank": "true",
+        "banner": "68_91_224",
+        "culture": "Calavorian",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Feudal Lordship",
+        "id": "House_Tenceur",
+        "leader": "DestroyTheSauce",
+        "members": [
+            "DestroyTheSauce",
+            "MrEnzo99",
+            "Archbishqp",
+            "gulis123"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "House Tenceur",
+        "prestige modifiers": [
+            "Events(25.0)"
+        ],
+        "provinces": [
+            72,
+            73,
+            71,
+            75,
+            76,
+            69
+        ],
+        "relations": [
+            "Verdant_City(none.friendly.50)",
+            "Luciliburhuc_Farming_Association(none.friendly.50)",
+            "Machinarium_Sovereignty(ally.friendly.80)",
+            "Mizeareigh(ally.friendly.80)",
+            "Cordelia(none.friendly.50)",
+            "Lucilinburhuc(none.friendly.50)",
+            "Nimbus(none.friendly.50)",
+            "TheDesertCamp(none.friendly.50)",
+            "Dawngale(ally.friendly.80)"
+        ],
+        "religion": "Ancient Restoration",
+        "rgb": "68,91,224",
+        "ruler title": "Lord",
+        "tax rate": 5.0,
+        "tier": "Barony (Province)",
+        "tier index": 0.0,
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 78.0,
+        "zPos": 100.0,
+        "subjects": [],
+        "size": 6,
+        "subject_size": 0
+    },
+    "Queendom_of_Eoridcois": {
+        "balance": 1652.2583,
+        "bank": "true",
+        "banner": "67_228_116",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Council",
+        "id": "Queendom_of_Eoridcois",
+        "leader": "Warlizardo",
+        "members": [
+            "Warlizardo"
+        ],
+        "military": [
+            "professional.6",
+            "militia.4"
+        ],
+        "military queue": [],
+        "name": "Eoridcois",
+        "prestige modifiers": [
+            "Events(80.0)",
+            "Wars(10.0)"
+        ],
+        "provinces": [
+            122,
+            182,
+            181,
+            180,
+            179,
+            178,
+            123,
+            107
+        ],
+        "relations": [
+            "Verdant_City(none.neutral.0)",
+            "The_Pale_Garden(none.neutral.0)",
+            "HouseGrimshaw(ally.neutral.30)",
+            "Nimbus(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "imperium(none.friendly.50)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "67,228,116",
+        "ruler title": "Councilhead",
+        "tax rate": 0.0,
+        "tier": "Duchy",
+        "titles": [
+            "Kravenmoor",
+            "SHLF_Cheerios"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 178.0,
+        "zPos": 225.0,
+        "subjects": [],
+        "size": 8,
+        "subject_size": 0
+    },
+    "Mizeareigh": {
+        "balance": 6421.4628375,
+        "bank": "true",
+        "banner": "5_71_42",
+        "culture": "Mizean",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Elective Constitutional Monarchy",
+        "id": "Mizeareigh",
+        "leader": "Nikilios",
+        "members": [
+            "Nikilios",
+            "BucketKat_",
+            "InquisitorKarp",
+            "EuryOnIce",
+            "ExtraGea",
+            "pacman403",
+            "carpiie",
+            "PlatonicNymph",
+            "AlikamApparati"
+        ],
+        "military": [
+            "professional.3",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Czardom of Mizea",
+        "prestige modifiers": [],
+        "provinces": [
+            36,
+            223,
+            222,
+            224,
+            225,
+            226,
+            228,
+            227,
+            235,
+            229,
+            230,
+            231,
+            233,
+            238,
+            234,
+            56,
+            54,
+            53,
+            51,
+            232,
+            52,
+            236,
+            237
+        ],
+        "relations": [
+            "The_NRPA(none.unfriendly.-20)",
+            "Verdant_City(none.friendly.50)",
+            "Machinarium_Sovereignty(ally.friendly.80)",
+            "Lucilinburhuc(ally.friendly.80)",
+            "House_Tenceur(ally.friendly.80)",
+            "Nimbus(none.friendly.50)",
+            "TheDesertCamp(ally.friendly.80)",
+            "HouseGrimshaw(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "Dawngale(none.friendly.50)",
+            "imperium(none.friendly.50)"
+        ],
+        "religion": "Order of the Sun and Moon",
+        "rgb": "5,71,42",
+        "ruler title": "Czarina",
+        "tax rate": 25.0,
+        "tier": "Kingdom",
+        "titles": [
+            "Dumayu",
+            "Duskvale",
+            "Mizea",
+            "Malazvook",
+            "Vizhuvso",
+            "Eschoadin",
+            "Severboden",
+            "Janfort",
+            "Etopravda",
+            "COUNTY_9"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 11.0,
+        "zPos": 26.0,
+        "subjects": [],
+        "size": 23,
+        "subject_size": 0
+    },
+    "The_Pale_Garden": {
+        "balance": 1178.4909,
+        "bank": "true",
+        "banner": "74_143_212",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "theocracy",
+        "id": "The_Pale_Garden",
+        "leader": "OminousPeanut",
+        "members": [
+            "OminousPeanut",
+            "LuckyNightmare69",
+            "GingerBAR"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "The Pale Garden",
+        "overlord": "House_Weston_of_Blossomreach",
+        "prestige modifiers": [
+            "Events(25.0)"
+        ],
+        "provinces": [
+            124,
+            160
+        ],
+        "relations": [
+            "Verdant_City(none.neutral.0)",
+            "Queendom_of_Eoridcois(none.neutral.0)",
+            "House_Weston_of_Blossomreach(overlord.friendly.50)",
+            "imperium(none.neutral.0)"
+        ],
+        "religion": "The Circle of Life and Death",
+        "rgb": "74,143,212",
+        "ruler title": "Leader",
+        "tax rate": 20.0,
+        "tier": "County",
+        "titles": [
+            "COUNTY_20"
+        ],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 99.0,
+        "zPos": 182.0,
+        "subjects": [],
+        "size": 2,
+        "subject_size": 0
+    },
+    "Cordelia": {
+        "balance": 21.220389625,
+        "bank": "true",
+        "banner": "89_75_219",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Cordelia",
+        "leader": "exoman69",
+        "members": [
+            "exoman69"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Cordelia",
+        "overlord": "imperium",
+        "prestige modifiers": [
+            "Events(50.0)",
+            "Wars(10.0)"
+        ],
+        "provinces": [
+            112,
+            113,
+            114,
+            116,
+            115,
+            117,
+            59
+        ],
+        "relations": [
+            "Verdant_City(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "imperium(overlord.neutral.0)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "89,75,219",
+        "ruler title": "<king>",
+        "tax rate": 0.0,
+        "tier": "Duchy",
+        "titles": [
+            "COUNTY_18",
+            "DUCHY_6"
+        ],
+        "vassal tax rate": 10.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 197.0,
+        "zPos": 164.0,
+        "subjects": [],
+        "size": 7,
+        "subject_size": 0
+    },
+    "imperium": {
+        "balance": 3553.7218077,
+        "bank": "true",
+        "banner": "111_0_0",
+        "culture": "Oseni",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Drakhanate",
+        "id": "imperium",
+        "leader": "MyNam3IsJ0hn",
+        "members": [
+            "drefvelin",
+            "kaks123",
+            "DrdeerX",
+            "MyNam3IsJ0hn"
+        ],
+        "military": [
+            "professional.6",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Grand Drakhanate",
+        "prestige modifiers": [
+            "Events(20.0)",
+            "Wars(100.0)"
+        ],
+        "provinces": [
+            106,
+            100,
+            103,
+            104,
+            68,
+            128,
+            129,
+            131,
+            132,
+            70,
+            96,
+            110,
+            63,
+            99,
+            93,
+            92,
+            90,
+            94,
+            65,
+            66,
+            98,
+            101,
+            64,
+            108,
+            109,
+            130,
+            105
+        ],
+        "relations": [
+            "The_Pale_Garden(none.friendly.50)",
+            "Verdant_City(palatinate.friendly.70)",
+            "The_NRPA(ally.friendly.80)",
+            "Machinarium_Sovereignty(none.hostile.-50)",
+            "Cordelia(palatinate.neutral.20)",
+            "TheDesertCamp(none.hostile.-50)",
+            "Beatrixian_Island(none.friendly.50)",
+            "Queendom_of_Eoridcois(none.friendly.50)",
+            "Rah_Clan(march.friendly.70)",
+            "Mizeareigh(none.friendly.50)",
+            "Lucilinburhuc(none.friendly.50)",
+            "Nimbus(none.friendly.50)",
+            "HouseGrimshaw(none.neutral.0)",
+            "House_Weston_of_Blossomreach(ally.friendly.80)",
+            "Tiayeouph(ally.friendly.80)",
+            "Skrung.Co(tributary.neutral.10)",
+            "Hell_Hops_Hellhouse(mercantile.friendly.70)"
+        ],
+        "religion": "Oseni-Aligned",
+        "rgb": "111,0,0",
+        "ruler title": "Drakhan",
+        "tax rate": 5.0,
+        "tier": "Kingdom",
+        "titles": [
+            "COUNTY_12",
+            "KINGDOM_2",
+            "COUNTY_11",
+            "DUCHY_4"
+        ],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 132.0,
+        "zPos": 125.0,
+        "subjects": [
+            "Cordelia",
+            "Verdant_City",
+            "Hell_Hops_Hellhouse",
+            "Rah_Clan"
+        ],
+        "size": 63,
+        "subject_size": 36
+    },
+    "Lucilinburhuc": {
+        "balance": 4667.8369453125,
+        "bank": "true",
+        "banner": "254_254_254",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "CaptaincyOFArms",
+        "id": "Lucilinburhuc",
+        "leader": "MrRumbleroar",
+        "members": [
+            "Todik",
+            "MrRumbleroar",
+            "Jamjam10626"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Free Company of Luciliburhuc",
+        "prestige modifiers": [],
+        "provinces": [
+            247,
+            248,
+            245,
+            244,
+            246,
+            253,
+            249,
+            251,
+            277,
+            275,
+            279,
+            278
+        ],
+        "relations": [
+            "Luciliburhuc_Farming_Association(palatinate.friendly.70)",
+            "Machinarium_Sovereignty(none.friendly.50)",
+            "Mizeareigh(ally.friendly.80)",
+            "Cordelia(none.friendly.50)",
+            "House_Tenceur(none.friendly.50)",
+            "HouseGrimshaw(none.friendly.50)",
+            "TheDesertCamp(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "imperium(none.friendly.50)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "254,254,254",
+        "ruler title": "Captain",
+        "tax rate": 0.0,
+        "tier": "Kingdom",
+        "titles": [
+            "Echternach",
+            "Lucilinburhuc",
+            "Bockfiels",
+            "Letzebierg"
+        ],
+        "vassal tax rate": 0.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 88.0,
+        "zPos": 30.0,
+        "subjects": [
+            "Luciliburhuc_Farming_Association"
+        ],
+        "size": 17,
+        "subject_size": 5
+    },
+    "Verdant_City": {
+        "balance": 676.63723285,
+        "bank": "true",
+        "banner": "46_139_87",
+        "culture": "Egalitarian",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "DynasticMeritocracy",
+        "id": "Verdant_City",
+        "leader": "kleinovac",
+        "members": [
+            "kleinovac",
+            "Woe_is_Lee",
+            "purpurdii",
+            "Fredolator",
+            "WrenPlays"
+        ],
+        "military": [
+            "professional.0",
+            "militia.0"
+        ],
+        "military queue": [],
+        "name": "xVxexrxdxaxnxtx xCxixtxy",
+        "overlord": "imperium",
+        "prestige modifiers": [
+            "Canon Dungeon Completion - Starter(30.0)",
+            "Events(205.0)",
+            "Wars(10.0)"
+        ],
+        "provinces": [
+            91,
+            88,
+            81,
+            87,
+            255,
+            82,
+            83,
+            74,
+            77,
+            257,
+            256,
+            254,
+            185,
+            183,
+            1,
+            4,
+            6,
+            3,
+            111
+        ],
+        "relations": [
+            "The_Pale_Garden(none.unfriendly.-20)",
+            "The_Inferni_Consortium(mercantile.friendly.70)",
+            "Machinarium_Sovereignty(none.unfriendly.-20)",
+            "Cordelia(none.friendly.50)",
+            "House_Tenceur(none.unfriendly.-20)",
+            "Selk'haren_Labs(palatinate.friendly.70)",
+            "imperium(overlord.friendly.50)",
+            "Viridia(none.friendly.50)",
+            "Queendom_of_Eoridcois(none.neutral.0)",
+            "Mizeareigh(none.unfriendly.-20)",
+            "Nimbus(none.friendly.50)",
+            "House_Weston_of_Blossomreach(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "Dawngale(none.friendly.50)",
+            "Hell_Hops_Hellhouse(none.friendly.50)"
+        ],
+        "religion": "Siros and Druidism",
+        "rgb": "46,139,87",
+        "ruler title": "High Grovekeeper",
+        "tax rate": 0.0,
+        "tier": "Petty Kingdom (Duchy)",
+        "tier index": 1.0,
+        "titles": [
+            "COUNTY_14",
+            "COUNTY_15",
+            "DUCHY_5",
+            "COUNTY_13",
+            "Ravenbreak",
+            "COUNTY_1"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 44.0,
+        "zPos": 133.0,
+        "subjects": [
+            "Selk'haren_Labs",
+            "The_Inferni_Consortium"
+        ],
+        "size": 21,
+        "subject_size": 2
+    },
+    "House_Weston_of_Blossomreach": {
+        "balance": 2294.1046,
+        "bank": "true",
+        "banner": "192_90_221",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "House_Weston_of_Blossomreach",
+        "leader": "Najroy",
+        "members": [
+            "Najroy"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "House Weston of Blossomreach",
+        "prestige modifiers": [],
+        "provinces": [
+            119,
+            118,
+            120,
+            184
+        ],
+        "relations": [
+            "The_NRPA(none.friendly.50)",
+            "Verdant_City(none.friendly.50)",
+            "The_Pale_Garden(mercantile.friendly.70)",
+            "HouseGrimshaw(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "imperium(ally.friendly.80)"
+        ],
+        "religion": "Religious Diversity",
+        "rgb": "192,90,221",
+        "ruler title": "Lord",
+        "tax rate": 20.0,
+        "tier": "City (County)",
+        "tier index": 1.0,
+        "titles": [
+            "COUNTY_19"
+        ],
+        "vassal tax rate": 50.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 78.0,
+        "zPos": 160.0,
+        "subjects": [
+            "The_Pale_Garden"
+        ],
+        "size": 6,
+        "subject_size": 2
+    },
+    "Hell_Hops_Hellhouse": {
+        "balance": 340.88805,
+        "bank": "true",
+        "banner": "231_69_204",
+        "culture": "Diverse",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Tavern",
+        "id": "Hell_Hops_Hellhouse",
+        "leader": "RiverBonnie",
+        "members": [
+            "RiverBonnie",
+            "StoneLover"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "The Rekindled Memorial",
+        "overlord": "imperium",
+        "prestige modifiers": [],
+        "provinces": [
+            97
+        ],
+        "relations": [
+            "imperium(overlord.neutral.0)"
+        ],
+        "religion": "Tolerant",
+        "rgb": "231,69,204",
+        "ruler title": "Tavernkeep",
+        "tax rate": -20.0,
+        "tier": "County",
+        "titles": [
+            "COUNTY_16"
+        ],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 105.0,
+        "zPos": 125.0,
+        "subjects": [],
         "size": 1,
+        "subject_size": 0
+    },
+    "Nimbus": {
+        "balance": 2487.43,
+        "bank": "true",
+        "banner": "59_53_211",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Nimbus",
+        "leader": "Jake3971",
+        "members": [
+            "Jake3971",
+            "AlokVocayne",
+            "Comiclobster425",
+            "MucusLukas",
+            "North_Were",
+            "BetaBunny"
+        ],
+        "military": [
+            "professional.6",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Nimbus",
+        "prestige modifiers": [
+            "Events(215.0)"
+        ],
+        "provinces": [
+            221,
+            210,
+            209,
+            214,
+            195,
+            84,
+            213,
+            194,
+            211,
+            212,
+            206,
+            193,
+            208,
+            44,
+            47,
+            215,
+            218,
+            217,
+            219,
+            49,
+            50,
+            207
+        ],
+        "relations": [
+            "Verdant_City(none.friendly.50)",
+            "The_NRPA(none.unfriendly.-20)",
+            "Queendom_of_Eoridcois(none.friendly.50)",
+            "Mizeareigh(none.friendly.50)",
+            "Cordelia(none.friendly.50)",
+            "Lucilinburhuc(none.friendly.50)",
+            "TheDesertCamp(none.unfriendly.-20)",
+            "HouseGrimshaw(none.friendly.50)",
+            "House_Weston_of_Blossomreach(none.friendly.50)",
+            "Tiayeouph(none.friendly.50)",
+            "Dawngale(palatinate.friendly.70)",
+            "imperium(none.hostile.-50)"
+        ],
+        "religion": "Multireligion",
+        "rgb": "59,53,211",
+        "ruler title": "Leader",
+        "tax rate": 0.0,
+        "tier": "Conglomerate (Kingdom)",
+        "tier index": 1.0,
+        "titles": [
+            "Nimbus",
+            "Aldroth",
+            "Wyvern_Pass",
+            "Emberfall_Gorge",
+            "Savine_Valley",
+            "Emberfall",
+            "Lunareth",
+            "Northwestern_Valleys"
+        ],
+        "vassal tax rate": 0.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 9.0,
+        "zPos": 133.0,
+        "subjects": [
+            "Dawngale"
+        ],
+        "size": 32,
+        "subject_size": 10
+    },
+    "HouseGrimshaw": {
+        "balance": 0.0,
+        "bank": "true",
+        "banner": "233_93_78",
+        "culture": "Mixed",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Shamanism",
+        "id": "HouseGrimshaw",
+        "leader": "Elswagmaster",
+        "members": [
+            "Elswagmaster"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "GreenWrathTribe",
+        "prestige modifiers": [
+            "Events(50.0)"
+        ],
+        "provinces": [
+            28,
+            27,
+            32,
+            29,
+            30,
+            31,
+            17,
+            24,
+            23,
+            19,
+            26,
+            25,
+            33,
+            163
+        ],
+        "relations": [
+            "The_NRPA(none.neutral.0)",
+            "Queendom_of_Eoridcois(ally.friendly.80)",
+            "Mizeareigh(none.friendly.50)",
+            "Lucilinburhuc(none.friendly.50)",
+            "TheDesertCamp(none.friendly.50)",
+            "Nimbus(none.unfriendly.-20)",
+            "Tiayeouph(none.friendly.50)",
+            "Viridia(none.friendly.50)"
+        ],
+        "religion": "Spiritism",
+        "rgb": "233,93,78",
+        "ruler title": "Shaman",
+        "tax rate": 5.0,
+        "tier": "Kingdom",
+        "titles": [
+            "COUNTY_5",
+            "DUCHY_2",
+            "KINGDOM_1"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 105.0,
+        "zPos": 63.0,
+        "subjects": [],
+        "size": 14,
+        "subject_size": 0
+    },
+    "Doug's_House": {
+        "balance": 2273.766,
+        "bank": "true",
+        "banner": "190_107_222",
+        "culture": "Multicultural",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Homestead",
+        "id": "Doug's_House",
+        "leader": "hazie_j",
+        "members": [
+            "hazie_j"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Doug's House",
+        "prestige modifiers": [],
+        "provinces": [],
+        "relations": [],
+        "religion": "Religious Diversity",
+        "rgb": "190,107,222",
+        "ruler title": "Leader",
+        "tax rate": 0.0,
+        "tier": "Nomads (Landless)",
+        "tier index": 1.0,
+        "titles": [],
+        "vassal tax rate": 100.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 54.0,
+        "zPos": 114.0,
+        "subjects": [],
+        "size": 0,
+        "subject_size": 0
+    },
+    "Rah_Clan": {
+        "balance": 902.2142000000003,
+        "bank": "true",
+        "banner": "73_210_193",
+        "culture": "Oseni",
+        "extra node capacity": 0.0,
+        "faction modifiers": [],
+        "government": "Crew",
+        "id": "Rah_Clan",
+        "leader": "vHashi",
+        "members": [
+            "vHashi",
+            "Robo1475",
+            "BlackoutStormer",
+            "op0l",
+            "CornKingTG",
+            "vMatcha",
+            "SimplySpirit"
+        ],
+        "military": [
+            "professional.0",
+            "militia.6"
+        ],
+        "military queue": [],
+        "name": "Saltblood Syndicate",
+        "overlord": "imperium",
+        "prestige modifiers": [
+            "Wars(30.0)"
+        ],
+        "provinces": [
+            102,
+            12,
+            11,
+            13,
+            14,
+            61,
+            60
+        ],
+        "relations": [
+            "Verdant_City(none.friendly.50)",
+            "The_NRPA(none.neutral.0)",
+            "imperium(overlord.friendly.50)",
+            "Skrung.Co(none.hostile.-50)"
+        ],
+        "religion": "Oseni-Based",
+        "rgb": "73,210,193",
+        "ruler title": "Capo",
+        "tax rate": 5.0,
+        "tier": "County",
+        "titles": [
+            "COUNTY_17"
+        ],
+        "vassal tax rate": 20.0,
+        "wealth modifiers": [],
+        "world": "TFMC_S2",
+        "xPos": 140.0,
+        "zPos": 122.0,
+        "subjects": [],
+        "size": 7,
         "subject_size": 0
     }
 }

@@ -53,7 +53,7 @@ export function useRegionHover({
         description:
             mapType === "trade"
             ? `The area of ${mapDisplayName} where ${region.name} dominates trade`
-            : `A ${region.tier ?? capitalize(mapType)} in ${mapDisplayName}`,
+            : `A ${mapType === "nation" ? "Nation" : region.tier ?? capitalize(mapType)} in ${mapDisplayName}`,
       });
     }
 

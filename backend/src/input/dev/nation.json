@@ -1,1 +1,1334 @@
-{}
+{
+  "TestFaction": {
+    "id": "TestFaction",
+    "name": "§x§a§3§a§1§8§4TestFaction",
+    "rgb": "215,203,92",
+    "leader": "dummy",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 73,
+    "extra node capacity": 0.0,
+    "banner": [
+      "RED.BASE",
+      "BROWN.DIAGONAL_UP_LEFT",
+      "CYAN.FIRE",
+      "LIGHT_BLUE.WATER",
+      "BLUE.CHECKER"
+    ],
+    "provinces": [
+      73
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "TestFaction",
+        "name": "§x§a§3§a§1§8§4TestFaction",
+        "leader": "dummy",
+        "rgb": "215,203,92",
+        "type": "realm",
+        "capital": 73,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 319.0,
+        "zPos": 50.0,
+        "balance": 6920.0,
+        "banner": [
+          "RED.BASE",
+          "BROWN.DIAGONAL_UP_LEFT",
+          "CYAN.FIRE",
+          "LIGHT_BLUE.WATER",
+          "BLUE.CHECKER"
+        ],
+        "members": [
+          "dummy"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 5
+          },
+          {
+            "id": "workshops",
+            "level": 3
+          },
+          {
+            "id": "storehouses",
+            "level": 4
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "TestGuild",
+        "name": "§x§a§3§a§1§8§4TestGuild",
+        "leader": "dumm3",
+        "rgb": "65,93,210",
+        "type": "guild",
+        "capital": 73,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 282.0,
+        "zPos": 78.0,
+        "balance": 1859.75,
+        "banner": [
+          "GRAY.BASE",
+          "GREEN.DIAGONAL_RIGHT",
+          "YELLOW.RING"
+        ],
+        "members": [
+          "dumm3",
+          "dummy2"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 3
+          },
+          {
+            "id": "workshops",
+            "level": 5
+          },
+          {
+            "id": "storehouses",
+            "level": 4
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Sable_Reach": {
+    "id": "Sable_Reach",
+    "name": "Sable Reach",
+    "rgb": "205,141,224",
+    "leader": "Nyssara",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 316,
+    "extra node capacity": 0.0,
+    "banner": [
+      "WHITE.BASE",
+      "WHITE.SQUARE_TOP_LEFT",
+      "WHITE.STRIPE_TOP",
+      "ORANGE.ARROWS_DOWN"
+    ],
+    "provinces": [
+      316
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Sable_Reach_Guild",
+        "name": "Sable Reach Guild",
+        "leader": "Lysa",
+        "rgb": "137,28,63",
+        "type": "guild",
+        "capital": 316,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 153.0,
+        "zPos": 266.0,
+        "balance": 1851.0,
+        "banner": [
+          "GRAY.BASE",
+          "ORANGE.CASTLE"
+        ],
+        "members": [
+          "Lysa",
+          "Orin",
+          "Bram",
+          "Dorn",
+          "Tarin"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 9
+          },
+          {
+            "id": "workshops",
+            "level": 5
+          },
+          {
+            "id": "storehouses",
+            "level": 14
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Sable_Reach",
+        "name": "Sable Reach",
+        "leader": "Nyssara",
+        "rgb": "205,141,224",
+        "type": "realm",
+        "capital": 316,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 283.0,
+        "zPos": 438.0,
+        "balance": 9241.0,
+        "banner": [
+          "WHITE.BASE",
+          "WHITE.SQUARE_TOP_LEFT",
+          "WHITE.STRIPE_TOP",
+          "ORANGE.ARROWS_DOWN"
+        ],
+        "members": [
+          "Nyssara"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 1
+          },
+          {
+            "id": "workshops",
+            "level": 4
+          },
+          {
+            "id": "storehouses",
+            "level": 0
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Ironroot_Covenant": {
+    "id": "Ironroot_Covenant",
+    "name": "Ironroot Covenant",
+    "rgb": "79,226,37",
+    "leader": "Vaelis",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 426,
+    "extra node capacity": 0.0,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.HALF_VERTICAL_RIGHT",
+      "BLACK.SMALL_STRIPES_DOWNLEFT",
+      "RED.MOON",
+      "RED.HEART",
+      "BROWN.SUNBURST"
+    ],
+    "provinces": [
+      426
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Ironroot_Covenant_Guild",
+        "name": "Ironroot Covenant Guild",
+        "leader": "Keth",
+        "rgb": "77,156,164",
+        "type": "guild",
+        "capital": 426,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 211.0,
+        "zPos": 83.0,
+        "balance": 5502.0,
+        "banner": [
+          "BROWN.BASE",
+          "BROWN.SQUARE_BOTTOM_LEFT",
+          "GRAY.SMALL_STRIPES_DOWNLEFT",
+          "LIGHT_BLUE.CROWN"
+        ],
+        "members": [
+          "Keth",
+          "Orin"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 9
+          },
+          {
+            "id": "workshops",
+            "level": 13
+          },
+          {
+            "id": "storehouses",
+            "level": 19
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Ironroot_Covenant",
+        "name": "Ironroot Covenant",
+        "leader": "Vaelis",
+        "rgb": "79,226,37",
+        "type": "realm",
+        "capital": 426,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 271.0,
+        "zPos": 259.0,
+        "balance": 8621.0,
+        "banner": [
+          "BLACK.BASE",
+          "BLACK.HALF_VERTICAL_RIGHT",
+          "BLACK.SMALL_STRIPES_DOWNLEFT",
+          "RED.MOON",
+          "RED.HEART",
+          "BROWN.SUNBURST"
+        ],
+        "members": [
+          "Vaelis"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 9
+          },
+          {
+            "id": "workshops",
+            "level": 5
+          },
+          {
+            "id": "storehouses",
+            "level": 9
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Emberfall_League": {
+    "id": "Emberfall_League",
+    "name": "Emberfall League",
+    "rgb": "231,144,175",
+    "leader": "Serapha",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 683,
+    "extra node capacity": 0.0,
+    "banner": [
+      "RED.BASE",
+      "BROWN.TRIANGLE_BOTTOM",
+      "GRAY.STRIPE_DOWNLEFT",
+      "WHITE.TRIDENT"
+    ],
+    "provinces": [
+      683
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Emberfall_League_Guild",
+        "name": "Emberfall League Guild",
+        "leader": "Orin",
+        "rgb": "38,63,101",
+        "type": "guild",
+        "capital": 683,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 230.0,
+        "zPos": 320.0,
+        "balance": 4976.0,
+        "banner": [
+          "BLACK.BASE",
+          "LIGHT_GRAY.TATTER",
+          "BLUE.RHOMBUS"
+        ],
+        "members": [
+          "Orin",
+          "Dorn",
+          "Eryn",
+          "Sylvi",
+          "Hale"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 1
+          },
+          {
+            "id": "workshops",
+            "level": 17
+          },
+          {
+            "id": "storehouses",
+            "level": 19
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Emberfall_League",
+        "name": "Emberfall League",
+        "leader": "Serapha",
+        "rgb": "231,144,175",
+        "type": "realm",
+        "capital": 683,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 34.0,
+        "zPos": 17.0,
+        "balance": 6384.0,
+        "banner": [
+          "RED.BASE",
+          "BROWN.TRIANGLE_BOTTOM",
+          "GRAY.STRIPE_DOWNLEFT",
+          "WHITE.TRIDENT"
+        ],
+        "members": [
+          "Serapha"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 2
+          },
+          {
+            "id": "workshops",
+            "level": 5
+          },
+          {
+            "id": "storehouses",
+            "level": 4
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Gilded_Horizon": {
+    "id": "Gilded_Horizon",
+    "name": "Gilded Horizon",
+    "rgb": "98,148,94",
+    "leader": "Kaelis",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 147,
+    "extra node capacity": 0.0,
+    "banner": [
+      "WHITE.BASE",
+      "WHITE.DIAGONAL_LEFT",
+      "WHITE.STRIPE_TOP",
+      "GRAY.COMPANION"
+    ],
+    "provinces": [
+      147
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Gilded_Horizon_Guild",
+        "name": "Gilded Horizon Guild",
+        "leader": "Hale",
+        "rgb": "196,139,193",
+        "type": "guild",
+        "capital": 147,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 417.0,
+        "zPos": 428.0,
+        "balance": 1830.0,
+        "banner": [
+          "LIGHT_GRAY.BASE",
+          "LIGHT_GRAY.DIAGONAL_LEFT",
+          "LIGHT_GRAY.BORDER",
+          "LIME.TRIDENT",
+          "BLACK.FORK_TOP"
+        ],
+        "members": [
+          "Hale",
+          "Dorn",
+          "Eryn"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 17
+          },
+          {
+            "id": "workshops",
+            "level": 1
+          },
+          {
+            "id": "storehouses",
+            "level": 5
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Gilded_Horizon",
+        "name": "Gilded Horizon",
+        "leader": "Kaelis",
+        "rgb": "98,148,94",
+        "type": "realm",
+        "capital": 147,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 294.0,
+        "zPos": 498.0,
+        "balance": 8349.0,
+        "banner": [
+          "WHITE.BASE",
+          "WHITE.DIAGONAL_LEFT",
+          "WHITE.STRIPE_TOP",
+          "GRAY.COMPANION"
+        ],
+        "members": [
+          "Kaelis"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 3
+          },
+          {
+            "id": "workshops",
+            "level": 9
+          },
+          {
+            "id": "storehouses",
+            "level": 5
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Silverwake_Dominion": {
+    "id": "Silverwake_Dominion",
+    "name": "Silverwake Dominion",
+    "rgb": "176,196,215",
+    "leader": "Corwyn",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 86,
+    "extra node capacity": 0.0,
+    "banner": [
+      "LIGHT_GRAY.BASE",
+      "LIGHT_GRAY.QUARTER_TOP_LEFT",
+      "LIGHT_GRAY.STRIPE_RIGHT",
+      "GRAY.ARROW_DOWN"
+    ],
+    "provinces": [
+      86
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Silverwake_Dominion_Guild",
+        "name": "Silverwake Dominion Guild",
+        "leader": "Lysa",
+        "rgb": "221,206,204",
+        "type": "guild",
+        "capital": 86,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 132.0,
+        "zPos": 194.0,
+        "balance": 2040.0,
+        "banner": [
+          "ORANGE.BASE",
+          "ORANGE.TRIANGLES_TOP",
+          "GREEN.FORK_TOP"
+        ],
+        "members": [
+          "Lysa",
+          "Eryn",
+          "Tarin"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 9
+          },
+          {
+            "id": "workshops",
+            "level": 1
+          },
+          {
+            "id": "storehouses",
+            "level": 14
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Silverwake_Dominion",
+        "name": "Silverwake Dominion",
+        "leader": "Corwyn",
+        "rgb": "176,196,215",
+        "type": "realm",
+        "capital": 86,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 352.0,
+        "zPos": 293.0,
+        "balance": 10239.0,
+        "banner": [
+          "LIGHT_GRAY.BASE",
+          "LIGHT_GRAY.QUARTER_TOP_LEFT",
+          "LIGHT_GRAY.STRIPE_RIGHT",
+          "GRAY.ARROW_DOWN"
+        ],
+        "members": [
+          "Corwyn"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 8
+          },
+          {
+            "id": "workshops",
+            "level": 4
+          },
+          {
+            "id": "storehouses",
+            "level": 10
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Stormveil_Union": {
+    "id": "Stormveil_Union",
+    "name": "Stormveil Union",
+    "rgb": "139,83,189",
+    "leader": "Thandor",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 574,
+    "extra node capacity": 0.0,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.TRIANGLE_TOP",
+      "LIME.BLAM"
+    ],
+    "provinces": [
+      574
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Stormveil_Union_Guild",
+        "name": "Stormveil Union Guild",
+        "leader": "Pella",
+        "rgb": "210,65,35",
+        "type": "guild",
+        "capital": 574,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 388.0,
+        "zPos": 333.0,
+        "balance": 1853.0,
+        "banner": [
+          "LIGHT_BLUE.BASE",
+          "CYAN.QUARTER_TOP_RIGHT",
+          "YELLOW.FORK_TOP",
+          "RED.CIRCLE"
+        ],
+        "members": [
+          "Pella",
+          "Mira"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 12
+          },
+          {
+            "id": "workshops",
+            "level": 19
+          },
+          {
+            "id": "storehouses",
+            "level": 11
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Stormveil_Union",
+        "name": "Stormveil Union",
+        "leader": "Thandor",
+        "rgb": "139,83,189",
+        "type": "realm",
+        "capital": 574,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 285.0,
+        "zPos": 131.0,
+        "balance": 4725.0,
+        "banner": [
+          "BLACK.BASE",
+          "BLACK.TRIANGLE_TOP",
+          "LIME.BLAM"
+        ],
+        "members": [
+          "Thandor"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 10
+          },
+          {
+            "id": "workshops",
+            "level": 0
+          },
+          {
+            "id": "storehouses",
+            "level": 4
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Frostmere_Pact": {
+    "id": "Frostmere_Pact",
+    "name": "Frostmere Pact",
+    "rgb": "66,144,21",
+    "leader": "Eldwyn",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 284,
+    "extra node capacity": 0.0,
+    "banner": [
+      "GRAY.BASE",
+      "LIGHT_BLUE.FORK_TOP"
+    ],
+    "provinces": [
+      284
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Frostmere_Pact",
+        "name": "Frostmere Pact",
+        "leader": "Eldwyn",
+        "rgb": "66,144,21",
+        "type": "realm",
+        "capital": 284,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 252.0,
+        "zPos": 39.0,
+        "balance": 7824.0,
+        "banner": [
+          "GRAY.BASE",
+          "LIGHT_BLUE.FORK_TOP"
+        ],
+        "members": [
+          "Eldwyn"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 4
+          },
+          {
+            "id": "workshops",
+            "level": 9
+          },
+          {
+            "id": "storehouses",
+            "level": 4
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Frostmere_Pact_Guild",
+        "name": "Frostmere Pact Guild",
+        "leader": "Tarin",
+        "rgb": "23,224,117",
+        "type": "guild",
+        "capital": 284,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 401.0,
+        "zPos": 3.0,
+        "balance": 4788.0,
+        "banner": [
+          "GRAY.BASE",
+          "GRAY.TRIANGLE_TOP",
+          "BROWN.STRIPE_LEFT",
+          "ORANGE.RING",
+          "LIGHT_GRAY.CLUBS"
+        ],
+        "members": [
+          "Tarin",
+          "Pella",
+          "Eryn"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 18
+          },
+          {
+            "id": "workshops",
+            "level": 17
+          },
+          {
+            "id": "storehouses",
+            "level": 9
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Verdant_Crown": {
+    "id": "Verdant_Crown",
+    "name": "Verdant Crown",
+    "rgb": "143,52,230",
+    "leader": "Maelor",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 595,
+    "extra node capacity": 0.0,
+    "banner": [
+      "YELLOW.BASE",
+      "YELLOW.DIAGONAL_UP_LEFT",
+      "YELLOW.STRIPE_DOWNLEFT",
+      "LIME.DIAGONAL_BORDER",
+      "ORANGE.CURTAINS"
+    ],
+    "provinces": [
+      595
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Verdant_Crown_Guild",
+        "name": "Verdant Crown Guild",
+        "leader": "Pella",
+        "rgb": "103,59,89",
+        "type": "guild",
+        "capital": 595,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 70.0,
+        "zPos": 330.0,
+        "balance": 1757.0,
+        "banner": [
+          "LIME.BASE",
+          "LIME.SQUARE_TOP_RIGHT",
+          "LIME.STRIPE_CENTER",
+          "BLUE.ARROWS_UP",
+          "LIGHT_GRAY.RIBS"
+        ],
+        "members": [
+          "Pella",
+          "Bram",
+          "Orin",
+          "Tarin"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 12
+          },
+          {
+            "id": "workshops",
+            "level": 7
+          },
+          {
+            "id": "storehouses",
+            "level": 20
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Verdant_Crown",
+        "name": "Verdant Crown",
+        "leader": "Maelor",
+        "rgb": "143,52,230",
+        "type": "realm",
+        "capital": 595,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 317.0,
+        "zPos": 189.0,
+        "balance": 11456.0,
+        "banner": [
+          "YELLOW.BASE",
+          "YELLOW.DIAGONAL_UP_LEFT",
+          "YELLOW.STRIPE_DOWNLEFT",
+          "LIME.DIAGONAL_BORDER",
+          "ORANGE.CURTAINS"
+        ],
+        "members": [
+          "Maelor"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 4
+          },
+          {
+            "id": "workshops",
+            "level": 1
+          },
+          {
+            "id": "storehouses",
+            "level": 2
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Dawnspire_Realm": {
+    "id": "Dawnspire_Realm",
+    "name": "Dawnspire Realm",
+    "rgb": "128,131,164",
+    "leader": "Boreas",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 578,
+    "extra node capacity": 0.0,
+    "banner": [
+      "BLACK.BASE",
+      "BLACK.SQUARE_TOP_RIGHT",
+      "BLACK.CURLY_BORDER",
+      "LIGHT_BLUE.MOJANG"
+    ],
+    "provinces": [
+      578
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Dawnspire_Realm",
+        "name": "Dawnspire Realm",
+        "leader": "Boreas",
+        "rgb": "128,131,164",
+        "type": "realm",
+        "capital": 578,
+        "bank": "false",
+        "banner": [
+          "BLACK.BASE",
+          "BLACK.SQUARE_TOP_RIGHT",
+          "BLACK.CURLY_BORDER",
+          "LIGHT_BLUE.MOJANG"
+        ],
+        "members": [
+          "Boreas"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 0
+          },
+          {
+            "id": "workshops",
+            "level": 0
+          },
+          {
+            "id": "storehouses",
+            "level": 0
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Dawnspire_Realmm",
+        "name": "Dawnspire Realm",
+        "leader": "Boreas",
+        "rgb": "128,131,164",
+        "type": "realm",
+        "capital": 578,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 401.0,
+        "zPos": 58.0,
+        "balance": 11737.0,
+        "banner": [
+          "BLACK.BASE",
+          "BLACK.SQUARE_TOP_RIGHT",
+          "BLACK.CURLY_BORDER",
+          "LIGHT_BLUE.MOJANG"
+        ],
+        "members": [
+          "Boreas"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 3
+          },
+          {
+            "id": "workshops",
+            "level": 9
+          },
+          {
+            "id": "storehouses",
+            "level": 7
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Dawnspire_Realm_Guild",
+        "name": "Dawnspire Realm Guild",
+        "leader": "Keth",
+        "rgb": "140,115,62",
+        "type": "guild",
+        "capital": 578,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 340.0,
+        "zPos": 282.0,
+        "balance": 1651.0,
+        "banner": [
+          "BROWN.BASE",
+          "GREEN.SMALL_STRIPES_DOWNLEFT",
+          "LIGHT_GRAY.SUN"
+        ],
+        "members": [
+          "Keth",
+          "Pella"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 9
+          },
+          {
+            "id": "workshops",
+            "level": 16
+          },
+          {
+            "id": "storehouses",
+            "level": 12
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Obsidian_Compact": {
+    "id": "Obsidian_Compact",
+    "name": "Obsidian Compact",
+    "rgb": "105,40,42",
+    "leader": "Ilyra",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 399,
+    "extra node capacity": 0.0,
+    "banner": [
+      "LIGHT_GRAY.BASE",
+      "LIGHT_GRAY.QUARTER_TOP_LEFT",
+      "LIGHT_GRAY.STRIPE_LEFT",
+      "YELLOW.CURTAINS",
+      "YELLOW.MOJANG"
+    ],
+    "provinces": [
+      399
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Obsidian_Compact",
+        "name": "Obsidian Compact",
+        "leader": "Ilyra",
+        "rgb": "105,40,42",
+        "type": "realm",
+        "capital": 399,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 449.0,
+        "zPos": 318.0,
+        "balance": 9597.0,
+        "banner": [
+          "LIGHT_GRAY.BASE",
+          "LIGHT_GRAY.QUARTER_TOP_LEFT",
+          "LIGHT_GRAY.STRIPE_LEFT",
+          "YELLOW.CURTAINS",
+          "YELLOW.MOJANG"
+        ],
+        "members": [
+          "Ilyra"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 5
+          },
+          {
+            "id": "workshops",
+            "level": 10
+          },
+          {
+            "id": "storehouses",
+            "level": 7
+          }
+        ],
+        "wealth modifiers": []
+      },
+      {
+        "id": "Obsidian_Compact_Guild",
+        "name": "Obsidian Compact Guild",
+        "leader": "Bram",
+        "rgb": "78,160,158",
+        "type": "guild",
+        "capital": 399,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 374.0,
+        "zPos": 182.0,
+        "balance": 1257.0,
+        "banner": [
+          "ORANGE.BASE",
+          "ORANGE.SQUARE_TOP_RIGHT",
+          "GREEN.CLOVER"
+        ],
+        "members": [
+          "Bram",
+          "Lysa",
+          "Pella",
+          "Sylvi",
+          "Dorn"
+        ],
+        "branches": [
+          {
+            "id": "guild_halls",
+            "level": 17
+          },
+          {
+            "id": "workshops",
+            "level": 15
+          },
+          {
+            "id": "storehouses",
+            "level": 6
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Estuaar": {
+    "id": "Estuaar",
+    "name": "§x§a§3§a§1§8§4Estuaar",
+    "rgb": "85,201,216",
+    "leader": "drefvelin",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 25,
+    "extra node capacity": 0.0,
+    "banner": [
+      "BLUE.BASE",
+      "CYAN.DIAGONAL_LEFT",
+      "WHITE.CRESCENT",
+      "GRAY.GRADIENT_UP"
+    ],
+    "provinces": [
+      25,
+      13,
+      5
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Estuaar",
+        "name": "§x§a§3§a§1§8§4Estuaar",
+        "leader": "drefvelin",
+        "rgb": "85,201,216",
+        "type": "realm",
+        "capital": 25,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 297.0,
+        "zPos": 192.0,
+        "balance": 32284.83,
+        "banner": [
+          "BLUE.BASE",
+          "CYAN.DIAGONAL_LEFT",
+          "WHITE.CRESCENT",
+          "GRAY.GRADIENT_UP"
+        ],
+        "members": [
+          "drefvelin",
+          "dadada"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 10
+          },
+          {
+            "id": "workshops",
+            "level": 15
+          },
+          {
+            "id": "storehouses",
+            "level": 20
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  }
+}

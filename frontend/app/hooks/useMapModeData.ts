@@ -36,15 +36,35 @@ export function useMapModeData({
         );
         if (!res.ok) throw new Error("Failed to fetch region data");
 
-        const data = await res.json();
+        const rawData: Record<string, any> = await res.json();
         if (cancelled) return;
 
-        setRegionData(data);
-        loadData(data);
+        // Filter region data
+        const filteredData: Record<string, any> = Object.fromEntries(
+          Object.entries(rawData).filter(([_, region]) => {
+            // Always require RGB
+            if (typeof region.rgb !== "string") return false;
+
+            // Only apply geometry filter for nation map
+            if (mapType === "nation") {
+              return (
+                Array.isArray(region.provinces) &&
+                region.provinces.length > 0
+              );
+            }
+
+            // All other map types keep everything
+            return true;
+          })
+        );
+
+        setRegionData(filteredData);
+        loadData(filteredData);
       } catch (err) {
         if (cancelled) return;
         console.error("Error fetching region data:", err);
         setRegionData(null);
+        loadData({});
       } finally {
         if (!cancelled) setLoading(false);
       }

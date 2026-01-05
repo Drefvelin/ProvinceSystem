@@ -6,6 +6,7 @@ setlocal ENABLEDELAYEDEXPANSION
 :: ==============================
 set ZIP_NAME=project.zip
 set TEMP_DIR=__deploy_temp__
+set USE_RUNTIME_EXCLUDES=0
 
 :: Top-level excludes
 set EXCLUDES=.git .next node_modules .vscode dist .gitignore README.md
@@ -66,13 +67,18 @@ for /f "delims=" %%D in ('dir /b /ad') do (
 :: Remove Docker runtime folders
 :: ==============================
 echo.
-echo Removing Docker runtime folders from deploy package...
-for %%R in (%RUNTIME_EXCLUDES%) do (
-    if exist "%TEMP_DIR%\%%R" (
-        echo Removing runtime folder: %%R
-        rmdir /S /Q "%TEMP_DIR%\%%R"
+if "%USE_RUNTIME_EXCLUDES%"=="1" (
+    echo Removing Docker runtime folders from deploy package...
+    for %%R in (%RUNTIME_EXCLUDES%) do (
+        if exist "%TEMP_DIR%\%%R" (
+            echo Removing runtime folder: %%R
+            rmdir /S /Q "%TEMP_DIR%\%%R"
+        )
     )
+) else (
+    echo Skipping runtime excludes (USE_RUNTIME_EXCLUDES=0)
 )
+
 
 :: ==============================
 :: Final verification
