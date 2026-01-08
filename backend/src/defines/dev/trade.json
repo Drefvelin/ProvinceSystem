@@ -1,119 +1,29 @@
 {
-    "TestFaction": {
-        "name": "TestFaction",
-        "rgb": "215,203,92",
+    "hauvid": {
+        "name": "Hauvid",
+        "rgb": "104,219,211",
         "tier": "Realm",
-        "size": 14,
+        "size": 131,
         "subjects": [],
         "overlord": null,
-        "banner": "215_203_92"
+        "banner": "104_219_211"
     },
-    "Sable_Reach_Guild": {
-        "name": "Sable Reach Guild",
-        "rgb": "137,28,63",
-        "tier": "Guild",
-        "size": 35,
-        "subjects": [],
-        "overlord": null,
-        "banner": "137_28_63"
-    },
-    "Ironroot_Covenant_Guild": {
-        "name": "Ironroot Covenant Guild",
-        "rgb": "77,156,164",
-        "tier": "Guild",
-        "size": 31,
-        "subjects": [],
-        "overlord": null,
-        "banner": "77_156_164"
-    },
-    "Emberfall_League_Guild": {
-        "name": "Emberfall League Guild",
-        "rgb": "38,63,101",
-        "tier": "Guild",
-        "size": 6,
-        "subjects": [],
-        "overlord": null,
-        "banner": "38_63_101"
-    },
-    "Emberfall_League": {
-        "name": "Emberfall League",
-        "rgb": "231,144,175",
+    "Tvyyr": {
+        "name": "Tvyyr",
+        "rgb": "208,78,233",
         "tier": "Realm",
-        "size": 8,
+        "size": 22,
         "subjects": [],
         "overlord": null,
-        "banner": "231_144_175"
+        "banner": "208_78_233"
     },
-    "Gilded_Horizon_Guild": {
-        "name": "Gilded Horizon Guild",
-        "rgb": "196,139,193",
-        "tier": "Guild",
-        "size": 26,
-        "subjects": [],
-        "overlord": null,
-        "banner": "196_139_193"
-    },
-    "Silverwake_Dominion_Guild": {
-        "name": "Silverwake Dominion Guild",
-        "rgb": "221,206,204",
-        "tier": "Guild",
-        "size": 23,
-        "subjects": [],
-        "overlord": null,
-        "banner": "221_206_204"
-    },
-    "Stormveil_Union_Guild": {
-        "name": "Stormveil Union Guild",
-        "rgb": "210,65,35",
-        "tier": "Guild",
-        "size": 20,
-        "subjects": [],
-        "overlord": null,
-        "banner": "210_65_35"
-    },
-    "Frostmere_Pact_Guild": {
-        "name": "Frostmere Pact Guild",
-        "rgb": "23,224,117",
-        "tier": "Guild",
-        "size": 55,
-        "subjects": [],
-        "overlord": null,
-        "banner": "23_224_117"
-    },
-    "Verdant_Crown_Guild": {
-        "name": "Verdant Crown Guild",
-        "rgb": "103,59,89",
-        "tier": "Guild",
-        "size": 36,
-        "subjects": [],
-        "overlord": null,
-        "banner": "103_59_89"
-    },
-    "Dawnspire_Realm_Guild": {
-        "name": "Dawnspire Realm Guild",
-        "rgb": "140,115,62",
-        "tier": "Guild",
-        "size": 12,
-        "subjects": [],
-        "overlord": null,
-        "banner": "140_115_62"
-    },
-    "Obsidian_Compact_Guild": {
-        "name": "Obsidian Compact Guild",
-        "rgb": "78,160,158",
-        "tier": "Guild",
-        "size": 41,
-        "subjects": [],
-        "overlord": null,
-        "banner": "78_160_158"
-    },
-    "Estuaar": {
-        "name": "Estuaar",
-        "rgb": "85,201,216",
+    "Atill": {
+        "name": "Atill",
+        "rgb": "225,124,76",
         "tier": "Realm",
-        "size": 307,
+        "size": 551,
         "subjects": [],
         "overlord": null,
-        "banner": "85_201_216"
+        "banner": "225_124_76"
     }
 }

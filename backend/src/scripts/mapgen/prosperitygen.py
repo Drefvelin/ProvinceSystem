@@ -1,6 +1,7 @@
 from PIL import Image
 import os
 import json
+import math
 
 from ..loader.provinces import load_provinces
 from ..loader.province_metadata import load_province_metadata
@@ -26,11 +27,14 @@ def lerp_color(c1, c2, t: float):
 
 
 def prosperity_to_color(norm: float):
+    """
+    norm ∈ [0, 1]
+    """
     if norm <= 0.33:
         return lerp_color((120, 0, 0), (220, 0, 0), norm / 0.33)
     if norm <= 0.66:
         return lerp_color((220, 0, 0), (230, 180, 0), (norm - 0.33) / 0.33)
-    return lerp_color((230, 180, 0), (80, 255, 80), (norm - 0.66) / 0.34)
+    return lerp_color((230, 180, 0), (120, 220, 120), (norm - 0.66) / 0.34)
 
 
 def prosperity_to_alpha(norm: float) -> int:
@@ -42,12 +46,11 @@ def prosperity_to_alpha(norm: float) -> int:
 
     # Soft curve so low prosperity barely shows
     alpha = 40 + int(215 * (norm ** 0.8))
-
     return min(255, max(0, alpha))
 
 
 # -----------------------------
-# FAST generator
+# FAST generator (logarithmic)
 # -----------------------------
 def create_prosperity_map(map_name: str, filename: str = "prosperity"):
     validate_map(map_name)
@@ -61,18 +64,29 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
     province_by_id = {p["id"]: p for p in province_data}
 
     # -------------------------------------------------
-    # Compute max prosperity
+    # Compute min / max prosperity
     # -------------------------------------------------
-    max_prosperity = max(
-        (p.get("prosperity", 0) for p in province_data),
-        default=1.0
-    )
+    prosperities = [
+        p.get("prosperity", 0)
+        for p in province_data
+        if p.get("prosperity", 0) > 0
+    ]
 
-    if max_prosperity <= 0:
+    if not prosperities:
         print("⚠ No prosperity data found")
         return
 
-    inv_max = 1.0 / max_prosperity
+    min_prosperity = min(prosperities)
+    max_prosperity = max(prosperities)
+
+    if max_prosperity <= min_prosperity:
+        print("⚠ Invalid prosperity range")
+        return
+
+    # Log-space bounds
+    log_min = math.log1p(min_prosperity)
+    log_max = math.log1p(max_prosperity)
+    inv_log_range = 1.0 / (log_max - log_min)
 
     # -------------------------------------------------
     # Precompute province_rgb -> RGBA
@@ -96,7 +110,13 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
         if prosperity <= 0:
             continue
 
-        norm = prosperity * inv_max
+        # Log-scaled normalization (ordering preserved)
+        log_val = math.log1p(prosperity)
+        norm = (log_val - log_min) * inv_log_range
+        norm = max(0.0, min(1.0, norm))
+
+        # Light compression so greens don't dominate
+        norm = norm ** 0.85
 
         color = prosperity_to_color(norm)
         alpha = prosperity_to_alpha(norm)
@@ -125,7 +145,7 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
                 painted += 1
 
     # -------------------------------------------------
-    # Save (PNG compression kept)
+    # Save
     # -------------------------------------------------
     output_path = os.path.abspath(
         os.path.join(
@@ -139,5 +159,6 @@ def create_prosperity_map(map_name: str, filename: str = "prosperity"):
 
     print(
         f"🔥 Prosperity map generated → {output_path} | "
-        f"max={max_prosperity:.2f} | painted={painted:,}"
+        f"min={min_prosperity:.2f} | max={max_prosperity:.2f} | "
+        f"painted={painted:,}"
     )
