@@ -13,6 +13,7 @@ def create_trade_map(
 ):
     validate_map(map_name)
 
+    # Color mapping now uses leader-minimum blending internally
     province_to_color = build_color_mapping(map_name, mode="guild")
 
     base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")

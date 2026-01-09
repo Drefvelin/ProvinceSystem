@@ -1,9 +1,82 @@
 {
+  "Dendburgh": {
+    "id": "Dendburgh",
+    "name": "§x§a§3§a§1§8§4Dendburgh",
+    "rgb": "152,77,234",
+    "leader": "dummy_5",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 13,
+    "extra node capacity": 0.0,
+    "banner": [
+      "YELLOW.BASE",
+      "YELLOW.GRADIENT",
+      "YELLOW.CROSS",
+      "WHITE.PUMPKIN"
+    ],
+    "provinces": [
+      13,
+      26
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Dendburgh",
+        "name": "§x§a§3§a§1§8§4Dendburgh",
+        "leader": "dummy_5",
+        "rgb": "152,77,234",
+        "type": "realm",
+        "capital": 13,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 265.0,
+        "zPos": 105.0,
+        "balance": 30720.08,
+        "banner": [
+          "YELLOW.BASE",
+          "YELLOW.GRADIENT",
+          "YELLOW.CROSS",
+          "WHITE.PUMPKIN"
+        ],
+        "members": [
+          "dummy_5"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 23
+          },
+          {
+            "id": "workshops",
+            "level": 32
+          },
+          {
+            "id": "storehouses",
+            "level": 27
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
   "hauvid": {
     "id": "hauvid",
     "name": "§x§a§3§a§1§8§4Hauvid",
     "rgb": "104,219,211",
-    "leader": "drefvelin",
+    "leader": "dummy_3",
     "ruler title": "Leader",
     "government": "Homestead",
     "culture": "Multicultural",
@@ -33,7 +106,7 @@
       {
         "id": "hauvid",
         "name": "§x§a§3§a§1§8§4Hauvid",
-        "leader": "drefvelin",
+        "leader": "dummy_3",
         "rgb": "104,219,211",
         "type": "realm",
         "capital": 41,
@@ -41,11 +114,85 @@
         "world": "TFMC_S2",
         "xPos": 319.0,
         "zPos": 107.0,
-        "balance": 23990.22,
+        "balance": 39075.52,
         "banner": [
           "WHITE.BASE",
           "WHITE.SQUARE_TOP_LEFT",
           "LIME.CIRCLE_TILES"
+        ],
+        "members": [
+          "dummy_3"
+        ],
+        "branches": [
+          {
+            "id": "bureaucracy",
+            "level": 21
+          },
+          {
+            "id": "workshops",
+            "level": 6
+          },
+          {
+            "id": "storehouses",
+            "level": 21
+          }
+        ],
+        "wealth modifiers": []
+      }
+    ],
+    "faction modifiers": []
+  },
+  "Schmorain": {
+    "id": "Schmorain",
+    "name": "§x§a§3§a§1§8§4Schmorain",
+    "rgb": "218,95,197",
+    "leader": "drefvelin",
+    "ruler title": "Leader",
+    "government": "Homestead",
+    "culture": "Multicultural",
+    "religion": "Religious Diversity",
+    "tax rate": 5.0,
+    "vassal tax rate": 100.0,
+    "capital": 25,
+    "extra node capacity": 0.0,
+    "banner": [
+      "BLUE.BASE",
+      "BLUE.DIAGONAL_UP_LEFT",
+      "CYAN.SMALL_STRIPES",
+      "ORANGE.COMPANION",
+      "YELLOW.ARROW_DOWN"
+    ],
+    "provinces": [
+      25
+    ],
+    "titles": [],
+    "relations": [],
+    "tier index": -1.0,
+    "military": [
+      "professional.0",
+      "militia.6"
+    ],
+    "military queue": [],
+    "prestige modifiers": [],
+    "guilds": [
+      {
+        "id": "Schmorain",
+        "name": "§x§a§3§a§1§8§4Schmorain",
+        "leader": "drefvelin",
+        "rgb": "218,95,197",
+        "type": "realm",
+        "capital": 25,
+        "bank": "true",
+        "world": "TFMC_S2",
+        "xPos": 245.0,
+        "zPos": 92.0,
+        "balance": 1116557.36,
+        "banner": [
+          "BLUE.BASE",
+          "BLUE.DIAGONAL_UP_LEFT",
+          "CYAN.SMALL_STRIPES",
+          "ORANGE.COMPANION",
+          "YELLOW.ARROW_DOWN"
         ],
         "members": [
           "drefvelin"
@@ -57,11 +204,11 @@
           },
           {
             "id": "workshops",
-            "level": 0
+            "level": 20
           },
           {
             "id": "storehouses",
-            "level": 17
+            "level": 26
           }
         ],
         "wealth modifiers": []
@@ -152,7 +299,7 @@
     "id": "Atill",
     "name": "§x§a§3§a§1§8§4Atill",
     "rgb": "225,124,76",
-    "leader": "dummy_2",
+    "leader": "dummy_4",
     "ruler title": "Leader",
     "government": "Homestead",
     "culture": "Multicultural",
@@ -185,27 +332,28 @@
       {
         "id": "Atill",
         "name": "§x§a§3§a§1§8§4Atill",
-        "leader": "dummy_2",
+        "leader": "dummy_4",
         "rgb": "225,124,76",
         "type": "realm",
         "capital": 49,
         "bank": "true",
         "world": "TFMC_S2",
-        "xPos": 366.0,
-        "zPos": 103.0,
-        "balance": 6184177.93,
+        "xPos": 315.0,
+        "zPos": 108.0,
+        "balance": 7244.64,
         "banner": [
           "GRAY.BASE",
           "GREEN.TRIANGLES_BOTTOM",
           "LIGHT_BLUE.GONFALON"
         ],
         "members": [
-          "dummy_2"
+          "dummy_2",
+          "dummy_4"
         ],
         "branches": [
           {
             "id": "bureaucracy",
-            "level": 9
+            "level": 13
           },
           {
             "id": "workshops",

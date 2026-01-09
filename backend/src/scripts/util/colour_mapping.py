@@ -15,6 +15,9 @@ SKIP_TERRAINS = {
 }
 
 
+LEADER_MIN_TRADE_WEIGHT = 0.20  # 🔧 tune here
+
+
 def get_dominant_guild(trade: dict):
     best_guild = None
     best_value = 0.0
@@ -34,21 +37,27 @@ def get_trade_ratio(trade: dict):
     return best / total
 
 
+def leader_minimum_blend(raw: dict, leader_min: float) -> dict:
+    """
+    Leader gets at least leader_min weight, but still participates
+    proportionally in the remaining blend.
+    """
+    leader = max(raw, key=raw.get)
+    scale = 1.0 - leader_min
+
+    weights = {g: v * scale for g, v in raw.items()}
+    weights[leader] += leader_min
+
+    return weights
+
+
 def mix_trade_color(trade: dict, guilds: dict) -> tuple[int, int, int] | None:
     """
-    Weighted RGB mix of all guild shares in this province.
-    Returns None if no valid guild contributions.
+    Weighted RGB mix of all guild shares in this province,
+    with a guaranteed minimum visual weight for the dominant guild.
     """
+    raw = {}
     total = 0.0
-    for gid, data in trade.items():
-        if gid in guilds:
-            total += float(data.get("trade", 0) or 0)
-
-    if total <= 0:
-        return None
-
-    r = g = b = 0.0
-    used = False
 
     for gid, data in trade.items():
         if gid not in guilds:
@@ -56,8 +65,25 @@ def mix_trade_color(trade: dict, guilds: dict) -> tuple[int, int, int] | None:
         v = float(data.get("trade", 0) or 0)
         if v <= 0:
             continue
+        raw[gid] = v
+        total += v
 
-        w = v / total
+    if total <= 0:
+        return None
+
+    # Normalize raw shares
+    for gid in raw:
+        raw[gid] /= total
+
+    # Apply leader-min dominance
+    weights = leader_minimum_blend(raw, LEADER_MIN_TRADE_WEIGHT)
+
+    r = g = b = 0.0
+    used = False
+
+    for gid, w in weights.items():
+        if w <= 0:
+            continue
         cr, cg, cb = guilds[gid]["rgb"]
         r += cr * w
         g += cg * w
@@ -192,19 +218,16 @@ def build_color_mapping(map_name: str, mode: str):
             if not dominant or dominant not in guilds:
                 continue
 
-            # Base (identity) color: dominant guild
+            # Base identity color (still dominant guild)
             base_color = guilds[dominant]["rgb"]
             province_to_color[prov_rgb] = base_color
 
-            # Dominance ratio (optional)
+            # Dominance ratio (raw, not visually biased)
             build_color_mapping.trade_strength[prov_rgb] = get_trade_ratio(trade)
 
-            # Mixed muddy color: weighted blend of all guild shares
+            # Visually biased mixed color
             mixed = mix_trade_color(trade, guilds)
-            if mixed is not None:
-                build_color_mapping.trade_mixed[prov_rgb] = mixed
-            else:
-                build_color_mapping.trade_mixed[prov_rgb] = base_color
+            build_color_mapping.trade_mixed[prov_rgb] = mixed or base_color
 
     return province_to_color
 

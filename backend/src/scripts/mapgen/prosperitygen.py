@@ -30,9 +30,9 @@ def prosperity_to_color(norm: float):
     """
     norm ∈ [0, 1]
     """
-    if norm <= 0.33:
+    if norm <= 0.5:
         return lerp_color((120, 0, 0), (220, 0, 0), norm / 0.33)
-    if norm <= 0.66:
+    if norm <= 0.80:
         return lerp_color((220, 0, 0), (230, 180, 0), (norm - 0.33) / 0.33)
     return lerp_color((230, 180, 0), (120, 220, 120), (norm - 0.66) / 0.34)
 

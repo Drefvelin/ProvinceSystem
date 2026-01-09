@@ -1,18 +1,36 @@
 {
+    "Dendburgh": {
+        "name": "Dendburgh",
+        "rgb": "152,77,234",
+        "tier": "Realm",
+        "size": 453,
+        "subjects": [],
+        "overlord": null,
+        "banner": "152_77_234"
+    },
     "hauvid": {
         "name": "Hauvid",
         "rgb": "104,219,211",
         "tier": "Realm",
-        "size": 131,
+        "size": 32,
         "subjects": [],
         "overlord": null,
         "banner": "104_219_211"
+    },
+    "Schmorain": {
+        "name": "Schmorain",
+        "rgb": "218,95,197",
+        "tier": "Realm",
+        "size": 42,
+        "subjects": [],
+        "overlord": null,
+        "banner": "218_95_197"
     },
     "Tvyyr": {
         "name": "Tvyyr",
         "rgb": "208,78,233",
         "tier": "Realm",
-        "size": 22,
+        "size": 2,
         "subjects": [],
         "overlord": null,
         "banner": "208_78_233"
@@ -21,7 +39,7 @@
         "name": "Atill",
         "rgb": "225,124,76",
         "tier": "Realm",
-        "size": 551,
+        "size": 175,
         "subjects": [],
         "overlord": null,
         "banner": "225_124_76"

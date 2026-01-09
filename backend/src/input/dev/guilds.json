@@ -1,15 +1,44 @@
 [
   {
+    "id": "Dendburgh",
+    "name": "§x§a§3§a§1§8§4Dendburgh",
+    "type": "§x§5§e§a§b§c§4Realm",
+    "size": 82,
+    "rgb": "152,77,234",
+    "trade_power": 41736.01,
+    "banner": [
+      "YELLOW.BASE",
+      "YELLOW.GRADIENT",
+      "YELLOW.CROSS",
+      "WHITE.PUMPKIN"
+    ]
+  },
+  {
     "id": "hauvid",
     "name": "§x§a§3§a§1§8§4Hauvid",
     "type": "§x§5§e§a§b§c§4Realm",
     "size": 48,
     "rgb": "104,219,211",
-    "trade_power": 18979.3,
+    "trade_power": 25305.74,
     "banner": [
       "WHITE.BASE",
       "WHITE.SQUARE_TOP_LEFT",
       "LIME.CIRCLE_TILES"
+    ]
+  },
+  {
+    "id": "Schmorain",
+    "name": "§x§a§3§a§1§8§4Schmorain",
+    "type": "§x§5§e§a§b§c§4Realm",
+    "size": 64,
+    "rgb": "218,95,197",
+    "trade_power": 32125.65,
+    "banner": [
+      "BLUE.BASE",
+      "BLUE.DIAGONAL_UP_LEFT",
+      "CYAN.SMALL_STRIPES",
+      "ORANGE.COMPANION",
+      "YELLOW.ARROW_DOWN"
     ]
   },
   {
@@ -18,7 +47,7 @@
     "type": "§x§5§e§a§b§c§4Realm",
     "size": 38,
     "rgb": "208,78,233",
-    "trade_power": 2375.61,
+    "trade_power": 3800.97,
     "banner": [
       "ORANGE.BASE",
       "ORANGE.TRIANGLES_TOP",
@@ -32,9 +61,9 @@
     "id": "Atill",
     "name": "§x§a§3§a§1§8§4Atill",
     "type": "§x§5§e§a§b§c§4Realm",
-    "size": 102,
+    "size": 101,
     "rgb": "225,124,76",
-    "trade_power": 21231.59,
+    "trade_power": 27665.99,
     "banner": [
       "GRAY.BASE",
       "GREEN.TRIANGLES_BOTTOM",
