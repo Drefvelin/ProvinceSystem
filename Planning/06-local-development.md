@@ -10,7 +10,7 @@ Goal: run pieces of the TFMC platform on a workstation. Full journeys: [12-end-t
 | **Website + bot** | Above + Red/`tfmc_bot` against local API | Discord skins approve/deny, ban role tests |
 | **Website + test Paper** | Above + local/test server with SimpleFactions and/or ArmourShop pointed at local API | Map upload/regen; skins code mint + pack write into a **copy** of IA contents |
 | **Production-like** | Docker compose for ProvinceSystem; plugins on real host | Final integration |
-| **AMP-host staging** | Separate clone + [STAGING.md](../STAGING.md) (`8001`/`3001`) | Discord bot vs localhost API without touching prod |
+| **AMP-host staging** | Separate clone + [STAGING.md](../STAGING.md) (`18001`/`13001`) | Discord bot vs localhost API without touching prod |
 
 Most day-to-day UI work is **website only**. Do not require Paper to start Sprint S1–S2.
 
