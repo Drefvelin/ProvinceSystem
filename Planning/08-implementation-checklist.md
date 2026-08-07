@@ -72,6 +72,16 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Done when:** Player links once, uploads without typing Discord/MC ids, and receives the three DMs (live path verified on staging).
 
+### S3.6 — In-game skins token
+
+**Repo:** `Workspace/armourshop` — [batches/step-6](./batches/step-6/00-index.md)
+
+- [x] Click-to-copy chat helper; `POST /skins/codes` client; `/linkdiscord` uses copy
+- [x] `/armourshop token create` + tab complete; perm `armourshop.token.create`
+- [ ] Staging: mint → redeem on site → upload
+
+**Done when:** Donator (LP) mints in game, clicks to copy, redeems on `/skins` without curl.
+
 ### S4 — ArmourShop apply
 
 **Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)

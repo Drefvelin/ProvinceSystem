@@ -137,6 +137,55 @@ def get_discord_id_for_uuid(player_uuid: str) -> str | None:
     return str(row["discord_user_id"])
 
 
+def unlink_by_uuid(player_uuid: str) -> dict:
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise LinkError("player_uuid is required")
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT player_uuid, discord_user_id FROM discord_links WHERE player_uuid = ?",
+            (uuid,),
+        ).fetchone()
+        if row is None:
+            raise LinkError("No Discord link for this Minecraft player")
+        conn.execute("DELETE FROM discord_links WHERE player_uuid = ?", (uuid,))
+        conn.commit()
+        discord_id = str(row["discord_user_id"])
+
+    return {
+        "ok": True,
+        "player_uuid": uuid,
+        "discord_user_id": discord_id,
+    }
+
+
+def unlink_by_discord_id(discord_user_id: str) -> dict:
+    discord_id = (discord_user_id or "").strip()
+    if not discord_id:
+        raise LinkError("discord_user_id is required")
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT player_uuid, discord_user_id FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+        if row is None:
+            raise LinkError("No Minecraft link for this Discord account")
+        player_uuid = str(row["player_uuid"])
+        conn.execute(
+            "DELETE FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        )
+        conn.commit()
+
+    return {
+        "ok": True,
+        "player_uuid": player_uuid,
+        "discord_user_id": discord_id,
+    }
+
+
 if __name__ == "__main__":
     from .db import migrate
 
@@ -183,5 +232,20 @@ if __name__ == "__main__":
         pass
     else:
         raise SystemExit("expected LinkError for reused code")
+
+    # Unlink by uuid
+    out = unlink_by_uuid(u1)
+    assert out["ok"] and get_discord_id_for_uuid(u1) is None
+    try:
+        unlink_by_uuid(u1)
+    except LinkError:
+        pass
+    else:
+        raise SystemExit("expected LinkError for unlink when not linked")
+
+    started4 = start_link(u1, "TestPlayer")
+    complete_link(started4["code"], d1)
+    out2 = unlink_by_discord_id(d1)
+    assert out2["ok"] and get_discord_id_for_uuid(u1) is None
 
     print("discord_link ok")

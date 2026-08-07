@@ -49,9 +49,9 @@ sequenceDiagram
   participant Discord
   participant IA as ItemsAdder
 
-  Player->>AS: /linkdiscord then generate skin code
+  Player->>AS: /linkdiscord then /armourshop token create
   AS->>API: POST link/start then POST /skins/codes
-  API-->>AS: link code / skins code once
+  API-->>AS: link code / skins code once (click-to-copy in chat)
   Note over Player,Discord: Discord /linkdiscord CODE binds UUID
   AS-->>Player: show skins code
   Player->>Web: redeem code
@@ -79,7 +79,7 @@ sequenceDiagram
 | Revocation | Staff/plugin can invalidate a code row |
 | Tier limits (later) | Optional higher 3D byte caps from code / donator tier |
 
-Eligibility (donator rank) is enforced **in ArmourShop** before calling issue.
+Eligibility (donator rank) is enforced **in ArmourShop** via permission `armourshop.token.create` (assigned with LP for donator ranks later). Command: `/armourshop token create`.
 
 Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md)).
 
@@ -92,8 +92,9 @@ Durable bind so the bot can DM the player. No OAuth; no Discord fields on the we
 | 1 | Player in game | `/linkdiscord` → ArmourShop `POST /skins/discord/link/start` with online UUID |
 | 2 | Player in Discord | `/linkdiscord <code>` → bot `POST /skins/discord/link/complete` with their Discord user id |
 | 3 | API | Stores `discord_links` row (`player_uuid` ↔ `discord_user_id`) |
+| Unlink | Player | In-game `/unlinkdiscord` → `POST …/link/unlink` (plugin); or Discord `/unlinkdiscord` → `POST …/link/unlink-discord` (staff) |
 
-Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected.
+Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected. Skin upload codes are **one-time** (`redeemed_at`).
 
 ### SQLite — `discord_links` / `discord_link_codes`
 
@@ -219,6 +220,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/discord/link/start` | `{ "player_uuid", "minecraft_name?" }` → `{ "code", "expires_at" }` |
+| `POST /skins/discord/link/unlink` | `{ "player_uuid" }` → clear link for that UUID |
 | `POST /skins/codes` | `{ "player_uuid" }` → `{ "code", "expires_at" }` |
 | `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`) |
 | `POST /skins/plugin/applied` | Ack submission ids |
@@ -236,6 +238,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/discord/link/complete` | `{ "code", "discord_user_id" }` → durable link |
+| `POST /skins/discord/link/unlink-discord` | `{ "discord_user_id" }` → clear link for that Discord id |
 | `GET /skins/staff/pending` | List `status=pending` (includes `discord_user_id` when set) |
 | `GET /skins/staff/notifications` | Undelivered player notify rows (`submitted`, …) |
 | `POST /skins/staff/notifications/{id}/ack` | Mark notification delivered |

@@ -1,4 +1,5 @@
 import type { SubmissionPublic } from "../../../lib/skins/api";
+import { formatLocal } from "../../../lib/skins/formatTime";
 
 function statusMessage(row: SubmissionPublic): string {
   switch (row.status) {
@@ -47,18 +48,18 @@ export default function StatusCard({ row }: Props) {
         ) : null}
         <div>
           <dt className="text-[var(--tfmc-stone)]">Created</dt>
-          <dd className="text-[var(--tfmc-mist)]">{row.created_at}</dd>
+          <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.created_at)}</dd>
         </div>
         {row.reviewed_at ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Reviewed</dt>
-            <dd className="text-[var(--tfmc-mist)]">{row.reviewed_at}</dd>
+            <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.reviewed_at)}</dd>
           </div>
         ) : null}
         {row.applied_at ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Applied</dt>
-            <dd className="text-[var(--tfmc-mist)]">{row.applied_at}</dd>
+            <dd className="text-[var(--tfmc-mist)]">{formatLocal(row.applied_at)}</dd>
           </div>
         ) : null}
         <div>

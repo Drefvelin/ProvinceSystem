@@ -60,8 +60,8 @@ flowchart TB
 |------|-----|------|
 | 0a | Donator | In-game `/linkdiscord` → one-time code |
 | 0b | Donator | Discord `/linkdiscord <code>` → UUID ↔ Discord id linked |
-| 1 | Donator | In-game: generate skin code (ArmourShop checks donator perm) |
-| 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once |
+| 1 | Donator | In-game: `/armourshop token create` (perm `armourshop.token.create` / admin; LP for donators later) |
+| 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once (**click-to-copy**) |
 | 3 | Donator | Website `/skins`: redeem code |
 | 4 | Donator | Chooses kind (+ grip for large); enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) (skin id from filenames) |
 | 5 | API | Requires Discord link; validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |

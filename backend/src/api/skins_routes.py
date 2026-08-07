@@ -14,7 +14,13 @@ from src.skins.auth import (
     require_staff_key,
 )
 from src.skins.codes import CodeError, get_session, issue_code, redeem_code
-from src.skins.discord_link import LinkError, complete_link, start_link
+from src.skins.discord_link import (
+    LinkError,
+    complete_link,
+    start_link,
+    unlink_by_discord_id,
+    unlink_by_uuid,
+)
 from src.skins.naming import SlugError
 from src.skins.notifications import (
     NotificationError,
@@ -64,6 +70,14 @@ class LinkStartBody(BaseModel):
 
 class LinkCompleteBody(BaseModel):
     code: str = Field(..., min_length=1)
+    discord_user_id: str = Field(..., min_length=1)
+
+
+class LinkUnlinkUuidBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+
+
+class LinkUnlinkDiscordBody(BaseModel):
     discord_user_id: str = Field(..., min_length=1)
 
 
@@ -123,6 +137,30 @@ def post_discord_link_complete(
     _require_staff(x_staff_key)
     try:
         return complete_link(body.code, body.discord_user_id)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/unlink")
+def post_discord_link_unlink(
+    body: LinkUnlinkUuidBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return unlink_by_uuid(body.player_uuid)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/unlink-discord")
+def post_discord_link_unlink_discord(
+    body: LinkUnlinkDiscordBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return unlink_by_discord_id(body.discord_user_id)
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

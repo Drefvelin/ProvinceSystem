@@ -90,6 +90,42 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"link complete: {r.status_code} {r.text}")
 
+    # Unlink by UUID then re-link (guards + unlink path)
+    r = client.post(
+        "/skins/discord/link/unlink",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200 or not r.json().get("ok"):
+        fail(f"unlink by uuid: {r.status_code} {r.text}")
+    r = client.post(
+        "/skins/discord/link/unlink",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 400:
+        fail(f"unlink when not linked expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/discord/link/start",
+        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"link start 2: {r.status_code} {r.text}")
+    r = client.post(
+        "/skins/discord/link/complete",
+        json={"code": r.json()["code"], "discord_user_id": DISCORD_ID},
+        headers={"X-Staff-Key": STAFF},
+    )
+    if r.status_code != 200:
+        fail(f"link complete 2: {r.status_code} {r.text}")
+
+    # One-time skins code: second redeem must fail
+    r = client.post("/skins/redeem", json={"code": code})
+    if r.status_code != 400:
+        fail(f"second redeem expected 400, got {r.status_code} {r.text}")
+
     icon = make_png(16, 16)
     layer = make_png(64, 32)
     large_tex = make_png(32, 32)

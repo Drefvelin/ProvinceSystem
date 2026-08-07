@@ -9,6 +9,7 @@ import {
   isSessionValid,
   type SkinsSession,
 } from "../../lib/skins/session";
+import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
 
 export default function SkinsPage() {
   const [ready, setReady] = useState(false);
@@ -50,7 +51,8 @@ export default function SkinsPage() {
       {session && isSessionValid(session) ? (
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {session.expires_at}
+            Session expires {formatExpiresIn(session.expires_at)} (
+            {formatLocal(session.expires_at)})
           </p>
           <button
             type="button"

@@ -23,8 +23,12 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-5/03-cog-link-and-dms](./step-5/03-cog-link-and-dms.md) | 5 | `/linkdiscord` + DMs | Link + submitted/approve/deny DMs |
 | [step-5/04-armourshop-linkdiscord](./step-5/04-armourshop-linkdiscord.md) | 5 | MC `/linkdiscord` | In-game code → Discord complete |
 | [step-5/05-e2e-verify](./step-5/05-e2e-verify.md) | 5 | Smoke + staging | Checkpoint green |
+| [step-6/00-index](./step-6/00-index.md) | 6 | In-game skins token overview | — |
+| [step-6/01-chat-and-api-client](./step-6/01-chat-and-api-client.md) | 6 | Click-to-copy + codes client | `/linkdiscord` copies |
+| [step-6/02-token-command](./step-6/02-token-command.md) | 6 | `/armourshop token create` + tab | Mint + redeem on site |
+| [step-6/03-docs-verify](./step-6/03-docs-verify.md) | 6 | Staging checklist | Checkpoint green |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = staff routes + `tfmc_bot`; Step 5 = link API + bot DMs + ArmourShop `/linkdiscord`.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = ArmourShop token mint.
 
 **Later:** ArmourShop IA apply; ban-role mute; review-sheet in Discord.
 

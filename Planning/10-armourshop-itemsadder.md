@@ -10,7 +10,7 @@ Naming: [07-naming-conventions.md](./07-naming-conventions.md).
 | Actor | Does |
 |-------|------|
 | ProvinceSystem | Codes, uploads, Discord review state, file store |
-| **ArmourShop** | `/linkdiscord`; mint codes; pull approved; write IA + shop YAML; LP; deferred reload |
+| **ArmourShop** | `/linkdiscord`; `/armourshop token create`; pull approved; write IA + shop YAML; LP; deferred reload |
 | ItemsAdder | Loads `tfmc_submissions` after files exist / pack rebuild |
 | SimpleFactions | Nothing here |
 
@@ -38,12 +38,9 @@ sequenceDiagram
   participant LP as LuckPerms
   participant Player
 
-  Player->>AS: /linkdiscord
-  AS->>API: POST /skins/discord/link/start
-  Note over Player,API: Discord /linkdiscord CODE completes bind
-  Player->>AS: generate skin code
-  AS->>API: POST /skins/codes
-  Note over Player,API: redeem upload Discord approve plus player DMs
+  Player->>AS: /linkdiscord then /armourshop token create
+  AS->>API: POST link/start then POST /skins/codes
+  Note over Player,API: Discord /linkdiscord CODE completes bind; token is click-to-copy
   AS->>API: GET /skins/plugin/approved
   API-->>AS: metadata plus files
   AS->>IA: write configs and textures
@@ -86,10 +83,11 @@ Players must bind Minecraft ↔ Discord before a website upload is accepted.
 
 | Command | Where | API |
 |---------|-------|-----|
-| `/linkdiscord` | In game (player online) | `POST /skins/discord/link/start` with UUID + name; show one-time code |
+| `/linkdiscord` | In game (player online) | `POST /skins/discord/link/start`; click-to-copy code |
 | `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
+| `/armourshop token create` | In game | `POST /skins/codes`; click-to-copy; perm `armourshop.token.create` |
 
-Batches: [step-5](./batches/step-5/00-index.md). Full IA apply remains separate (B3).
+Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token). Full IA apply remains separate (B3).
 
 ## Display ownership
 
@@ -145,9 +143,9 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 
 ## Checklist
 
-- [ ] `/linkdiscord` → `link/start` ([step-5/04](./batches/step-5/04-armourshop-linkdiscord.md))  
+- [x] `/linkdiscord` → `link/start` ([step-5/04](./batches/step-5/04-armourshop-linkdiscord.md))  
+- [x] `/armourshop token create` → `POST /skins/codes` + click-to-copy ([step-6](./batches/step-6/00-index.md))  
 - [ ] Scaffold empty `tfmc_submissions` on live + copy  
-- [ ] REST client + skins code command  
 - [ ] Pull + write `armor_set`, `item`, `handheld`, `large_handheld` (grip templates)  
 - [ ] Category YAML + LP  
 - [ ] Deferred reload + applied ack  
