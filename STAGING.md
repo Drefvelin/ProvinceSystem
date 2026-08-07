@@ -11,14 +11,38 @@ Data lives only under this clone (`backend/src/data`, etc.).
 - Docker + Docker Compose on the host
 - Git access to this repo
 
+## Update staging clone (every pull)
+
+Staging boxes should track the remote branch **exactly**. Do **not** keep local edits (including `chmod +x` dirtying the scripts — that makes `git pull` fail with “local changes would be overwritten”).
+
+```bash
+cd ~/ProvinceSystem   # or ~/tfmc-staging
+git fetch origin
+git checkout tfmc-bot          # or whatever branch you run staging on
+git reset --hard origin/tfmc-bot
+chmod +x scripts/staging-*.sh  # required after reset; do this every time before ./scripts/...
+```
+
+`reset --hard` discards any local chmod/script tweaks so the tree matches GitHub. Then set execute bits again before running the scripts.
+
 ## Start (SSH)
+
+First-time clone:
 
 ```bash
 git clone <ProvinceSystem-git-url> ~/tfmc-staging
-cd ~/tfmc-staging   # or ~/ProvinceSystem if that is your staging clone
-git pull
+cd ~/tfmc-staging
+git checkout tfmc-bot
 chmod +x scripts/staging-*.sh
 ./scripts/staging-down.sh   # clear a failed partial up
+./scripts/staging-up.sh
+curl -s http://127.0.0.1:18001/ping
+```
+
+After later updates: use **Update staging clone** above, then:
+
+```bash
+./scripts/staging-down.sh
 ./scripts/staging-up.sh
 curl -s http://127.0.0.1:18001/ping
 ```
