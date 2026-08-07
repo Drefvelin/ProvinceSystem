@@ -42,9 +42,10 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Repo:** `ProvinceSystem` frontend
 
-- [ ] Shell nav + redeem + kind forms (6 armor slots / item kinds + grip) + status + slug UX
+- [x] Shell nav + redeem + kind forms (6 armor slots / item kinds + grip) + status + slug UX
 
-**Done when:** Browser path works without Discord/ArmourShop.
+**Done when:** Browser path works without Discord/ArmourShop.  
+**Verified:** Step 3 batches 3.01–3.04 (`/`, `/map/main`, `/skins`, `/skins/[id]`).
 
 ### S3 — Discord skins cog
 

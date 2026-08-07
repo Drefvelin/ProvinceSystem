@@ -24,6 +24,7 @@ Future tools (e.g. BreweryX helpers) plug into the same website shell.
 
 ## Locked decisions
 
+- **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
 - **No site logins** — skins use ArmourShop-issued UUID-bound codes.
 - **SQLite + disk** for skins metadata/files on the API.
 - **SimpleFactions = map only**; **ArmourShop = skins pack writer**.
@@ -68,7 +69,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2 skins API batches (on `skins-api`); later steps added here  
+13. [batches/README.md](./batches/README.md) — Step 2 API + Step 3 shell/skins UI batches (on `skins-api`)  
 
 ## Success criteria (full platform)
 

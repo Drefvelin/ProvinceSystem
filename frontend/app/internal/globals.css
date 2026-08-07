@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --tfmc-forest: #1a2e24;
+  --tfmc-forest-deep: #0f1c16;
+  --tfmc-moss: #2d4a3a;
+  --tfmc-stone: #c8c2b4;
+  --tfmc-cream: #e8e4d9;
+  --tfmc-mist: #a8b5a8;
+  --tfmc-accent: #7a9e6a;
+  --tfmc-header-h: 3.5rem;
+
+  --background: var(--tfmc-forest-deep);
+  --foreground: var(--tfmc-cream);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-tfmc-forest: var(--tfmc-forest);
+  --color-tfmc-forest-deep: var(--tfmc-forest-deep);
+  --color-tfmc-moss: var(--tfmc-moss);
+  --color-tfmc-stone: var(--tfmc-stone);
+  --color-tfmc-cream: var(--tfmc-cream);
+  --color-tfmc-mist: var(--tfmc-mist);
+  --color-tfmc-accent: var(--tfmc-accent);
+  --font-sans: var(--font-source-sans);
+  --font-display: var(--font-fraunces);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}
+
+@keyframes hub-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hub-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hub-rise {
+  animation: hub-rise 0.9s ease-out both;
+}
+
+.hub-rise-delay {
+  animation: hub-rise 0.9s ease-out 0.15s both;
+}
+
+.hub-fade-delay {
+  animation: hub-fade 1s ease-out 0.35s both;
 }

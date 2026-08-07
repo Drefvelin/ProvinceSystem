@@ -2,7 +2,7 @@
 
 Each batch is **one plan + one build**: small enough to finish and verify before the next.
 
-**Branch (Step 2):** `skins-api` (off `site-rework`). ProvinceSystem only.
+**Branch:** Step 2/3 on `skins-api` (or `skins-ui` cut from it). ProvinceSystem.
 
 | Batch | Step | Title | Done when |
 |-------|------|-------|-----------|
@@ -15,8 +15,12 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-2/06-asset-rules](./step-2/06-asset-rules.md) | 2 | Exact sizes; item/handheld/large_handheld + grip | Wrong size 400; grip stored |
 | [step-2/07-review-sheet](./step-2/07-review-sheet.md) | 2 | Staff 2D contact PNG | `review-sheet` returns image/png |
 | [step-2/08-verify-handoff](./step-2/08-verify-handoff.md) | 2 | E2E smoke + handoff | Step 2 checkpoint green → Step 3 UI |
-| [step-3/00-index](./step-3/00-index.md) | 3 | Skins UI overview | — |
+| [step-3/00-index](./step-3/00-index.md) | 3 | Shell + skins UI overview | — |
+| [step-3/01-shell-and-hub](./step-3/01-shell-and-hub.md) | 3 | Shell, hub, nav | `/` hub; Map/Skins links; r3b1rth unlisted |
+| [step-3/02-skins-redeem](./step-3/02-skins-redeem.md) | 3 | Redeem + session | Code → session in browser |
+| [step-3/03-skins-upload](./step-3/03-skins-upload.md) | 3 | Kind forms + upload | Armor / large+grip submit OK |
+| [step-3/04-skins-status-verify](./step-3/04-skins-status-verify.md) | 3 | Status + verify | Browser checklist green |
 
-**Later:** Step 3 UI batches; bot / ArmourShop batches as needed.
+**Later:** Discord bot / ArmourShop batches as needed.
 
 Parent playbook: [../README.md](../README.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)
