@@ -63,7 +63,7 @@ flowchart TB
 | 3 | Donator | Website `/skins`: redeem code |
 | 4 | Donator | Chooses `armor_set`, `item`, `handheld`, or `large_handheld` (+ grip preset for large); enters display name + slug; uploads files in labeled slots |
 | 5 | API | Validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems; status `pending` |
-| 6 | tfmc_bot | Skins cog posts review embed **with review PNG sheet** from API |
+| 6 | tfmc_bot | Skins cog posts review embed to `#bot-feed` **with raw submission PNGs** (review-sheet later) |
 | 7 | Staff | Approve or Deny (+ reason) from visuals |
 | 8 | API | Status `approved` / `denied` |
 | 9 | ArmourShop | Pulls approved; writes `tfmc_submissions` from kind/grip templates; shop YAML; LP `armourshop.submission.{slug}` |

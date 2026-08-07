@@ -10,6 +10,7 @@ Goal: run pieces of the TFMC platform on a workstation. Full journeys: [12-end-t
 | **Website + bot** | Above + Red/`tfmc_bot` against local API | Discord skins approve/deny, ban role tests |
 | **Website + test Paper** | Above + local/test server with SimpleFactions and/or ArmourShop pointed at local API | Map upload/regen; skins code mint + pack write into a **copy** of IA contents |
 | **Production-like** | Docker compose for ProvinceSystem; plugins on real host | Final integration |
+| **AMP-host staging** | Separate clone + [STAGING.md](../STAGING.md) (`8001`/`3001`) | Discord bot vs localhost API without touching prod |
 
 Most day-to-day UI work is **website only**. Do not require Paper to start Sprint S1–S2.
 
@@ -138,9 +139,12 @@ curl -X POST http://localhost:8000/skins/submissions/{id}/approve \
 
 Pack writes are tested against a **copy** of ItemsAdder contents (e.g. from `ItemsAdder Copy`), not production, until ArmourShop apply sprint. Point ArmourShop config at that copy locally if you need a dry run ([10](./10-armourshop-itemsadder.md)).
 
-### Bot later
+### Bot (Step 4)
 
-Load cogs from `tfmc_bot/` in a Red instance; set API URL + `STAFF_KEY` to local backend ([11](./11-discord-bot.md)). Skins cog and ban-role updates are not required for website-only sprints.
+- Cogs live in `tfmc_bot/` as **[Red-DiscordBot](https://github.com/cog-creators/red-discordbot)** cogs; production Red runs on **AMP (CubeCoders)**.
+- For skins review: set `API_BASE_URL` to your **local/staging** API (not required to touch live website), `STAFF_KEY`, and `BOT_FEED_CHANNEL_ID` for **`#bot-feed`**.
+- Create pending submissions via local `/skins` or curl; cog posts raw PNGs and approve/deny. See [11](./11-discord-bot.md) and [batches/step-4](./batches/step-4/00-index.md).
+- Ban-role updates are a later track; not required for skins Discord MVP.
 
 ### SimpleFactions later
 

@@ -126,7 +126,7 @@ Never trust client-provided destination filenames. Build paths only from `submis
 
 ## Staff / Discord
 
-Embeds show **display_name**, **slug**, **kind**, and **grip_preset** when set, plus the **review PNG sheet**. Deny reason can mention art / hold / display issues; naming and wrong pixel sizes should not reach staff — blocked at upload.
+Embeds show **display_name**, **slug**, **kind**, and **grip_preset** when set, plus **raw PNG attachments** for MVP (review-sheet / multi-view later). Deny reason can mention art / hold / display issues; naming and wrong pixel sizes should not reach staff — blocked at upload.
 
 ## Player-facing copy (suggested)
 

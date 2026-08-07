@@ -249,6 +249,33 @@ def deny_submission(submission_id: str, reason: str) -> dict:
     return _public_row(row)
 
 
+def list_pending() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM submissions
+            WHERE status = 'pending'
+            ORDER BY created_at ASC
+            """
+        ).fetchall()
+
+    result = []
+    for row in rows:
+        result.append(
+            {
+                "id": row["id"],
+                "player_uuid": row["player_uuid"],
+                "slug": row["slug"],
+                "kind": row["kind"],
+                "display_name": row["display_name"],
+                "grip_preset": row["grip_preset"],
+                "created_at": row["created_at"],
+                "files": _list_png_files(row["id"]),
+            }
+        )
+    return result
+
+
 def list_approved_pending_apply(since: str | None = None) -> list[dict]:
     sql = """
         SELECT * FROM submissions

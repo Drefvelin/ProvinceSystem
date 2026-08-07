@@ -12,7 +12,7 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 | **SimpleFactions** | `Workspace/simplefactions/` | Map bridge: nation JSON upload, queue, regen, province lookup |
 | **ArmourShop** | `Workspace/armourshop/` | Skins bridge: mint codes, pull approvals, write pack + shop YAML, LP |
 | **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player content goes in namespace **`tfmc_submissions`** |
-| **tfmc_bot** | `tfmc_bot/` | Red Discord bot: skins review; ban/warn DMs; Discord banned-role mute |
+| **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review (`#bot-feed`); ban/warn DMs; Discord banned-role mute (later) |
 
 ## Product lines
 
@@ -31,7 +31,7 @@ Future tools (e.g. BreweryX helpers) plug into the same website shell.
 - **`tfmc_submissions`** pack; IA auto CMD (like armor/cooking), not legacy `tfmc_pack` CMD overrides.
 - **Armor set** = 4 icons (16×16) + 2 layers (64×32); **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; later **item_3d** / **shield**.
 - **Naming:** `lowercase_snake_case` slugs; upload filenames ignored — [07-naming-conventions.md](./07-naming-conventions.md).
-- **Staff review:** Discord embeds **pre-baked PNG review sheets** from the API (not interactive WebGL).
+- **Staff review (Discord MVP):** posts to `#bot-feed` with **raw submission PNGs**; approve/deny via Red cog. Review-sheet attach later. Bot = [Red](https://github.com/cog-creators/red-discordbot) on AMP — [11](./11-discord-bot.md).
 - **Bot** does not ban on Minecraft; Discord DMs + roles only.
 
 ## Threat model (intentional)
@@ -69,7 +69,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2 API + Step 3 shell/skins UI batches (on `skins-api`)  
+13. [batches/README.md](./batches/README.md) — Step 2 API, Step 3 UI, Step 4 Discord (`tfmc_bot` + staff API)  
 
 ## Success criteria (full platform)
 
@@ -80,7 +80,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Skins**
 
-- Code → upload (armor_set / item / handheld / large_handheld) → Discord approve (PNG sheet) → ArmourShop writes pack → player can apply skin.
+- Code → upload (armor_set / item / handheld / large_handheld) → Discord approve in `#bot-feed` (raw PNGs MVP) → ArmourShop writes pack → player can apply skin.
 - Naming enforced; no shareable codes granting another UUID the cosmetic.
 
 **Bot**

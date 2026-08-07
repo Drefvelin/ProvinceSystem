@@ -99,11 +99,11 @@ See [05-skins-system.md](./05-skins-system.md).
 
 | Work | Detail |
 |------|--------|
-| Skins cog | Pending notify, **attach review PNG sheet**, Approve / Deny + reason → staff API |
-| Ban cog update | On `/minecraftban` (or paired command): add Discord **banned** role; add `/minecraftunban` (or clear) to remove it |
+| Skins cog | Pending notify → `#bot-feed`, **attach raw PNGs**, Approve / Deny + reason → staff API (review-sheet later) |
+| Ban cog update | **After** skins Discord MVP: on `/minecraftban` add Discord **banned** role; `/minecraftunban` to remove |
 | Scope | Discord mute/notify only — **in-game bans stay in-game commands** |
 
-**Done when:** Submission review works in Discord with images; banned role toggles for channel mute.
+**Done when:** Submission review works in Discord with raw images in `#bot-feed` (ban role is a follow-on).
 
 ### B3 — ArmourShop bridge
 

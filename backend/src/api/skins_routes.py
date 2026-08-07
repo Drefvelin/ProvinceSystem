@@ -25,6 +25,7 @@ from src.skins.submissions import (
     deny_submission,
     get_submission_for_owner,
     list_approved_pending_apply,
+    list_pending,
     mark_applied,
     resolve_submission_file,
 )
@@ -196,6 +197,28 @@ def post_deny(
         raise HTTPException(status_code=status, detail=str(e)) from e
     logger.info("would notify discord submission=%s action=deny", submission_id)
     return result
+
+
+@skins_router.get("/staff/pending")
+def staff_pending(
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return {"submissions": list_pending()}
+
+
+@skins_router.get("/staff/submissions/{submission_id}/files/{filename}")
+def staff_file(
+    submission_id: str,
+    filename: str,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    path = resolve_submission_file(submission_id, filename)
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    media = "image/png" if filename.lower().endswith(".png") else "application/octet-stream"
+    return FileResponse(path, media_type=media, filename=filename)
 
 
 @skins_router.get("/plugin/approved")

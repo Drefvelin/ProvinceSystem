@@ -8,7 +8,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 
 - Donators submit **armor sets** (2D) or **item skins** (`item` / `handheld` / `large_handheld`; 3D + shields later).
 - No website logins; codes from ArmourShop bound to player UUID.
-- Staff approve/deny in Discord (deny includes reason), with **PNG review sheets** attached.
+- Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
 - ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates.
 
 ## Upload kinds
@@ -57,7 +57,7 @@ sequenceDiagram
   Web->>API: POST /skins/redeem
   Player->>Web: slug display_name kind files
   Web->>API: POST /skins/submissions
-  API->>Discord: notify pending plus review PNG sheet
+  API->>Discord: notify pending plus raw PNG files
   Discord->>API: approve or deny
   AS->>API: GET /skins/plugin/approved
   API-->>AS: payload
@@ -134,12 +134,13 @@ Staff must see submissions visually without opening Blockbench.
 
 | Phase | What the API serves | Who consumes |
 |-------|---------------------|--------------|
-| Step 2 / MVP 2D | Staff-auth **contact sheet** PNG: armor = six labeled tiles; item kinds = texture + kind/grip caption | Discord cog attaches image to pending embed; curl for local review |
-| Later (3D / shield) | Multi-view bake: `gui`, `ground`, first/third person hands; shield also **blocking** (auto display) | Same Discord path; site view-only viewer shares the renderer |
+| **Step 4 Discord MVP** | Individual on-disk PNGs via staff file download | Bot attaches raw files to `#bot-feed` |
+| Step 2+ / curl | Staff-auth **contact sheet** PNG (`review-sheet`): armor = six labeled tiles; item kinds = texture + kind/grip caption | curl / later Discord when render system ships |
+| Later (3D / shield) | Multi-view bake: `gui`, `ground`, first/third person hands; shield also **blocking** | Discord + site view-only viewer |
 
-- Discord does **not** embed interactive WebGL — only **pre-baked PNG**(s).
-- Interactive orbit viewer is website-only and deferred (shared view-only renderer with the bake pipeline).
-- Endpoint sketch: `GET /skins/submissions/{id}/review-sheet` with `X-Staff-Key` → `image/png`.
+- Discord does **not** embed interactive WebGL — only static images (raw files now; pre-baked sheets later).
+- Interactive orbit viewer is website-only and deferred.
+- Endpoints: `GET /skins/submissions/{id}/review-sheet` (staff); staff file GET under `/skins/staff/...` (Step 4.01).
 
 ## ItemsAdder shape (ArmourShop writes)
 
@@ -201,13 +202,15 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 
 | Method | Purpose |
 |--------|---------|
-| `GET /skins/submissions/{id}/review-sheet` | PNG contact sheet / later multi-view bake |
+| `GET /skins/staff/pending` | List `status=pending` (id, slug, kind, grip, uuid, files, …) |
+| `GET /skins/staff/submissions/{id}/files/{filename}` | Download one PNG under that submission dir |
+| `GET /skins/submissions/{id}/review-sheet` | Contact sheet (optional for Discord later) |
 | `POST /skins/submissions/{id}/approve` | |
 | `POST /skins/submissions/{id}/deny` | `{ "reason" }` |
 
 ### API → Discord
 
-Webhook or bot poll: submission id, slug, kind, grip_preset, UUID, **review-sheet image** (staff-auth URL), buttons.
+Bot poll (or later webhook): pending metadata + **raw file** downloads; buttons in `#bot-feed`.
 
 ## Frontend (`/skins`)
 

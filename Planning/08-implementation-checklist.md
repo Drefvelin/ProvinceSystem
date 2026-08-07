@@ -49,11 +49,15 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 ### S3 — Discord skins cog
 
-**Repo:** `tfmc_bot` — [11](./11-discord-bot.md)
+**Repo:** `tfmc_bot` (Red on AMP) — [11](./11-discord-bot.md) · [batches/step-4](./batches/step-4/00-index.md)
 
-- [ ] Pending embed + **review PNG sheet** + Approve/Deny + staff API + message update
+- [x] Staff API: pending list + staff file download
+- [x] Cog: `#bot-feed` embed + **raw PNG** attachments + Approve/Deny + message update
+- [x] Poll (or slash) intake without duplicate posts
 
-**Done when:** Staff can review staging submissions in Discord from images.
+**Done when:** Staff can review staging/local submissions in Discord from raw files (review-sheet attach later).
+
+**Verified:** Step 4 batches 4.01–4.05 implemented; AMP E2E against local/staging API is the runtime check.
 
 ### S4 — ArmourShop apply
 

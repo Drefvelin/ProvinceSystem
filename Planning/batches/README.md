@@ -2,25 +2,24 @@
 
 Each batch is **one plan + one build**: small enough to finish and verify before the next.
 
-**Branch:** Step 2/3 on `skins-api` (or `skins-ui` cut from it). ProvinceSystem.
-
 | Batch | Step | Title | Done when |
 |-------|------|-------|-----------|
-| [step-2/00-index](./step-2/00-index.md) | 2 | Step overview | — |
-| [step-2/01-data-foundation](./step-2/01-data-foundation.md) | 2 | SQLite, paths, compose | DB opens; `data/skins/` exists |
-| [step-2/02-naming-and-secrets](./step-2/02-naming-and-secrets.md) | 2 | Slug rules + env keys | Unit-check slug; keys load from env |
-| [step-2/03-codes](./step-2/03-codes.md) | 2 | Issue, redeem, seed | Mock code redeems to a session |
-| [step-2/04-submissions](./step-2/04-submissions.md) | 2 | Upload armor_set / item_2d (historical) | Files on disk with fixed stems |
-| [step-2/05-review-and-pull](./step-2/05-review-and-pull.md) | 2 | Status, staff approve/deny, plugin pull | Approve via curl; approved list works |
-| [step-2/06-asset-rules](./step-2/06-asset-rules.md) | 2 | Exact sizes; item/handheld/large_handheld + grip | Wrong size 400; grip stored |
-| [step-2/07-review-sheet](./step-2/07-review-sheet.md) | 2 | Staff 2D contact PNG | `review-sheet` returns image/png |
-| [step-2/08-verify-handoff](./step-2/08-verify-handoff.md) | 2 | E2E smoke + handoff | Step 2 checkpoint green → Step 3 UI |
+| [step-2/00-index](./step-2/00-index.md) | 2 | Skins API overview | — |
+| [step-2/01–08](./step-2/00-index.md) | 2 | Data → smoke | Step 2 checkpoint green |
 | [step-3/00-index](./step-3/00-index.md) | 3 | Shell + skins UI overview | — |
-| [step-3/01-shell-and-hub](./step-3/01-shell-and-hub.md) | 3 | Shell, hub, nav | `/` hub; Map/Skins links; r3b1rth unlisted |
+| [step-3/01-shell-and-hub](./step-3/01-shell-and-hub.md) | 3 | Shell, hub, nav | `/` hub; Map/Skins; r3b1rth unlisted |
 | [step-3/02-skins-redeem](./step-3/02-skins-redeem.md) | 3 | Redeem + session | Code → session in browser |
 | [step-3/03-skins-upload](./step-3/03-skins-upload.md) | 3 | Kind forms + upload | Armor / large+grip submit OK |
 | [step-3/04-skins-status-verify](./step-3/04-skins-status-verify.md) | 3 | Status + verify | Browser checklist green |
+| [step-4/00-index](./step-4/00-index.md) | 4 | Discord skins review overview | — |
+| [step-4/01-staff-pending-api](./step-4/01-staff-pending-api.md) | 4 | Staff pending + file GET | curl pending + PNG |
+| [step-4/02-cog-scaffold](./step-4/02-cog-scaffold.md) | 4 | Red cog scaffold | Cog loads on Red/AMP |
+| [step-4/03-post-raw-files](./step-4/03-post-raw-files.md) | 4 | Embed + raw PNG attach | Message in `#bot-feed` |
+| [step-4/04-approve-deny](./step-4/04-approve-deny.md) | 4 | Buttons + deny modal | API status matches Discord |
+| [step-4/05-auto-intake-verify](./step-4/05-auto-intake-verify.md) | 4 | Poll + AMP verify | E2E local API + TFMC Discord |
 
-**Later:** Discord bot / ArmourShop batches as needed.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = ProvinceSystem staff routes + `tfmc_bot` cogs (Red on AMP).
+
+**Later:** ArmourShop apply; ban-role mute; review-sheet in Discord.
 
 Parent playbook: [../README.md](../README.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)
