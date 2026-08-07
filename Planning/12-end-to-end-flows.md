@@ -61,18 +61,18 @@ flowchart TB
 | 1 | Donator | In-game: generate skin code (ArmourShop checks donator perm) |
 | 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once |
 | 3 | Donator | Website `/skins`: redeem code |
-| 4 | Donator | Chooses `armor_set` or `item_2d`; enters display name + slug; uploads files in labeled slots |
-| 5 | API | Validates naming ([07](./07-naming-conventions.md)); stores fixed stems; status `pending` |
-| 6 | tfmc_bot | Skins cog posts review embed |
-| 7 | Staff | Approve or Deny (+ reason) |
+| 4 | Donator | Chooses `armor_set`, `item`, `handheld`, or `large_handheld` (+ grip preset for large); enters display name + slug; uploads files in labeled slots |
+| 5 | API | Validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems; status `pending` |
+| 6 | tfmc_bot | Skins cog posts review embed **with review PNG sheet** from API |
+| 7 | Staff | Approve or Deny (+ reason) from visuals |
 | 8 | API | Status `approved` / `denied` |
-| 9 | ArmourShop | Pulls approved; writes `tfmc_submissions`; shop YAML; LP `armourshop.submission.{slug}` |
+| 9 | ArmourShop | Pulls approved; writes `tfmc_submissions` from kind/grip templates; shop YAML; LP `armourshop.submission.{slug}` |
 | 10 | ArmourShop | Deferred IA reload when safe; ack `applied` |
 | 11 | Donator | Opens ArmourShop; sees set; applies to gear |
 
-**Armor files:** 4 icons + 2 layers. **Item 2D:** one PNG. Filenames from OS ignored.
+**Armor files:** 4 icons (16×16) + 2 layers (64×32). **Item / handheld:** one 16×16 PNG. **Large handheld:** one 32×32 PNG + grip. Filenames from OS ignored.
 
-**Failure modes:** bad slug; incomplete armor slots; Discord double-approve; reload while players online; LP missing so shop hides set.
+**Failure modes:** bad slug; wrong pixel size; incomplete armor slots; Discord double-approve; reload while players online; LP missing so shop hides set.
 
 ---
 
@@ -126,7 +126,7 @@ sequenceDiagram
 ## Definition of done (platform MVP)
 
 - Flow 1 works on live map (existing; UX polish ongoing).  
-- Flow 2 works for armor_set + item_2d with Discord approve and ArmourShop apply.  
+- Flow 2 works for armor_set + item/handheld/large_handheld with Discord approve (PNG sheet) and ArmourShop apply.  
 - Flow 3 DM/log works today; role add/clear ships with bot track.  
 - Naming enforced on Flow 2.  
 - Local testing possible for API/UI without Paper ([06](./06-local-development.md)).  

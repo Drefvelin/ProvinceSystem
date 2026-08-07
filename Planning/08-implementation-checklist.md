@@ -28,19 +28,21 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Repo:** `ProvinceSystem`
 
-- [ ] SQLite + migrations (`codes`, `submissions`)
-- [ ] `data/skins/` + compose volume + gitignore
-- [ ] Slug validation ([07](./07-naming-conventions.md))
-- [ ] Routes: issue, redeem, upload armor_set/item_2d, status, staff approve/deny
-- [ ] Seed mock code; env `PLUGIN_KEY` / `STAFF_KEY`
+- [x] SQLite + migrations (`codes`, `submissions`)
+- [x] `data/skins/` + compose volume + gitignore
+- [x] Slug validation ([07](./07-naming-conventions.md))
+- [x] Routes: issue, redeem, upload armor_set/item/handheld/large_handheld, status, staff approve/deny, review-sheet
+- [x] Exact PNG sizes + `grip_preset` for large_handheld
+- [x] Seed mock code; env `PLUGIN_KEY` / `STAFF_KEY`
 
-**Done when:** curl armor_set upload stores six fixed stems; approve works.
+**Done when:** curl armor_set (correct sizes) stores six fixed stems; large_handheld+grip works; approve works; review-sheet returns PNG.  
+**Verified:** `backend/scripts/skins_e2e_smoke.ps1` (Step 2.08).
 
 ### S2 — Website `/skins`
 
 **Repo:** `ProvinceSystem` frontend
 
-- [ ] Shell nav + redeem + kind forms (6 armor slots / 1 item slot) + status + slug UX
+- [ ] Shell nav + redeem + kind forms (6 armor slots / item kinds + grip) + status + slug UX
 
 **Done when:** Browser path works without Discord/ArmourShop.
 
@@ -48,22 +50,23 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Repo:** `tfmc_bot` — [11](./11-discord-bot.md)
 
-- [ ] Pending embed + Approve/Deny + staff API + message update
+- [ ] Pending embed + **review PNG sheet** + Approve/Deny + staff API + message update
 
-**Done when:** Staff can review staging submissions in Discord.
+**Done when:** Staff can review staging submissions in Discord from images.
 
 ### S4 — ArmourShop apply
 
 **Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)
 
-- [ ] Config URL/key/paths; code command; pull; write `tfmc_submissions`; shop YAML; LP; deferred reload; applied ack
+- [ ] Config URL/key/paths; code command; pull; write `tfmc_submissions` with kind/grip templates; shop YAML; LP; deferred reload; applied ack
 
 **Done when:** Flow 2 complete in [12](./12-end-to-end-flows.md).
 
-### S5 — Item 3D + harden
+### S5 — Item 3D + shield + harden
 
-- [ ] `item_3d` API/UI + ArmourShop cooking-style apply
-- [ ] Quotas, retention, reserved slugs
+- [ ] `item_3d` / `shield` API/UI + display-key validation + ArmourShop apply (shield blocking auto)
+- [ ] Multi-view review bake for Discord; shared view-only site renderer
+- [ ] Quotas, retention, reserved slugs, tier size caps
 
 ---
 
@@ -122,8 +125,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Area | Criteria |
 |------|----------|
 | Map | Live SF → API → web works; realm card shows size; usable on phone |
-| Skins | armor_set + item_2d; naming enforced; Discord approve; ArmourShop pack + LP |
-| Bot | Skins review; ban DM/log + banned role add/clear |
+| Skins | armor_set + item/handheld/large_handheld; exact sizes; naming; Discord PNG review; ArmourShop pack + LP |
+| Bot | Skins review with sheets; ban DM/log + banned role add/clear |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP: item_3d, full map overlay crop, brewery module, SF secret cleanup if not done.
+Post-MVP: item_3d, shield, full map overlay crop, brewery module, SF secret cleanup if not done.

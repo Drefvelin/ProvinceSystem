@@ -112,19 +112,27 @@ After **cropped overlay** work lands ([04-map-performance.md](./04-map-performan
    - Pick a fake UUID  
    - Insert `code_hash` for a known plaintext like `TEST-CODE-1`  
 3. Open `/skins`, redeem, submit with a valid **slug** (e.g. `blue_knight`) — see [07-naming-conventions.md](./07-naming-conventions.md).  
-4. Fixture uploads (filenames on disk after API rename matter; your OS picker names do not):
+4. Fixture uploads (**exact pixel sizes** required; OS picker names ignored):
 
-   - **item_2d:** any one PNG → stored as `{slug}.png`  
-   - **armor_set:** six PNGs in labeled slots → `{slug}_helmet.png`, `_chestplate`, `_leggings`, `_boots`, `_layer_1`, `_layer_2`  
+   - **item** / **handheld:** one **16×16** PNG → `{slug}.png`  
+   - **large_handheld:** one **32×32** PNG + `grip_preset` (`bottom`|`middle`|`top`) → `{slug}.png`  
+   - **armor_set:** four **16×16** icons + two **64×32** layers → `{slug}_helmet.png`, `_chestplate`, `_leggings`, `_boots`, `_layer_1`, `_layer_2`  
 
-5. Approve with curl + staff key:
+5. Fetch staff review sheet (optional for curl MVP):
+
+```bash
+curl -o sheet.png http://localhost:8000/skins/submissions/{id}/review-sheet \
+  -H "X-Staff-Key: …"
+```
+
+6. Approve with curl + staff key:
 
 ```bash
 curl -X POST http://localhost:8000/skins/submissions/{id}/approve \
   -H "X-Staff-Key: …"
 ```
 
-6. Exercise `GET /skins/plugin/approved` with the plugin key; no Java required for API testing.
+7. Exercise `GET /skins/plugin/approved` with the plugin key; no Java required for API testing.
 
 ### ArmourShop / ItemsAdder later
 
