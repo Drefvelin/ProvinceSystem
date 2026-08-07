@@ -24,12 +24,14 @@ Future tools (e.g. BreweryX helpers) plug into the same website shell.
 
 ## Locked decisions
 
+- **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
 - **No site logins** — skins use ArmourShop-issued UUID-bound codes.
 - **SQLite + disk** for skins metadata/files on the API.
 - **SimpleFactions = map only**; **ArmourShop = skins pack writer**.
 - **`tfmc_submissions`** pack; IA auto CMD (like armor/cooking), not legacy `tfmc_pack` CMD overrides.
-- **Armor set** = 4 icons + 2 layers; **item_2d** = 1 PNG; later **item_3d** = PNG + JSON.
+- **Armor set** = 4 icons (16×16) + 2 layers (64×32); **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; later **item_3d** / **shield**.
 - **Naming:** `lowercase_snake_case` slugs; upload filenames ignored — [07-naming-conventions.md](./07-naming-conventions.md).
+- **Staff review:** Discord embeds **pre-baked PNG review sheets** from the API (not interactive WebGL).
 - **Bot** does not ban on Minecraft; Discord DMs + roles only.
 
 ## Threat model (intentional)
@@ -65,6 +67,10 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 12. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
 
+**Build batches (plan + implement)**
+
+13. [batches/README.md](./batches/README.md) — Step 2 API + Step 3 shell/skins UI batches (on `skins-api`)  
+
 ## Success criteria (full platform)
 
 **Map**
@@ -74,7 +80,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Skins**
 
-- Code → upload (armor_set / item_2d) → Discord approve → ArmourShop writes pack → player can apply skin.
+- Code → upload (armor_set / item / handheld / large_handheld) → Discord approve (PNG sheet) → ArmourShop writes pack → player can apply skin.
 - Naming enforced; no shareable codes granting another UUID the cosmetic.
 
 **Bot**

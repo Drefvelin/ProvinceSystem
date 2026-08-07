@@ -19,15 +19,18 @@ Ban cog is **notification + logging only**. It does not ban players on the Minec
 New cog (name e.g. `skinsreview` / `tfmcskins`):
 
 1. Receive pending submissions (webhook from API, or poll `pending` with staff key).  
-2. Post embed: submission id, slug, display name, kind, player UUID, preview image(s).  
-3. Buttons: **Approve** / **Deny**.  
-4. Deny opens modal for reason.  
-5. Call ProvinceSystem staff API (`X-Staff-Key`).  
-6. Edit original message to show outcome (prevent double-clicks).
+2. Post embed: submission id, slug, display name, kind, grip_preset (if any), player UUID.  
+3. **Attach review PNG sheet(s)** from `GET /skins/submissions/{id}/review-sheet` (`X-Staff-Key`) — Discord shows static images only (no WebGL).  
+   - MVP 2D: one contact sheet (armor tiles or item texture + captions).  
+   - Later 3D/shield: multi-view sheet including gui/ground/hands and auto **blocking** for shields.  
+4. Buttons: **Approve** / **Deny**.  
+5. Deny opens modal for reason (art, hold, weird gui/ground size, etc.).  
+6. Call ProvinceSystem staff API (`X-Staff-Key`).  
+7. Edit original message to show outcome (prevent double-clicks).
 
 Permissions: Staff (and Helper if desired)—same pattern as minecraftban role checks.
 
-Does not write ItemsAdder files; ArmourShop pulls after status is `approved`.
+Does not write ItemsAdder files; ArmourShop pulls after status is `approved`. Naming and wrong pixel sizes are blocked at upload — staff should not see those failures.
 
 ## Planned: banned role on ban / clear on unban
 
@@ -66,7 +69,7 @@ Website skins MVP does not require the bot ([06](./06-local-development.md)); ap
 
 ## Implementation checklist (bot track)
 
-- [ ] Skins cog: notify + approve/deny + message update  
+- [ ] Skins cog: notify + **review PNG sheet** + approve/deny + message update  
 - [ ] Ban: add role on ban notify  
 - [ ] Unban command: remove role  
 - [ ] Document required Discord permission setup for banned role  

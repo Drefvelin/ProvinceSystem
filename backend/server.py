@@ -19,6 +19,9 @@ app = FastAPI()
 # --------------------
 @app.on_event("startup")
 async def startup_log():
+    from src.skins.db import migrate
+
+    migrate()
     logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
 
 # --------------------------------
@@ -27,7 +30,8 @@ async def startup_log():
 origins = [
     "https://www.tfminecraft.net",
     "https://tfminecraft.net",  # optional
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(
@@ -52,6 +56,7 @@ from src.api.banner_routes import banner_router
 from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
+from src.api.skins_routes import skins_router
 
 app.include_router(map_router)
 app.include_router(data_router)
@@ -59,3 +64,4 @@ app.include_router(banner_router)
 app.include_router(claim_router)
 app.include_router(regen_router)
 app.include_router(file_router)
+app.include_router(skins_router)

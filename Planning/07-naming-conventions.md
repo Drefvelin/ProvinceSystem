@@ -54,22 +54,32 @@ Also reject reserved slugs: `test`, `texture`, `null`, `undefined`, `admin`, `tf
 
 Form fields (suggested names): `helmet`, `chestplate`, `leggings`, `boots`, `layer_1`, `layer_2`.
 
-### `item_2d`
+Exact sizes (API reject otherwise): icons **16×16**; layers **64×32**.
+
+### `item` / `handheld` / `large_handheld`
 
 ```text
 {slug}.png
 ```
 
-Field: `texture`.
+Field: `texture`.  
+Sizes: `item` and `handheld` **16×16**; `large_handheld` **32×32**.  
+`large_handheld` also requires form/body field `grip_preset` (`bottom` \| `middle` \| `top`) — stored in DB/`meta.json`, **not** in the filename.
 
-### `item_3d`
+(`item_2d` is retired; use the three kinds above.)
+
+### `item_3d` (later)
 
 ```text
 {slug}.png
 {slug}.json
 ```
 
-Fields: `texture`, `model`.
+Fields: `texture`, `model`. JSON must include required `display` keys (see [05](./05-skins-system.md) / [10](./10-armourshop-itemsadder.md)).
+
+### `shield` (later)
+
+Model + texture stems TBD with ArmourShop; one mesh; blocking display is **generated at apply**, not a second upload filename.
 
 ## Derived identifiers
 
@@ -78,7 +88,7 @@ Fields: `texture`, `model`.
 | IA namespace | `tfmc_submissions` |
 | IA armor piece ids | `{slug}_helmet`, `{slug}_chestplate`, `{slug}_leggings`, `{slug}_boots` |
 | IA `armors_rendering` key | `{slug}` |
-| IA item 2d/3d id | `{slug}` |
+| IA item id (all non-armor kinds) | `{slug}` |
 | Full item ref | `ia.tfmc_submissions:{id}` |
 | ArmourShop set key | `{slug}` |
 | LP permission | `armourshop.submission.{slug}` |
@@ -116,7 +126,7 @@ Never trust client-provided destination filenames. Build paths only from `submis
 
 ## Staff / Discord
 
-Embeds show **display_name** and **slug**. Deny reason can mention art issues; naming failures should not reach staff — blocked at upload.
+Embeds show **display_name**, **slug**, **kind**, and **grip_preset** when set, plus the **review PNG sheet**. Deny reason can mention art / hold / display issues; naming and wrong pixel sizes should not reach staff — blocked at upload.
 
 ## Player-facing copy (suggested)
 

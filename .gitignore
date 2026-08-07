@@ -36,6 +36,10 @@ docker-compose.override.yml
 docker/data/
 *.db
 
+# Skins runtime uploads (keep folder via .gitkeep)
+backend/src/data/skins/**
+!backend/src/data/skins/.gitkeep
+
 # VSCode & JetBrains IDE
 .vscode/
 *.iml

@@ -9,6 +9,7 @@ services:
       - ./backend/src/output:/app/src/output
       - ./backend/src/input:/app/src/input
       - ./backend/src/defines:/app/src/defines
+      - ./backend/src/data:/app/src/data
     security_opt:
       - no-new-privileges:true
     restart: always

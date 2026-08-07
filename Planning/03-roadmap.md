@@ -18,7 +18,7 @@ flowchart TD
     B1[B1_SkinsMVP]
     B2[B2_DiscordSkins]
     B3[B3_ArmourShopApply]
-    B4[B4_Item3D]
+    B4[B4_Item3D_Shield_Bake]
     B5[B5_Harden]
     B0 --> B1
     B1 --> B2
@@ -85,13 +85,13 @@ See [05-skins-system.md](./05-skins-system.md).
 
 | Work | Detail |
 |------|--------|
-| SQLite + disk | Migrations; fixed file stems per kind |
-| APIs | Issue (mock), redeem, upload, status, staff approve/deny via API key |
-| Web UI | Redeem; **armor_set** (6 file slots) and **item_2d** (1 slot); slug + display name |
-| Validation | PNG magic, size limits, naming regex |
+| SQLite + disk | Migrations; fixed file stems per kind; `grip_preset` |
+| APIs | Issue (mock), redeem, upload, status, staff approve/deny, **review-sheet PNG** |
+| Web UI | Redeem; **armor_set** (6 slots); **item** / **handheld** / **large_handheld** (1 slot + grip for large); slug + display name |
+| Validation | PNG magic; **exact** sizes (icons 16×16, layers 64×32, item/handheld 16×16, large 32×32); naming regex |
 | Mock codes | Seed script |
 
-**Done when:** Local armor_set + item_2d upload; approve via curl; files on disk with correct stems.
+**Done when:** Local armor_set + item kinds upload at correct sizes; review-sheet works; approve via curl.
 
 ### B2 — Discord staff + ban role
 
@@ -99,11 +99,11 @@ See [05-skins-system.md](./05-skins-system.md).
 
 | Work | Detail |
 |------|--------|
-| Skins cog | Pending notify, Approve / Deny + reason → staff API |
+| Skins cog | Pending notify, **attach review PNG sheet**, Approve / Deny + reason → staff API |
 | Ban cog update | On `/minecraftban` (or paired command): add Discord **banned** role; add `/minecraftunban` (or clear) to remove it |
 | Scope | Discord mute/notify only — **in-game bans stay in-game commands** |
 
-**Done when:** Submission review works in Discord; banned role toggles for channel mute.
+**Done when:** Submission review works in Discord with images; banned role toggles for channel mute.
 
 ### B3 — ArmourShop bridge
 
@@ -112,22 +112,25 @@ See [05-skins-system.md](./05-skins-system.md).
 | Work | Detail |
 |------|--------|
 | Mint codes | In-game command; UUID bound; show once |
-| Pull approved | Fetch payloads from API |
-| Write pack | `contents/tfmc_submissions/` YAML + textures (IA auto CMD, not `tfmc_pack`) |
+| Pull approved | Fetch payloads from API (`kind`, `grip_preset`, files) |
+| Write pack | `contents/tfmc_submissions/` YAML + textures; **templates** for item/handheld/large grip displays |
 | Shop + LP | Category/set YAML; `armourshop.submission.{slug}` |
 | Deferred reload | IA reload when empty or on restart; queue otherwise |
 
 **Done when:** Code → upload → Discord approve → skin usable in ArmourShop for that UUID without manual file copy.
 
-### B4 — Item 3D
+### B4 — Item 3D + shield + viewer bake
 
 | Work | Detail |
 |------|--------|
-| Kind `item_3d` | PNG + JSON; cooking-style `generate: false` + `model_path` |
+| Kind `item_3d` | PNG + JSON; required `display` keys; cooking-style `generate: false` + `model_path` |
+| Kind `shield` | One model+texture; ArmourShop auto **blocking** display clone |
 | Helmets | Single-item 3D skins, **not** armor sets |
+| Size / tier caps | Default json+texture &lt; 30KB; optional higher caps from code tier |
+| Review bake | Multi-view PNG sheet (gui/ground/hands/blocking) for Discord; shared view-only site renderer later |
 | ArmourShop apply | Write model + texture under `tfmc_submissions` |
 
-**Done when:** 3D item path matches 2D workflow.
+**Done when:** 3D/shield path matches 2D workflow including staff PNG review.
 
 ### B5 — Harden and expand
 
@@ -137,10 +140,10 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Priority for “finished product ASAP”
 
-1. **B0 + B1** — API and `/skins` with naming (unblocks everything)  
-2. **B2 skins cog** — staff can review without curl  
-3. **B3 ArmourShop** — real server apply  
+1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
+2. **B2 skins cog** — staff can review with PNG sheets without curl  
+3. **B3 ArmourShop** — real server apply + display templates  
 4. **A1 realm card + mobile** in parallel whenever free  
 5. **B4 / A1 cropped overlays / B5** as capacity allows  
 
-Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d.
+Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d/shield.

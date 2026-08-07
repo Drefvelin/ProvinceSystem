@@ -90,7 +90,7 @@ Path example: `backend/src/data/province.db` (volume-mounted in compose).
 | Table | Purpose |
 |-------|---------|
 | `codes` | Issued codes (hashed), player UUID, expiry, redeemed flag |
-| `submissions` | kind, slug, display_name, status, paths, deny reason |
+| `submissions` | kind, slug, display_name, grip_preset, status, paths, deny reason |
 | `audit_log` | Approvals, denials, ArmourShop apply events |
 
 ### Filesystem (pending blobs on API)
@@ -98,17 +98,17 @@ Path example: `backend/src/data/province.db` (volume-mounted in compose).
 ```text
 backend/src/data/skins/
   {submission_id}/
-    meta.json                 # slug, kind, display_name, uuid
-    # armor_set (fixed stems — see 07):
+    meta.json                 # slug, kind, display_name, uuid, grip_preset?
+    # armor_set (fixed stems — see 07): icons 16x16, layers 64x32
     {slug}_helmet.png
     {slug}_chestplate.png
     {slug}_leggings.png
     {slug}_boots.png
     {slug}_layer_1.png
     {slug}_layer_2.png
-    # item_2d:
+    # item / handheld / large_handheld:
     {slug}.png
-    # item_3d:
+    # item_3d / shield (later):
     {slug}.png
     {slug}.json
 ```

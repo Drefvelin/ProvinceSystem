@@ -59,12 +59,30 @@ Create namespace once (scaffold empty pack), then ArmourShop appends per submiss
 
 - `armors_rendering.{slug}` with `layer_1` / `layer_2`
 - Four items: `{slug}_helmet|chestplate|leggings|boots` with `generate: true`, icon textures, `custom_armor: {slug}`
+- Expect icons 16×16 and layers 64×32 (API already enforced)
 
-**Item 2D** — single item, `generate: true`, texture `{slug}`.
+**2D items** — single item id `{slug}`, texture `{slug}`:
 
-**Item 3D** (later) — cooking style: `generate: false`, `model_path`, ship JSON under namespace models.
+| Kind | ArmourShop responsibility |
+|------|---------------------------|
+| `item` | Flat / generated parent + standard `display` template |
+| `handheld` | Handheld parent + sword-style orientation `display` |
+| `large_handheld` | 32×32 scale template + **`grip_preset`** → locked translation/scale set (`bottom` / `middle` / `top`) |
+
+Donor never hand-edits JSON for these kinds. Staff review art + preset via Discord PNG sheet.
+
+**Item 3D** (later) — cooking style: `generate: false`, `model_path`, ship donor JSON under namespace models. JSON must already contain required `display` keys (`gui`, `ground`, `fixed`, `firstperson_*`, `thirdperson_*`, and `head` when relevant). Soft scale warnings optional; missing keys → reject at upload (API), not at apply.
+
+**Shield** (later) — one model + texture from donor; ArmourShop **clones** model and applies locked **blocking** `display` (and any IA blocking override). Do not require a second mesh upload.
 
 Never add new skins via manual `custom_model_data` lists in `tfmc_pack`.
+
+## Display ownership
+
+| Kind | Who authors `display` |
+|------|------------------------|
+| `armor_set`, `item`, `handheld`, `large_handheld` | ArmourShop templates (grip selects among large templates) |
+| `item_3d`, `shield` | Donor Blockbench JSON (required keys); ArmourShop adds shield blocking clone only |
 
 ## ArmourShop shop integration
 
@@ -115,10 +133,10 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 
 - [ ] Scaffold empty `tfmc_submissions` on live + copy  
 - [ ] REST client + code command  
-- [ ] Pull + write armor_set and item_2d  
+- [ ] Pull + write `armor_set`, `item`, `handheld`, `large_handheld` (grip templates)  
 - [ ] Category YAML + LP  
 - [ ] Deferred reload + applied ack  
-- [ ] item_3d later  
+- [ ] `item_3d` + `shield` (blocking auto) later  
 
 ## See also
 
