@@ -42,7 +42,35 @@ bot_feed_channel_id: YOUR_BOT_FEED_CHANNEL_ID
 poll_interval_seconds: 60
 ```
 
-Then in Discord: `-reload skinsreview` → `/skinsreview ping`.
+Then in Discord: `-reload skinsreview` → `/skinsreview ping`.  
+Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
+
+## Step 5 — Discord link + player DMs (manual)
+
+Automated API path: `python scripts/skins_e2e_smoke.py` from `backend/` (link + notify + review).
+
+Live Discord path (operator):
+
+1. **Link** — In game `/linkdiscord` (ArmourShop `skins-api` → staging URL + plugin key), **or** curl:
+
+```bash
+curl -s -X POST http://127.0.0.1:18001/skins/discord/link/start \
+  -H "Content-Type: application/json" \
+  -H "X-Plugin-Key: dev-plugin-key" \
+  -d '{"player_uuid":"00000000-0000-0000-0000-000000000001","minecraft_name":"Test"}'
+```
+
+2. In TFMC Discord: `/linkdiscord code:<CODE>` (ephemeral success).
+3. Mint + redeem skins code (below) → upload on `http://127.0.0.1:13001/skins`.
+4. Confirm **submitted** DM; submission appears in `#bot-feed`.
+5. Approve or Deny → **outcome** DM (+ reason if denied).
+6. Confirm API/status shows `player_uuid` + linked Discord (staff embed / pending).
+
+Checkpoint:
+
+```text
+link → redeem + upload → submitted DM → Approve/Deny → outcome DM
+```
 
 ## Mint a code + submit a skin
 
@@ -61,7 +89,7 @@ curl -s -X POST http://127.0.0.1:18001/skins/codes \
 ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 user@amp-host
 ```
 
-Open `http://127.0.0.1:13001/skins`, redeem the code, upload, wait for `#bot-feed` (or `/skinsreview post <id>`).
+Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID), wait for `#bot-feed` (or `/skinsreview post <id>`).
 
 ## Keys (compose defaults)
 

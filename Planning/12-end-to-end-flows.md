@@ -58,21 +58,25 @@ flowchart TB
 
 | Step | Who | What |
 |------|-----|------|
+| 0a | Donator | In-game `/linkdiscord` → one-time code |
+| 0b | Donator | Discord `/linkdiscord <code>` → UUID ↔ Discord id linked |
 | 1 | Donator | In-game: generate skin code (ArmourShop checks donator perm) |
 | 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once |
 | 3 | Donator | Website `/skins`: redeem code |
-| 4 | Donator | Chooses `armor_set`, `item`, `handheld`, or `large_handheld` (+ grip preset for large); enters display name + slug; uploads files in labeled slots |
-| 5 | API | Validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems; status `pending` |
+| 4 | Donator | Chooses kind (+ grip for large); enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) (skin id from filenames) |
+| 5 | API | Requires Discord link; validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
+| 5b | tfmc_bot | DM player: submission received |
 | 6 | tfmc_bot | Skins cog posts review embed to `#bot-feed` **with raw submission PNGs** (review-sheet later) |
 | 7 | Staff | Approve or Deny (+ reason) from visuals |
 | 8 | API | Status `approved` / `denied` |
+| 8b | tfmc_bot | DM player: approved, or denied + reason |
 | 9 | ArmourShop | Pulls approved; writes `tfmc_submissions` from kind/grip templates; shop YAML; LP `armourshop.submission.{slug}` |
 | 10 | ArmourShop | Deferred IA reload when safe; ack `applied` |
 | 11 | Donator | Opens ArmourShop; sees set; applies to gear |
 
-**Armor files:** 4 icons (16×16) + 2 layers (64×32). **Item / handheld:** one 16×16 PNG. **Large handheld:** one 32×32 PNG + grip. Filenames from OS ignored.
+**Armor files:** 4 icons (16×16) + 2 layers (64×32). **Item / handheld:** one 16×16 PNG. **Large handheld:** one 32×32 PNG + grip. Upload **file names** define skin id ([07](./07-naming-conventions.md)).
 
-**Failure modes:** bad slug; wrong pixel size; incomplete armor slots; Discord double-approve; reload while players online; LP missing so shop hides set.
+**Failure modes:** not Discord-linked; bad PNG file names / id; wrong pixel size; incomplete armor slots; Discord double-approve; closed DMs (review still works); reload while players online; LP missing so shop hides set.
 
 ---
 

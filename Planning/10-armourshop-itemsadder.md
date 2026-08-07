@@ -10,7 +10,7 @@ Naming: [07-naming-conventions.md](./07-naming-conventions.md).
 | Actor | Does |
 |-------|------|
 | ProvinceSystem | Codes, uploads, Discord review state, file store |
-| **ArmourShop** | Mint codes; pull approved; write IA + shop YAML; LP; deferred reload |
+| **ArmourShop** | `/linkdiscord`; mint codes; pull approved; write IA + shop YAML; LP; deferred reload |
 | ItemsAdder | Loads `tfmc_submissions` after files exist / pack rebuild |
 | SimpleFactions | Nothing here |
 
@@ -38,9 +38,12 @@ sequenceDiagram
   participant LP as LuckPerms
   participant Player
 
+  Player->>AS: /linkdiscord
+  AS->>API: POST /skins/discord/link/start
+  Note over Player,API: Discord /linkdiscord CODE completes bind
   Player->>AS: generate skin code
   AS->>API: POST /skins/codes
-  Note over Player,API: redeem upload Discord approve
+  Note over Player,API: redeem upload Discord approve plus player DMs
   AS->>API: GET /skins/plugin/approved
   API-->>AS: metadata plus files
   AS->>IA: write configs and textures
@@ -76,6 +79,17 @@ Donor never hand-edits JSON for these kinds. Staff review art + preset via Disco
 **Shield** (later) — one model + texture from donor; ArmourShop **clones** model and applies locked **blocking** `display` (and any IA blocking override). Do not require a second mesh upload.
 
 Never add new skins via manual `custom_model_data` lists in `tfmc_pack`.
+
+## Discord link (before skins upload)
+
+Players must bind Minecraft ↔ Discord before a website upload is accepted.
+
+| Command | Where | API |
+|---------|-------|-----|
+| `/linkdiscord` | In game (player online) | `POST /skins/discord/link/start` with UUID + name; show one-time code |
+| `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
+
+Batches: [step-5](./batches/step-5/00-index.md). Full IA apply remains separate (B3).
 
 ## Display ownership
 
@@ -131,8 +145,9 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 
 ## Checklist
 
+- [ ] `/linkdiscord` → `link/start` ([step-5/04](./batches/step-5/04-armourshop-linkdiscord.md))  
 - [ ] Scaffold empty `tfmc_submissions` on live + copy  
-- [ ] REST client + code command  
+- [ ] REST client + skins code command  
 - [ ] Pull + write `armor_set`, `item`, `handheld`, `large_handheld` (grip templates)  
 - [ ] Category YAML + LP  
 - [ ] Deferred reload + applied ack  

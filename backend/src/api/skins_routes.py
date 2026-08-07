@@ -14,7 +14,13 @@ from src.skins.auth import (
     require_staff_key,
 )
 from src.skins.codes import CodeError, get_session, issue_code, redeem_code
+from src.skins.discord_link import LinkError, complete_link, start_link
 from src.skins.naming import SlugError
+from src.skins.notifications import (
+    NotificationError,
+    ack_notification,
+    list_undelivered,
+)
 from src.skins.review_sheet import ReviewSheetError, build_review_sheet
 from src.skins.storage import StorageError
 from src.skins.submissions import (
@@ -49,6 +55,16 @@ class DenyBody(BaseModel):
 
 class AppliedBody(BaseModel):
     submission_ids: list[str]
+
+
+class LinkStartBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    minecraft_name: str | None = None
+
+
+class LinkCompleteBody(BaseModel):
+    code: str = Field(..., min_length=1)
+    discord_user_id: str = Field(..., min_length=1)
 
 
 def _session_from_auth(authorization: str | None):
@@ -87,6 +103,30 @@ def post_codes(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@skins_router.post("/discord/link/start")
+def post_discord_link_start(
+    body: LinkStartBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return start_link(body.player_uuid, body.minecraft_name)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/complete")
+def post_discord_link_complete(
+    body: LinkCompleteBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return complete_link(body.code, body.discord_user_id)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @skins_router.post("/redeem")
 def post_redeem(body: RedeemBody):
     try:
@@ -99,8 +139,8 @@ def post_redeem(body: RedeemBody):
 async def post_submissions(
     authorization: str | None = Header(default=None),
     kind: str = Form(...),
-    slug: str = Form(...),
     display_name: str = Form(...),
+    slug: str | None = Form(default=None),
     grip_preset: str | None = Form(default=None),
     helmet: UploadFile | None = File(default=None),
     chestplate: UploadFile | None = File(default=None),
@@ -122,18 +162,21 @@ async def post_submissions(
         "texture": texture,
     }
     files_bytes: dict[str, bytes] = {}
+    filenames: dict[str, str | None] = {}
     for name, upload in uploads.items():
         if upload is not None:
             files_bytes[name] = await upload.read()
+            filenames[name] = upload.filename
 
     try:
         return create_submission(
             session,
             kind,
-            slug,
             display_name,
             files_bytes,
             grip_preset=grip_preset,
+            slug=slug,
+            filenames=filenames,
         )
     except SlugConflictError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -205,6 +248,26 @@ def staff_pending(
 ):
     _require_staff(x_staff_key)
     return {"submissions": list_pending()}
+
+
+@skins_router.get("/staff/notifications")
+def staff_notifications(
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return {"notifications": list_undelivered()}
+
+
+@skins_router.post("/staff/notifications/{notification_id}/ack")
+def staff_notification_ack(
+    notification_id: int,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return ack_notification(notification_id)
+    except NotificationError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @skins_router.get("/staff/submissions/{submission_id}/files/{filename}")

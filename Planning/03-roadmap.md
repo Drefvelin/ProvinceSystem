@@ -17,12 +17,14 @@ flowchart TD
     B0[B0_ShellPlusLocal]
     B1[B1_SkinsMVP]
     B2[B2_DiscordSkins]
+    B25[B2_5_LinkAndDMs]
     B3[B3_ArmourShopApply]
     B4[B4_Item3D_Shield_Bake]
     B5[B5_Harden]
     B0 --> B1
     B1 --> B2
-    B2 --> B3
+    B2 --> B25
+    B25 --> B3
     B3 --> B4
     B4 --> B5
   end
@@ -104,6 +106,18 @@ See [05-skins-system.md](./05-skins-system.md).
 | Scope | Discord mute/notify only — **in-game bans stay in-game commands** |
 
 **Done when:** Submission review works in Discord with raw images in `#bot-feed` (ban role is a follow-on).
+
+### B2.5 — Discord link + player DMs
+
+**Repos:** ProvinceSystem + `tfmc_bot` + ArmourShop — [batches/step-5](./batches/step-5/00-index.md)
+
+| Work | Detail |
+|------|--------|
+| Link API | `/linkdiscord` in game → start; Discord `/linkdiscord <code>` → complete; durable UUID ↔ Discord id |
+| Upload gate | Submissions require link; stamp `discord_user_id` |
+| Player DMs | Submitted (outbox poll); approved / denied (+ reason) from cog |
+
+**Done when:** Link + upload + three DMs work on staging without typing ids on the site.
 
 ### B3 — ArmourShop bridge
 

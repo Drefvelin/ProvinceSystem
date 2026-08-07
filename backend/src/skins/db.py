@@ -31,4 +31,8 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN grip_preset TEXT"
             )
+        if "discord_user_id" not in _column_names(conn, "submissions"):
+            conn.execute(
+                "ALTER TABLE submissions ADD COLUMN discord_user_id TEXT"
+            )
         conn.commit()

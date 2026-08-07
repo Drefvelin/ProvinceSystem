@@ -36,11 +36,7 @@ export default function StatusCard({ row }: Props) {
           <dd className="text-[var(--tfmc-cream)]">{row.kind}</dd>
         </div>
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Slug</dt>
-          <dd className="text-[var(--tfmc-cream)]">{row.slug}</dd>
-        </div>
-        <div>
-          <dt className="text-[var(--tfmc-stone)]">Display name</dt>
+          <dt className="text-[var(--tfmc-stone)]">Item name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>
         </div>
         {row.grip_preset ? (

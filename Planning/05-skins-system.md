@@ -2,7 +2,7 @@
 
 End-to-end design for donator texture submissions on **ProvinceSystem** (store + review state).  
 
-**See also:** [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) (MC apply), [11-discord-bot.md](./11-discord-bot.md) (staff UI), [07-naming-conventions.md](./07-naming-conventions.md) (slugs), [12-end-to-end-flows.md](./12-end-to-end-flows.md) (full journey).
+**See also:** [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) (MC apply), [11-discord-bot.md](./11-discord-bot.md) (staff UI), [07-naming-conventions.md](./07-naming-conventions.md) (Item name vs filename-derived id), [12-end-to-end-flows.md](./12-end-to-end-flows.md) (full journey).
 
 ## Goals
 
@@ -26,7 +26,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 **Retired:** `item_2d` (replaced by the three 2D item kinds above).  
 **Track B4:** `item_3d` + `shield`.
 
-Original upload filenames are **ignored**; the API stores only the fixed stems above.
+Original upload **file names must follow convention** (they define the skin id); the API stores fixed stems under the submission folder.
 
 ### Grip presets (`large_handheld` only)
 
@@ -49,15 +49,18 @@ sequenceDiagram
   participant Discord
   participant IA as ItemsAdder
 
-  Player->>AS: command generate skin code
-  AS->>API: POST /skins/codes
-  API-->>AS: plaintext code once
-  AS-->>Player: show code
+  Player->>AS: /linkdiscord then generate skin code
+  AS->>API: POST link/start then POST /skins/codes
+  API-->>AS: link code / skins code once
+  Note over Player,Discord: Discord /linkdiscord CODE binds UUID
+  AS-->>Player: show skins code
   Player->>Web: redeem code
   Web->>API: POST /skins/redeem
-  Player->>Web: slug display_name kind files
+  Player->>Web: Item name + kind + named PNG files
   Web->>API: POST /skins/submissions
+  API->>API: require Discord link stamp discord_user_id
   API->>Discord: notify pending plus raw PNG files
+  Discord->>Player: DM submitted then approve or deny outcome
   Discord->>API: approve or deny
   AS->>API: GET /skins/plugin/approved
   API-->>AS: payload
@@ -77,6 +80,34 @@ sequenceDiagram
 | Tier limits (later) | Optional higher 3D byte caps from code / donator tier |
 
 Eligibility (donator rank) is enforced **in ArmourShop** before calling issue.
+
+Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md)).
+
+## Discord link (MC ↔ Discord)
+
+Durable bind so the bot can DM the player. No OAuth; no Discord fields on the website.
+
+| Step | Who | What |
+|------|-----|------|
+| 1 | Player in game | `/linkdiscord` → ArmourShop `POST /skins/discord/link/start` with online UUID |
+| 2 | Player in Discord | `/linkdiscord <code>` → bot `POST /skins/discord/link/complete` with their Discord user id |
+| 3 | API | Stores `discord_links` row (`player_uuid` ↔ `discord_user_id`) |
+
+Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected.
+
+### SQLite — `discord_links` / `discord_link_codes`
+
+| Table | Notes |
+|-------|-------|
+| `discord_links` | `player_uuid` unique, `discord_user_id` unique, `linked_at`, optional `minecraft_name` |
+| `discord_link_codes` | one-time code hash, UUID, expiry (~10–15m), `used_at` |
+
+### Player DMs
+
+| Event | How |
+|-------|-----|
+| Submitted | Outbox `skin_notifications` (`type=submitted`); bot polls + ack |
+| Approved / denied | Cog DMs after successful staff API call (deny includes reason) |
 
 ## Storage
 
@@ -107,6 +138,7 @@ Eligibility (donator rank) is enforced **in ArmourShop** before calling issue.
 | `dir_path` | relative folder under `data/skins/` |
 | `created_at` / `reviewed_at` / `applied_at` | |
 | `discord_message_id` | nullable |
+| `discord_user_id` | from `discord_links` at submit; required for new uploads |
 
 ### Disk (API pending)
 
@@ -186,6 +218,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 
 | Method | Purpose |
 |--------|---------|
+| `POST /skins/discord/link/start` | `{ "player_uuid", "minecraft_name?" }` → `{ "code", "expires_at" }` |
 | `POST /skins/codes` | `{ "player_uuid" }` → `{ "code", "expires_at" }` |
 | `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`) |
 | `POST /skins/plugin/applied` | Ack submission ids |
@@ -195,14 +228,17 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/redeem` | `{ "code" }` → session |
-| `POST /skins/submissions` | Multipart: kind, slug, display_name, optional grip_preset, fixed file fields |
+| `POST /skins/submissions` | Multipart: kind, display_name (Item name), optional grip_preset; optional slug (scripts); skin id from upload filenames; **requires Discord link** for session UUID |
 | `GET /skins/submissions/{id}` | Status for owner session |
 
 ### Discord bot → API (`X-Staff-Key`)
 
 | Method | Purpose |
 |--------|---------|
-| `GET /skins/staff/pending` | List `status=pending` (id, slug, kind, grip, uuid, files, …) |
+| `POST /skins/discord/link/complete` | `{ "code", "discord_user_id" }` → durable link |
+| `GET /skins/staff/pending` | List `status=pending` (includes `discord_user_id` when set) |
+| `GET /skins/staff/notifications` | Undelivered player notify rows (`submitted`, …) |
+| `POST /skins/staff/notifications/{id}/ack` | Mark notification delivered |
 | `GET /skins/staff/submissions/{id}/files/{filename}` | Download one PNG under that submission dir |
 | `GET /skins/submissions/{id}/review-sheet` | Contact sheet (optional for Discord later) |
 | `POST /skins/submissions/{id}/approve` | |
@@ -210,20 +246,20 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 
 ### API → Discord
 
-Bot poll (or later webhook): pending metadata + **raw file** downloads; buttons in `#bot-feed`.
+Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; notification poll for **submitted** DMs; approve/deny handlers send outcome DMs.
 
 ## Frontend (`/skins`)
 
 1. Enter code → redeem  
 2. Choose kind → **fixed slots** (armor: 6; item/handheld/large_handheld: 1 texture; large requires grip preset picker)  
-3. Enter **display name** + **slug** (show live validation / auto-slugify then confirm)  
+3. Enter **Item name** (ArmourShop label); upload PNGs whose **file names** follow [07](./07-naming-conventions.md) (skin id from basename)  
 4. Client-side size hints; server still enforces exact pixels  
-5. Submit → status page  
-6. No accounts  
+5. Submit → status page (API rejects if Discord not linked)  
+6. No accounts; no Discord id fields on the form  
 
 ## Discord bot
 
-Skins review cog + ban-role behavior: **[11-discord-bot.md](./11-discord-bot.md)**. In-game bans stay on the MC server.
+Skins review + `/linkdiscord` + player DMs: **[11-discord-bot.md](./11-discord-bot.md)** · [batches/step-5](./batches/step-5/00-index.md). In-game bans stay on the MC server.
 
 ## SimpleFactions
 

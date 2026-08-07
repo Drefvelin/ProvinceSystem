@@ -59,6 +59,19 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Verified:** Step 4 batches 4.01–4.05 implemented; AMP E2E against local/staging API is the runtime check.
 
+### S3.5 — Discord link + player DMs
+
+**Repos:** ProvinceSystem + `tfmc_bot` + ArmourShop `/linkdiscord` — [batches/step-5](./batches/step-5/00-index.md)
+
+- [x] Link API: start (plugin) + complete (staff) + `discord_links`
+- [x] Submit requires link; stamp `discord_user_id`; submitted notification outbox
+- [x] Cog: `/linkdiscord`; DMs for submitted / approved / denied
+- [x] ArmourShop: `/linkdiscord` → `link/start`
+- [x] Smoke green (`skins_e2e_smoke.py` — link + notify + review)
+- [ ] Live Discord DM path on staging/AMP — operator checklist in [STAGING.md](../STAGING.md)
+
+**Done when:** Player links once, uploads without typing Discord/MC ids, and receives the three DMs (live path verified on staging).
+
 ### S4 — ArmourShop apply
 
 **Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)

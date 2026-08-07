@@ -25,6 +25,7 @@ from src.skins.db import migrate
 
 STAFF = "dev-staff-key"
 PLUGIN = "dev-plugin-key"
+DISCORD_ID = "999999999999999999"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
@@ -73,30 +74,75 @@ def main() -> None:
     token = r.json()["session_token"]
     auth = {"Authorization": f"Bearer {token}"}
 
+    # Discord link required before upload (5.02)
+    r = client.post(
+        "/skins/discord/link/start",
+        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"link start: {r.status_code} {r.text}")
+    r = client.post(
+        "/skins/discord/link/complete",
+        json={"code": r.json()["code"], "discord_user_id": DISCORD_ID},
+        headers={"X-Staff-Key": STAFF},
+    )
+    if r.status_code != 200:
+        fail(f"link complete: {r.status_code} {r.text}")
+
     icon = make_png(16, 16)
     layer = make_png(64, 32)
     large_tex = make_png(32, 32)
 
-    # Armor upload
+    # Armor upload — filenames define skin id
     armor_slug = f"smoke_armor_{suffix}"
     files = [
-        ("helmet", ("h.png", icon, "image/png")),
-        ("chestplate", ("c.png", icon, "image/png")),
-        ("leggings", ("l.png", icon, "image/png")),
-        ("boots", ("b.png", icon, "image/png")),
-        ("layer_1", ("l1.png", layer, "image/png")),
-        ("layer_2", ("l2.png", layer, "image/png")),
+        ("helmet", (f"{armor_slug}_helmet.png", icon, "image/png")),
+        ("chestplate", (f"{armor_slug}_chestplate.png", icon, "image/png")),
+        ("leggings", (f"{armor_slug}_leggings.png", icon, "image/png")),
+        ("boots", (f"{armor_slug}_boots.png", icon, "image/png")),
+        ("layer_1", (f"{armor_slug}_layer_1.png", layer, "image/png")),
+        ("layer_2", (f"{armor_slug}_layer_2.png", layer, "image/png")),
     ]
     data = {
         "kind": "armor_set",
-        "slug": armor_slug,
         "display_name": "Smoke Armor",
     }
     r = client.post("/skins/submissions", data=data, files=files, headers=auth)
     if r.status_code != 200:
         fail(f"armor upload: {r.status_code} {r.text}")
-    armor_id = r.json()["id"]
+    armor = r.json()
+    armor_id = armor["id"]
+    if armor.get("slug") != armor_slug:
+        fail(f"armor slug expected {armor_slug}, got {armor.get('slug')}")
+    if armor.get("discord_user_id") != DISCORD_ID:
+        fail(
+            f"armor discord_user_id expected {DISCORD_ID}, "
+            f"got {armor.get('discord_user_id')}"
+        )
     print(f"armor submission {armor_id}")
+
+    staff = {"X-Staff-Key": STAFF}
+    r = client.get("/skins/staff/notifications", headers=staff)
+    if r.status_code != 200:
+        fail(f"notifications: {r.status_code} {r.text}")
+    notes = [
+        n
+        for n in r.json().get("notifications", [])
+        if n.get("submission_id") == armor_id and n.get("type") == "submitted"
+    ]
+    if not notes:
+        fail(f"no submitted notification for armor {armor_id}")
+    nid = notes[0]["id"]
+    if notes[0].get("discord_user_id") != DISCORD_ID:
+        fail("submitted notification discord_user_id mismatch")
+    r = client.post(f"/skins/staff/notifications/{nid}/ack", headers=staff)
+    if r.status_code != 200:
+        fail(f"notification ack: {r.status_code} {r.text}")
+    r = client.get("/skins/staff/notifications", headers=staff)
+    if any(n.get("id") == nid for n in r.json().get("notifications", [])):
+        fail("notification still listed after ack")
+    print(f"submitted notification {nid} ok")
 
     # New session for second submission (code already redeemed — issue another)
     r = client.post(
@@ -116,22 +162,27 @@ def main() -> None:
         "/skins/submissions",
         data={
             "kind": "large_handheld",
-            "slug": large_slug,
             "display_name": "Smoke Large",
             "grip_preset": "bottom",
         },
-        files=[("texture", ("t.png", large_tex, "image/png"))],
+        files=[("texture", (f"{large_slug}.png", large_tex, "image/png"))],
         headers=auth2,
     )
     if r.status_code != 200:
         fail(f"large upload: {r.status_code} {r.text}")
     large = r.json()
     large_id = large["id"]
+    if large.get("slug") != large_slug:
+        fail(f"large slug expected {large_slug}, got {large.get('slug')}")
     if large.get("grip_preset") != "bottom":
         fail(f"expected grip_preset=bottom, got {large.get('grip_preset')}")
+    if large.get("discord_user_id") != DISCORD_ID:
+        fail(
+            f"large discord_user_id expected {DISCORD_ID}, "
+            f"got {large.get('discord_user_id')}"
+        )
     print(f"large submission {large_id} grip={large['grip_preset']}")
 
-    staff = {"X-Staff-Key": STAFF}
     for sid, label in ((armor_id, "armor"), (large_id, "large")):
         r = client.get(f"/skins/submissions/{sid}/review-sheet", headers=staff)
         if r.status_code != 200:
@@ -181,7 +232,7 @@ def main() -> None:
         fail("large should still be on approved list")
     print("applied ack ok")
 
-    print("ALL OK — Step 2 smoke passed")
+    print("ALL OK — Step 5 smoke passed (link + notify + review)")
     sys.exit(0)
 
 

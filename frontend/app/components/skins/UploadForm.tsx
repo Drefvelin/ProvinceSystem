@@ -10,7 +10,7 @@ import {
   sizeHint,
   type SkinKind,
 } from "../../../lib/skins/sizes";
-import { assertSlugClient, slugifyDisplayName } from "../../../lib/skins/slug";
+import { ARMOR_SUFFIXES, assertUploadFilenames } from "../../../lib/skins/slug";
 import KindPicker from "./KindPicker";
 
 const GRIPS = ["bottom", "middle", "top"] as const;
@@ -29,22 +29,27 @@ const fieldLabel: Record<string, string> = {
   texture: "Texture",
 };
 
+function namingHint(kind: SkinKind): string {
+  if (kind === "armor_set") {
+    return (
+      "PNG file names must match: your_id_helmet.png, _chestplate, _leggings, " +
+      "_boots, _layer_1, _layer_2 (same your_id on all six). Example: blue_knight_helmet.png"
+    );
+  }
+  return (
+    "PNG file name becomes the skin id: use your_id.png " +
+    "(lowercase letters, numbers, underscores). Example: blue_knight.png"
+  );
+}
+
 export default function UploadForm({ sessionToken }: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<SkinKind>("armor_set");
-  const [displayName, setDisplayName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
+  const [itemName, setItemName] = useState("");
   const [grip, setGrip] = useState<(typeof GRIPS)[number]>("bottom");
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!slugTouched) {
-      setSlug(slugifyDisplayName(displayName));
-    }
-  }, [displayName, slugTouched]);
 
   useEffect(() => {
     setFiles({});
@@ -62,21 +67,21 @@ export default function UploadForm({ sessionToken }: Props) {
     e.preventDefault();
     setError(null);
 
-    const name = displayName.trim();
+    const name = itemName.trim();
     if (!name) {
-      setError("Display name is required");
-      return;
-    }
-
-    try {
-      assertSlugClient(slug.trim());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid slug");
+      setError("Item name is required (shown in ArmourShop)");
       return;
     }
 
     if (kind === "large_handheld" && !grip) {
       setError("Choose a grip preset");
+      return;
+    }
+
+    try {
+      assertUploadFilenames(kind, files);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid file names");
       return;
     }
 
@@ -103,7 +108,6 @@ export default function UploadForm({ sessionToken }: Props) {
       const result = await createSubmission({
         sessionToken,
         kind,
-        slug: slug.trim(),
         display_name: name,
         grip_preset: kind === "large_handheld" ? grip : null,
         files: uploadFiles,
@@ -130,35 +134,23 @@ export default function UploadForm({ sessionToken }: Props) {
       <KindPicker value={kind} onChange={setKind} disabled={loading} />
 
       <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
+      <p className="text-sm text-[var(--tfmc-mist)]">{namingHint(kind)}</p>
 
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Display name
+          Item name
+        </span>
+        <span className="text-xs text-[var(--tfmc-mist)]">
+          Shown in ArmourShop. Spaces and capitals are fine.
         </span>
         <input
           type="text"
-          value={displayName}
+          value={itemName}
           disabled={loading}
-          onChange={(e) => setDisplayName(e.target.value)}
+          onChange={(e) => setItemName(e.target.value)}
           className={inputClass}
           maxLength={80}
-        />
-      </label>
-
-      <label className="flex flex-col gap-2 text-left">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Slug
-        </span>
-        <input
-          type="text"
-          value={slug}
-          disabled={loading}
-          spellCheck={false}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlug(e.target.value);
-          }}
-          className={inputClass}
+          placeholder="Blue Knight"
         />
       </label>
 
@@ -197,6 +189,15 @@ export default function UploadForm({ sessionToken }: Props) {
                 ? fieldLabel[field]
                 : `Texture (${kind === "large_handheld" ? "32×32" : "16×16"})`}
             </span>
+            {kind === "armor_set" ? (
+              <span className="text-xs text-[var(--tfmc-mist)]">
+                Required name: …{ARMOR_SUFFIXES[field]}
+              </span>
+            ) : (
+              <span className="text-xs text-[var(--tfmc-mist)]">
+                Required name: your_id.png
+              </span>
+            )}
             <input
               type="file"
               accept="image/png,.png"
@@ -206,6 +207,11 @@ export default function UploadForm({ sessionToken }: Props) {
               }
               className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
             />
+            {files[field] ? (
+              <span className="text-xs text-[var(--tfmc-cream)]">
+                Selected: {files[field]!.name}
+              </span>
+            ) : null}
           </label>
         ))}
       </div>

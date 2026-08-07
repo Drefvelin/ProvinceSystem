@@ -9,7 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .db import SKINS_DIR, connect
-from .naming import SlugError, assert_slug
+from .discord_link import get_discord_id_for_uuid
+from .naming import SlugError, resolve_submission_slug
+from .notifications import enqueue_submitted
 from .storage import ARMOR_FIELDS, StorageError, write_submission_files
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
@@ -25,7 +27,7 @@ class SubmissionError(ValueError):
 
 
 class SlugConflictError(SubmissionError):
-    """Slug already used by an active submission."""
+    """Skin id already used by an active submission."""
 
 
 def _iso_now() -> str:
@@ -44,6 +46,9 @@ def _public_row(row: sqlite3.Row) -> dict:
         "created_at": row["created_at"],
         "reviewed_at": row["reviewed_at"],
         "applied_at": row["applied_at"],
+        "discord_user_id": row["discord_user_id"]
+        if "discord_user_id" in row.keys()
+        else None,
     }
 
 
@@ -63,10 +68,12 @@ def slug_taken(slug: str) -> bool:
 def create_submission(
     session_row: sqlite3.Row,
     kind: str,
-    slug: str,
     display_name: str,
     files_bytes: dict[str, bytes],
     grip_preset: str | None = None,
+    *,
+    slug: str | None = None,
+    filenames: dict[str, str | None] | None = None,
 ) -> dict:
     kind = (kind or "").strip()
     if kind not in ALLOWED_KINDS:
@@ -76,9 +83,9 @@ def create_submission(
 
     display = (display_name or "").strip()
     if not display:
-        raise SubmissionError("display_name is required")
+        raise SubmissionError("Item name is required")
     if len(display) > MAX_DISPLAY_NAME:
-        raise SubmissionError(f"display_name max length is {MAX_DISPLAY_NAME}")
+        raise SubmissionError(f"Item name max length is {MAX_DISPLAY_NAME}")
 
     grip = (grip_preset or "").strip() or None
     if kind == "large_handheld":
@@ -89,14 +96,6 @@ def create_submission(
     elif grip is not None:
         raise SubmissionError("grip_preset is only allowed for large_handheld")
 
-    try:
-        slug = assert_slug(slug)
-    except SlugError:
-        raise
-
-    if slug_taken(slug):
-        raise SlugConflictError(f"Slug '{slug}' is already in use")
-
     if kind == "armor_set":
         missing = [f for f in ARMOR_FIELDS if f not in files_bytes]
         if missing:
@@ -104,11 +103,29 @@ def create_submission(
     elif "texture" not in files_bytes:
         raise SubmissionError("Missing file: texture")
 
+    names = filenames or {}
+    try:
+        slug = resolve_submission_slug(kind, names, provided_slug=slug)
+    except SlugError:
+        raise
+
+    if slug_taken(slug):
+        raise SlugConflictError(
+            f"A skin with file id '{slug}' is already in use. "
+            "Rename your PNG(s) and try again."
+        )
+
     submission_id = str(uuid.uuid4())
     dir_path = f"skins/{submission_id}"
     created_at = _iso_now()
     code_id = session_row["code_id"]
     player_uuid = session_row["player_uuid"]
+
+    discord_id = get_discord_id_for_uuid(player_uuid)
+    if not discord_id:
+        raise SubmissionError(
+            "Link Discord in-game with /linkdiscord first"
+        )
 
     with connect() as conn:
         conn.execute(
@@ -116,8 +133,8 @@ def create_submission(
             INSERT INTO submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
                 grip_preset, status, deny_reason, dir_path, created_at,
-                reviewed_at, applied_at, discord_message_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, NULL, NULL, NULL)
+                reviewed_at, applied_at, discord_message_id, discord_user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, NULL, NULL, NULL, ?)
             """,
             (
                 submission_id,
@@ -129,6 +146,7 @@ def create_submission(
                 grip,
                 dir_path,
                 created_at,
+                discord_id,
             ),
         )
         conn.commit()
@@ -148,6 +166,14 @@ def create_submission(
     except Exception:
         _rollback_submission(submission_id)
         raise
+
+    enqueue_submitted(
+        submission_id,
+        discord_id,
+        display_name=display,
+        kind=kind,
+        slug=slug,
+    )
 
     with connect() as conn:
         row = conn.execute(
@@ -270,6 +296,9 @@ def list_pending() -> list[dict]:
                 "display_name": row["display_name"],
                 "grip_preset": row["grip_preset"],
                 "created_at": row["created_at"],
+                "discord_user_id": row["discord_user_id"]
+                if "discord_user_id" in row.keys()
+                else None,
                 "files": _list_png_files(row["id"]),
             }
         )
