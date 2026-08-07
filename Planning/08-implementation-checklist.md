@@ -1,0 +1,129 @@
+# 08 — Implementation checklist (full platform)
+
+Cross-repo build order for map, skins, bot, and pack. Journeys: [12-end-to-end-flows.md](./12-end-to-end-flows.md). Roadmap tracks: [03-roadmap.md](./03-roadmap.md).
+
+Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspace/simplefactions` | ItemsAdder contents.
+
+---
+
+## Sprint 0 — Docs
+
+- [x] Platform Planning playbook (README + 01–12)
+
+---
+
+## Track — Pack scaffold (anytime before ArmourShop apply)
+
+**Repo / server:** ItemsAdder (`Workspace/plugins/ItemsAdder` + keep `ItemsAdder Copy` in sync for reference)
+
+- [ ] Create empty namespace **`tfmc_submissions`** (configs + resourcepack folders)
+- [ ] Deploy scaffold to live so ArmourShop only appends files later
+- [ ] Document path in ArmourShop config ([10](./10-armourshop-itemsadder.md))
+
+---
+
+## Track — Skins (ProvinceSystem → bot → ArmourShop)
+
+### S1 — API foundation
+
+**Repo:** `ProvinceSystem`
+
+- [ ] SQLite + migrations (`codes`, `submissions`)
+- [ ] `data/skins/` + compose volume + gitignore
+- [ ] Slug validation ([07](./07-naming-conventions.md))
+- [ ] Routes: issue, redeem, upload armor_set/item_2d, status, staff approve/deny
+- [ ] Seed mock code; env `PLUGIN_KEY` / `STAFF_KEY`
+
+**Done when:** curl armor_set upload stores six fixed stems; approve works.
+
+### S2 — Website `/skins`
+
+**Repo:** `ProvinceSystem` frontend
+
+- [ ] Shell nav + redeem + kind forms (6 armor slots / 1 item slot) + status + slug UX
+
+**Done when:** Browser path works without Discord/ArmourShop.
+
+### S3 — Discord skins cog
+
+**Repo:** `tfmc_bot` — [11](./11-discord-bot.md)
+
+- [ ] Pending embed + Approve/Deny + staff API + message update
+
+**Done when:** Staff can review staging submissions in Discord.
+
+### S4 — ArmourShop apply
+
+**Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)
+
+- [ ] Config URL/key/paths; code command; pull; write `tfmc_submissions`; shop YAML; LP; deferred reload; applied ack
+
+**Done when:** Flow 2 complete in [12](./12-end-to-end-flows.md).
+
+### S5 — Item 3D + harden
+
+- [ ] `item_3d` API/UI + ArmourShop cooking-style apply
+- [ ] Quotas, retention, reserved slugs
+
+---
+
+## Track — Bot moderation (parallel with S3)
+
+**Repo:** `tfmc_bot` — [11](./11-discord-bot.md)
+
+- [ ] Banned role id in config
+- [ ] Add role on ban notify
+- [ ] Unban/clear command removes role
+- [ ] Channel overwrites documented for staff
+
+**Done when:** Flow 3 role mute works; MC bans still in-game only.
+
+---
+
+## Track — Map
+
+### M1 — Website map UX
+
+**Repo:** `ProvinceSystem` — [09](./09-map-system.md), [04](./04-map-performance.md)
+
+- [ ] Realm size on hover card
+- [ ] Cropped overlays + bbox
+- [ ] Hover throttle / RGB map
+- [ ] Mobile layout
+- [ ] Hub shell (shared with skins)
+
+### M2 — SimpleFactions hygiene (when touching plugin)
+
+**Repo:** `Workspace/simplefactions`
+
+- [ ] Move API URL + regen secret to config (stop hardcoding hash in source)
+- [ ] Confirm `mapRef` matches website `mapId` per world
+- [ ] No skins logic added here
+
+**Done when:** Flow 1 reliable; map feels fast enough for MVP.
+
+---
+
+## Suggested PR / work sequence
+
+1. Pack scaffold `tfmc_submissions`  
+2. ProvinceSystem skins API (S1)  
+3. `/skins` UI (S2)  
+4. Discord skins cog (S3)  
+5. ArmourShop apply (S4)  
+6. Map hover card fix (M1 quick win) — parallel anytime  
+7. Ban role (bot moderation) — parallel with S3+  
+8. Cropped overlays / item_3d / SF config hygiene as capacity allows  
+
+---
+
+## Definition of “finished product” (platform MVP)
+
+| Area | Criteria |
+|------|----------|
+| Map | Live SF → API → web works; realm card shows size; usable on phone |
+| Skins | armor_set + item_2d; naming enforced; Discord approve; ArmourShop pack + LP |
+| Bot | Skins review; ban DM/log + banned role add/clear |
+| Ops | Local website demo without Paper; deferred IA reload when safe |
+
+Post-MVP: item_3d, full map overlay crop, brewery module, SF secret cleanup if not done.
