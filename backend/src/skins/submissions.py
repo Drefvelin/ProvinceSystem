@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -227,6 +228,21 @@ def _validate_tiers(raw: list[str] | None) -> list[str]:
     return out
 
 
+def _reject_duplicate_textures(files_bytes: dict[str, bytes]) -> None:
+    """Every uploaded PNG in a submission must have unique bytes."""
+    if len(files_bytes) < 2:
+        return
+    seen: dict[str, str] = {}
+    for field, data in files_bytes.items():
+        dig = hashlib.sha256(data).hexdigest()
+        if dig in seen:
+            raise SubmissionError(
+                f"File '{field}' is identical to '{seen[dig]}' — "
+                "each PNG in a submission must be unique"
+            )
+        seen[dig] = field
+
+
 def slug_taken(slug: str) -> bool:
     with connect() as conn:
         row = conn.execute(
@@ -378,6 +394,8 @@ def create_submission(
                 raise SubmissionError(f"Missing files: {', '.join(missing)}")
         elif "texture" not in files_bytes:
             raise SubmissionError("Missing file: texture")
+
+    _reject_duplicate_textures(files_bytes)
 
     player_uuid = session_row["player_uuid"]
     link = get_link_for_uuid(player_uuid)

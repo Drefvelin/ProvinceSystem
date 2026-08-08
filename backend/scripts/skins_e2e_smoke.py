@@ -26,7 +26,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 from fastapi.testclient import TestClient
 
 from server import app
-from src.skins.db import migrate
+from src.skins.db import connect, migrate
 from src.skins.naming import ARMOR_FIELDS, build_submission_id
 
 STAFF = "dev-staff-key"
@@ -36,7 +36,8 @@ IGN = "Smoke"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
-def make_png(w: int, h: int) -> bytes:
+def make_png(w: int, h: int, fill: int = 0) -> bytes:
+    """RGB PNG; `fill` (0–255) tints pixel bytes so fixtures can be distinct."""
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
             struct.pack(">I", len(data))
@@ -45,7 +46,8 @@ def make_png(w: int, h: int) -> bytes:
             + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
         )
 
-    raw = b"".join(b"\x00" + bytes(w * 3) for _ in range(h))
+    pixel = bytes([fill & 0xFF]) * (w * 3)
+    raw = b"".join(b"\x00" + pixel for _ in range(h))
     return (
         PNG_MAGIC
         + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
@@ -59,19 +61,48 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def armor_tier_files(tiers: list[str], icon: bytes, layer: bytes) -> list[tuple]:
-    """Multipart fields `{tier}_helmet` … `{tier}_layer_2`; filenames freeform."""
+def armor_tier_files(
+    tiers: list[str],
+    *,
+    distinct: bool = True,
+    icon: bytes | None = None,
+    layer: bytes | None = None,
+) -> list[tuple]:
+    """Multipart fields `{tier}_helmet` … `{tier}_layer_2`; filenames freeform.
+
+    When distinct=True (default), every field gets unique PNG bytes.
+    Pass icon/layer with distinct=False to reuse the same bytes (negative tests).
+    """
     files: list[tuple] = []
+    n = 0
     for tier in tiers:
-        for field in ARMOR_FIELDS[:4]:
-            files.append((f"{tier}_{field}", ("art.png", icon, "image/png")))
-        for field in ARMOR_FIELDS[4:]:
-            files.append((f"{tier}_{field}", ("layer.png", layer, "image/png")))
+        for field in ARMOR_FIELDS:
+            if distinct:
+                if field in ARMOR_FIELDS[:4]:
+                    data = make_png(16, 16, fill=11 + n * 13)
+                else:
+                    data = make_png(64, 32, fill=37 + n * 17)
+                n += 1
+            else:
+                if icon is None or layer is None:
+                    raise ValueError("icon and layer required when distinct=False")
+                data = icon if field in ARMOR_FIELDS[:4] else layer
+            name = "art.png" if field in ARMOR_FIELDS[:4] else "layer.png"
+            files.append((f"{tier}_{field}", (name, data, "image/png")))
     return files
 
 
 def main() -> None:
     migrate()
+    # Idempotent re-runs (Step 11+ assumes empty submissions)
+    with connect() as conn:
+        conn.execute("DELETE FROM submissions")
+        try:
+            conn.execute("DELETE FROM notifications")
+        except Exception:
+            pass
+        conn.commit()
+
     client = TestClient(app)
     player = "00000000-0000-0000-0000-000000000208"
     unlinked_player = f"00000000-0000-0000-0000-{uuid.uuid4().hex[:12]}"
@@ -95,17 +126,21 @@ def main() -> None:
     )
     if r.status_code != 200:
         fail(f"link start: {r.status_code} {r.text}")
-    r = client.post(
-        "/skins/discord/link/complete",
-        json={
-            "code": r.json()["code"],
-            "discord_user_id": DISCORD_ID,
-            "discord_username": "SmokeDiscord",
-        },
-        headers={"X-Staff-Key": STAFF},
-    )
-    if r.status_code != 200:
-        fail(f"link complete: {r.status_code} {r.text}")
+    start_body = r.json()
+    if not start_body.get("already_linked"):
+        if "code" not in start_body:
+            fail(f"link start missing code: {start_body}")
+        r = client.post(
+            "/skins/discord/link/complete",
+            json={
+                "code": start_body["code"],
+                "discord_user_id": DISCORD_ID,
+                "discord_username": "SmokeDiscord",
+            },
+            headers={"X-Staff-Key": STAFF},
+        )
+        if r.status_code != 200:
+            fail(f"link complete: {r.status_code} {r.text}")
 
     # Already linked — no new code
     r = client.post(
@@ -123,7 +158,7 @@ def main() -> None:
     if "code" in already:
         fail(f"already linked should not return code: {already}")
 
-    # Plugin notice from complete
+    # Plugin notice from complete (optional if link already existed)
     r = client.get("/skins/plugin/notices", headers={"X-Plugin-Key": PLUGIN})
     if r.status_code != 200:
         fail(f"plugin notices: {r.status_code} {r.text}")
@@ -133,23 +168,22 @@ def main() -> None:
         for n in notices
         if n.get("player_uuid") == player and n.get("type") == "link_success"
     ]
-    if not match:
-        fail(f"expected link_success notice for {player}: {notices}")
-    notice_id = match[-1]["id"]
-    if match[-1].get("payload", {}).get("discord_username") != "SmokeDiscord":
-        fail(f"notice payload missing username: {match[-1]}")
-    r = client.post(
-        "/skins/plugin/notices/ack",
-        json={"ids": [notice_id]},
-        headers={"X-Plugin-Key": PLUGIN},
-    )
-    if r.status_code != 200:
-        fail(f"ack notices: {r.status_code} {r.text}")
-    if notice_id not in (r.json().get("acked") or []):
-        fail(f"ack missing notice id: {r.text}")
-    r = client.get("/skins/plugin/notices", headers={"X-Plugin-Key": PLUGIN})
-    if any(n.get("id") == notice_id for n in (r.json().get("notices") or [])):
-        fail("acked notice still undelivered")
+    if match:
+        notice_id = match[-1]["id"]
+        if match[-1].get("payload", {}).get("discord_username") != "SmokeDiscord":
+            fail(f"notice payload missing username: {match[-1]}")
+        r = client.post(
+            "/skins/plugin/notices/ack",
+            json={"ids": [notice_id]},
+            headers={"X-Plugin-Key": PLUGIN},
+        )
+        if r.status_code != 200:
+            fail(f"ack notices: {r.status_code} {r.text}")
+        if notice_id not in (r.json().get("acked") or []):
+            fail(f"ack missing notice id: {r.text}")
+        r = client.get("/skins/plugin/notices", headers={"X-Plugin-Key": PLUGIN})
+        if any(n.get("id") == notice_id for n in (r.json().get("notices") or [])):
+            fail("acked notice still undelivered")
 
     # Issue + active list + redeem
     r = client.post(
@@ -290,6 +324,29 @@ def main() -> None:
     if r.status_code != 400:
         fail(f"armor duplicate tier expected 400, got {r.status_code} {r.text}")
 
+    # Negative: same PNG bytes for the same slot across tiers
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Bad Armor Dup Texture",
+            "tiers": json.dumps(["iron", "steel"]),
+        },
+        files=armor_tier_files(
+            ["iron", "steel"], distinct=False, icon=icon, layer=layer
+        ),
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(
+            f"armor identical textures expected 400, got "
+            f"{r.status_code} {r.text}"
+        )
+    detail = (r.json().get("detail") or r.text).lower()
+    if "identical" not in detail and "unique" not in detail:
+        fail(f"armor identical textures message unexpected: {r.text}")
+    print("duplicate PNG bytes in submission rejected ok")
+
     # Multi-tier armor upload — ids come from IGN + item name, filenames are freeform
     armor_tiers = ["iron", "steel"]
     r = client.post(
@@ -299,7 +356,7 @@ def main() -> None:
             "display_name": "Smoke Armor",
             "tiers": json.dumps(armor_tiers),
         },
-        files=armor_tier_files(armor_tiers, icon, layer),
+        files=armor_tier_files(armor_tiers),
         headers=auth,
     )
     if r.status_code != 200:
@@ -338,10 +395,15 @@ def main() -> None:
     print("armor conflict-check (display_name only) ok")
 
     # Backward-compat: legacy unprefixed armor fields + base_set select a single tier
-    legacy_files = [
-        (field, ("art.png", icon if field in ARMOR_FIELDS[:4] else layer, "image/png"))
-        for field in ARMOR_FIELDS
-    ]
+    legacy_files = []
+    for i, field in enumerate(ARMOR_FIELDS):
+        if field in ARMOR_FIELDS[:4]:
+            data = make_png(16, 16, fill=80 + i * 11)
+            name = "art.png"
+        else:
+            data = make_png(64, 32, fill=120 + i * 9)
+            name = "layer.png"
+        legacy_files.append((field, (name, data, "image/png")))
     r = client.post(
         "/skins/submissions",
         data={

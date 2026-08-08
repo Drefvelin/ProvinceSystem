@@ -54,6 +54,8 @@ Plus a form field `tiers` — a JSON array, e.g. `["iron","steel"]`. The uploade
 
 Exact sizes: icons **16×16**; layers **64×32**.
 
+**Unique textures:** every PNG in a submission must have distinct upload bytes (SHA-256 of the file). Re-uploading the same file for two slots or two tiers is rejected.
+
 *Legacy single-tier path:* unprefixed fields (`helmet`, `chestplate`, …) plus `base_set` are still accepted and mapped onto a single tier (named by `base_set`, default `iron`) for backward compatibility. Prefer the multi-tier `tiers` + prefixed-field form for anything new.
 
 ### `handheld` / `large_handheld`
