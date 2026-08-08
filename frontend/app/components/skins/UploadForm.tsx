@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSubmission, checkSubmissionConflict, SkinsApiError } from "../../../lib/skins/api";
 import {
+  ARMOR_TIERS,
   baseSetLabel,
   baseSetPickerTitle,
   baseSetsForKind,
@@ -19,12 +20,6 @@ import {
   type SkinKind,
 } from "../../../lib/skins/sizes";
 import {
-  ARMOR_SUFFIXES,
-  BOW_SUFFIXES,
-  CROSSBOW_SUFFIXES,
-  assertUploadFilenames,
-} from "../../../lib/skins/slug";
-import {
   LEGACY_PALETTE,
   NAME_STYLES,
   normalizePreviewHex,
@@ -35,9 +30,15 @@ import {
 import KindPicker from "./KindPicker";
 
 const GRIPS = ["bottom", "middle", "top"] as const;
+const MAX_TIERS = ARMOR_TIERS.length;
 
 type Props = {
   sessionToken: string;
+};
+
+type TierEntry = {
+  tier: string;
+  files: Record<string, File | null>;
 };
 
 const fieldLabel: Record<string, string> = {
@@ -54,45 +55,11 @@ const fieldLabel: Record<string, string> = {
   charged: "Charged",
 };
 
-function namingHint(kind: SkinKind): string {
-  if (kind === "armor_set") {
-    return (
-      "PNG file names must match: your_id_helmet.png, _chestplate, _leggings, " +
-      "_boots, _layer_1, _layer_2 (same your_id on all six). Example: blue_knight_helmet.png"
-    );
-  }
-  if (kind === "bow" || kind === "large_bow") {
-    return (
-      "Four PNGs with the same id: your_id.png, your_id_0.png, your_id_1.png, " +
-      "your_id_2.png. Example: blue_shortbow.png + blue_shortbow_0.png …"
-    );
-  }
-  if (kind === "crossbow") {
-    return (
-      "Five PNGs with the same id: your_id.png, _0, _1, _2, and your_id_charged.png. " +
-      "Example: blue_cross.png … blue_cross_charged.png"
-    );
-  }
+function namingHint(): string {
   return (
-    "PNG file name becomes the skin id: use your_id.png " +
-    "(lowercase letters, numbers, underscores). Example: blue_knight.png"
+    "File names can be anything — the server renames your PNGs automatically " +
+    "from your item name. Sizes still matter (see above)."
   );
-}
-
-function requiredNameHint(kind: SkinKind, field: string): string {
-  if (kind === "armor_set") {
-    return `Required name: …${ARMOR_SUFFIXES[field]}`;
-  }
-  if (isBowFrameKind(kind)) {
-    const suffixes =
-      kind === "crossbow" ? CROSSBOW_SUFFIXES : BOW_SUFFIXES;
-    const suffix = suffixes[field];
-    if (field === "texture") {
-      return "Required name: your_id.png";
-    }
-    return `Required name: your_id${suffix}`;
-  }
-  return "Required name: your_id.png";
 }
 
 function slotLabel(kind: SkinKind, field: string): string {
@@ -111,6 +78,8 @@ export default function UploadForm({ sessionToken }: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<SkinKind>("armor_set");
   const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
+  const [tiers, setTiers] = useState<TierEntry[]>([]);
+  const [tierToAdd, setTierToAdd] = useState<string>("");
   const [itemName, setItemName] = useState("");
   const [applyName, setApplyName] = useState(false);
   const [colours, setColours] = useState<string[]>(["#ffffff"]);
@@ -123,6 +92,8 @@ export default function UploadForm({ sessionToken }: Props) {
 
   useEffect(() => {
     setFiles({});
+    setTiers([]);
+    setTierToAdd("");
     setError(null);
     setBaseSet(defaultBaseSet(kind));
   }, [kind]);
@@ -136,9 +107,39 @@ export default function UploadForm({ sessionToken }: Props) {
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
+  const isArmor = kind === "armor_set";
+
+  const remainingTiers: string[] = ARMOR_TIERS.filter(
+    (t) => !tiers.some((entry) => entry.tier === t)
+  );
+  const effectiveTierToAdd = remainingTiers.includes(tierToAdd)
+    ? tierToAdd
+    : remainingTiers[0] ?? "";
 
   function setFile(field: string, file: File | null) {
     setFiles((prev) => ({ ...prev, [field]: file }));
+  }
+
+  function addTier(tier: string) {
+    if (!tier || tiers.some((entry) => entry.tier === tier)) return;
+    if (tiers.length >= MAX_TIERS) return;
+    setTiers((prev) => [...prev, { tier, files: {} }]);
+    setTierToAdd("");
+    setError(null);
+  }
+
+  function removeTier(tier: string) {
+    setTiers((prev) => prev.filter((entry) => entry.tier !== tier));
+  }
+
+  function setTierFile(tier: string, field: string, file: File | null) {
+    setTiers((prev) =>
+      prev.map((entry) =>
+        entry.tier === tier
+          ? { ...entry, files: { ...entry.files, [field]: file } }
+          : entry
+      )
+    );
   }
 
   async function onSubmit(e: FormEvent) {
@@ -151,8 +152,13 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
-    if (!baseSet || !baseOptions.includes(baseSet)) {
+    if (!isArmor && (!baseSet || !baseOptions.includes(baseSet))) {
       setError(`Choose a ${baseSetPickerTitle(kind).toLowerCase()}`);
+      return;
+    }
+
+    if (isArmor && tiers.length < 1) {
+      setError("Add at least 1 armor tier");
       return;
     }
 
@@ -161,30 +167,46 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
-    let baseId: string;
-    try {
-      baseId = assertUploadFilenames(kind, files);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid file names");
-      return;
-    }
-
     const uploadFiles: Record<string, File> = {};
-    try {
-      for (const field of fileFields) {
-        const file = files[field];
-        if (!file) {
-          throw new Error(`Missing file: ${field}`);
+
+    if (isArmor) {
+      try {
+        for (const entry of tiers) {
+          const tierLabel = baseSetLabel(entry.tier);
+          for (const field of fileFields) {
+            const file = entry.files[field];
+            const label = fieldLabel[field] || field;
+            if (!file) {
+              throw new Error(`Missing ${label} for the ${tierLabel} tier`);
+            }
+            const expected = expectedSizeForField(kind, field);
+            if (expected) {
+              await assertFileSize(file, expected, `${tierLabel} ${label}`);
+            }
+            uploadFiles[`${entry.tier}_${field}`] = file;
+          }
         }
-        const expected = expectedSizeForField(kind, field);
-        if (expected) {
-          await assertFileSize(file, expected, fieldLabel[field] || field);
-        }
-        uploadFiles[field] = file;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "File validation failed");
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "File validation failed");
-      return;
+    } else {
+      try {
+        for (const field of fileFields) {
+          const file = files[field];
+          if (!file) {
+            throw new Error(`Missing file: ${fieldLabel[field] || field}`);
+          }
+          const expected = expectedSizeForField(kind, field);
+          if (expected) {
+            await assertFileSize(file, expected, fieldLabel[field] || field);
+          }
+          uploadFiles[field] = file;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "File validation failed");
+        return;
+      }
     }
 
     if (applyName) {
@@ -202,23 +224,18 @@ export default function UploadForm({ sessionToken }: Props) {
       const check = await checkSubmissionConflict({
         sessionToken,
         display_name: name,
-        base_id: baseId,
       });
       if (!check.ok) {
         const reasons = new Set(
           check.conflicts.flatMap((c) => c.reasons || [])
         );
-        if (reasons.has("display_name") && reasons.has("base_id")) {
-          setError(
-            "You already have an active skin with this item name and file id. Ask staff to delete it, or change the name/files."
-          );
-        } else if (reasons.has("display_name")) {
+        if (reasons.has("display_name")) {
           setError(
             `You already have an active skin named "${name}". Choose a different item name.`
           );
         } else {
           setError(
-            `You already have an active skin with file id "${baseId}". Rename your PNG(s).`
+            "You already have an active skin that conflicts with this one. Choose a different item name."
           );
         }
         setLoading(false);
@@ -229,7 +246,8 @@ export default function UploadForm({ sessionToken }: Props) {
         sessionToken,
         kind,
         display_name: name,
-        base_set: baseSet,
+        base_set: isArmor ? null : baseSet,
+        tiers: isArmor ? tiers.map((entry) => entry.tier) : undefined,
         grip_preset: kind === "large_handheld" ? grip : null,
         add_name: applyName,
         name_colours: applyName ? colours : undefined,
@@ -285,26 +303,28 @@ export default function UploadForm({ sessionToken }: Props) {
       <KindPicker value={kind} onChange={setKind} disabled={loading} />
 
       <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
-      <p className="text-sm text-[var(--tfmc-mist)]">{namingHint(kind)}</p>
+      <p className="text-sm text-[var(--tfmc-mist)]">{namingHint()}</p>
 
-      <label className="flex flex-col gap-2 text-left">
-        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          {baseSetPickerTitle(kind)}
-        </span>
-        <select
-          value={baseSet}
-          disabled={loading}
-          onChange={(e) => setBaseSet(e.target.value)}
-          className={inputClass}
-          required
-        >
-          {baseOptions.map((id) => (
-            <option key={id} value={id}>
-              {baseSetLabel(id)}
-            </option>
-          ))}
-        </select>
-      </label>
+      {!isArmor ? (
+        <label className="flex flex-col gap-2 text-left">
+          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+            {baseSetPickerTitle(kind)}
+          </span>
+          <select
+            value={baseSet}
+            disabled={loading}
+            onChange={(e) => setBaseSet(e.target.value)}
+            className={inputClass}
+            required
+          >
+            {baseOptions.map((id) => (
+              <option key={id} value={id}>
+                {baseSetLabel(id)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
@@ -483,32 +503,126 @@ export default function UploadForm({ sessionToken }: Props) {
         </fieldset>
       ) : null}
 
-      <div className="flex flex-col gap-4">
-        {fileFields.map((field) => (
-          <label key={field} className="flex flex-col gap-2 text-left">
-            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              {slotLabel(kind, field)}
-            </span>
-            <span className="text-xs text-[var(--tfmc-mist)]">
-              {requiredNameHint(kind, field)}
-            </span>
-            <input
-              type="file"
-              accept="image/png,.png"
-              disabled={loading}
-              onChange={(e) =>
-                setFile(field, e.target.files?.[0] ?? null)
-              }
-              className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
-            />
-            {files[field] ? (
-              <span className="text-xs text-[var(--tfmc-cream)]">
-                Selected: {files[field]!.name}
+      {isArmor ? (
+        <fieldset className="flex flex-col gap-4 border-0 p-0">
+          <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
+            Armor tiers
+          </legend>
+          <p className="text-xs text-[var(--tfmc-mist)]">
+            Add 1–6 tiers. Each tier needs all six armor PNGs (helmet,
+            chestplate, leggings, boots, layer 1, layer 2).
+          </p>
+
+          {tiers.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {tiers.map((entry) => (
+                <div
+                  key={entry.tier}
+                  className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--tfmc-cream)]">
+                      {baseSetLabel(entry.tier)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => removeTier(entry.tier)}
+                      className="text-xs text-[#e8a0a0] hover:underline"
+                    >
+                      Remove tier
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    {fileFields.map((field) => (
+                      <label key={field} className="flex flex-col gap-2 text-left">
+                        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                          {slotLabel(kind, field)}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/png,.png"
+                          disabled={loading}
+                          onChange={(e) =>
+                            setTierFile(
+                              entry.tier,
+                              field,
+                              e.target.files?.[0] ?? null
+                            )
+                          }
+                          className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
+                        />
+                        {entry.files[field] ? (
+                          <span className="text-xs text-[var(--tfmc-cream)]">
+                            Selected: {entry.files[field]!.name}
+                          </span>
+                        ) : null}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--tfmc-mist)]">
+              No tiers added yet.
+            </p>
+          )}
+
+          {remainingTiers.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={effectiveTierToAdd}
+                disabled={loading}
+                onChange={(e) => setTierToAdd(e.target.value)}
+                className={inputClass}
+              >
+                {remainingTiers.map((t) => (
+                  <option key={t} value={t}>
+                    {baseSetLabel(t)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => addTier(effectiveTierToAdd)}
+                className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)]"
+              >
+                Add tier
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--tfmc-mist)]">
+              All {MAX_TIERS} tiers added.
+            </p>
+          )}
+        </fieldset>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {fileFields.map((field) => (
+            <label key={field} className="flex flex-col gap-2 text-left">
+              <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                {slotLabel(kind, field)}
               </span>
-            ) : null}
-          </label>
-        ))}
-      </div>
+              <input
+                type="file"
+                accept="image/png,.png"
+                disabled={loading}
+                onChange={(e) =>
+                  setFile(field, e.target.files?.[0] ?? null)
+                }
+                className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
+              />
+              {files[field] ? (
+                <span className="text-xs text-[var(--tfmc-cream)]">
+                  Selected: {files[field]!.name}
+                </span>
+              ) : null}
+            </label>
+          ))}
+        </div>
+      )}
 
       {error ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">

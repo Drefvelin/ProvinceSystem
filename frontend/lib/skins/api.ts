@@ -85,10 +85,10 @@ export type SubmissionPublic = {
   display_name: string;
   grip_preset: string | null;
   base_set: string | null;
+  tiers?: string[];
   add_name?: boolean;
   name_colours?: string[];
   name_styles?: string[];
-  player_key?: string | null;
   status: string;
   deny_reason: string | null;
   created_at: string;
@@ -112,7 +112,8 @@ export type CreateSubmissionInput = {
   sessionToken: string;
   kind: string;
   display_name: string;
-  base_set: string;
+  base_set?: string | null;
+  tiers?: string[];
   grip_preset?: string | null;
   add_name?: boolean;
   name_colours?: string[];
@@ -123,14 +124,10 @@ export type CreateSubmissionInput = {
 export async function checkSubmissionConflict(input: {
   sessionToken: string;
   display_name: string;
-  base_id?: string;
 }): Promise<SubmissionCheckResult> {
   const params = new URLSearchParams();
   if (input.display_name.trim()) {
     params.set("display_name", input.display_name.trim());
-  }
-  if (input.base_id?.trim()) {
-    params.set("base_id", input.base_id.trim());
   }
   const res = await fetch(
     `${getApiBase()}/skins/submissions/check?${params.toString()}`,
@@ -154,7 +151,12 @@ export async function createSubmission(
   const form = new FormData();
   form.append("kind", input.kind);
   form.append("display_name", input.display_name);
-  form.append("base_set", input.base_set);
+  if (input.base_set) {
+    form.append("base_set", input.base_set);
+  }
+  if (input.tiers?.length) {
+    form.append("tiers", JSON.stringify(input.tiers));
+  }
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);
   }

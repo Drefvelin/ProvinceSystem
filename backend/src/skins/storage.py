@@ -9,13 +9,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .db import SKINS_DIR
-from .naming import BOW_FRAME_FIELDS, CROSSBOW_FRAME_FIELDS
+from .naming import (
+    ARMOR_ICON_FIELDS,
+    ARMOR_LAYER_FIELDS,
+    BOW_FRAME_FIELDS,
+    CROSSBOW_FRAME_FIELDS,
+)
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 MAX_PNG_BYTES = 2 * 1024 * 1024
-ARMOR_ICON_FIELDS = ("helmet", "chestplate", "leggings", "boots")
-ARMOR_LAYER_FIELDS = ("layer_1", "layer_2")
-ARMOR_FIELDS = ARMOR_ICON_FIELDS + ARMOR_LAYER_FIELDS
 
 ICON_SIZE = (16, 16)
 LAYER_SIZE = (64, 32)
@@ -28,8 +30,9 @@ CROSSBOW_SIZE = (16, 16)
 SINGLE_TEXTURE_KINDS = frozenset({"handheld", "large_handheld"})
 BOW_KINDS = frozenset({"bow", "large_bow"})
 CROSSBOW_KINDS = frozenset({"crossbow"})
-ITEM_KINDS = SINGLE_TEXTURE_KINDS | BOW_KINDS | CROSSBOW_KINDS
-TEXTURE_KINDS = ITEM_KINDS
+ITEM_KINDS = frozenset(
+    {"handheld", "large_handheld", "bow", "large_bow", "crossbow"}
+)
 
 
 class StorageError(ValueError):
@@ -94,7 +97,6 @@ def _write_bow_frames(
             (out_dir / f"{slug}_{n}.png").write_bytes(files[field])
         elif field == "charged":
             (out_dir / f"{slug}_charged.png").write_bytes(files[field])
-            # ItemsAdder generate:true CROSSBOW often expects *_arrow for charged
             (out_dir / f"{slug}_arrow.png").write_bytes(files[field])
         else:
             raise StorageError(f"Unknown bow field: {field}")
@@ -109,29 +111,37 @@ def write_submission_files(
     grip_preset: str | None = None,
     base_set: str | None = None,
     *,
+    tiers: list[str] | None = None,
     add_name: bool = False,
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
 ) -> Path:
     """
     Write PNGs under SKINS_DIR/{submission_id}/ with fixed stems.
-    `files` keys: armor fields, `texture` for handheld, or bow frame fields.
+    Upload filenames are ignored; `files` keys are logical field names.
+    Armor multi-tier: keys `{tier}_helmet`, …; disk `{tier}_helmet.png`.
     """
     out_dir = SKINS_DIR / submission_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         if kind == "armor_set":
-            for field in ARMOR_ICON_FIELDS:
-                if field not in files:
-                    raise StorageError(f"Missing file field: {field}")
-                validate_png(files[field], ICON_SIZE)
-                (out_dir / f"{slug}_{field}.png").write_bytes(files[field])
-            for field in ARMOR_LAYER_FIELDS:
-                if field not in files:
-                    raise StorageError(f"Missing file field: {field}")
-                validate_png(files[field], LAYER_SIZE)
-                (out_dir / f"{slug}_{field}.png").write_bytes(files[field])
+            tier_list = list(tiers or [])
+            if not tier_list:
+                raise StorageError("armor_set requires at least one tier")
+            for tier in tier_list:
+                for field in ARMOR_ICON_FIELDS:
+                    key = f"{tier}_{field}"
+                    if key not in files:
+                        raise StorageError(f"Missing file field: {key}")
+                    validate_png(files[key], ICON_SIZE)
+                    (out_dir / f"{tier}_{field}.png").write_bytes(files[key])
+                for field in ARMOR_LAYER_FIELDS:
+                    key = f"{tier}_{field}"
+                    if key not in files:
+                        raise StorageError(f"Missing file field: {key}")
+                    validate_png(files[key], LAYER_SIZE)
+                    (out_dir / f"{tier}_{field}.png").write_bytes(files[key])
         elif kind in SINGLE_TEXTURE_KINDS:
             if "texture" not in files:
                 raise StorageError("Missing file field: texture")
@@ -158,6 +168,7 @@ def write_submission_files(
             "display_name": display_name,
             "grip_preset": grip_preset,
             "base_set": base_set,
+            "tiers": list(tiers or []),
             "add_name": bool(add_name),
             "name_colours": list(name_colours or []),
             "name_styles": list(name_styles or []),

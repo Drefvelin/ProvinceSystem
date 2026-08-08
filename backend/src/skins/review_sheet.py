@@ -3,19 +3,23 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 from .db import SKINS_DIR, connect
-from .storage import ARMOR_FIELDS, ITEM_KINDS
+from .naming import ARMOR_FIELDS
+from .storage import ITEM_KINDS
 
 TILE_DISPLAY = 96
 PAD = 12
 LABEL_H = 18
+TIER_CAPTION_H = 28
 BG = (32, 32, 36)
 LABEL_COLOR = (220, 220, 220)
 CAPTION_COLOR = (200, 200, 210)
+TIER_COLOR = (160, 200, 255)
 
 
 class ReviewSheetError(ValueError):
@@ -62,7 +66,21 @@ def _paste_centered(
     canvas.paste(tile, (px, py), tile if tile.mode == "RGBA" else None)
 
 
-def _armor_sheet(slug: str, out_dir: Path) -> bytes:
+def _parse_tiers_json(raw) -> list[str]:
+    if raw is None or raw == "":
+        return []
+    if isinstance(raw, list):
+        return [str(x) for x in raw if x is not None and str(x).strip()]
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(x) for x in data if x is not None and str(x).strip()]
+
+
+def _armor_tier_strip(tier: str, out_dir: Path) -> Image.Image:
     cols, rows = 3, 2
     cell_w = TILE_DISPLAY + PAD * 2
     cell_h = TILE_DISPLAY + LABEL_H + PAD * 2
@@ -73,7 +91,7 @@ def _armor_sheet(slug: str, out_dir: Path) -> bytes:
     font = _font(12)
 
     for i, field in enumerate(ARMOR_FIELDS):
-        path = out_dir / f"{slug}_{field}.png"
+        path = out_dir / f"{tier}_{field}.png"
         if not path.is_file():
             raise ReviewSheetError(f"Missing file: {path.name}")
         col, row = i % cols, i // cols
@@ -92,6 +110,39 @@ def _armor_sheet(slug: str, out_dir: Path) -> bytes:
             fill=LABEL_COLOR,
             font=font,
         )
+
+    return canvas
+
+
+def _armor_sheet(tiers: list[str], out_dir: Path) -> bytes:
+    if not tiers:
+        raise ReviewSheetError("armor_set has no tiers")
+
+    strips: list[tuple[str, Image.Image]] = []
+    for tier in tiers:
+        strips.append((tier, _armor_tier_strip(tier, out_dir)))
+
+    width = max(strip.width for _, strip in strips)
+    strip_h = strips[0][1].height
+    height = len(strips) * (TIER_CAPTION_H + strip_h)
+    canvas = Image.new("RGB", (width, height), BG)
+    draw = ImageDraw.Draw(canvas)
+    tier_font = _font(16)
+
+    y = 0
+    for tier, strip in strips:
+        caption = tier
+        cb = draw.textbbox((0, 0), caption, font=tier_font)
+        cw = cb[2] - cb[0]
+        draw.text(
+            ((width - cw) // 2, y + (TIER_CAPTION_H - (cb[3] - cb[1])) // 2),
+            caption,
+            fill=TIER_COLOR,
+            font=tier_font,
+        )
+        y += TIER_CAPTION_H
+        canvas.paste(strip, ((width - strip.width) // 2, y))
+        y += strip.height
 
     buf = io.BytesIO()
     canvas.save(buf, format="PNG")
@@ -168,7 +219,11 @@ def build_review_sheet(submission_id: str) -> bytes | None:
         raise ReviewSheetError("Submission files directory missing")
 
     if kind == "armor_set":
-        return _armor_sheet(slug, out_dir)
+        tiers = _parse_tiers_json(row["tiers"] if "tiers" in row.keys() else None)
+        if not tiers:
+            fallback = (base_set or "").strip()
+            tiers = [fallback] if fallback else ["iron"]
+        return _armor_sheet(tiers, out_dir)
     if kind in ITEM_KINDS:
         return _item_sheet(slug, kind, grip, base_set, out_dir)
     raise ReviewSheetError(f"Unsupported kind for review sheet: {kind}")

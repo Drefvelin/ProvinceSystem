@@ -1,10 +1,15 @@
 """Skins API E2E smoke — run from backend/: python scripts/skins_e2e_smoke.py
 
 Uses FastAPI TestClient (no separate uvicorn). Requires SKINS_DEV=1 or real keys.
+
+Step 11: submission ids are `{sanitized_ign}_{slugify(display_name)}` (no
+player_key, no filename-derived identity). Armor submissions carry 1–6 tiers
+in one row; upload filenames are freeform and ignored by the server.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import struct
 import sys
@@ -22,10 +27,12 @@ from fastapi.testclient import TestClient
 
 from server import app
 from src.skins.db import migrate
+from src.skins.naming import ARMOR_FIELDS, build_submission_id
 
 STAFF = "dev-staff-key"
 PLUGIN = "dev-plugin-key"
 DISCORD_ID = "999999999999999999"
+IGN = "Smoke"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
@@ -52,10 +59,20 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
+def armor_tier_files(tiers: list[str], icon: bytes, layer: bytes) -> list[tuple]:
+    """Multipart fields `{tier}_helmet` … `{tier}_layer_2`; filenames freeform."""
+    files: list[tuple] = []
+    for tier in tiers:
+        for field in ARMOR_FIELDS[:4]:
+            files.append((f"{tier}_{field}", ("art.png", icon, "image/png")))
+        for field in ARMOR_FIELDS[4:]:
+            files.append((f"{tier}_{field}", ("layer.png", layer, "image/png")))
+    return files
+
+
 def main() -> None:
     migrate()
     client = TestClient(app)
-    suffix = uuid.uuid4().hex[:8]
     player = "00000000-0000-0000-0000-000000000208"
     unlinked_player = f"00000000-0000-0000-0000-{uuid.uuid4().hex[:12]}"
 
@@ -73,7 +90,7 @@ def main() -> None:
     # Discord link required before mint
     r = client.post(
         "/skins/discord/link/start",
-        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        json={"player_uuid": player, "minecraft_name": IGN},
         headers={"X-Plugin-Key": PLUGIN},
     )
     if r.status_code != 200:
@@ -93,7 +110,7 @@ def main() -> None:
     # Already linked — no new code
     r = client.post(
         "/skins/discord/link/start",
-        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        json={"player_uuid": player, "minecraft_name": IGN},
         headers={"X-Plugin-Key": PLUGIN},
     )
     if r.status_code != 200:
@@ -198,7 +215,7 @@ def main() -> None:
 
     r = client.post(
         "/skins/discord/link/start",
-        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        json={"player_uuid": player, "minecraft_name": IGN},
         headers={"X-Plugin-Key": PLUGIN},
     )
     if r.status_code != 200:
@@ -224,29 +241,7 @@ def main() -> None:
     layer = make_png(64, 32)
     large_tex = make_png(32, 32)
 
-    # Negative: armor + wrong base_set
-    armor_slug = f"smoke_armor_{suffix}"
-    armor_files = [
-        ("helmet", (f"{armor_slug}_helmet.png", icon, "image/png")),
-        ("chestplate", (f"{armor_slug}_chestplate.png", icon, "image/png")),
-        ("leggings", (f"{armor_slug}_leggings.png", icon, "image/png")),
-        ("boots", (f"{armor_slug}_boots.png", icon, "image/png")),
-        ("layer_1", (f"{armor_slug}_layer_1.png", layer, "image/png")),
-        ("layer_2", (f"{armor_slug}_layer_2.png", layer, "image/png")),
-    ]
-    r = client.post(
-        "/skins/submissions",
-        data={
-            "kind": "armor_set",
-            "display_name": "Bad Armor",
-            "base_set": "swords",
-        },
-        files=armor_files,
-        headers=auth,
-    )
-    if r.status_code != 400:
-        fail(f"armor+swords expected 400, got {r.status_code} {r.text}")
-
+    # kind=item is disabled regardless of Step 11 changes
     r = client.post(
         "/skins/submissions",
         data={
@@ -254,54 +249,118 @@ def main() -> None:
             "display_name": "Disabled Item",
             "base_set": "swords",
         },
-        files=[("texture", (f"smoke_item_{suffix}.png", icon, "image/png"))],
+        files=[("texture", ("art.png", icon, "image/png"))],
         headers=auth,
     )
     if r.status_code != 400:
         fail(f"kind=item expected 400, got {r.status_code} {r.text}")
 
-    # Armor upload — filenames define skin id
-    data = {
-        "kind": "armor_set",
-        "display_name": "Smoke Armor",
-        "base_set": "iron",
-    }
+    # Negative: armor with no tiers and no legacy unprefixed fields
     r = client.post(
-        "/skins/submissions", data=data, files=armor_files, headers=auth
+        "/skins/submissions",
+        data={"kind": "armor_set", "display_name": "Bad Armor No Tiers"},
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"armor no tiers expected 400, got {r.status_code} {r.text}")
+
+    # Negative: armor with an invalid tier name
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Bad Armor Tier",
+            "tiers": json.dumps(["swords"]),
+        },
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"armor invalid tier expected 400, got {r.status_code} {r.text}")
+
+    # Negative: armor with a duplicate tier
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Bad Armor Dup Tier",
+            "tiers": json.dumps(["iron", "iron"]),
+        },
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"armor duplicate tier expected 400, got {r.status_code} {r.text}")
+
+    # Multi-tier armor upload — ids come from IGN + item name, filenames are freeform
+    armor_tiers = ["iron", "steel"]
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Smoke Armor",
+            "tiers": json.dumps(armor_tiers),
+        },
+        files=armor_tier_files(armor_tiers, icon, layer),
+        headers=auth,
     )
     if r.status_code != 200:
         fail(f"armor upload: {r.status_code} {r.text}")
     armor = r.json()
     armor_id = armor["id"]
-    player_key = armor.get("player_key")
-    if not player_key or len(str(player_key)) != 8:
-        fail(f"armor player_key expected 8 chars, got {player_key!r}")
-    expected_armor_slug = f"{player_key}_{armor_slug}"
-    if armor.get("slug") != expected_armor_slug:
-        fail(
-            f"armor slug expected {expected_armor_slug}, got {armor.get('slug')}"
-        )
-    if armor.get("base_set") != "iron":
-        fail(f"armor base_set expected iron, got {armor.get('base_set')}")
+    expected_armor_id = build_submission_id(IGN, "Smoke Armor")
+    if armor_id != expected_armor_id:
+        fail(f"armor id expected {expected_armor_id}, got {armor_id}")
+    if armor.get("slug") != armor_id:
+        fail(f"armor slug expected to equal id, got {armor.get('slug')}")
+    if armor.get("tiers") != armor_tiers:
+        fail(f"armor tiers expected {armor_tiers}, got {armor.get('tiers')}")
+    if armor.get("base_set") is not None:
+        fail(f"armor base_set expected null, got {armor.get('base_set')}")
     if armor.get("discord_user_id") != DISCORD_ID:
         fail(
             f"armor discord_user_id expected {DISCORD_ID}, "
             f"got {armor.get('discord_user_id')}"
         )
-    # Conflict check: same display_name should fail
+    print(
+        f"armor submission {armor_id} tiers={armor['tiers']} "
+        f"base_set={armor.get('base_set')!r} ok"
+    )
+
+    # Conflict check: display_name only (no base_id) — active armor blocks a re-submit
     r = client.get(
         "/skins/submissions/check",
-        params={"display_name": "Smoke Armor", "base_id": armor_slug},
+        params={"display_name": "Smoke Armor"},
         headers=auth,
     )
     if r.status_code != 200:
         fail(f"check endpoint: {r.status_code} {r.text}")
     if r.json().get("ok") is not False:
         fail(f"check should conflict for Smoke Armor, got {r.json()}")
-    print(
-        f"armor submission {armor_id} slug={armor['slug']} "
-        f"base_set={armor['base_set']} conflict-check ok"
+    print("armor conflict-check (display_name only) ok")
+
+    # Backward-compat: legacy unprefixed armor fields + base_set select a single tier
+    legacy_files = [
+        (field, ("art.png", icon if field in ARMOR_FIELDS[:4] else layer, "image/png"))
+        for field in ARMOR_FIELDS
+    ]
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Smoke Armor Legacy",
+            "base_set": "iron",
+        },
+        files=legacy_files,
+        headers=auth,
     )
+    if r.status_code != 200:
+        fail(f"legacy armor upload: {r.status_code} {r.text}")
+    legacy_armor = r.json()
+    legacy_armor_id = legacy_armor["id"]
+    if legacy_armor.get("tiers") != ["iron"]:
+        fail(f"legacy armor tiers expected ['iron'], got {legacy_armor.get('tiers')}")
+    if legacy_armor.get("base_set") is not None:
+        fail(f"legacy armor base_set expected null, got {legacy_armor.get('base_set')}")
+    print(f"legacy single-tier armor {legacy_armor_id} tiers={legacy_armor['tiers']} ok")
 
     staff = {"X-Staff-Key": STAFF}
     r = client.get("/skins/staff/notifications", headers=staff)
@@ -338,8 +397,7 @@ def main() -> None:
         fail(f"redeem 2: {r.status_code} {r.text}")
     auth2 = {"Authorization": f"Bearer {r.json()['session_token']}"}
 
-    # handheld + wrong base_set
-    hand_slug = f"smoke_hand_{suffix}"
+    # handheld + wrong base_set (still validated for non-armor kinds)
     r = client.post(
         "/skins/submissions",
         data={
@@ -347,12 +405,13 @@ def main() -> None:
             "display_name": "Bad Hand",
             "base_set": "spears",
         },
-        files=[("texture", (f"{hand_slug}.png", icon, "image/png"))],
+        files=[("texture", ("whatever.png", icon, "image/png"))],
         headers=auth2,
     )
     if r.status_code != 400:
         fail(f"handheld+spears expected 400, got {r.status_code} {r.text}")
 
+    # handheld upload — id from IGN + item name, freeform filename OK
     r = client.post(
         "/skins/submissions",
         data={
@@ -363,13 +422,18 @@ def main() -> None:
             "name_colours": '["#9c001a", "&c"]',
             "name_styles": '["bold", "italic"]',
         },
-        files=[("texture", (f"{hand_slug}.png", icon, "image/png"))],
+        files=[("texture", ("my_cool_texture_v2.png", icon, "image/png"))],
         headers=auth2,
     )
     if r.status_code != 200:
         fail(f"handheld upload: {r.status_code} {r.text}")
     hand = r.json()
     hand_id = hand["id"]
+    expected_hand_id = build_submission_id(IGN, "Smoke Hand")
+    if hand_id != expected_hand_id:
+        fail(f"hand id expected {expected_hand_id}, got {hand_id}")
+    if hand.get("slug") != hand_id:
+        fail(f"hand slug expected to equal id, got {hand.get('slug')}")
     if hand.get("base_set") != "swords":
         fail(f"handheld base_set expected swords, got {hand.get('base_set')}")
     if hand.get("add_name") is not True:
@@ -378,15 +442,9 @@ def main() -> None:
         fail(f"handheld name_colours unexpected: {hand.get('name_colours')}")
     if hand.get("name_styles") != ["bold", "italic"]:
         fail(f"handheld name_styles unexpected: {hand.get('name_styles')}")
-    if not str(hand.get("slug", "")).startswith(f"{player_key}_"):
-        # same player may have new session but same UUID → same player_key
-        pass
-    expected_hand = f"{hand.get('player_key') or player_key}_{hand_slug}"
-    if hand.get("slug") != expected_hand:
-        fail(f"handheld slug expected {expected_hand}, got {hand.get('slug')}")
     print(
         f"handheld submission {hand_id} base_set={hand['base_set']} "
-        f"add_name colours/styles ok slug={hand.get('slug')}"
+        f"add_name colours/styles ok (freeform filename)"
     )
 
     # Third session for large
@@ -402,7 +460,6 @@ def main() -> None:
         fail(f"redeem 3: {r.status_code} {r.text}")
     auth3 = {"Authorization": f"Bearer {r.json()['session_token']}"}
 
-    large_slug = f"smoke_large_{suffix}"
     r = client.post(
         "/skins/submissions",
         data={
@@ -411,18 +468,18 @@ def main() -> None:
             "grip_preset": "bottom",
             "base_set": "spears",
         },
-        files=[("texture", (f"{large_slug}.png", large_tex, "image/png"))],
+        files=[("texture", ("large-texture-final.png", large_tex, "image/png"))],
         headers=auth3,
     )
     if r.status_code != 200:
         fail(f"large upload: {r.status_code} {r.text}")
     large = r.json()
     large_id = large["id"]
-    if large.get("slug") != f"{large.get('player_key')}_{large_slug}":
-        fail(
-            f"large slug expected {large.get('player_key')}_{large_slug}, "
-            f"got {large.get('slug')}"
-        )
+    expected_large_id = build_submission_id(IGN, "Smoke Large")
+    if large_id != expected_large_id:
+        fail(f"large id expected {expected_large_id}, got {large_id}")
+    if large.get("slug") != large_id:
+        fail(f"large slug expected to equal id, got {large.get('slug')}")
     if large.get("grip_preset") != "bottom":
         fail(f"expected grip_preset=bottom, got {large.get('grip_preset')}")
     if large.get("base_set") != "spears":
@@ -434,7 +491,7 @@ def main() -> None:
         )
     print(
         f"large submission {large_id} grip={large['grip_preset']} "
-        f"base_set={large['base_set']}"
+        f"base_set={large['base_set']} (freeform filename)"
     )
 
     for sid, label in (
@@ -453,7 +510,7 @@ def main() -> None:
     if r.status_code != 401:
         fail(f"review-sheet without key expected 401, got {r.status_code}")
 
-    # Approve all three
+    # Approve all three (leave legacy_armor pending)
     for sid in (armor_id, hand_id, large_id):
         r = client.post(f"/skins/submissions/{sid}/approve", headers=staff)
         if r.status_code != 200:
@@ -470,8 +527,17 @@ def main() -> None:
         fail("handheld missing from plugin approved list")
     if large_id not in by_id:
         fail("large missing from plugin approved list")
-    if by_id[armor_id].get("base_set") != "iron":
-        fail("armor base_set missing on approved list")
+    if sorted(by_id[armor_id].get("tiers") or []) != sorted(armor_tiers):
+        fail(
+            f"armor tiers missing/incomplete on approved list: "
+            f"{by_id[armor_id].get('tiers')}"
+        )
+    if "iron" not in by_id[armor_id].get("tiers", []):
+        fail("armor approved tiers missing iron")
+    if "steel" not in by_id[armor_id].get("tiers", []):
+        fail("armor approved tiers missing steel")
+    if by_id[armor_id].get("base_set") is not None:
+        fail("armor base_set expected null on approved list")
     if by_id[hand_id].get("base_set") != "swords":
         fail("handheld base_set missing on approved list")
     if by_id[large_id].get("grip_preset") != "bottom":
@@ -490,7 +556,7 @@ def main() -> None:
             "handheld name_styles missing on approved list: "
             f"{by_id[hand_id].get('name_styles')}"
         )
-    print("plugin approved list ok")
+    print("plugin approved list ok (armor tiers include iron+steel, base_set null)")
 
     r = client.post(
         "/skins/plugin/applied",
@@ -510,7 +576,20 @@ def main() -> None:
         fail("large should still be on approved list")
     print("applied ack ok")
 
-    print("ALL OK — Step 10 smoke passed (player_key prefix + name fields)")
+    # Deletable/tab-complete list uses human ids, not UUIDs
+    r = client.get("/skins/plugin/submissions/deletable", headers=plugin)
+    if r.status_code != 200:
+        fail(f"deletable list: {r.status_code} {r.text}")
+    deletable_ids = {s.get("id") for s in r.json().get("submissions", [])}
+    for sid in (hand_id, large_id, legacy_armor_id):
+        if sid not in deletable_ids:
+            fail(f"deletable list missing {sid}: {deletable_ids}")
+    for sid in deletable_ids:
+        if not isinstance(sid, str) or "-" in sid:
+            fail(f"deletable id looks like a UUID, expected human id: {sid}")
+    print("deletable list ok (human ids, tab-complete ready)")
+
+    print("ALL OK — Step 11 smoke (IGN ids + multi-tier)")
     sys.exit(0)
 
 

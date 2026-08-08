@@ -42,11 +42,16 @@ export default function StatusCard({ row }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Kind</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.kind}</dd>
         </div>
-        {row.base_set ? (
+        {row.tiers?.length ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">
-              {row.kind === "armor_set" ? "Armor tier" : "Applicable type"}
-            </dt>
+            <dt className="text-[var(--tfmc-stone)]">Armor tiers</dt>
+            <dd className="text-[var(--tfmc-cream)]">
+              {row.tiers.join(", ")}
+            </dd>
+          </div>
+        ) : row.base_set ? (
+          <div>
+            <dt className="text-[var(--tfmc-stone)]">Applicable type</dt>
             <dd className="text-[var(--tfmc-cream)]">{row.base_set}</dd>
           </div>
         ) : null}
@@ -54,12 +59,6 @@ export default function StatusCard({ row }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Item name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>
         </div>
-        {row.slug ? (
-          <div>
-            <dt className="text-[var(--tfmc-stone)]">Skin id</dt>
-            <dd className="break-all text-[var(--tfmc-mist)]">{row.slug}</dd>
-          </div>
-        ) : null}
         {row.add_name ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Apply name</dt>
@@ -99,7 +98,7 @@ export default function StatusCard({ row }: Props) {
           </div>
         ) : null}
         <div>
-          <dt className="text-[var(--tfmc-stone)]">Id</dt>
+          <dt className="text-[var(--tfmc-stone)]">Skin id</dt>
           <dd className="break-all text-[var(--tfmc-mist)]">{row.id}</dd>
         </div>
       </dl>

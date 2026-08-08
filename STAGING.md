@@ -75,7 +75,7 @@ Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
 
 ## Step 5 — Discord link + player DMs (manual)
 
-Automated API path: `python scripts/skins_e2e_smoke.py` from `backend/` (link + notify + review).
+Automated API path: `python scripts/skins_e2e_smoke.py` from `backend/` (link + notify + review; Step 11: IGN-based ids, multi-tier armor, no `player_key`).
 
 Live Discord path (operator):
 
@@ -150,7 +150,7 @@ Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must alr
 
 End-to-end for kinds with pack writers: **`armor_set`**, **`handheld`**, **`large_handheld`**, **`bow`**, **`large_bow`**, **`crossbow`**.
 
-Bow kinds need multi-frame PNGs with the **same id prefix**: `{id}.png` + `{id}_0.png` / `_1` / `_2` (crossbow also `{id}_charged.png`). Sizes: bow/crossbow 16×16; large_bow 32×32.
+Bow kinds need four/five multipart fields (`texture`, `pull_0`, `pull_1`, `pull_2`, + `charged` for crossbow) — **filenames are freeform**, the server writes fixed `{id}...` stems itself. Sizes: bow/crossbow 16×16; large_bow 32×32.
 
 1. Deploy latest `Builds/ArmourShop/armourshop-*.jar`. On the **server** `plugins/ArmourShop/config.yml` (do not commit secrets):
    - `skins-api.base-url`: `http://127.0.0.1:18001` (or host-reachable staging API)
@@ -160,13 +160,13 @@ Bow kinds need multi-frame PNGs with the **same id prefix**: `{id}.png` + `{id}_
    - `pack-apply.force-reload-time`: `"06:00"` server-local daily force pull + IA refresh (blank disables)
    - `pack-apply.ia-reload-delay-seconds`: seconds between `iareload` and `iazip` (default `5`)
 2. Link Discord + mint + redeem (Step 5 / mint section above).
-3. On `http://127.0.0.1:13001/skins`: choose kind + filtered **`base_set`** (no `item`); grip only for `large_handheld`; upload PNGs named with a **base id** (API stores `{player_key}_{base_id}`). Optional **Apply name** adds colours/styles. Site blocks if you already have that name or base id.
-4. Staff **Approve** in `#bot-feed` (embed shows Minecraft + Discord names, not raw UUIDs).
+3. On `http://127.0.0.1:13001/skins`: choose kind. Armor: **Add tier** (1–6 of `iron/steel/abyssalite/mythril/mage/infantry`), 6 uploads per tier; non-armor: pick filtered **`base_set`** (no `item`), grip only for `large_handheld`. Upload any PNG file — filenames don't matter, the API derives the id from your linked Minecraft name + item name. Optional **Apply name** adds colours/styles. Site blocks if you already have an active submission with that item name.
+4. Staff **Approve** in `#bot-feed` (embed shows the human submission id, Minecraft + Discord names, tiers or base set — never raw UUIDs).
 5. Pack apply happens via:
    - **Manual:** `/armourshop pack pull` (force — runs even with players online)
    - **Empty server:** last player quit → auto pull + IA refresh if queue/API pending
    - **Daily:** `force-reload-time` (force)
-   Expect console: pack write / shop / LP (API, no `lp` chat) / `iareload` → delay → `iazip` / applied ack.
+   Expect console: pack write (**N files per tier for armor**) / shop (**N SkinSets for armor, one per tier, sharing one LP grant**) / LP (API, no `lp` chat) / `iareload` → delay → `iazip` / applied ack.
    Shop YAML uses plain `name` + separate `colour` (string or list) + optional `add-name` / `styles` (TLibs gradient at runtime).
 6. Confirm id left the approved list:
 
@@ -175,25 +175,25 @@ curl -s http://127.0.0.1:18001/skins/plugin/approved \
   -H "X-Plugin-Key: dev-plugin-key"
 ```
 
-7. Issuer opens ArmourShop → set under **Player Armor** (`ps_armor`) or **Player Items** (`ps_items`) → apply onto matching BaseSet gear in inventory.
-8. Staff delete (optional): `/armourshop submission delete <submission-uuid>` clears shop + pack + LP and marks API `revoked` (works for pre–player-key slugs too; tab-completes deletable ids).
+7. Issuer opens ArmourShop → set(s) under **Player Armor** (`ps_armor`, one per tier) or **Player Items** (`ps_items`) → apply onto matching BaseSet/tier gear in inventory.
+8. Staff delete (optional): `/armourshop submission delete <human-id>` (tab-completes ids like `drefvelin_blue_knight`, never a UUID) clears **all tiers'** shop + pack files + shared LP node and marks API `revoked`. Delete only **enqueues** the deferred IA refresh — it does not force an immediate `iareload`/`iazip`, even with staff online; the queued reload flushes on the next empty-server tick or the daily force time.
 
 Operator checklist:
 
-- [ ] Redeploy API (migrate backfills `player_key`); bot; rebuild ArmourShop (+ TLibs if needed)
+- [ ] Redeploy API (migrate drops `player_keys`; ignore any leftover unused column); bot; rebuild ArmourShop (+ TLibs if needed)
 - [ ] Config: staging API + live `pack-apply.*` paths (+ force time / IA delay)
-- [ ] Link/re-link keeps same `player_key`; two players can use same PNG basename
-- [ ] Upload blocked when same player reuses name or base id
-- [ ] Approve → pack pull wrote prefixed slug; `#bot-feed` shows names
-- [ ] `/armourshop submission delete <id>` removes shop/pack; status revoked
-- [ ] Issuer sees set and applies onto matching BaseSet gear
+- [ ] Submit **multi-tier armor** (e.g. iron + steel) with arbitrary PNG filenames — accepted; id built from IGN + item name
+- [ ] Upload blocked when same player reuses the same item name (no separate base-id conflict check)
+- [ ] Approve → pack pull writes **N SkinSets** for an N-tier armor submission; `#bot-feed` shows names + tiers, not UUIDs
+- [ ] `/armourshop submission delete <human-id>` tab-completes and removes shop/pack for all tiers; status revoked; IA refresh only **queued** (not forced)
+- [ ] Issuer sees set(s) and applies onto matching BaseSet/tier gear
 
-Failure modes: players online delays non-force IA refresh; LuckPerms missing so shop hides set; wrong BaseSet gear in inventory; bow frame names must share the same `{id}` prefix; Mojibake `Â` means jar/source encoding still wrong; base id too long after 8-char prefix (shorten PNG id).
+Failure modes: players online delays non-force IA refresh; LuckPerms missing so shop hides set; wrong BaseSet/tier gear in inventory; Mojibake `Â` means jar/source encoding still wrong; item name too long combined with IGN (shorten item name — 48-char id cap).
 
 Checkpoint:
 
 ```text
-approve → pack pull → shop + LP API → iareload → iazip → applied → issuer applies skin
+approve → pack pull (N tiers) → shop + LP API → iareload → iazip → applied → issuer applies skin
 ```
 
 ## Keys (compose defaults)

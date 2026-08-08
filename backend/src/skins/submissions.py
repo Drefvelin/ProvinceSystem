@@ -6,23 +6,23 @@ import json
 import re
 import shutil
 import sqlite3
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .db import SKINS_DIR, connect
 from .discord_link import get_link_for_uuid
 from .naming import (
+    ARMOR_FIELDS,
+    ARMOR_TIERS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
     SlugError,
-    base_id_from_slug,
-    prefix_slug,
-    resolve_submission_slug,
+    build_submission_id,
+    sanitize_ign,
+    slugify_display_name,
 )
 from .notifications import enqueue_submitted
 from .storage import (
-    ARMOR_FIELDS,
     BOW_KINDS,
     CROSSBOW_KINDS,
     StorageError,
@@ -161,10 +161,6 @@ def _validate_name_styles(raw: list[str] | None, *, add_name: bool) -> list[str]
 
 
 def _public_row(row: sqlite3.Row) -> dict:
-    player_key = None
-    link = get_link_for_uuid(row["player_uuid"])
-    if link:
-        player_key = link.get("player_key")
     return {
         "id": row["id"],
         "kind": row["kind"],
@@ -172,10 +168,10 @@ def _public_row(row: sqlite3.Row) -> dict:
         "display_name": row["display_name"],
         "grip_preset": row["grip_preset"],
         "base_set": _row_base_set(row),
+        "tiers": _row_json_list(row, "tiers"),
         "add_name": _row_add_name(row),
         "name_colours": _row_json_list(row, "name_colours"),
         "name_styles": _row_json_list(row, "name_styles"),
-        "player_key": player_key,
         "status": row["status"],
         "deny_reason": row["deny_reason"],
         "created_at": row["created_at"],
@@ -190,7 +186,6 @@ def _public_row(row: sqlite3.Row) -> dict:
 def _link_names(player_uuid: str) -> dict:
     link = get_link_for_uuid(player_uuid) or {}
     return {
-        "player_key": link.get("player_key"),
         "minecraft_name": link.get("minecraft_name"),
         "discord_username": link.get("discord_username"),
         "discord_user_id": link.get("discord_user_id"),
@@ -209,12 +204,35 @@ def _validate_base_set(kind: str, base_set: str | None) -> str:
     return raw
 
 
+def _validate_tiers(raw: list[str] | None) -> list[str]:
+    if not raw:
+        raise SubmissionError("armor_set requires 1–6 tiers")
+    if len(raw) > 6:
+        raise SubmissionError("at most 6 armor tiers")
+    out: list[str] = []
+    seen: set[str] = set()
+    tier_names = ", ".join(sorted(ARMOR_TIERS))
+    for item in raw:
+        tier = (item or "").strip().lower()
+        if not tier:
+            raise SubmissionError("empty tier name")
+        if tier not in ARMOR_TIERS:
+            raise SubmissionError(
+                f"tier '{tier}' is not valid (must be one of: {tier_names})"
+            )
+        if tier in seen:
+            raise SubmissionError(f"duplicate tier '{tier}'")
+        seen.add(tier)
+        out.append(tier)
+    return out
+
+
 def slug_taken(slug: str) -> bool:
     with connect() as conn:
         row = conn.execute(
             """
             SELECT 1 FROM submissions
-            WHERE slug = ? AND status IN (?, ?, ?)
+            WHERE id = ? AND status IN (?, ?, ?)
             LIMIT 1
             """,
             (slug, *ACTIVE_STATUSES),
@@ -226,18 +244,24 @@ def check_player_conflicts(
     player_uuid: str,
     *,
     display_name: str | None = None,
-    base_id: str | None = None,
+    submission_id: str | None = None,
 ) -> dict:
-    """Return conflicts for same-player active display_name and/or base_id."""
+    """Return conflicts for same-player active display_name and/or submission id."""
     uuid = (player_uuid or "").strip()
     display = (display_name or "").strip()
-    base = (base_id or "").strip() or None
+    sid = (submission_id or "").strip() or None
     conflicts: list[dict] = []
     if not uuid:
         return {"ok": True, "conflicts": conflicts}
 
-    link = get_link_for_uuid(uuid) or {}
-    player_key = link.get("player_key")
+    if sid is None and display:
+        link = get_link_for_uuid(uuid) or {}
+        minecraft_name = link.get("minecraft_name")
+        if minecraft_name:
+            try:
+                sid = build_submission_id(minecraft_name, display)
+            except SlugError:
+                pass
 
     with connect() as conn:
         rows = conn.execute(
@@ -251,11 +275,20 @@ def check_player_conflicts(
 
     for row in rows:
         reasons: list[str] = []
-        if display and str(row["display_name"]).strip().lower() == display.lower():
+        row_display = str(row["display_name"]).strip()
+        if display and row_display.lower() == display.lower():
             reasons.append("display_name")
-        row_base = base_id_from_slug(str(row["slug"]), player_key)
-        if base and row_base == base:
-            reasons.append("base_id")
+        elif display:
+            try:
+                new_slug = slugify_display_name(display)
+                row_slug = slugify_display_name(row_display)
+                if new_slug.lower() == row_slug.lower():
+                    reasons.append("display_name")
+            except SlugError:
+                pass
+        row_id = str(row["id"])
+        if sid and row_id == sid:
+            reasons.append("id")
         if reasons:
             conflicts.append(
                 {
@@ -278,12 +311,14 @@ def create_submission(
     grip_preset: str | None = None,
     base_set: str | None = None,
     *,
-    slug: str | None = None,
+    tiers: list[str] | None = None,
     filenames: dict[str, str | None] | None = None,
     add_name: bool = False,
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
 ) -> dict:
+    _ = filenames  # upload names ignored for identity
+
     kind = (kind or "").strip()
     if kind == "item":
         raise SubmissionError("kind 'item' is disabled")
@@ -292,8 +327,6 @@ def create_submission(
             "kind must be armor_set, handheld, large_handheld, "
             "bow, large_bow, or crossbow"
         )
-
-    base = _validate_base_set(kind, base_set)
 
     display = (display_name or "").strip()
     if not display:
@@ -316,26 +349,35 @@ def create_submission(
     colours_json = json.dumps(colours) if colours else None
     styles_json = json.dumps(styles) if styles else None
 
+    tier_list: list[str] | None
     if kind == "armor_set":
-        missing = [f for f in ARMOR_FIELDS if f not in files_bytes]
-        if missing:
-            raise SubmissionError(f"Missing files: {', '.join(missing)}")
-    elif kind in BOW_KINDS:
-        missing = [f for f in BOW_FRAME_FIELDS if f not in files_bytes]
-        if missing:
-            raise SubmissionError(f"Missing files: {', '.join(missing)}")
-    elif kind in CROSSBOW_KINDS:
-        missing = [f for f in CROSSBOW_FRAME_FIELDS if f not in files_bytes]
-        if missing:
-            raise SubmissionError(f"Missing files: {', '.join(missing)}")
-    elif "texture" not in files_bytes:
-        raise SubmissionError("Missing file: texture")
-
-    names = filenames or {}
-    try:
-        base_id = resolve_submission_slug(kind, names, provided_slug=slug)
-    except SlugError:
-        raise
+        tier_list = _validate_tiers(tiers)
+        base: str | None = None
+        for tier in tier_list:
+            missing = [
+                f"{tier}_{field}"
+                for field in ARMOR_FIELDS
+                if f"{tier}_{field}" not in files_bytes
+            ]
+            if missing:
+                raise SubmissionError(f"Missing files: {', '.join(missing)}")
+    else:
+        if tiers:
+            raise SubmissionError("tiers are only allowed for armor_set")
+        tier_list = None
+        base = _validate_base_set(kind, base_set)
+        if kind in BOW_KINDS:
+            missing = [f for f in BOW_FRAME_FIELDS if f not in files_bytes]
+            if missing:
+                raise SubmissionError(f"Missing files: {', '.join(missing)}")
+        elif kind in CROSSBOW_KINDS:
+            missing = [
+                f for f in CROSSBOW_FRAME_FIELDS if f not in files_bytes
+            ]
+            if missing:
+                raise SubmissionError(f"Missing files: {', '.join(missing)}")
+        elif "texture" not in files_bytes:
+            raise SubmissionError("Missing file: texture")
 
     player_uuid = session_row["player_uuid"]
     link = get_link_for_uuid(player_uuid)
@@ -343,28 +385,30 @@ def create_submission(
         raise SubmissionError(
             "Link Discord in-game with /linkdiscord first"
         )
-    player_key = link.get("player_key")
-    if not player_key:
+    minecraft_name = link.get("minecraft_name")
+    if not minecraft_name:
         raise SubmissionError(
-            "Player key missing — re-link Discord or wait for API migrate"
+            "Minecraft name missing — re-link Discord or wait for API migrate"
         )
 
     try:
-        full_slug = prefix_slug(player_key, base_id)
+        submission_id = build_submission_id(minecraft_name, display)
     except SlugError:
         raise
 
+    slug = submission_id
+
     conflict = check_player_conflicts(
-        player_uuid, display_name=display, base_id=base_id
+        player_uuid, display_name=display, submission_id=submission_id
     )
     if not conflict["ok"]:
         reasons = set()
         for c in conflict["conflicts"]:
             reasons.update(c.get("reasons") or [])
-        if "display_name" in reasons and "base_id" in reasons:
+        if "display_name" in reasons and "id" in reasons:
             msg = (
                 "You already have an active skin with this item name "
-                "and file id. Delete it in-game or choose a different name/files."
+                "and id. Delete it in-game or choose a different item name."
             )
         elif "display_name" in reasons:
             msg = (
@@ -374,35 +418,34 @@ def create_submission(
             )
         else:
             msg = (
-                f"You already have an active skin with file id '{base_id}'. "
-                "Rename your PNG(s) or ask staff to delete the old one."
+                f"You already have an active skin with id '{submission_id}'. "
+                "Choose a different item name or ask staff to delete the old one."
             )
         raise SubmissionError(msg)
 
-    if slug_taken(full_slug):
+    if slug_taken(submission_id):
         raise SlugConflictError(
-            f"A skin with file id '{full_slug}' is already in use. "
-            "Rename your PNG(s) and try again."
+            f"A skin with id '{submission_id}' is already in use. "
+            "Choose a different item name and try again."
         )
 
-    submission_id = str(uuid.uuid4())
+    tiers_json = json.dumps(tier_list) if tier_list else None
     dir_path = f"skins/{submission_id}"
     created_at = _iso_now()
     code_id = session_row["code_id"]
     discord_id = str(link["discord_user_id"])
-    slug = full_slug
 
     with connect() as conn:
         conn.execute(
             """
             INSERT INTO submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
-                grip_preset, base_set, add_name, name_colours, name_styles,
+                grip_preset, base_set, tiers, add_name, name_colours, name_styles,
                 status, deny_reason, dir_path,
                 created_at, reviewed_at, applied_at, discord_message_id,
                 discord_user_id
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
                 NULL, NULL, NULL, ?
             )
             """,
@@ -415,6 +458,7 @@ def create_submission(
                 display,
                 grip,
                 base,
+                tiers_json,
                 1 if want_add_name else 0,
                 colours_json,
                 styles_json,
@@ -434,6 +478,7 @@ def create_submission(
             files_bytes,
             grip_preset=grip,
             base_set=base,
+            tiers=tier_list,
             add_name=want_add_name,
             name_colours=colours,
             name_styles=styles,
@@ -575,6 +620,7 @@ def list_pending() -> list[dict]:
                 "display_name": row["display_name"],
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
+                "tiers": _row_json_list(row, "tiers"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),
@@ -587,7 +633,6 @@ def list_pending() -> list[dict]:
                 ),
                 "minecraft_name": names.get("minecraft_name"),
                 "discord_username": names.get("discord_username"),
-                "player_key": names.get("player_key"),
                 "files": _list_png_files(row["id"]),
             }
         )
@@ -620,11 +665,13 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
                 "display_name": row["display_name"],
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
+                "tiers": _row_json_list(row, "tiers"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),
-                "player_key": names.get("player_key"),
                 "reviewed_at": row["reviewed_at"],
+                "minecraft_name": names.get("minecraft_name"),
+                "discord_username": names.get("discord_username"),
                 "files": _list_png_files(row["id"]),
             }
         )
@@ -651,7 +698,7 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
         "display_name": row["display_name"],
         "status": row["status"],
         "base_set": _row_base_set(row),
-        "player_key": names.get("player_key"),
+        "tiers": _row_json_list(row, "tiers"),
         "minecraft_name": names.get("minecraft_name"),
     }
 

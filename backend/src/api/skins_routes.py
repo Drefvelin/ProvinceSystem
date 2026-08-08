@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
@@ -32,7 +33,7 @@ from src.skins.plugin_notices import (
     ack_plugin_notices,
     list_undelivered_plugin_notices,
 )
-from src.skins.naming import SlugError
+from src.skins.naming import ARMOR_FIELDS, SlugError
 from src.skins.notifications import (
     NotificationError,
     ack_notification,
@@ -242,69 +243,81 @@ def post_redeem(body: RedeemBody):
 def get_submissions_check(
     authorization: str | None = Header(default=None),
     display_name: str | None = None,
-    base_id: str | None = None,
+    submission_id: str | None = None,
 ):
     session = _session_from_auth(authorization)
     return check_player_conflicts(
         session["player_uuid"],
         display_name=display_name,
-        base_id=base_id,
+        submission_id=submission_id,
     )
 
 
 @skins_router.post("/submissions")
 async def post_submissions(
+    request: Request,
     authorization: str | None = Header(default=None),
-    kind: str = Form(...),
-    display_name: str = Form(...),
-    base_set: str = Form(...),
-    slug: str | None = Form(default=None),
-    grip_preset: str | None = Form(default=None),
-    add_name: str | None = Form(default=None),
-    name_colours: str | None = Form(default=None),
-    name_styles: str | None = Form(default=None),
-    helmet: UploadFile | None = File(default=None),
-    chestplate: UploadFile | None = File(default=None),
-    leggings: UploadFile | None = File(default=None),
-    boots: UploadFile | None = File(default=None),
-    layer_1: UploadFile | None = File(default=None),
-    layer_2: UploadFile | None = File(default=None),
-    texture: UploadFile | None = File(default=None),
-    pull_0: UploadFile | None = File(default=None),
-    pull_1: UploadFile | None = File(default=None),
-    pull_2: UploadFile | None = File(default=None),
-    charged: UploadFile | None = File(default=None),
 ):
     session = _session_from_auth(authorization)
+    form = await request.form()
 
-    uploads = {
-        "helmet": helmet,
-        "chestplate": chestplate,
-        "leggings": leggings,
-        "boots": boots,
-        "layer_1": layer_1,
-        "layer_2": layer_2,
-        "texture": texture,
-        "pull_0": pull_0,
-        "pull_1": pull_1,
-        "pull_2": pull_2,
-        "charged": charged,
-    }
+    kind = str(form.get("kind") or "")
+    display_name = str(form.get("display_name") or "")
+    base_set_raw = form.get("base_set")
+    base_set = str(base_set_raw).strip() if base_set_raw else None
+    grip_preset_raw = form.get("grip_preset")
+    grip_preset = str(grip_preset_raw).strip() if grip_preset_raw else None
+    add_name_raw = form.get("add_name")
+    name_colours_raw = form.get("name_colours")
+    name_styles_raw = form.get("name_styles")
+    tiers_raw = form.get("tiers")
+
+    tiers_list: list[str] | None = None
+    if tiers_raw:
+        try:
+            parsed = json.loads(str(tiers_raw))
+            if not isinstance(parsed, list):
+                raise ValueError("not a list")
+            tiers_list = [str(x) for x in parsed]
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="tiers must be a JSON array"
+            ) from e
+
     files_bytes: dict[str, bytes] = {}
     filenames: dict[str, str | None] = {}
-    for name, upload in uploads.items():
-        if upload is not None:
-            files_bytes[name] = await upload.read()
-            filenames[name] = upload.filename
+    for key, value in form.multi_items():
+        if hasattr(value, "read") and hasattr(value, "filename"):
+            files_bytes[str(key)] = await value.read()
+            filenames[str(key)] = value.filename
 
-    want_add = str(add_name or "").strip().lower() in ("1", "true", "yes", "on")
+    if kind == "armor_set" and not tiers_list:
+        has_unprefixed = any(field in files_bytes for field in ARMOR_FIELDS)
+        if has_unprefixed:
+            tier = (base_set or "iron").strip().lower()
+            tiers_list = [tier]
+            remapped: dict[str, bytes] = {}
+            remapped_names: dict[str, str | None] = {}
+            for field in ARMOR_FIELDS:
+                if field in files_bytes:
+                    tier_key = f"{tier}_{field}"
+                    remapped[tier_key] = files_bytes[field]
+                    remapped_names[tier_key] = filenames.get(field)
+            files_bytes = {
+                k: v for k, v in files_bytes.items() if k not in ARMOR_FIELDS
+            }
+            filenames = {
+                k: v for k, v in filenames.items() if k not in ARMOR_FIELDS
+            }
+            files_bytes.update(remapped)
+            filenames.update(remapped_names)
+
+    want_add = str(add_name_raw or "").strip().lower() in ("1", "true", "yes", "on")
     colours_list: list[str] | None = None
     styles_list: list[str] | None = None
-    if name_colours and name_colours.strip():
+    if name_colours_raw and str(name_colours_raw).strip():
         try:
-            import json as _json
-
-            parsed = _json.loads(name_colours)
+            parsed = json.loads(str(name_colours_raw))
             if isinstance(parsed, list):
                 colours_list = [str(x) for x in parsed]
             else:
@@ -313,11 +326,9 @@ async def post_submissions(
             raise HTTPException(
                 status_code=400, detail="name_colours must be a JSON array"
             ) from e
-    if name_styles and name_styles.strip():
+    if name_styles_raw and str(name_styles_raw).strip():
         try:
-            import json as _json
-
-            parsed = _json.loads(name_styles)
+            parsed = json.loads(str(name_styles_raw))
             if isinstance(parsed, list):
                 styles_list = [str(x) for x in parsed]
             else:
@@ -333,9 +344,9 @@ async def post_submissions(
             kind,
             display_name,
             files_bytes,
-            grip_preset=grip_preset,
-            base_set=base_set,
-            slug=slug,
+            grip_preset=grip_preset or None,
+            base_set=base_set or None,
+            tiers=tiers_list,
             filenames=filenames,
             add_name=want_add,
             name_colours=colours_list,

@@ -1,5 +1,17 @@
 import type { SkinKind } from "./sizes";
 
+/** Armor tiers (step-11 multi-tier armor). Mirrors backend ARMOR_TIERS. */
+export const ARMOR_TIERS = [
+  "iron",
+  "steel",
+  "abyssalite",
+  "mythril",
+  "mage",
+  "infantry",
+] as const;
+
+export const MAX_ARMOR_TIERS = ARMOR_TIERS.length;
+
 /** Mirrors backend BASE_SETS (step-8 / batch 8.01). */
 export const BASE_SETS: Record<SkinKind, readonly string[]> = {
   armor_set: ["iron", "steel", "abyssalite", "mythril", "mage", "infantry"],

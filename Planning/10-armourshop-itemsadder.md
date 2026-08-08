@@ -72,11 +72,12 @@ tfmc_submissions/
 
 Keep Copy and live in sync when changing scaffold. Dry-run writers should target Copy (or a temp contents root) via `pack-apply.ia-contents-path`.
 
-**Armor set** (2D) — mirror `tfmc_armor`:
+**Armor set** (2D, multi-tier) — mirror `tfmc_armor`, **once per tier** in the submission's `tiers` list (1–6 from `iron|steel|abyssalite|mythril|mage|infantry`):
 
-- `armors_rendering.{slug}` with `layer_1` / `layer_2`
-- Four items: `{slug}_helmet|chestplate|leggings|boots` with `generate: true`, icon textures, `custom_armor: {slug}`
+- `armors_rendering.{id}_{tier}` with `layer_1` / `layer_2`
+- Four items per tier: `{id}_{tier}_helmet|chestplate|leggings|boots` with `generate: true`, icon textures, `custom_armor: {id}_{tier}`
 - Expect icons 16×16 and layers 64×32 (API already enforced)
+- Shared item name / apply-name / colours across all tiers of a submission; no "amend applied set" MVP — new tiers require a new submission
 
 **2D / weapon skins** — single item id `{slug}`, texture `{slug}`:
 
@@ -130,23 +131,24 @@ Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-
 Today categories point at `ia.tfmc_armor:…` or legacy `localmodel(…)`. Player submissions should only use:
 
 ```text
-ia.tfmc_submissions:{slug}_helmet
-ia.tfmc_submissions:{slug}
+ia.tfmc_submissions:{id}_{tier}_helmet   # armor, per tier
+ia.tfmc_submissions:{id}                 # non-armor
 ```
 
 - Two categories: **`ps_armor`** (`is-item: false`) and **`ps_items`** (`is-item: true`)  
-- Set key = `{slug}` (`{player_key}_{base_id}`); SkinSet `set: {base_set}` from upload (filtered by kind — [step-8](./batches/step-8/00-index.md))  
+- Non-armor set key = `{id}`; SkinSet `set: {base_set}` from upload (filtered by kind — [step-8](./batches/step-8/00-index.md))  
+- Armor: **one SkinSet per tier**, key `{id}_{tier}`, `set: {tier}` — a 2-tier submission writes 2 SkinSets under `ps_armor`; `base_set` is null/unused for armor  
 - SkinSet display: plain `name`, separate `colour` (string or list of `#RRGGBB` / legacy codes), optional `add-name`, optional `styles` (`bold` / `italic` / `underline` / `strikethrough`). Runtime formatting via TLibs `applyColourGradient` (+ styles). Jar sources use `\u00A7` / UTF-8 to avoid GUI `Â` mojibake.  
-- Staff: `/armourshop submission delete <submissionId>` removes shop SkinSet + `tfmc_submissions` pack files + LP node + API `revoked`, then IA refresh.  
+- Staff: `/armourshop submission delete <submissionId>` removes **all** tier SkinSets + all `tfmc_submissions` pack files for that submission id family + LP node + API `revoked`, then **enqueues** a deferred IA refresh (no immediate `iareload`/`iazip` — see Deferred reload below). Tab-complete lists human ids (`drefvelin_blue_knight`), never UUIDs.  
 - `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`  
-- Gate with `permission: armourshop.submission.{slug}` (Bukkit `hasPermission`; LP grants the node)  
+- Gate with `permission: armourshop.submission.{id}` (Bukkit `hasPermission`; LP grants the node once per submission, shared across all its tiers)  
 - **No scroll** on player submission sets  
 
 Apply path stays existing `ArmorMerger.merge` + IA id (inventory item must match the chosen BaseSet).
 
 ## LuckPerms
 
-On apply: grant issuer UUID `armourshop.submission.{slug}`.  
+On apply: grant issuer UUID `armourshop.submission.{id}` — one shared node for the whole submission, covering every tier.  
 On revoke/deny-after-apply (if ever): remove node and optionally disable IA permission.
 
 ## Deferred reload
@@ -157,6 +159,8 @@ Same policy as map regen when possible:
 2. If players online → mark pending reload (`pending-reload.yml`).  
 3. When `onlineCount == 0` or on restart/enable → console **`iazip`** (reload configs + regenerate resourcepack).  
 4. On `ItemsAdderPackCompressedEvent` → `POST /skins/plugin/applied` (not only when files are written).
+
+**Delete is deferred-only** (Step 11): staff delete clears pack/shop/LP files and calls API revoke synchronously, then only **enqueues** into the same `PendingReloadQueue` / `DeferredIaReloadService` used above (`requestFlush(false)` — empty-server path) — it never dispatches `iareload`/`iazip` immediately, even with staff watching. The queued refresh flushes on the next empty-server tick, the daily `force-reload-time`, or a manual force pull, exactly like a normal approve/apply pack write.
 
 ## Config (plugin)
 
@@ -185,6 +189,9 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 - [x] Pack writer + harness ([step-7](./batches/step-7/00-index.md) 02–05)  
 - [x] `base_set` API/UI + pull + shop + LP + reload + applied ([step-8](./batches/step-8/00-index.md) 01–06; live STAGING E2E boxes in [STAGING.md](../STAGING.md))  
 - [x] Bow / large_bow / crossbow writers ([step-8/07](./batches/step-8/07-bow-crossbow-writers.md); staging apply unchecked)  
+- [x] IGN-based submission ids; no `player_key`; upload filenames ignored ([step-11/01](./batches/step-11/01-ign-id.md))  
+- [x] Multi-tier armor: 1–6 tiers per submission, one SkinSet + pack write per tier, shared LP node ([step-11/02](./batches/step-11/02-tiers-api.md), [step-11/04](./batches/step-11/04-pack-shop.md))  
+- [x] Delete = deferred IA queue only, no immediate reload; tab-complete uses human ids ([step-11/05](./batches/step-11/05-delete-defer.md))  
 - [ ] `item_3d` + `shield` (blocking auto) later  
 
 ## See also

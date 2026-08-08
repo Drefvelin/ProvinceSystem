@@ -107,6 +107,7 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] Bow / large_bow / crossbow writers + harness + apply ([8.07](./batches/step-8/07-bow-crossbow-writers.md))
 - [x] Name colour / encoding / website Apply name ([step-9](./batches/step-9/00-index.md))
 - [x] Player key prefix, collision check, staff delete, bot names ([step-10](./batches/step-10/00-index.md))
+- [x] IGN-based human ids (no `player_key`), ignore upload filenames, multi-tier armor (1–6), deferred-only delete ([step-11](./batches/step-11/00-index.md))
 
 **Done when:** Flow 2 complete for melee/armor in [12](./12-end-to-end-flows.md); bow kinds after 8.07.
 
