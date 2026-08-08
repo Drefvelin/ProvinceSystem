@@ -12,23 +12,36 @@ export const ARMOR_TIERS = [
 
 export const MAX_ARMOR_TIERS = ARMOR_TIERS.length;
 
-/** Mirrors backend BASE_SETS (step-8 / batch 8.01). */
+const HANDHELD = [
+  "swords",
+  "battleaxes",
+  "daggers",
+  "warhammers",
+  "shortswords",
+  "hatchets",
+  "hoes",
+  "knives",
+] as const;
+
+const LARGE_HANDHELD = [
+  "spears",
+  "polearms",
+  "greathammers",
+  "staffs",
+] as const;
+
+/** Mirrors backend BASE_SETS (step-8 / step-13). */
 export const BASE_SETS: Record<SkinKind, readonly string[]> = {
   armor_set: ["iron", "steel", "abyssalite", "mythril", "mage", "infantry"],
-  handheld: [
-    "swords",
-    "battleaxes",
-    "daggers",
-    "warhammers",
-    "shortswords",
-    "hatchets",
-    "hoes",
-    "knives",
-  ],
-  large_handheld: ["spears", "polearms", "greathammers", "staffs"],
+  handheld: HANDHELD,
+  large_handheld: LARGE_HANDHELD,
   bow: ["shortbows"],
   large_bow: ["longbows"],
   crossbow: ["crossbows"],
+  item_3d: [...HANDHELD, ...LARGE_HANDHELD],
+  shield: ["shields"],
+  helmet_3d: ["helmets"],
+  gun: ["rifles", "pistols", "shotguns", "launchers"],
 };
 
 const LABELS: Record<string, string> = {
@@ -53,6 +66,12 @@ const LABELS: Record<string, string> = {
   shortbows: "Shortbows",
   longbows: "Longbows",
   crossbows: "Crossbows",
+  shields: "Shields",
+  helmets: "Helmets",
+  rifles: "Rifles",
+  pistols: "Pistols",
+  shotguns: "Shotguns",
+  launchers: "Launchers",
 };
 
 export function baseSetsForKind(kind: SkinKind): readonly string[] {

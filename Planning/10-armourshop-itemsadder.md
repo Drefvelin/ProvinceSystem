@@ -92,9 +92,11 @@ Keep Copy and live in sync when changing scaffold. Dry-run writers should target
 
 Donor never hand-edits JSON for these kinds. Staff review art + preset via Discord PNG sheet.
 
-**Item 3D** (later) — cooking style: `generate: false`, `model_path`, ship donor JSON under namespace models. JSON must already contain required `display` keys (`gui`, `ground`, `fixed`, `firstperson_*`, `thirdperson_*`, and `head` when relevant). Soft scale warnings optional; missing keys → reject at upload (API), not at apply.
+**Item 3D / helmet 3D** ([step-13](./batches/step-13/00-index.md)) — `generate: false`, `model_path`, ship donor JSON (API-merged display) under namespace models. Missing required keys → reject at upload (API), not at apply.
 
-**Shield** (later) — one model + texture from donor; ArmourShop **clones** model and applies locked **blocking** `display` (and any IA blocking override). Do not require a second mesh upload.
+**Shield** — one model + texture from donor; ArmourShop **clones** model to `{slug}_blocking` and applies locked **round** blocking `display` Δ + overrides. Do not require a second mesh upload.
+
+**Armor 3D helmet** — per-tier flag `helmet_3d_tiers`; that tier’s helmet item uses `generate: false` + model/texture (no 16×16 icon); other pieces unchanged.
 
 Never add new skins via manual `custom_model_data` lists in `tfmc_pack`.
 
@@ -124,7 +126,9 @@ Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-
 | `armor_set`, `handheld` | IA auto-gen (`generate: true` + parent); no shipped per-skin JSON |
 | `large_handheld` | ArmourShop **grip template** JSONs + thin per-skin model (`generate: false`) |
 | `bow`, `large_bow`, `crossbow` | ArmourShop writers ([8.07](./batches/step-8/07-bow-crossbow-writers.md)); pull/draw templates |
-| `item_3d`, `shield` | Donor Blockbench JSON (required keys); ArmourShop adds shield blocking clone only |
+| `item_3d`, `helmet_3d` | Donor Blockbench JSON (API autofill + validate); ArmourShop ships as-is |
+| `shield` | Donor JSON + ArmourShop blocking clone (round Δ) |
+| `armor_set` 3D helmet tier | Same as `helmet_3d` under `{id}_{tier}_helmet` |
 
 ## ArmourShop shop integration
 
@@ -140,7 +144,7 @@ ia.tfmc_submissions:{id}                 # non-armor
 - Armor: **one SkinSet per tier**, key `{id}_{tier}`, `set: {tier}` — a 2-tier submission writes 2 SkinSets under `ps_armor`; `base_set` is null/unused for armor  
 - SkinSet display: plain `name`, separate `colour` (string or list of `#RRGGBB` / legacy codes), optional `add-name`, optional `styles` (`bold` / `italic` / `underline` / `strikethrough`). Runtime formatting via TLibs `applyColourGradient` (+ styles). Jar sources use `\u00A7` / UTF-8 to avoid GUI `Â` mojibake.  
 - Staff: `/armourshop submission delete <submissionId>` removes **all** tier SkinSets + all `tfmc_submissions` pack files for that submission id family + LP node + API `revoked`, then **enqueues** a deferred IA refresh (no immediate `iareload`/`iazip` — see Deferred reload below). Tab-complete lists human ids (`drefvelin_blue_knight`), never UUIDs.  
-- `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`  
+- `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`  
 - Gate with `permission: armourshop.submission.{id}` (Bukkit `hasPermission`; LP grants the node once per submission, shared across all its tiers)  
 - **No scroll** on player submission sets  
 
@@ -192,7 +196,9 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 - [x] IGN-based submission ids; no `player_key`; upload filenames ignored ([step-11/01](./batches/step-11/01-ign-id.md))  
 - [x] Multi-tier armor: 1–6 tiers per submission, one SkinSet + pack write per tier, shared LP node ([step-11/02](./batches/step-11/02-tiers-api.md), [step-11/04](./batches/step-11/04-pack-shop.md))  
 - [x] Delete = deferred IA queue only, no immediate reload; tab-complete uses human ids ([step-11/05](./batches/step-11/05-delete-defer.md))  
-- [ ] `item_3d` + `shield` (blocking auto) later  
+- [x] `item_3d` + `shield` + `helmet_3d` (blocking auto; armor per-tier 3D helmet) — [step-13](./batches/step-13/00-index.md)
+- [x] Guns carry/reload/aim — [step-14](./batches/step-14/00-index.md) (upload/apply); [step-15](./batches/step-15/00-index.md) (GaG IA ids; shop `gunskin({id})`)
+- [ ] Multi-view 3D review bake later
 
 ## See also
 

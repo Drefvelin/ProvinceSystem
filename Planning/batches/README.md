@@ -46,9 +46,12 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-10/00-index](./step-10/00-index.md) | 10 | Player key / delete / bot names | Prefixed slug + staff delete |
 | [step-11/00-index](./step-11/00-index.md) | 11 | IGN ids / multi-tier armor | Human ids + tier packs |
 | [step-12/00-index](./step-12/00-index.md) | 12 | Staff review sheet + submit UX | One composite sheet; site + bot |
+| [step-13/00-index](./step-13/00-index.md) | 13 | Item 3D / shield / helmet 3D | Upload → apply for 3D kinds |
+| [step-14/00-index](./step-14/00-index.md) | 14 | Gun skins | carry/reload/aim upload + apply |
+| [step-15/00-index](./step-15/00-index.md) | 15 | Gun IA ids | GaG `ia.…`; no CMD dual-write |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop).
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA.
 
-**Later:** Ban-role mute; review-sheet in Discord; `item_3d` / `shield`.
+**Later:** Ban-role mute; multi-view 3D review bake.
 
 Parent playbook: [../README.md](../README.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)

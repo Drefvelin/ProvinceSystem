@@ -95,18 +95,40 @@ Size: **16×16**.
 
 All enabled non-armor kinds also require **`base_set`** (ArmourShop BaseSet id: type filtered by kind) — a form field, not derived from filenames; see [step-8](./batches/step-8/00-index.md). Kind `item` is not selectable. Armor uses `tiers` instead of `base_set` (`base_set` is null/unused for `armor_set`).
 
-### `item_3d` (later)
+### `item_3d` / `shield` / `helmet_3d`
 
 ```text
 {id}.png
 {id}.json
 ```
 
-Same `{id}` stem on both; JSON must include required `display` keys.
+Same `{id}` stem on both. Multipart fields: `texture` + `model`. API autofills missing `display` tabs then validates ([step-13](./batches/step-13/00-index.md)). Shield blocking model is **not** uploaded (ArmourShop clones at apply).
 
-### `shield` (later)
+`base_set`: `item_3d` → handheld ∪ large_handheld; `shield` → `shields`; `helmet_3d` → `helmets`.
 
-TBD with ArmourShop; one mesh; blocking display generated at apply.
+### `gun` ([step-14](./batches/step-14/00-index.md) / [step-15](./batches/step-15/00-index.md))
+
+```text
+{id}.png
+{id}_carry.json
+{id}_reload.json
+{id}_aim.json
+```
+
+Multipart: `texture`, `carry_model`, `reload_model`, `aim_model`. Display autofill per model as `item_3d`.  
+`base_set`: `rifles` \| `pistols` \| `shotguns` \| `launchers`.  
+Apply writes IA items (STONE_HOE carry/reload, CROSSBOW aim) + GaG `skins.yml` `ia.tfmc_submissions:{id}_*`; shop `gunskin({id})`.
+
+### Armor 3D helmet (per tier)
+
+When tier is listed in `helmet_3d_tiers`:
+
+```text
+{tier}_helmet_model.json
+{tier}_helmet_texture.png
+```
+
+No `{tier}_helmet.png` for that tier. Flat tiers still use `{tier}_helmet.png`.
 
 ## After validation (server storage)
 
@@ -121,6 +143,7 @@ Server writes under `data/skins/{submission_id}/` using fixed stems derived from
 | IA item id (non-armor) | `{id}` |
 | ArmourShop set key, non-armor | `{id}` |
 | ArmourShop set key, armor (per tier) | `{id}_{tier}` |
+| Gun shop item | `gunskin({id})` |
 | LP permission (shared across tiers) | `armourshop.submission.{id}` |
 
 ## Player-facing copy (examples)

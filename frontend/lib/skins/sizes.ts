@@ -4,7 +4,11 @@ export type SkinKind =
   | "large_handheld"
   | "bow"
   | "large_bow"
-  | "crossbow";
+  | "crossbow"
+  | "item_3d"
+  | "shield"
+  | "helmet_3d"
+  | "gun";
 
 export type Size = { w: number; h: number };
 
@@ -27,11 +31,30 @@ export const ARMOR_FIELDS = [
   ...ARMOR_LAYER_FIELDS,
 ] as const;
 
+/** Armor fields when helmet is flat 16×16. */
+export const ARMOR_FIELDS_FLAT = ARMOR_FIELDS;
+
+/** Armor body fields always required (helmet handled separately). */
+export const ARMOR_BODY_FIELDS = [
+  "chestplate",
+  "leggings",
+  "boots",
+  ...ARMOR_LAYER_FIELDS,
+] as const;
+
 export const BOW_PULL_FIELDS = ["pull_0", "pull_1", "pull_2"] as const;
 export const BOW_FRAME_FIELDS = ["texture", ...BOW_PULL_FIELDS] as const;
 export const CROSSBOW_FRAME_FIELDS = [
   ...BOW_FRAME_FIELDS,
   "charged",
+] as const;
+
+export const MODEL_3D_FIELDS = ["texture", "model"] as const;
+export const GUN_FIELDS = [
+  "texture",
+  "carry_model",
+  "reload_model",
+  "aim_model",
 ] as const;
 
 export function isLargeTextureKind(kind: SkinKind): boolean {
@@ -40,6 +63,14 @@ export function isLargeTextureKind(kind: SkinKind): boolean {
 
 export function isBowFrameKind(kind: SkinKind): boolean {
   return kind === "bow" || kind === "large_bow" || kind === "crossbow";
+}
+
+export function isModel3dKind(kind: SkinKind): boolean {
+  return kind === "item_3d" || kind === "shield" || kind === "helmet_3d";
+}
+
+export function isGunKind(kind: SkinKind): boolean {
+  return kind === "gun";
 }
 
 export function fileFieldsForKind(kind: SkinKind): readonly string[] {
@@ -52,6 +83,12 @@ export function fileFieldsForKind(kind: SkinKind): readonly string[] {
   if (kind === "crossbow") {
     return CROSSBOW_FRAME_FIELDS;
   }
+  if (isModel3dKind(kind)) {
+    return MODEL_3D_FIELDS;
+  }
+  if (isGunKind(kind)) {
+    return GUN_FIELDS;
+  }
   return ["texture"];
 }
 
@@ -60,12 +97,18 @@ export function expectedSizeForField(
   field: string
 ): Size | null {
   if (kind === "armor_set") {
+    if (field === "helmet_texture") {
+      return null; // any PNG size for 3D helmet texture
+    }
     if ((ARMOR_ICON_FIELDS as readonly string[]).includes(field)) {
       return ICON_SIZE;
     }
     if ((ARMOR_LAYER_FIELDS as readonly string[]).includes(field)) {
       return LAYER_SIZE;
     }
+    return null;
+  }
+  if (isModel3dKind(kind) || isGunKind(kind)) {
     return null;
   }
   if (isBowFrameKind(kind)) {
@@ -86,7 +129,7 @@ export function expectedSizeForField(
 
 export function sizeHint(kind: SkinKind): string {
   if (kind === "armor_set") {
-    return "Icons must be 16×16; layers must be 64×32.";
+    return "Icons must be 16×16; layers must be 64×32. 3D helmet: any PNG + Blockbench JSON.";
   }
   if (kind === "large_bow") {
     return "All four bow frames must be 32×32.";
@@ -96,6 +139,9 @@ export function sizeHint(kind: SkinKind): string {
   }
   if (kind === "crossbow") {
     return "All five crossbow frames must be 16×16.";
+  }
+  if (isModel3dKind(kind) || isGunKind(kind)) {
+    return "Upload a texture PNG and Blockbench model JSON (display autofilled if missing). Guns need carry, reload, and aim models.";
   }
   if (isLargeTextureKind(kind)) {
     return "Texture must be 32×32.";

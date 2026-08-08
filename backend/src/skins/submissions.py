@@ -13,7 +13,6 @@ from pathlib import Path
 from .db import SKINS_DIR, connect
 from .discord_link import get_link_for_uuid
 from .naming import (
-    ARMOR_FIELDS,
     ARMOR_TIER_LABELS,
     ARMOR_TIERS,
     BOW_FRAME_FIELDS,
@@ -29,6 +28,8 @@ from .name_preview import write_name_preview
 from .storage import (
     BOW_KINDS,
     CROSSBOW_KINDS,
+    GUN_KIND,
+    GUN_MODEL_FIELDS,
     StorageError,
     write_submission_files,
 )
@@ -39,6 +40,22 @@ ALLOWED_STYLES = frozenset(
 )
 _HEX_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
 _LEGACY_RE = re.compile(r"^[\u00a7&]?[0-9A-Fa-fk-or]$")
+_HANDHELD_BASES = frozenset(
+    {
+        "swords",
+        "battleaxes",
+        "daggers",
+        "warhammers",
+        "shortswords",
+        "hatchets",
+        "hoes",
+        "knives",
+    }
+)
+_LARGE_HANDHELD_BASES = frozenset(
+    {"spears", "polearms", "greathammers", "staffs"}
+)
+
 ALLOWED_KINDS = frozenset(
     {
         "armor_set",
@@ -47,31 +64,28 @@ ALLOWED_KINDS = frozenset(
         "bow",
         "large_bow",
         "crossbow",
+        "item_3d",
+        "shield",
+        "helmet_3d",
+        "gun",
     }
 )
 BASE_SETS: dict[str, frozenset[str]] = {
     "armor_set": frozenset(
         {"iron", "steel", "abyssalite", "mythril", "mage", "infantry"}
     ),
-    "handheld": frozenset(
-        {
-            "swords",
-            "battleaxes",
-            "daggers",
-            "warhammers",
-            "shortswords",
-            "hatchets",
-            "hoes",
-            "knives",
-        }
-    ),
-    "large_handheld": frozenset(
-        {"spears", "polearms", "greathammers", "staffs"}
-    ),
+    "handheld": _HANDHELD_BASES,
+    "large_handheld": _LARGE_HANDHELD_BASES,
     "bow": frozenset({"shortbows"}),
     "large_bow": frozenset({"longbows"}),
     "crossbow": frozenset({"crossbows"}),
+    "item_3d": _HANDHELD_BASES | _LARGE_HANDHELD_BASES,
+    "shield": frozenset({"shields"}),
+    "helmet_3d": frozenset({"helmets"}),
+    "gun": frozenset({"rifles", "pistols", "shotguns", "launchers"}),
 }
+MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
+GUN_FIELDS = ("texture",) + GUN_MODEL_FIELDS
 GRIP_PRESETS = frozenset({"bottom", "middle", "top"})
 MAX_DISPLAY_NAME = 80
 
@@ -192,6 +206,7 @@ def _public_row(row: sqlite3.Row) -> dict:
         "grip_preset": row["grip_preset"],
         "base_set": _row_base_set(row),
         "tiers": _row_json_list(row, "tiers"),
+        "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
         "tier_aliases": _row_json_object(row, "tier_aliases"),
         "add_name": _row_add_name(row),
         "name_colours": _row_json_list(row, "name_colours"),
@@ -279,12 +294,39 @@ def _validate_tier_aliases(
     return out
 
 
+def _validate_helmet_3d_tiers(
+    tiers: list[str], raw: list[str] | None
+) -> list[str]:
+    if not raw:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        tier = (item or "").strip().lower()
+        if not tier:
+            continue
+        if tier not in tiers:
+            raise SubmissionError(
+                f"helmet_3d_tiers entry '{tier}' is not in this submission's tiers"
+            )
+        if tier in seen:
+            continue
+        seen.add(tier)
+        out.append(tier)
+    return out
+
+
 def _reject_duplicate_textures(files_bytes: dict[str, bytes]) -> None:
     """Every uploaded PNG in a submission must have unique bytes."""
-    if len(files_bytes) < 2:
+    pngs = {
+        field: data
+        for field, data in files_bytes.items()
+        if data.startswith(b"\x89PNG")
+    }
+    if len(pngs) < 2:
         return
     seen: dict[str, str] = {}
-    for field, data in files_bytes.items():
+    for field, data in pngs.items():
         dig = hashlib.sha256(data).hexdigest()
         if dig in seen:
             raise SubmissionError(
@@ -380,6 +422,7 @@ def create_submission(
     *,
     tiers: list[str] | None = None,
     tier_aliases: dict[str, str] | None = None,
+    helmet_3d_tiers: list[str] | None = None,
     filenames: dict[str, str | None] | None = None,
     add_name: bool = False,
     name_colours: list[str] | None = None,
@@ -393,7 +436,7 @@ def create_submission(
     if kind not in ALLOWED_KINDS:
         raise SubmissionError(
             "kind must be armor_set, handheld, large_handheld, "
-            "bow, large_bow, or crossbow"
+            "bow, large_bow, crossbow, item_3d, shield, helmet_3d, or gun"
         )
 
     display = (display_name or "").strip()
@@ -419,16 +462,24 @@ def create_submission(
 
     tier_list: list[str] | None
     aliases: dict[str, str] | None
+    h3d_list: list[str]
     if kind == "armor_set":
         tier_list = _validate_tiers(tiers)
         aliases = _validate_tier_aliases(tier_list, tier_aliases)
+        h3d_list = _validate_helmet_3d_tiers(tier_list, helmet_3d_tiers)
         base: str | None = None
         for tier in tier_list:
-            missing = [
-                f"{tier}_{field}"
-                for field in ARMOR_FIELDS
-                if f"{tier}_{field}" not in files_bytes
-            ]
+            missing: list[str] = []
+            for field in ("chestplate", "leggings", "boots", "layer_1", "layer_2"):
+                if f"{tier}_{field}" not in files_bytes:
+                    missing.append(f"{tier}_{field}")
+            if tier in h3d_list:
+                for field in ("helmet_model", "helmet_texture"):
+                    if f"{tier}_{field}" not in files_bytes:
+                        missing.append(f"{tier}_{field}")
+            else:
+                if f"{tier}_helmet" not in files_bytes:
+                    missing.append(f"{tier}_helmet")
             if missing:
                 raise SubmissionError(f"Missing files: {', '.join(missing)}")
     else:
@@ -436,8 +487,13 @@ def create_submission(
             raise SubmissionError("tiers are only allowed for armor_set")
         if tier_aliases:
             raise SubmissionError("tier_aliases are only allowed for armor_set")
+        if helmet_3d_tiers:
+            raise SubmissionError(
+                "helmet_3d_tiers are only allowed for armor_set"
+            )
         tier_list = None
         aliases = None
+        h3d_list = []
         base = _validate_base_set(kind, base_set)
         if kind in BOW_KINDS:
             missing = [f for f in BOW_FRAME_FIELDS if f not in files_bytes]
@@ -447,6 +503,15 @@ def create_submission(
             missing = [
                 f for f in CROSSBOW_FRAME_FIELDS if f not in files_bytes
             ]
+            if missing:
+                raise SubmissionError(f"Missing files: {', '.join(missing)}")
+        elif kind in MODEL_3D_KINDS:
+            if "texture" not in files_bytes:
+                raise SubmissionError("Missing file: texture")
+            if "model" not in files_bytes:
+                raise SubmissionError("Missing file: model")
+        elif kind == GUN_KIND:
+            missing = [f for f in GUN_FIELDS if f not in files_bytes]
             if missing:
                 raise SubmissionError(f"Missing files: {', '.join(missing)}")
         elif "texture" not in files_bytes:
@@ -506,6 +571,7 @@ def create_submission(
 
     tiers_json = json.dumps(tier_list) if tier_list else None
     aliases_json = json.dumps(aliases) if aliases else None
+    h3d_json = json.dumps(h3d_list) if h3d_list else None
     dir_path = f"skins/{submission_id}"
     created_at = _iso_now()
     code_id = session_row["code_id"]
@@ -517,13 +583,13 @@ def create_submission(
                 """
                 INSERT INTO submissions (
                     id, player_uuid, code_id, kind, slug, display_name,
-                    grip_preset, base_set, tiers, tier_aliases, add_name,
-                    name_colours, name_styles,
+                    grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
+                    add_name, name_colours, name_styles,
                     status, deny_reason, dir_path,
                     created_at, reviewed_at, applied_at, discord_message_id,
                     discord_user_id
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
                     NULL, NULL, NULL, ?
                 )
                 """,
@@ -537,6 +603,7 @@ def create_submission(
                     grip,
                     base,
                     tiers_json,
+                    h3d_json,
                     aliases_json,
                     1 if want_add_name else 0,
                     colours_json,
@@ -563,6 +630,7 @@ def create_submission(
             grip_preset=grip,
             base_set=base,
             tiers=tier_list,
+            helmet_3d_tiers=h3d_list,
             tier_aliases=aliases,
             add_name=want_add_name,
             name_colours=colours,
@@ -630,17 +698,34 @@ def _get_row(submission_id: str) -> sqlite3.Row | None:
         ).fetchone()
 
 
-def _list_png_files(submission_id: str) -> list[str]:
+def _list_asset_files(submission_id: str) -> list[str]:
+    """PNG + model JSON for plugin download (excludes meta.json)."""
     out_dir = SKINS_DIR / submission_id
     if not out_dir.is_dir():
         return []
-    names = sorted(p.name for p in out_dir.glob("*.png") if p.is_file())
+    names = sorted(
+        p.name
+        for p in out_dir.iterdir()
+        if p.is_file()
+        and (
+            p.suffix.lower() == ".png"
+            or (
+                p.suffix.lower() == ".json"
+                and p.name.lower() != "meta.json"
+            )
+        )
+    )
     preferred = []
     for key in ("review_sheet.png", "name_preview.png"):
         if key in names:
             preferred.append(key)
             names = [n for n in names if n != key]
     return preferred + names
+
+
+def _list_png_files(submission_id: str) -> list[str]:
+    """Back-compat alias — includes JSON model files for apply."""
+    return _list_asset_files(submission_id)
 
 
 def approve_submission(submission_id: str) -> dict:
@@ -720,6 +805,7 @@ def list_pending() -> list[dict]:
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
                 "tiers": _row_json_list(row, "tiers"),
+                "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
                 "tier_aliases": _row_json_object(row, "tier_aliases"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
@@ -733,7 +819,7 @@ def list_pending() -> list[dict]:
                 ),
                 "minecraft_name": names.get("minecraft_name"),
                 "discord_username": names.get("discord_username"),
-                "files": _list_png_files(row["id"]),
+                "files": _list_asset_files(row["id"]),
             }
         )
     return result
@@ -766,6 +852,7 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
                 "tiers": _row_json_list(row, "tiers"),
+                "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
                 "tier_aliases": _row_json_object(row, "tier_aliases"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
@@ -773,7 +860,7 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
                 "reviewed_at": row["reviewed_at"],
                 "minecraft_name": names.get("minecraft_name"),
                 "discord_username": names.get("discord_username"),
-                "files": _list_png_files(row["id"]),
+                "files": _list_asset_files(row["id"]),
             }
         )
     return result

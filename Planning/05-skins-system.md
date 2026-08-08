@@ -6,32 +6,38 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 
 ## Goals
 
-- Donators submit **armor sets** (2D) or **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`; `item` disabled for now; 3D + shields later).
+- Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), and **guns** (`gun`; `item` disabled).
 - No website logins; codes from ArmourShop bound to player UUID.
 - Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
-- ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates.
+- ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates for 2D; 3D uses donor JSON after API display autofill. Guns append GaG `skins.yml` with `ia.…` ids (STONE_HOE carry/reload, CROSSBOW aim); stock GaG skins may still use material.CMD.
 
 ## Upload kinds
 
 | Kind | Multipart fields (server writes fixed stems; filenames ignored) | Exact sizes | IA approach |
 |------|----------------------|-------------|-------------|
-| `armor_set` | Per tier (`tiers` JSON, 1–6 of `iron\|steel\|abyssalite\|mythril\|mage\|infantry`): `{tier}_helmet`, `{tier}_chestplate`, `{tier}_leggings`, `{tier}_boots`, `{tier}_layer_1`, `{tier}_layer_2` | Icons **16×16**; layers **64×32** | Like `tfmc_armor`, one SkinSet **per tier**: `generate: true` icons + `armors_rendering` with two layers |
+| `armor_set` | Per tier (`tiers` JSON): flat `{tier}_helmet` **or** 3D `{tier}_helmet_model` + `{tier}_helmet_texture` (via `helmet_3d_tiers`); always chest/legs/boots/layers | Icons **16×16**; layers **64×32**; 3D: PNG + JSON caps | One SkinSet **per tier**; 3D helmet `generate: false` + `model_path` |
 | `handheld` | `texture` | **16×16** | Sword-style handheld parent (`generate: true`) |
 | `large_handheld` | `texture` | **32×32** | `generate: false` + thin model parenting ArmourShop **grip template** JSON (`bottom` / `middle` / `top`) |
 | `bow` | `texture`, `pull_0`, `pull_1`, `pull_2` | **16×16** | BOW + `generate: true` pull frames |
 | `large_bow` | same four fields | **32×32** | Large bow thin models + locked display |
 | `crossbow` | bow four + `charged` | **16×16** | CROSSBOW + `generate: true` |
 | `item` | — | — | **Disabled** for upload (no use yet) |
-| `item_3d` (later) | texture + JSON | Texture + JSON size caps (tiered); JSON must include required `display` keys | Cooking-style: `generate: false` + `model_path` |
-| `shield` (later) | model + texture (one mesh) | Same 3D caps; required `display` keys | ArmourShop clones model + locked **blocking** display |
+| `item_3d` | `texture` + `model` | PNG ≤ 2 MiB; JSON ≤ 512 KiB; required `display` after autofill | `generate: false` + `model_path` |
+| `shield` | `texture` + `model` (one mesh) | Same 3D caps | ArmourShop clones model + locked **round blocking** display Δ |
+| `helmet_3d` | `texture` + `model` | Same 3D caps; `head` required | `generate: false` + `model_path`; `set: helmets` |
+| `gun` | `texture` + `carry_model` + `reload_model` + `aim_model` | Same 3D caps; display as `item_3d` per model | IA STONE_HOE×2 + CROSSBOW; **GaG** `skins.yml` `ia.…`; shop `gunskin({id})` |
 
-**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`.  
-**`base_set` pairing** (type/tier → kind, non-armor only): see [step-8/00-index](./batches/step-8/00-index.md). Armor uses `tiers` instead — see [step-11](./batches/step-11/00-index.md).  
-**Deferred:** guns (`rifles`/`pistols`/`shotguns`/`launchers`), `shields`, `helmets` BaseSets.  
-**Track B4:** `item_3d` + `shield`.  
-**Apply:** Pack writer [step-7](./batches/step-7/00-index.md) (armor/handheld/large); live apply + bow writers [step-8](./batches/step-8/00-index.md); multi-tier armor apply [step-11/04](./batches/step-11/04-pack-shop.md).
+**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `gun`.  
+**`base_set` pairing:** [step-8/00-index](./batches/step-8/00-index.md) + [step-13](./batches/step-13/00-index.md) + [step-14](./batches/step-14/00-index.md). Armor uses `tiers` + optional `helmet_3d_tiers`.  
+**Deferred:** multi-view review bake.  
+**Track B4 / Step 13:** `item_3d` + `shield` + `helmet_3d`. **Step 14:** `gun` upload/apply. **Step 15:** GaG IA ids (no CMD dual-write).  
+**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md).
 
-Upload **filenames are ignored** for identity (Step 11) — the API validates PNG size/dimensions only and writes fixed stems from the submission id (and tier, for armor) under the submission folder. See [07-naming-conventions.md](./07-naming-conventions.md).
+### Display autofill (3D kinds)
+
+API merges defaults into donor `display` (player keys win). Required after merge: both thirdperson, both firstperson, `ground`, `gui`, `fixed`. `head` required for `shield`, `helmet_3d`, and armor-tier 3D helmets only. Gun models use the same 7 tabs as `item_3d` (no `head`).
+
+Upload **filenames are ignored** for identity (Step 11) — the API validates PNG/JSON and writes fixed stems from the submission id (and tier, for armor). See [07-naming-conventions.md](./07-naming-conventions.md).
 
 ### Grip presets (`large_handheld` only)
 

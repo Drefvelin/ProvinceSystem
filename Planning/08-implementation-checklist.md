@@ -111,11 +111,13 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Done when:** Flow 2 complete for melee/armor in [12](./12-end-to-end-flows.md); bow kinds after 8.07.
 
-### S5 — Item 3D + shield + harden
+### S5 — Item 3D + shield + helmet 3D ([step-13](./batches/step-13/00-index.md))
 
-- [ ] `item_3d` / `shield` API/UI + display-key validation + ArmourShop apply (shield blocking auto)
-- [ ] Multi-view review bake for Discord; shared view-only site renderer
-- [ ] Quotas, retention, reserved slugs, tier size caps
+- [x] `item_3d` / `shield` / `helmet_3d` API/UI + display autofill + ArmourShop apply (shield blocking auto; armor per-tier 3D helmet)
+- [x] Guns carry/reload/aim ([step-14](./batches/step-14/00-index.md))
+- [x] GaG resolve IA ids instead of CMD ([step-15](./batches/step-15/00-index.md))
+- [ ] Multi-view review bake for Discord; shared view-only site renderer (**later**)
+- [ ] Quotas, retention, reserved slugs, tier size caps (**later**)
 
 ---
 
@@ -178,4 +180,5 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Bot | Skins review with sheets; ban DM/log + banned role add/clear |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP: item_3d, shield, full map overlay crop, brewery module, SF secret cleanup if not done.
+Post-MVP later: multi-view 3D review bake, full map overlay crop, brewery module, SF secret cleanup if not done.  
+Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs.

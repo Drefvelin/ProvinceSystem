@@ -73,6 +73,10 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN tier_aliases TEXT"
             )
+        if "helmet_3d_tiers" not in _column_names(conn, "submissions"):
+            conn.execute(
+                "ALTER TABLE submissions ADD COLUMN helmet_3d_tiers TEXT"
+            )
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")

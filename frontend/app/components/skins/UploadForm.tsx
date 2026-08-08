@@ -17,7 +17,10 @@ import {
   fileFieldsForKind,
   isBowFrameKind,
   isLargeTextureKind,
+  isModel3dKind,
+  isGunKind,
   sizeHint,
+  ARMOR_BODY_FIELDS,
   type SkinKind,
 } from "../../../lib/skins/sizes";
 import {
@@ -41,17 +44,25 @@ type TierEntry = {
   tier: string;
   /** Display suffix for this tier (default Iron/Steel/…). */
   alias: string;
+  /** When true, helmet is model+texture instead of 16×16 icon. */
+  helmet3d: boolean;
   files: Record<string, File | null>;
 };
 
 const fieldLabel: Record<string, string> = {
   helmet: "Helmet (16×16)",
+  helmet_texture: "Helmet texture (PNG)",
+  helmet_model: "Helmet model (JSON)",
   chestplate: "Chestplate (16×16)",
   leggings: "Leggings (16×16)",
   boots: "Boots (16×16)",
   layer_1: "Layer 1 (64×32)",
   layer_2: "Layer 2 (64×32)",
-  texture: "Standby texture",
+  texture: "Texture (PNG)",
+  model: "Model (JSON)",
+  carry_model: "Carry model (JSON)",
+  reload_model: "Reload model (JSON)",
+  aim_model: "Aim model (JSON)",
   pull_0: "Pull 0",
   pull_1: "Pull 1",
   pull_2: "Pull 2",
@@ -69,12 +80,32 @@ function slotLabel(kind: SkinKind, field: string): string {
   if (kind === "armor_set") {
     return fieldLabel[field] || field;
   }
+  if (isModel3dKind(kind) || isGunKind(kind)) {
+    return fieldLabel[field] || field;
+  }
   const size = isLargeTextureKind(kind) ? "32×32" : "16×16";
   const base = fieldLabel[field] || field;
   if (isBowFrameKind(kind) || field === "texture") {
+    if (field === "texture" && isBowFrameKind(kind)) {
+      return `Standby texture (${size})`;
+    }
     return `${base} (${size})`;
   }
   return `Texture (${size})`;
+}
+
+function acceptForField(field: string): string {
+  if (
+    field === "model" ||
+    field.endsWith("_model") ||
+    field === "helmet_model" ||
+    field === "carry_model" ||
+    field === "reload_model" ||
+    field === "aim_model"
+  ) {
+    return "application/json,.json";
+  }
+  return "image/png,.png";
 }
 
 export default function UploadForm({ sessionToken }: Props) {
@@ -131,7 +162,7 @@ export default function UploadForm({ sessionToken }: Props) {
     if (tiers.length >= MAX_TIERS) return;
     setTiers((prev) => [
       ...prev,
-      { tier, alias: baseSetLabel(tier), files: {} },
+      { tier, alias: baseSetLabel(tier), helmet3d: false, files: {} },
     ]);
     setTierToAdd("");
     setError(null);
@@ -146,6 +177,22 @@ export default function UploadForm({ sessionToken }: Props) {
       prev.map((entry) =>
         entry.tier === tier ? { ...entry, alias } : entry
       )
+    );
+  }
+
+  function setTierHelmet3d(tier: string, helmet3d: boolean) {
+    setTiers((prev) =>
+      prev.map((entry) => {
+        if (entry.tier !== tier) return entry;
+        const files = { ...entry.files };
+        if (helmet3d) {
+          delete files.helmet;
+        } else {
+          delete files.helmet_model;
+          delete files.helmet_texture;
+        }
+        return { ...entry, helmet3d, files };
+      })
     );
   }
 
@@ -201,7 +248,11 @@ export default function UploadForm({ sessionToken }: Props) {
       try {
         for (const entry of tiers) {
           const tierLabel = baseSetLabel(entry.tier);
-          for (const field of fileFields) {
+          const helmetFields = entry.helmet3d
+            ? (["helmet_model", "helmet_texture"] as const)
+            : (["helmet"] as const);
+          const fields = [...helmetFields, ...ARMOR_BODY_FIELDS];
+          for (const field of fields) {
             const file = entry.files[field];
             const label = fieldLabel[field] || field;
             if (!file) {
@@ -280,6 +331,9 @@ export default function UploadForm({ sessionToken }: Props) {
           ? Object.fromEntries(
               tiers.map((entry) => [entry.tier, entry.alias.trim()])
             )
+          : undefined,
+        helmet_3d_tiers: isArmor
+          ? tiers.filter((e) => e.helmet3d).map((e) => e.tier)
           : undefined,
         grip_preset: kind === "large_handheld" ? grip : null,
         add_name: applyName,
@@ -596,9 +650,9 @@ export default function UploadForm({ sessionToken }: Props) {
             Armor tiers
           </legend>
           <p className="text-xs text-[var(--tfmc-mist)]">
-            Add 1–6 tiers. Each tier needs all six armor PNGs (helmet,
-            chestplate, leggings, boots, layer 1, layer 2). The pack name
-            becomes{" "}
+            Add 1–6 tiers. Each tier needs chestplate, leggings, boots, and both
+            layers. Helmet is either a 16×16 icon or a 3D model (checkbox). The
+            pack name becomes{" "}
             <span className="text-[var(--tfmc-cream)]">
               {itemName.trim() || "Name"} {tiers[0]?.alias.trim() || "Iron"}
             </span>{" "}
@@ -608,7 +662,12 @@ export default function UploadForm({ sessionToken }: Props) {
 
           {tiers.length > 0 ? (
             <div className="flex flex-col gap-4">
-              {tiers.map((entry) => (
+              {tiers.map((entry) => {
+                const helmetFields = entry.helmet3d
+                  ? (["helmet_model", "helmet_texture"] as const)
+                  : (["helmet"] as const);
+                const tierFields = [...helmetFields, ...ARMOR_BODY_FIELDS];
+                return (
                 <div
                   key={entry.tier}
                   className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4"
@@ -649,15 +708,27 @@ export default function UploadForm({ sessionToken }: Props) {
                       Chestplate
                     </span>
                   </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]">
+                    <input
+                      type="checkbox"
+                      checked={entry.helmet3d}
+                      disabled={loading}
+                      onChange={(e) =>
+                        setTierHelmet3d(entry.tier, e.target.checked)
+                      }
+                      className="accent-[var(--tfmc-accent)]"
+                    />
+                    3D Helmet
+                  </label>
                   <div className="flex flex-col gap-4">
-                    {fileFields.map((field) => (
+                    {tierFields.map((field) => (
                       <label key={field} className="flex flex-col gap-2 text-left">
                         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
                           {slotLabel(kind, field)}
                         </span>
                         <input
                           type="file"
-                          accept="image/png,.png"
+                          accept={acceptForField(field)}
                           disabled={loading}
                           onChange={(e) =>
                             onPickedFile(e.target.files, (file) =>
@@ -675,7 +746,8 @@ export default function UploadForm({ sessionToken }: Props) {
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-[var(--tfmc-mist)]">
@@ -721,7 +793,7 @@ export default function UploadForm({ sessionToken }: Props) {
               </span>
               <input
                 type="file"
-                accept="image/png,.png"
+                accept={acceptForField(field)}
                 disabled={loading}
                 onChange={(e) =>
                   onPickedFile(e.target.files, (file) => setFile(field, file))

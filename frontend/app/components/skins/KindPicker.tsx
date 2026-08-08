@@ -9,6 +9,10 @@ const OPTIONS: { value: SkinKind; label: string }[] = [
   { value: "bow", label: "Bow (16×16, 4 frames)" },
   { value: "large_bow", label: "Large bow (32×32, 4 frames)" },
   { value: "crossbow", label: "Crossbow (16×16, 5 frames)" },
+  { value: "item_3d", label: "Item 3D (model + texture)" },
+  { value: "shield", label: "Shield 3D (model + texture)" },
+  { value: "helmet_3d", label: "Helmet 3D (model + texture)" },
+  { value: "gun", label: "Gun (carry / reload / aim)" },
 ];
 
 type Props = {

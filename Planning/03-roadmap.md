@@ -141,18 +141,18 @@ Mint codes are done ([step-6](./batches/step-6/00-index.md)). Remaining B3 split
 
 **Done when:** Code → upload → Discord approve → skin usable in ArmourShop for that UUID without manual file copy.
 
-### B4 — Item 3D + shield + viewer bake
+### B4 — Item 3D + shield + helmet 3D ([step-13](./batches/step-13/00-index.md))
 
 | Work | Detail |
 |------|--------|
-| Kind `item_3d` | PNG + JSON; required `display` keys; cooking-style `generate: false` + `model_path` |
-| Kind `shield` | One model+texture; ArmourShop auto **blocking** display clone |
-| Helmets | Single-item 3D skins, **not** armor sets |
-| Size / tier caps | Default json+texture &lt; 30KB; optional higher caps from code tier |
-| Review bake | Multi-view PNG sheet (gui/ground/hands/blocking) for Discord; shared view-only site renderer later |
+| Kind `item_3d` | PNG + JSON; display autofill; `generate: false` + `model_path` |
+| Kind `shield` | One model+texture; ArmourShop auto **round blocking** display clone |
+| Kind `helmet_3d` | Standalone 3D helmet (`set: helmets`); also per-tier on `armor_set` via `helmet_3d_tiers` |
+| Size caps | PNG ≤ 2 MiB; JSON ≤ 512 KiB |
+| Review bake | **Deferred** — multi-view PNG sheet / site viewer later |
 | ArmourShop apply | Write model + texture under `tfmc_submissions` |
 
-**Done when:** 3D/shield path matches 2D workflow including staff PNG review.
+**Done when:** 3D/shield/helmet path matches 2D workflow (upload → approve → apply). Multi-view bake later.
 
 ### B5 — Harden and expand
 

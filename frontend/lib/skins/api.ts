@@ -128,6 +128,7 @@ export type CreateSubmissionInput = {
   base_set?: string | null;
   tiers?: string[];
   tier_aliases?: Record<string, string>;
+  helmet_3d_tiers?: string[];
   grip_preset?: string | null;
   add_name?: boolean;
   name_colours?: string[];
@@ -173,6 +174,9 @@ export async function createSubmission(
   }
   if (input.tier_aliases && Object.keys(input.tier_aliases).length) {
     form.append("tier_aliases", JSON.stringify(input.tier_aliases));
+  }
+  if (input.helmet_3d_tiers?.length) {
+    form.append("helmet_3d_tiers", JSON.stringify(input.helmet_3d_tiers));
   }
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);

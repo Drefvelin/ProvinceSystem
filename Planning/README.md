@@ -30,8 +30,8 @@ Future tools (e.g. BreweryX helpers) plug into the same website shell.
 - **SQLite + disk** for skins metadata/files on the API.
 - **SimpleFactions = map only**; **ArmourShop = skins pack writer**.
 - **`tfmc_submissions`** pack; IA auto CMD (like armor/cooking), not legacy `tfmc_pack` CMD overrides.
-- **Armor set** = 4 icons (16×16) + 2 layers (64×32); **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; later **item_3d** / **shield**.
-- **Naming:** Item name for ArmourShop; skin id from PNG file names — [07-naming-conventions.md](./07-naming-conventions.md).
+- **Armor set** = 4 icons (16×16) + 2 layers (64×32); optional per-tier **3D helmet**; **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; **item_3d** / **shield** / **helmet_3d** — [step-13](./batches/step-13/00-index.md).
+- **Naming:** Item name for ArmourShop; id from IGN + display name — [07-naming-conventions.md](./07-naming-conventions.md).
 - **Staff review (Discord MVP):** posts to `#bot-feed` with **raw submission PNGs**; approve/deny via Red cog. Review-sheet attach later. Bot = [Red](https://github.com/cog-creators/red-discordbot) on AMP — [11](./11-discord-bot.md).
 - **Bot** does not ban on Minecraft; Discord DMs + roles only.
 
@@ -70,7 +70,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2–8: API, UI, Discord review, link, token, pack writer, plugin apply  
+13. [batches/README.md](./batches/README.md) — Step 2–13: API, UI, Discord, pack writer, plugin apply, 3D kinds  
 
 ## Success criteria (full platform)
 

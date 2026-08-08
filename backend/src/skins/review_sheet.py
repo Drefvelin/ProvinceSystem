@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from .db import SKINS_DIR, connect
 from .name_preview import render_name_preview_png
 from .naming import ARMOR_FIELDS
-from .storage import BOW_KINDS, CROSSBOW_KINDS, ITEM_KINDS
+from .storage import BOW_KINDS, CROSSBOW_KINDS, GUN_KIND, ITEM_KINDS, MODEL_3D_KINDS
 
 TILE_DISPLAY = 128
 ITEM_DISPLAY = 256
@@ -170,7 +170,12 @@ def _armor_tier_strip(tier: str, out_dir: Path) -> Image.Image:
     font = _font(12)
 
     for i, field in enumerate(ARMOR_FIELDS):
-        path = out_dir / f"{tier}_{field}.png"
+        if field == "helmet":
+            path = out_dir / f"{tier}_helmet.png"
+            if not path.is_file():
+                path = out_dir / f"{tier}_helmet_texture.png"
+        else:
+            path = out_dir / f"{tier}_{field}.png"
         if not path.is_file():
             raise ReviewSheetError(f"Missing file: {path.name}")
         col, row = i % cols, i // cols
@@ -180,7 +185,9 @@ def _armor_tier_strip(tier: str, out_dir: Path) -> Image.Image:
         _paste_centered(
             canvas, tile, (x0, y0, x0 + TILE_DISPLAY, y0 + TILE_DISPLAY)
         )
-        label = field
+        label = "helmet_3d" if field == "helmet" and path.name.endswith(
+            "_helmet_texture.png"
+        ) else field
         bbox = draw.textbbox((0, 0), label, font=font)
         tw = bbox[2] - bbox[0]
         draw.text(
@@ -364,7 +371,7 @@ def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
         if base_set:
             caption_bits.append(f"base={base_set}")
         body = _bow_body(slug, kind, base_set, out_dir)
-    elif kind in ITEM_KINDS:
+    elif kind in ITEM_KINDS or kind in MODEL_3D_KINDS or kind == GUN_KIND:
         if base_set:
             caption_bits.append(f"base={base_set}")
         if grip:
