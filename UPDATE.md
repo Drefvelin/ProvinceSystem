@@ -19,7 +19,7 @@ Expected ping: `{"ok":true}`.
 From your machine (PowerShell / terminal), keep this session open:
 
 ```bash
-ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 user@amp-host
+ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 tfmc@188.40.119.246
 ```
 
 Replace `user@amp-host` with your real SSH login.

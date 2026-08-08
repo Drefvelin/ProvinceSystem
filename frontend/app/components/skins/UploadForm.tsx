@@ -117,6 +117,15 @@ export default function UploadForm({ sessionToken }: Props) {
     setFiles((prev) => ({ ...prev, [field]: file }));
   }
 
+  /** Ignore cancel / empty picker so an existing selection is kept. */
+  function onPickedFile(
+    fileList: FileList | null,
+    apply: (file: File) => void
+  ) {
+    const file = fileList?.[0];
+    if (file) apply(file);
+  }
+
   function addTier(tier: string) {
     if (!tier || tiers.some((entry) => entry.tier === tier)) return;
     if (tiers.length >= MAX_TIERS) return;
@@ -651,10 +660,8 @@ export default function UploadForm({ sessionToken }: Props) {
                           accept="image/png,.png"
                           disabled={loading}
                           onChange={(e) =>
-                            setTierFile(
-                              entry.tier,
-                              field,
-                              e.target.files?.[0] ?? null
+                            onPickedFile(e.target.files, (file) =>
+                              setTierFile(entry.tier, field, file)
                             )
                           }
                           className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
@@ -717,7 +724,7 @@ export default function UploadForm({ sessionToken }: Props) {
                 accept="image/png,.png"
                 disabled={loading}
                 onChange={(e) =>
-                  setFile(field, e.target.files?.[0] ?? null)
+                  onPickedFile(e.target.files, (file) => setFile(field, file))
                 }
                 className="text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]"
               />

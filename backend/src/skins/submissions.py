@@ -512,40 +512,46 @@ def create_submission(
     discord_id = str(link["discord_user_id"])
 
     with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO submissions (
-                id, player_uuid, code_id, kind, slug, display_name,
-                grip_preset, base_set, tiers, tier_aliases, add_name,
-                name_colours, name_styles,
-                status, deny_reason, dir_path,
-                created_at, reviewed_at, applied_at, discord_message_id,
-                discord_user_id
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
-                NULL, NULL, NULL, ?
+        try:
+            conn.execute(
+                """
+                INSERT INTO submissions (
+                    id, player_uuid, code_id, kind, slug, display_name,
+                    grip_preset, base_set, tiers, tier_aliases, add_name,
+                    name_colours, name_styles,
+                    status, deny_reason, dir_path,
+                    created_at, reviewed_at, applied_at, discord_message_id,
+                    discord_user_id
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
+                    NULL, NULL, NULL, ?
+                )
+                """,
+                (
+                    submission_id,
+                    player_uuid,
+                    code_id,
+                    kind,
+                    slug,
+                    display,
+                    grip,
+                    base,
+                    tiers_json,
+                    aliases_json,
+                    1 if want_add_name else 0,
+                    colours_json,
+                    styles_json,
+                    dir_path,
+                    created_at,
+                    discord_id,
+                ),
             )
-            """,
-            (
-                submission_id,
-                player_uuid,
-                code_id,
-                kind,
-                slug,
-                display,
-                grip,
-                base,
-                tiers_json,
-                aliases_json,
-                1 if want_add_name else 0,
-                colours_json,
-                styles_json,
-                dir_path,
-                created_at,
-                discord_id,
-            ),
-        )
-        conn.commit()
+            conn.commit()
+        except sqlite3.IntegrityError as e:
+            raise SlugConflictError(
+                f"A skin with id '{submission_id}' is already in use. "
+                "Choose a different item name, or ask staff to delete the old one."
+            ) from e
 
     try:
         write_submission_files(
@@ -823,37 +829,26 @@ def list_deletable_submissions() -> list[dict]:
 
 
 def revoke_submission(submission_id: str) -> dict:
-    """Mark submission revoked so slug can be reused and won't re-apply."""
+    """Hard-delete a submission row and its on-disk files (staff delete).
+
+    Any status is allowed (pending/approved/applied/revoked/denied). Missing id
+    raises SubmissionError so the plugin can report "Submission not found".
+    """
     sid = (submission_id or "").strip()
     if not sid:
         raise SubmissionError("submission id is required")
     row = _get_row(sid)
     if row is None:
         raise SubmissionError("Submission not found")
-    status = str(row["status"] or "")
-    if status == "revoked":
-        return {**_public_row(row), "already_revoked": True}
-    if status == "denied":
-        raise SubmissionError("Denied submissions cannot be revoked")
 
-    reviewed_at = row["reviewed_at"] or _iso_now()
     with connect() as conn:
-        conn.execute(
-            """
-            UPDATE submissions
-            SET status = 'revoked', reviewed_at = COALESCE(reviewed_at, ?)
-            WHERE id = ?
-            """,
-            (reviewed_at, sid),
-        )
+        conn.execute("DELETE FROM submissions WHERE id = ?", (sid,))
         conn.commit()
-        row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
-            (sid,),
-        ).fetchone()
-    out = _public_row(row)
-    out["revoked"] = True
-    return out
+    out = SKINS_DIR / sid
+    if out.exists():
+        shutil.rmtree(out, ignore_errors=True)
+
+    return {"id": sid, "deleted": True}
 
 
 def mark_applied(submission_ids: list[str]) -> list[str]:

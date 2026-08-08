@@ -42,23 +42,15 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
-/** fetch with a clearer error when the API is unreachable (tunnel down, wrong port). */
+/** fetch with a clearer error when the API is unreachable. */
 async function apiFetch(
   input: string,
   init?: RequestInit
 ): Promise<Response> {
   try {
     return await fetch(input, init);
-  } catch (err) {
-    const base = getApiBase();
-    const why =
-      err instanceof Error && err.message
-        ? err.message
-        : "network error";
-    throw new Error(
-      `Cannot reach skins API at ${base} (${why}). ` +
-        "If you use staging, keep the SSH tunnel open for both UI and API ports."
-    );
+  } catch {
+    throw new Error("Upload failed. Please try again.");
   }
 }
 
