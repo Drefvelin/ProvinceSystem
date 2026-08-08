@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS discord_links (
     player_uuid TEXT PRIMARY KEY,
     discord_user_id TEXT NOT NULL UNIQUE,
     minecraft_name TEXT,
+    discord_username TEXT,
     linked_at TEXT NOT NULL
 );
 
@@ -66,6 +67,15 @@ CREATE TABLE IF NOT EXISTS skin_notifications (
     delivered_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS plugin_notices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    player_uuid TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
 CREATE INDEX IF NOT EXISTS idx_submissions_slug ON submissions(slug);
 CREATE INDEX IF NOT EXISTS idx_codes_hash ON codes(code_hash);
@@ -74,3 +84,5 @@ CREATE INDEX IF NOT EXISTS idx_discord_links_discord ON discord_links(discord_us
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_hash ON discord_link_codes(code_hash);
 CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
     ON skin_notifications(delivered_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_plugin_notices_undelivered
+    ON plugin_notices(delivered_at, created_at);

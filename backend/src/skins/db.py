@@ -43,4 +43,8 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE codes ADD COLUMN code_plaintext TEXT"
             )
+        if "discord_username" not in _column_names(conn, "discord_links"):
+            conn.execute(
+                "ALTER TABLE discord_links ADD COLUMN discord_username TEXT"
+            )
         conn.commit()

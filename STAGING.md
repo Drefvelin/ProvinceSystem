@@ -88,11 +88,13 @@ curl -s -X POST http://127.0.0.1:18001/skins/discord/link/start \
   -d '{"player_uuid":"00000000-0000-0000-0000-000000000001","minecraft_name":"Test"}'
 ```
 
-2. In TFMC Discord: `/linkdiscord code:<CODE>` (ephemeral success).
+2. In TFMC Discord: `/linkdiscord code:<CODE>` (ephemeral success). In game, ArmourShop polls notices (~1s) and chats link success if the player is online.
 3. Mint via `/armourshop token create` (or curl below) → redeem + upload on `http://127.0.0.1:13001/skins`.
 4. Confirm **submitted** DM; submission appears in `#bot-feed`.
 5. Approve or Deny → **outcome** DM (+ reason if denied).
 6. Confirm API/status shows `player_uuid` + linked Discord (staff embed / pending).
+
+If already linked, in-game `/linkdiscord` does **not** mint a new code — it says already linked (with Discord name when stored). Use `/unlinkdiscord` first to relink.
 
 **Unlink (wrong account / alt):**
 

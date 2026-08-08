@@ -80,11 +80,59 @@ def main() -> None:
         fail(f"link start: {r.status_code} {r.text}")
     r = client.post(
         "/skins/discord/link/complete",
-        json={"code": r.json()["code"], "discord_user_id": DISCORD_ID},
+        json={
+            "code": r.json()["code"],
+            "discord_user_id": DISCORD_ID,
+            "discord_username": "SmokeDiscord",
+        },
         headers={"X-Staff-Key": STAFF},
     )
     if r.status_code != 200:
         fail(f"link complete: {r.status_code} {r.text}")
+
+    # Already linked — no new code
+    r = client.post(
+        "/skins/discord/link/start",
+        json={"player_uuid": player, "minecraft_name": "Smoke"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"link start already: {r.status_code} {r.text}")
+    already = r.json()
+    if not already.get("already_linked"):
+        fail(f"expected already_linked: {already}")
+    if already.get("discord_username") != "SmokeDiscord":
+        fail(f"expected discord_username SmokeDiscord: {already}")
+    if "code" in already:
+        fail(f"already linked should not return code: {already}")
+
+    # Plugin notice from complete
+    r = client.get("/skins/plugin/notices", headers={"X-Plugin-Key": PLUGIN})
+    if r.status_code != 200:
+        fail(f"plugin notices: {r.status_code} {r.text}")
+    notices = r.json().get("notices") or []
+    match = [
+        n
+        for n in notices
+        if n.get("player_uuid") == player and n.get("type") == "link_success"
+    ]
+    if not match:
+        fail(f"expected link_success notice for {player}: {notices}")
+    notice_id = match[-1]["id"]
+    if match[-1].get("payload", {}).get("discord_username") != "SmokeDiscord":
+        fail(f"notice payload missing username: {match[-1]}")
+    r = client.post(
+        "/skins/plugin/notices/ack",
+        json={"ids": [notice_id]},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"ack notices: {r.status_code} {r.text}")
+    if notice_id not in (r.json().get("acked") or []):
+        fail(f"ack missing notice id: {r.text}")
+    r = client.get("/skins/plugin/notices", headers={"X-Plugin-Key": PLUGIN})
+    if any(n.get("id") == notice_id for n in (r.json().get("notices") or [])):
+        fail("acked notice still undelivered")
 
     # Issue + active list + redeem
     r = client.post(
@@ -157,7 +205,11 @@ def main() -> None:
         fail(f"link start 2: {r.status_code} {r.text}")
     r = client.post(
         "/skins/discord/link/complete",
-        json={"code": r.json()["code"], "discord_user_id": DISCORD_ID},
+        json={
+            "code": r.json()["code"],
+            "discord_user_id": DISCORD_ID,
+            "discord_username": "SmokeDiscord",
+        },
         headers={"X-Staff-Key": STAFF},
     )
     if r.status_code != 200:

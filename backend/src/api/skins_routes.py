@@ -28,6 +28,10 @@ from src.skins.discord_link import (
     unlink_by_discord_id,
     unlink_by_uuid,
 )
+from src.skins.plugin_notices import (
+    ack_plugin_notices,
+    list_undelivered_plugin_notices,
+)
 from src.skins.naming import SlugError
 from src.skins.notifications import (
     NotificationError,
@@ -82,6 +86,11 @@ class LinkStartBody(BaseModel):
 class LinkCompleteBody(BaseModel):
     code: str = Field(..., min_length=1)
     discord_user_id: str = Field(..., min_length=1)
+    discord_username: str | None = None
+
+
+class PluginNoticesAckBody(BaseModel):
+    ids: list[int] = Field(default_factory=list)
 
 
 class LinkUnlinkUuidBody(BaseModel):
@@ -167,9 +176,30 @@ def post_discord_link_complete(
 ):
     _require_staff(x_staff_key)
     try:
-        return complete_link(body.code, body.discord_user_id)
+        return complete_link(
+            body.code,
+            body.discord_user_id,
+            discord_username=body.discord_username,
+        )
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/plugin/notices")
+def plugin_notices_list(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return {"notices": list_undelivered_plugin_notices()}
+
+
+@skins_router.post("/plugin/notices/ack")
+def plugin_notices_ack(
+    body: PluginNoticesAckBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return ack_plugin_notices(body.ids)
 
 
 @skins_router.post("/discord/link/unlink")
