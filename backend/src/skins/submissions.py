@@ -890,6 +890,17 @@ def resolve_submission_file(submission_id: str, filename: str) -> Path | None:
     except ValueError:
         return None
 
+    if not candidate.is_file() and name == "review_sheet.png":
+        # Compose on demand — create no longer always writes this file.
+        try:
+            from .review_sheet import ReviewSheetError, write_review_sheet
+
+            write_review_sheet(submission_id)
+        except ReviewSheetError:
+            return None
+        except Exception:
+            return None
+
     if not candidate.is_file():
         return None
     return candidate
