@@ -347,7 +347,7 @@ def main() -> None:
         fail(f"armor identical textures message unexpected: {r.text}")
     print("duplicate PNG bytes in submission rejected ok")
 
-    # Multi-tier armor upload — ids come from IGN + item name, filenames are freeform
+    # Multi-tier armor upload — colours without add_name; name_preview.png generated
     armor_tiers = ["iron", "steel"]
     r = client.post(
         "/skins/submissions",
@@ -355,6 +355,8 @@ def main() -> None:
             "kind": "armor_set",
             "display_name": "Smoke Armor",
             "tiers": json.dumps(armor_tiers),
+            "name_colours": '["#55ff55", "#5555ff"]',
+            "name_styles": '["bold"]',
         },
         files=armor_tier_files(armor_tiers),
         headers=auth,
@@ -372,6 +374,12 @@ def main() -> None:
         fail(f"armor tiers expected {armor_tiers}, got {armor.get('tiers')}")
     if armor.get("base_set") is not None:
         fail(f"armor base_set expected null, got {armor.get('base_set')}")
+    if armor.get("add_name") is not False:
+        fail(f"armor add_name expected False, got {armor.get('add_name')}")
+    if armor.get("name_colours") != ["#55ff55", "#5555ff"]:
+        fail(f"armor name_colours unexpected: {armor.get('name_colours')}")
+    if armor.get("name_styles") != ["bold"]:
+        fail(f"armor name_styles unexpected: {armor.get('name_styles')}")
     if armor.get("discord_user_id") != DISCORD_ID:
         fail(
             f"armor discord_user_id expected {DISCORD_ID}, "
@@ -379,8 +387,20 @@ def main() -> None:
         )
     print(
         f"armor submission {armor_id} tiers={armor['tiers']} "
-        f"base_set={armor.get('base_set')!r} ok"
+        f"colours without add_name ok"
     )
+
+    staff_early = {"X-Staff-Key": STAFF}
+    r = client.get(
+        f"/skins/staff/submissions/{armor_id}/files/name_preview.png",
+        headers=staff_early,
+    )
+    if r.status_code != 200 or not r.content.startswith(PNG_MAGIC):
+        fail(
+            f"name_preview.png missing after armor submit "
+            f"(get={r.status_code})"
+        )
+    print("name_preview.png ok")
 
     # Conflict check: display_name only (no base_id) — active armor blocks a re-submit
     r = client.get(
@@ -600,6 +620,13 @@ def main() -> None:
         fail("armor approved tiers missing steel")
     if by_id[armor_id].get("base_set") is not None:
         fail("armor base_set expected null on approved list")
+    if by_id[armor_id].get("name_colours") != ["#55ff55", "#5555ff"]:
+        fail(
+            "armor name_colours missing on approved list: "
+            f"{by_id[armor_id].get('name_colours')}"
+        )
+    if by_id[armor_id].get("add_name") is not False:
+        fail("armor add_name expected false on approved list")
     if by_id[hand_id].get("base_set") != "swords":
         fail("handheld base_set missing on approved list")
     if by_id[large_id].get("grip_preset") != "bottom":

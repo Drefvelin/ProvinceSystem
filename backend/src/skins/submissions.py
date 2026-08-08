@@ -23,6 +23,7 @@ from .naming import (
     slugify_display_name,
 )
 from .notifications import enqueue_submitted
+from .name_preview import write_name_preview
 from .storage import (
     BOW_KINDS,
     CROSSBOW_KINDS,
@@ -129,9 +130,8 @@ def _normalize_colour_token(token: str) -> str:
     raise SubmissionError(f"invalid colour '{token}' (use #RRGGBB or §c)")
 
 
-def _validate_name_colours(raw: list[str] | None, *, add_name: bool) -> list[str]:
-    if not add_name:
-        return []
+def _validate_name_colours(raw: list[str] | None) -> list[str]:
+    """Colours are independent of add_name (SkinSet display vs apply-name)."""
     if not raw:
         return []
     out: list[str] = []
@@ -142,9 +142,8 @@ def _validate_name_colours(raw: list[str] | None, *, add_name: bool) -> list[str
     return out
 
 
-def _validate_name_styles(raw: list[str] | None, *, add_name: bool) -> list[str]:
-    if not add_name:
-        return []
+def _validate_name_styles(raw: list[str] | None) -> list[str]:
+    """Styles are independent of add_name."""
     if not raw:
         return []
     out: list[str] = []
@@ -360,8 +359,8 @@ def create_submission(
         raise SubmissionError("grip_preset is only allowed for large_handheld")
 
     want_add_name = bool(add_name)
-    colours = _validate_name_colours(name_colours, add_name=want_add_name)
-    styles = _validate_name_styles(name_styles, add_name=want_add_name)
+    colours = _validate_name_colours(name_colours)
+    styles = _validate_name_styles(name_styles)
     colours_json = json.dumps(colours) if colours else None
     styles_json = json.dumps(styles) if styles else None
 
@@ -501,6 +500,12 @@ def create_submission(
             name_colours=colours,
             name_styles=styles,
         )
+        write_name_preview(
+            submission_id,
+            display,
+            name_colours=colours,
+            name_styles=styles,
+        )
     except StorageError:
         _rollback_submission(submission_id)
         raise
@@ -559,7 +564,11 @@ def _list_png_files(submission_id: str) -> list[str]:
     out_dir = SKINS_DIR / submission_id
     if not out_dir.is_dir():
         return []
-    return sorted(p.name for p in out_dir.glob("*.png") if p.is_file())
+    names = sorted(p.name for p in out_dir.glob("*.png") if p.is_file())
+    # Staff/bot: show coloured name first when present
+    if "name_preview.png" in names:
+        names = ["name_preview.png"] + [n for n in names if n != "name_preview.png"]
+    return names
 
 
 def approve_submission(submission_id: str) -> dict:

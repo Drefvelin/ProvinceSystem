@@ -89,6 +89,7 @@ export default function UploadForm({ sessionToken }: Props) {
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
 
   useEffect(() => {
     setFiles({});
@@ -97,13 +98,6 @@ export default function UploadForm({ sessionToken }: Props) {
     setError(null);
     setBaseSet(defaultBaseSet(kind));
   }, [kind]);
-
-  useEffect(() => {
-    if (!applyName) {
-      setColours(["#ffffff"]);
-      setStyles([]);
-    }
-  }, [applyName]);
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
@@ -209,11 +203,11 @@ export default function UploadForm({ sessionToken }: Props) {
       }
     }
 
-    if (applyName) {
+    if (colours.length > 0) {
       const normalized = colours
         .map((c) => normalizePreviewHex(c))
         .filter((c): c is string => Boolean(c));
-      if (colours.length > 0 && normalized.length !== colours.length) {
+      if (normalized.length !== colours.length) {
         setError("Each colour must be #RRGGBB or a legacy § code");
         return;
       }
@@ -250,8 +244,8 @@ export default function UploadForm({ sessionToken }: Props) {
         tiers: isArmor ? tiers.map((entry) => entry.tier) : undefined,
         grip_preset: kind === "large_handheld" ? grip : null,
         add_name: applyName,
-        name_colours: applyName ? colours : undefined,
-        name_styles: applyName ? styles : undefined,
+        name_colours: colours.length ? colours : undefined,
+        name_styles: styles.length ? styles : undefined,
         files: uploadFiles,
       });
       router.push(`/skins/${result.id}`);
@@ -271,7 +265,7 @@ export default function UploadForm({ sessionToken }: Props) {
   const inputClass =
     "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60";
 
-  const spans = applyName ? previewSpans(itemName.trim() || "Preview", colours) : [];
+  const spans = previewSpans(itemName.trim() || "Preview", colours);
   const styleCss = previewStyleCss(styles);
 
   function addColour(token: string) {
@@ -290,6 +284,17 @@ export default function UploadForm({ sessionToken }: Props) {
 
   function removeColour(index: number) {
     setColours((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function reorderColour(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return;
+    setColours((prev) => {
+      if (from >= prev.length || to >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   }
 
   function toggleStyle(style: NameStyle) {
@@ -344,137 +349,160 @@ export default function UploadForm({ sessionToken }: Props) {
         />
       </label>
 
-      <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]">
+      <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--tfmc-cream)]">
         <input
           type="checkbox"
           checked={applyName}
           disabled={loading}
           onChange={(e) => setApplyName(e.target.checked)}
-          className="accent-[var(--tfmc-accent)]"
+          className="mt-0.5 accent-[var(--tfmc-accent)]"
         />
-        Apply name (colour / style on the item when equipped)
+        <span>
+          Apply name when equipped
+          <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
+            Keep the item&apos;s existing name on the skinned piece. Separate
+            from colours below.
+          </span>
+        </span>
       </label>
 
-      {applyName ? (
-        <fieldset className="flex flex-col gap-4 border-0 p-0">
-          <legend className="sr-only">Name colours and styles</legend>
+      <fieldset className="flex flex-col gap-4 border-0 p-0">
+        <legend className="sr-only">Name colours and styles</legend>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              Colours
-            </span>
-            <span className="text-xs text-[var(--tfmc-mist)]">
-              One colour = solid. Two or more = gradient across the name.
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {colours.map((c, i) => (
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+            Colours
+          </span>
+          <span className="text-xs text-[var(--tfmc-mist)]">
+            One colour = solid. Two or more = gradient across the name. Drag
+            chips to reorder; × removes.
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {colours.map((c, i) => (
+              <div
+                key={`${c}-${i}`}
+                draggable={!loading}
+                onDragStart={() => setDragFrom(i)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragFrom !== null) {
+                    reorderColour(dragFrom, i);
+                  }
+                  setDragFrom(null);
+                }}
+                onDragEnd={() => setDragFrom(null)}
+                className={`inline-flex cursor-grab items-center gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_30%,transparent)] px-2 py-1 text-xs text-[var(--tfmc-cream)] active:cursor-grabbing ${
+                  dragFrom === i ? "opacity-60 ring-1 ring-[var(--tfmc-accent)]" : ""
+                }`}
+                title="Drag to reorder"
+              >
+                <span
+                  className="inline-block h-3 w-3 rounded-sm border border-black/40"
+                  style={{ backgroundColor: normalizePreviewHex(c) || c }}
+                />
+                {c}
                 <button
-                  key={`${c}-${i}`}
                   type="button"
                   disabled={loading}
                   onClick={() => removeColour(i)}
                   title="Remove colour"
-                  className="inline-flex items-center gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-2 py-1 text-xs text-[var(--tfmc-cream)]"
+                  className="rounded-sm px-1 text-[var(--tfmc-mist)] transition hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] hover:text-[var(--tfmc-cream)]"
                 >
-                  <span
-                    className="inline-block h-3 w-3 rounded-sm border border-black/40"
-                    style={{ backgroundColor: normalizePreviewHex(c) || c }}
-                  />
-                  {c}
-                  <span aria-hidden>×</span>
+                  ×
                 </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="color"
-                value={normalizePreviewHex(hexDraft) || "#55ff55"}
-                disabled={loading}
-                onChange={(e) => setHexDraft(e.target.value)}
-                className="h-9 w-12 cursor-pointer bg-transparent"
-              />
-              <input
-                type="text"
-                value={hexDraft}
-                disabled={loading}
-                onChange={(e) => setHexDraft(e.target.value)}
-                className={`${inputClass} max-w-[8rem]`}
-                placeholder="#55ff55"
-                maxLength={7}
-              />
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="color"
+              value={normalizePreviewHex(hexDraft) || "#55ff55"}
+              disabled={loading}
+              onChange={(e) => setHexDraft(e.target.value)}
+              className="h-9 w-12 cursor-pointer bg-transparent"
+            />
+            <input
+              type="text"
+              value={hexDraft}
+              disabled={loading}
+              onChange={(e) => setHexDraft(e.target.value)}
+              className={`${inputClass} max-w-[8rem]`}
+              placeholder="#55ff55"
+              maxLength={7}
+            />
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => addColour(hexDraft)}
+              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)] transition hover:brightness-110 hover:border-[var(--tfmc-accent)] active:scale-[0.98] disabled:opacity-60"
+            >
+              Add colour
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {LEGACY_PALETTE.map((p) => (
               <button
+                key={p.code}
                 type="button"
                 disabled={loading}
-                onClick={() => addColour(hexDraft)}
-                className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)]"
+                title={`${p.label} (§${p.code})`}
+                onClick={() => addColour(p.hex)}
+                className="h-5 w-5 rounded-sm border border-black/50 transition hover:scale-125 hover:ring-2 hover:ring-[var(--tfmc-accent)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] active:scale-110"
+                style={{ backgroundColor: p.hex }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+            Styles
+          </span>
+          <div className="flex flex-wrap gap-3">
+            {NAME_STYLES.map((s) => (
+              <label
+                key={s}
+                className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]"
               >
-                Add colour
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {LEGACY_PALETTE.map((p) => (
-                <button
-                  key={p.code}
-                  type="button"
+                <input
+                  type="checkbox"
+                  checked={styles.includes(s)}
                   disabled={loading}
-                  title={`${p.label} (§${p.code})`}
-                  onClick={() => addColour(p.hex)}
-                  className="h-5 w-5 rounded-sm border border-black/50"
-                  style={{ backgroundColor: p.hex }}
+                  onChange={() => toggleStyle(s)}
+                  className="accent-[var(--tfmc-accent)]"
                 />
-              ))}
-            </div>
+                {s}
+              </label>
+            ))}
           </div>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              Styles
-            </span>
-            <div className="flex flex-wrap gap-3">
-              {NAME_STYLES.map((s) => (
-                <label
-                  key={s}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={styles.includes(s)}
-                    disabled={loading}
-                    onChange={() => toggleStyle(s)}
-                    className="accent-[var(--tfmc-accent)]"
-                  />
-                  {s}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              Preview
-            </span>
-            <div
-              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[#1a1a1a] px-4 py-3"
-              aria-live="polite"
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+            Preview
+          </span>
+          <div
+            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[#1a1a1a] px-4 py-3"
+            aria-live="polite"
+          >
+            <p
+              className="m-0 text-xl tracking-wide"
+              style={{
+                ...styleCss,
+                fontFamily:
+                  'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
+              }}
             >
-              <p
-                className="m-0 text-xl tracking-wide"
-                style={{
-                  ...styleCss,
-                  fontFamily:
-                    'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
-                }}
-              >
-                {spans.map((span, i) => (
-                  <span key={i} style={{ color: span.color }}>
-                    {span.char === " " ? "\u00a0" : span.char}
-                  </span>
-                ))}
-              </p>
-            </div>
+              {spans.map((span, i) => (
+                <span key={i} style={{ color: span.color }}>
+                  {span.char === " " ? "\u00a0" : span.char}
+                </span>
+              ))}
+            </p>
           </div>
-        </fieldset>
-      ) : null}
+        </div>
+      </fieldset>
 
       {kind === "large_handheld" ? (
         <fieldset className="flex flex-col gap-2">

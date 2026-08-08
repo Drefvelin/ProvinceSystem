@@ -130,4 +130,9 @@ Server writes under `data/skins/{submission_id}/` using fixed stems derived from
 
 ## Staff Discord
 
-Embeds show the human **Submission id** prominently, **Item name**, **kind**, **Tiers** (armor) or **Base set** (non-armor), **grip_preset** when set, **Minecraft** and **Discord** names (never raw MC UUID or Discord snowflake as a field), plus raw PNG attachments (MVP).
+Embeds show the human **Submission id** prominently, **Item name**, **kind**, **Tiers** (armor) or **Base set** (non-armor), **grip_preset** when set, **Minecraft** and **Discord** names (never raw MC UUID or Discord snowflake as a field), **Colours** / **Apply name** when relevant, plus raw PNG attachments including a generated **`name_preview.png`** (coloured display name for staff).
+
+## Name colours vs Apply name
+
+- **`name_colours` / `name_styles`** — how the SkinSet display name looks in ArmourShop (shop YAML `colour` / `styles`). Independent of apply-name.
+- **`add_name`** — when applying the skin in-game, keep the base item’s existing name on the skinned piece. Does **not** gate colours.

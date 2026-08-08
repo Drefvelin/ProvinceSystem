@@ -162,12 +162,12 @@ export async function createSubmission(
   }
   if (input.add_name) {
     form.append("add_name", "true");
-    if (input.name_colours?.length) {
-      form.append("name_colours", JSON.stringify(input.name_colours));
-    }
-    if (input.name_styles?.length) {
-      form.append("name_styles", JSON.stringify(input.name_styles));
-    }
+  }
+  if (input.name_colours?.length) {
+    form.append("name_colours", JSON.stringify(input.name_colours));
+  }
+  if (input.name_styles?.length) {
+    form.append("name_styles", JSON.stringify(input.name_styles));
   }
   for (const [name, file] of Object.entries(input.files)) {
     form.append(name, file, file.name);

@@ -138,8 +138,8 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `kind` | `armor_set` \| `handheld` \| `large_handheld` \| `bow` \| `large_bow` \| `crossbow` \| later `item_3d` \| `shield` (`item` disabled) |
 | `slug` | Same string as `id` (no separate field — kept as a column alias for older call sites) |
 | `display_name` | human string (plain text; colours/styles are separate) |
-| `add_name` | bool; when true, ArmourShop renames gear with styled name |
-| `name_colours` | JSON array of `#RRGGBB` or legacy `§c` / `&c` (1 = solid, 2+ = gradient) |
+| `add_name` | bool; when true, applying the skin keeps the base item’s display name on the result (independent of colours) |
+| `name_colours` | JSON array of `#RRGGBB` or legacy `§c` / `&c` (1 = solid, 2+ = gradient); SkinSet shop look — not gated on `add_name` |
 | `name_styles` | JSON array: `bold` / `italic` / `underline` / `strikethrough` |
 | `grip_preset` | nullable; required when `kind=large_handheld` (`bottom` \| `middle` \| `top`) |
 | `base_set` | ArmourShop BaseSet id; required for non-armor kinds, must match kind allowlist ([step-8](./batches/step-8/00-index.md)); **null/unused for `armor_set`** |
@@ -278,9 +278,9 @@ Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; not
 1. Enter code → redeem  
 2. Choose kind (no `item`) → **fixed slots** (armor: 6 per tier; handheld/large: 1; bow/large_bow: 4; crossbow: 5)  
 3. Armor: **Add tier** flow — pick from remaining allowlist tiers, one 6-slot panel per tier, ≥1 required, ≤6 total; non-armor: pick **`base_set`** filtered by kind; large also picks grip  
-4. Enter **Item name** (plain text stored as `display_name`, shared across all tiers); optional **Apply name** unlocks colours (hex / § palette; 2+ = gradient), styles, and a live preview  
+4. Enter **Item name** (plain text stored as `display_name`, shared across all tiers); set **colours** / **styles** / live preview anytime; optional **Apply name** is separate (keep base item name when equipped)  
 5. Client-side size hints; server still enforces exact pixels + tier/`base_set` allowlists + colour/style allowlists (filenames themselves are never checked)  
-6. Submit → status page shows the human submission id, plain name, tier list (armor) or base set, and apply-name note (API rejects if Discord not linked)  
+6. Submit → status page shows the human submission id, plain name, tier list (armor) or base set, name look, and apply-name; API writes `name_preview.png` for Discord staff (API rejects if Discord not linked)  
 7. No accounts; no Discord id fields on the form  
 
 ## Discord bot

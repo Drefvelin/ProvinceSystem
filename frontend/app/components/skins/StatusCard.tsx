@@ -59,22 +59,27 @@ export default function StatusCard({ row }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Item name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>
         </div>
-        {row.add_name ? (
+        {row.name_colours?.length || row.name_styles?.length ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Apply name</dt>
+            <dt className="text-[var(--tfmc-stone)]">Name look</dt>
             <dd className="text-[var(--tfmc-cream)]">
-              Yes
               {row.name_colours?.length
-                ? ` · ${row.name_colours.length} colour${
+                ? `${row.name_colours.length} colour${
                     row.name_colours.length === 1 ? "" : "s"
                   }`
-                : ""}
+                : "no colours"}
               {row.name_styles?.length
                 ? ` · ${row.name_styles.join(", ")}`
                 : ""}
             </dd>
           </div>
         ) : null}
+        <div>
+          <dt className="text-[var(--tfmc-stone)]">Apply name</dt>
+          <dd className="text-[var(--tfmc-cream)]">
+            {row.add_name ? "Yes" : "No"}
+          </dd>
+        </div>
         {row.grip_preset ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Grip</dt>
