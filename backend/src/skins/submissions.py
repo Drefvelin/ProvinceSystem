@@ -24,6 +24,7 @@ from .naming import (
 )
 from .notifications import enqueue_submitted
 from .name_preview import write_name_preview
+from .review_sheet import ReviewSheetError, write_review_sheet
 from .storage import (
     BOW_KINDS,
     CROSSBOW_KINDS,
@@ -506,7 +507,11 @@ def create_submission(
             name_colours=colours,
             name_styles=styles,
         )
+        write_review_sheet(submission_id)
     except StorageError:
+        _rollback_submission(submission_id)
+        raise
+    except ReviewSheetError:
         _rollback_submission(submission_id)
         raise
     except Exception:
@@ -565,10 +570,12 @@ def _list_png_files(submission_id: str) -> list[str]:
     if not out_dir.is_dir():
         return []
     names = sorted(p.name for p in out_dir.glob("*.png") if p.is_file())
-    # Staff/bot: show coloured name first when present
-    if "name_preview.png" in names:
-        names = ["name_preview.png"] + [n for n in names if n != "name_preview.png"]
-    return names
+    preferred = []
+    for key in ("review_sheet.png", "name_preview.png"):
+        if key in names:
+            preferred.append(key)
+            names = [n for n in names if n != key]
+    return preferred + names
 
 
 def approve_submission(submission_id: str) -> dict:

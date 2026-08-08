@@ -304,6 +304,23 @@ export default function UploadForm({ sessionToken }: Props) {
   }
 
   return (
+    <div className="relative">
+      {loading ? (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-sm bg-[color-mix(in_srgb,var(--tfmc-forest)_92%,transparent)] px-6 py-16"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] border-t-[var(--tfmc-accent)]"
+            aria-hidden
+          />
+          <p className="text-lg text-[var(--tfmc-cream)]">Submitting…</p>
+          <p className="text-center text-sm text-[var(--tfmc-mist)]">
+            Building your review preview — this may take a moment.
+          </p>
+        </div>
+      ) : null}
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-6">
       <KindPicker value={kind} onChange={setKind} disabled={loading} />
 
@@ -671,5 +688,6 @@ export default function UploadForm({ sessionToken }: Props) {
         {loading ? "Uploading…" : "Submit"}
       </button>
     </form>
+    </div>
   );
 }

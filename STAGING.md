@@ -144,7 +144,7 @@ curl -s -X POST http://127.0.0.1:18001/skins/codes \
 ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 user@amp-host
 ```
 
-Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID), wait for `#bot-feed` (or `/skinsreview post <id>`).
+Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID). The site shows **Submitting…** until the composite review sheet is built, then the status page displays that sheet. Wait for `#bot-feed` (or `/skinsreview post <id>`) — Discord gets the same `review_sheet.png`, not raw 16×16 files.
 
 ## Step 8 — Flow 2 apply (armor / melee)
 

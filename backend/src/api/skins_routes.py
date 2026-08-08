@@ -373,9 +373,24 @@ def get_submission(
 @skins_router.get("/submissions/{submission_id}/review-sheet")
 def get_review_sheet(
     submission_id: str,
+    authorization: str | None = Header(default=None),
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
 ):
-    _require_staff(x_staff_key)
+    """Staff key or owning player session may fetch the composite sheet."""
+    staff_ok = False
+    if x_staff_key:
+        try:
+            require_staff_key(x_staff_key)
+            staff_ok = True
+        except AuthError:
+            staff_ok = False
+
+    if not staff_ok:
+        session = _session_from_auth(authorization)
+        row = get_submission_for_owner(submission_id, session["player_uuid"])
+        if row is None:
+            raise HTTPException(status_code=404, detail="Submission not found")
+
     try:
         data = build_review_sheet(submission_id)
     except ReviewSheetError as e:

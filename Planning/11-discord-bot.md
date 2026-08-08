@@ -16,7 +16,7 @@ Batches: [batches/step-4/00-index.md](./batches/step-4/00-index.md) (staff revie
 
 | Cog | Path | What it does today |
 |-----|------|--------------------|
-| **skinsreview** | `tfmc_bot/skinsreview/` | `#bot-feed` raw PNG review; Approve/Deny; poll pending; `/linkdiscord`; player DMs (submitted / approved / denied) |
+| **skinsreview** | `tfmc_bot/skinsreview/` | `#bot-feed` composite review sheet; Approve/Deny; poll pending; `/linkdiscord`; player DMs (submitted / approved / denied) |
 | **minecraftban** | `tfmc_bot/minecraftban/` | Slash `/minecraftban`, `/minecraftwarn`: ephemeral preview, DM user, log embed to staff channel |
 | **tfmcbotstaus** | `tfmc_bot/tfmcbotstaus/` | Rotates bot presence / activity |
 
@@ -28,7 +28,7 @@ New cog (e.g. `skinsreview` / `tfmcskins`) in `tfmc_bot/`:
 
 1. Discover pending submissions: poll `GET /skins/staff/pending` (`X-Staff-Key`) and/or slash post-by-id.
 2. Post to **`#bot-feed`**: embed with the human **Submission id** shown prominently, Item name, kind, **Tiers** (armor, comma-joined) or **Base set** (non-armor), grip, **Minecraft name**, **Discord mention/username**. No `player_key` anywhere (Step 11 removed it) — footer is unused unless `slug` ever differs from `id`. Do **not** show raw MC UUID or Discord snowflake as fields.
-3. **Attach raw submission PNGs** (helmet/chestplate/… or texture) via staff file download — **not** the review-sheet for MVP. Review-sheet / rendered multi-view comes later when the render system exists.
+3. **Attach one composite `review_sheet.png`** (NN-upscaled textures + coloured display name) via staff file download or `GET …/review-sheet`. Do **not** dump raw 16×16 PNGs into Discord.
 4. Buttons: **Approve** / **Deny**.
 5. Deny opens modal for reason.
 6. Call `POST …/approve` or `POST …/deny` with `X-Staff-Key`.
@@ -83,23 +83,23 @@ Never put staff keys in the ProvinceSystem frontend or public repo config.
 1. Run ProvinceSystem API locally (`SKINS_DEV=1` or real `STAFF_KEY`).  
 2. Create a pending submission (local `/skins` or curl).  
 3. Red on AMP (or a local Red for cog dev) with `API_BASE_URL` → that API and `BOT_FEED_CHANNEL_ID` → `#bot-feed`.  
-4. Confirm message + raw PNGs in Discord; approve/deny; API status updates.
+4. Confirm message + composite `review_sheet.png` in Discord; approve/deny; API status updates.
 
 Live production website can stay unchanged during this work.
 
 ## Implementation checklist (bot track)
 
-- [x] Skins cog: pending intake + **raw file** attachments in `#bot-feed` + approve/deny + message update  
+- [x] Skins cog: pending intake + **composite review_sheet.png** in `#bot-feed` + approve/deny + message update  
 - [x] Staff API: pending list + staff file download ([step-4/01](./batches/step-4/01-staff-pending-api.md))  
 - [x] `/linkdiscord` + submitted/approve/deny DMs ([step-5](./batches/step-5/00-index.md))  
 - [ ] Ban: add role on ban notify (later)  
 - [ ] Unban command: remove role (later)  
 - [ ] Document Discord permission setup for banned role  
 - [ ] Keep status cog as-is unless unwanted  
-- [ ] Later: attach review-sheet / multi-view render instead of (or in addition to) raw files  
 
 ## See also
 
 - [12-end-to-end-flows.md](./12-end-to-end-flows.md) — skins + ban journeys  
 - [08-implementation-checklist.md](./08-implementation-checklist.md) — Bot track  
 - [06-local-development.md](./06-local-development.md) — local API + bot  
+- [batches/step-12/00-index.md](./batches/step-12/00-index.md) — unified review sheet + submit UX  

@@ -189,6 +189,24 @@ export async function createSubmission(
   return data as SubmissionPublic;
 }
 
+export async function getReviewSheet(
+  id: string,
+  sessionToken: string
+): Promise<string> {
+  const res = await fetch(`${getApiBase()}/skins/submissions/${id}/review-sheet`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new SkinsApiError(
+      detailMessage(data, `Could not load review sheet (${res.status})`),
+      res.status
+    );
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export async function getSubmission(
   id: string,
   sessionToken: string

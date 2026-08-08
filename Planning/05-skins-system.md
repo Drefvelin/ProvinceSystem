@@ -280,7 +280,7 @@ Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; not
 3. Armor: **Add tier** flow — pick from remaining allowlist tiers, one 6-slot panel per tier, ≥1 required, ≤6 total; non-armor: pick **`base_set`** filtered by kind; large also picks grip  
 4. Enter **Item name** (plain text stored as `display_name`, shared across all tiers); set **colours** / **styles** / live preview anytime; optional **Apply name** is separate (keep base item name when equipped)  
 5. Client-side size hints; server still enforces exact pixels + tier/`base_set` allowlists + colour/style allowlists (filenames themselves are never checked)  
-6. Submit → status page shows the human submission id, plain name, tier list (armor) or base set, name look, and apply-name; API writes `name_preview.png` for Discord staff (API rejects if Discord not linked)  
+6. Submit → **Submitting…** spinner until create finishes (composite `review_sheet.png` written); status page shows that sheet plus id, tiers/base set, name look, apply-name  
 7. No accounts; no Discord id fields on the form  
 
 ## Discord bot

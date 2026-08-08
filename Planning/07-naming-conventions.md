@@ -130,7 +130,9 @@ Server writes under `data/skins/{submission_id}/` using fixed stems derived from
 
 ## Staff Discord
 
-Embeds show the human **Submission id** prominently, **Item name**, **kind**, **Tiers** (armor) or **Base set** (non-armor), **grip_preset** when set, **Minecraft** and **Discord** names (never raw MC UUID or Discord snowflake as a field), **Colours** / **Apply name** when relevant, plus raw PNG attachments including a generated **`name_preview.png`** (coloured display name for staff).
+Staff get **one composite `review_sheet.png`**: nearest-neighbor upscaled textures plus a coloured display-name header (not raw 16×16 attachments). Embeds still show **Submission id**, **Item name**, **kind**, **Tiers** / **Base set**, **grip**, **Minecraft** / **Discord** names, **Colours** / **Apply name**.
+
+The website status page shows the same review sheet after submit.
 
 ## Name colours vs Apply name
 

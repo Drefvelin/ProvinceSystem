@@ -45,6 +45,7 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-9/00-index](./step-9/00-index.md) | 9 | Name colour / encoding / web | Gradient + Apply name |
 | [step-10/00-index](./step-10/00-index.md) | 10 | Player key / delete / bot names | Prefixed slug + staff delete |
 | [step-11/00-index](./step-11/00-index.md) | 11 | IGN ids / multi-tier armor | Human ids + tier packs |
+| [step-12/00-index](./step-12/00-index.md) | 12 | Staff review sheet + submit UX | One composite sheet; site + bot |
 
 **Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop).
 

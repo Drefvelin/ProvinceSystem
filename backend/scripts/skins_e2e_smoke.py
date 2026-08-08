@@ -392,15 +392,24 @@ def main() -> None:
 
     staff_early = {"X-Staff-Key": STAFF}
     r = client.get(
-        f"/skins/staff/submissions/{armor_id}/files/name_preview.png",
+        f"/skins/staff/submissions/{armor_id}/files/review_sheet.png",
         headers=staff_early,
     )
     if r.status_code != 200 or not r.content.startswith(PNG_MAGIC):
         fail(
-            f"name_preview.png missing after armor submit "
+            f"review_sheet.png missing after armor submit "
             f"(get={r.status_code})"
         )
-    print("name_preview.png ok")
+    r = client.get(
+        f"/skins/submissions/{armor_id}/review-sheet",
+        headers=auth,
+    )
+    if r.status_code != 200 or not r.content.startswith(PNG_MAGIC):
+        fail(
+            f"owner review-sheet GET failed "
+            f"(get={r.status_code})"
+        )
+    print("review_sheet.png ok (disk + owner GET)")
 
     # Conflict check: display_name only (no base_id) — active armor blocks a re-submit
     r = client.get(
