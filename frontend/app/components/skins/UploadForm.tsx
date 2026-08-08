@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSubmission, checkSubmissionConflict, SkinsApiError } from "../../../lib/skins/api";
+import { setLastSubmissionId } from "../../../lib/skins/session";
 import {
   ARMOR_TIERS,
   baseSetLabel,
@@ -277,6 +278,7 @@ export default function UploadForm({ sessionToken }: Props) {
         name_styles: styles.length ? styles : undefined,
         files: uploadFiles,
       });
+      setLastSubmissionId(result.id);
       router.push(`/skins/${result.id}`);
     } catch (err) {
       const message =

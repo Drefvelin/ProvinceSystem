@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import StatusCard from "../../components/skins/StatusCard";
 import {
@@ -17,6 +17,7 @@ import {
 
 export default function SubmissionStatusPage() {
   const params = useParams();
+  const router = useRouter();
   const id = typeof params.id === "string" ? params.id : "";
   const [row, setRow] = useState<SubmissionPublic | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,11 @@ export default function SubmissionStatusPage() {
     void load();
   }, [load]);
 
+  function onSubmitAnother() {
+    clearSession();
+    router.push("/skins");
+  }
+
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col px-6 py-16">
       <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
@@ -91,12 +97,13 @@ export default function SubmissionStatusPage() {
             >
               Refresh status
             </button>
-            <Link
-              href="/skins"
-              className="text-sm text-[var(--tfmc-accent)] hover:underline"
+            <button
+              type="button"
+              onClick={onSubmitAnother}
+              className="text-sm text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
             >
               Submit another
-            </Link>
+            </button>
           </div>
         </>
       ) : null}
