@@ -412,7 +412,12 @@ def build_review_sheet(submission_id: str) -> bytes | None:
     canvas = _compose_full_sheet(row, out_dir)
     buf = io.BytesIO()
     canvas.save(buf, format="PNG")
-    return buf.getvalue()
+    data = buf.getvalue()
+    try:
+        cached.write_bytes(data)
+    except OSError:
+        pass
+    return data
 
 
 def write_review_sheet(submission_id: str) -> Path:

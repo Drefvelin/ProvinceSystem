@@ -42,6 +42,26 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
+/** fetch with a clearer error when the API is unreachable (tunnel down, wrong port). */
+async function apiFetch(
+  input: string,
+  init?: RequestInit
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (err) {
+    const base = getApiBase();
+    const why =
+      err instanceof Error && err.message
+        ? err.message
+        : "network error";
+    throw new Error(
+      `Cannot reach skins API at ${base} (${why}). ` +
+        "If you use staging, keep the SSH tunnel open for both UI and API ports."
+    );
+  }
+}
+
 export type RedeemResult = {
   session_token: string;
   player_uuid: string;
@@ -50,7 +70,7 @@ export type RedeemResult = {
 };
 
 export async function redeemCode(code: string): Promise<RedeemResult> {
-  const res = await fetch(`${getApiBase()}/skins/redeem`, {
+  const res = await apiFetch(`${getApiBase()}/skins/redeem`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code: code.trim() }),
@@ -131,7 +151,7 @@ export async function checkSubmissionConflict(input: {
   if (input.display_name.trim()) {
     params.set("display_name", input.display_name.trim());
   }
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBase()}/skins/submissions/check?${params.toString()}`,
     {
       headers: { Authorization: `Bearer ${input.sessionToken}` },
@@ -178,7 +198,7 @@ export async function createSubmission(
     form.append(name, file, file.name);
   }
 
-  const res = await fetch(`${getApiBase()}/skins/submissions`, {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${input.sessionToken}` },
     body: form,
@@ -198,9 +218,12 @@ export async function getReviewSheet(
   id: string,
   sessionToken: string
 ): Promise<string> {
-  const res = await fetch(`${getApiBase()}/skins/submissions/${id}/review-sheet`, {
-    headers: { Authorization: `Bearer ${sessionToken}` },
-  });
+  const res = await apiFetch(
+    `${getApiBase()}/skins/submissions/${id}/review-sheet`,
+    {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+    }
+  );
   if (!res.ok) {
     const data = await parseJson(res);
     throw new SkinsApiError(
@@ -216,7 +239,7 @@ export async function getSubmission(
   id: string,
   sessionToken: string
 ): Promise<SubmissionPublic> {
-  const res = await fetch(`${getApiBase()}/skins/submissions/${id}`, {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions/${id}`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
   });
   const data = await parseJson(res);

@@ -26,7 +26,6 @@ from .naming import (
 )
 from .notifications import enqueue_submitted
 from .name_preview import write_name_preview
-from .review_sheet import ReviewSheetError, write_review_sheet
 from .storage import (
     BOW_KINDS,
     CROSSBOW_KINDS,
@@ -569,11 +568,9 @@ def create_submission(
             name_colours=colours,
             name_styles=styles,
         )
-        write_review_sheet(submission_id)
+        # review_sheet.png is composed on first GET (build_review_sheet) so the
+        # upload response stays fast (multi-tier armor + SSH tunnels).
     except StorageError:
-        _rollback_submission(submission_id)
-        raise
-    except ReviewSheetError:
         _rollback_submission(submission_id)
         raise
     except Exception:

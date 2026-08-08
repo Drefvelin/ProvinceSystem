@@ -348,7 +348,7 @@ export default function UploadForm({ sessionToken }: Props) {
           />
           <p className="text-lg text-[var(--tfmc-cream)]">Submitting…</p>
           <p className="text-center text-sm text-[var(--tfmc-mist)]">
-            Building your review preview — this may take a moment.
+            Uploading textures — please wait.
           </p>
         </div>
       ) : null}
