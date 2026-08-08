@@ -273,8 +273,14 @@ def main() -> None:
         fail(f"armor upload: {r.status_code} {r.text}")
     armor = r.json()
     armor_id = armor["id"]
-    if armor.get("slug") != armor_slug:
-        fail(f"armor slug expected {armor_slug}, got {armor.get('slug')}")
+    player_key = armor.get("player_key")
+    if not player_key or len(str(player_key)) != 8:
+        fail(f"armor player_key expected 8 chars, got {player_key!r}")
+    expected_armor_slug = f"{player_key}_{armor_slug}"
+    if armor.get("slug") != expected_armor_slug:
+        fail(
+            f"armor slug expected {expected_armor_slug}, got {armor.get('slug')}"
+        )
     if armor.get("base_set") != "iron":
         fail(f"armor base_set expected iron, got {armor.get('base_set')}")
     if armor.get("discord_user_id") != DISCORD_ID:
@@ -282,7 +288,20 @@ def main() -> None:
             f"armor discord_user_id expected {DISCORD_ID}, "
             f"got {armor.get('discord_user_id')}"
         )
-    print(f"armor submission {armor_id} base_set={armor['base_set']}")
+    # Conflict check: same display_name should fail
+    r = client.get(
+        "/skins/submissions/check",
+        params={"display_name": "Smoke Armor", "base_id": armor_slug},
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"check endpoint: {r.status_code} {r.text}")
+    if r.json().get("ok") is not False:
+        fail(f"check should conflict for Smoke Armor, got {r.json()}")
+    print(
+        f"armor submission {armor_id} slug={armor['slug']} "
+        f"base_set={armor['base_set']} conflict-check ok"
+    )
 
     staff = {"X-Staff-Key": STAFF}
     r = client.get("/skins/staff/notifications", headers=staff)
@@ -340,6 +359,9 @@ def main() -> None:
             "kind": "handheld",
             "display_name": "Smoke Hand",
             "base_set": "swords",
+            "add_name": "true",
+            "name_colours": '["#9c001a", "&c"]',
+            "name_styles": '["bold", "italic"]',
         },
         files=[("texture", (f"{hand_slug}.png", icon, "image/png"))],
         headers=auth2,
@@ -350,7 +372,22 @@ def main() -> None:
     hand_id = hand["id"]
     if hand.get("base_set") != "swords":
         fail(f"handheld base_set expected swords, got {hand.get('base_set')}")
-    print(f"handheld submission {hand_id} base_set={hand['base_set']}")
+    if hand.get("add_name") is not True:
+        fail(f"handheld add_name expected True, got {hand.get('add_name')}")
+    if hand.get("name_colours") != ["#9c001a", "\u00a7c"]:
+        fail(f"handheld name_colours unexpected: {hand.get('name_colours')}")
+    if hand.get("name_styles") != ["bold", "italic"]:
+        fail(f"handheld name_styles unexpected: {hand.get('name_styles')}")
+    if not str(hand.get("slug", "")).startswith(f"{player_key}_"):
+        # same player may have new session but same UUID → same player_key
+        pass
+    expected_hand = f"{hand.get('player_key') or player_key}_{hand_slug}"
+    if hand.get("slug") != expected_hand:
+        fail(f"handheld slug expected {expected_hand}, got {hand.get('slug')}")
+    print(
+        f"handheld submission {hand_id} base_set={hand['base_set']} "
+        f"add_name colours/styles ok slug={hand.get('slug')}"
+    )
 
     # Third session for large
     r = client.post(
@@ -381,8 +418,11 @@ def main() -> None:
         fail(f"large upload: {r.status_code} {r.text}")
     large = r.json()
     large_id = large["id"]
-    if large.get("slug") != large_slug:
-        fail(f"large slug expected {large_slug}, got {large.get('slug')}")
+    if large.get("slug") != f"{large.get('player_key')}_{large_slug}":
+        fail(
+            f"large slug expected {large.get('player_key')}_{large_slug}, "
+            f"got {large.get('slug')}"
+        )
     if large.get("grip_preset") != "bottom":
         fail(f"expected grip_preset=bottom, got {large.get('grip_preset')}")
     if large.get("base_set") != "spears":
@@ -438,6 +478,18 @@ def main() -> None:
         fail("large grip_preset missing on approved list")
     if by_id[large_id].get("base_set") != "spears":
         fail("large base_set missing on approved list")
+    if by_id[hand_id].get("add_name") is not True:
+        fail("handheld add_name missing on approved list")
+    if by_id[hand_id].get("name_colours") != ["#9c001a", "\u00a7c"]:
+        fail(
+            "handheld name_colours missing on approved list: "
+            f"{by_id[hand_id].get('name_colours')}"
+        )
+    if by_id[hand_id].get("name_styles") != ["bold", "italic"]:
+        fail(
+            "handheld name_styles missing on approved list: "
+            f"{by_id[hand_id].get('name_styles')}"
+        )
     print("plugin approved list ok")
 
     r = client.post(
@@ -458,7 +510,7 @@ def main() -> None:
         fail("large should still be on approved list")
     print("applied ack ok")
 
-    print("ALL OK — Step 8.01 smoke passed (base_set + pairing)")
+    print("ALL OK — Step 10 smoke passed (player_key prefix + name fields)")
     sys.exit(0)
 
 

@@ -4,7 +4,11 @@ import { formatLocal } from "../../../lib/skins/formatTime";
 function statusMessage(row: SubmissionPublic): string {
   switch (row.status) {
     case "pending":
-      return "Waiting for staff review.";
+      return (
+        "Submitted. It can take up to 5 minutes for your request to enter the " +
+        "review system — you will get a Discord DM when it does. After that, " +
+        "staff will review it."
+      );
     case "denied":
       return row.deny_reason?.trim()
         ? `Denied — ${row.deny_reason.trim()}`
@@ -13,6 +17,8 @@ function statusMessage(row: SubmissionPublic): string {
       return "Approved — waiting to be applied on the server.";
     case "applied":
       return "Live on the server.";
+    case "revoked":
+      return "Removed from the server.";
     default:
       return row.status;
   }
@@ -48,6 +54,28 @@ export default function StatusCard({ row }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Item name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>
         </div>
+        {row.slug ? (
+          <div>
+            <dt className="text-[var(--tfmc-stone)]">Skin id</dt>
+            <dd className="break-all text-[var(--tfmc-mist)]">{row.slug}</dd>
+          </div>
+        ) : null}
+        {row.add_name ? (
+          <div>
+            <dt className="text-[var(--tfmc-stone)]">Apply name</dt>
+            <dd className="text-[var(--tfmc-cream)]">
+              Yes
+              {row.name_colours?.length
+                ? ` · ${row.name_colours.length} colour${
+                    row.name_colours.length === 1 ? "" : "s"
+                  }`
+                : ""}
+              {row.name_styles?.length
+                ? ` · ${row.name_styles.join(", ")}`
+                : ""}
+            </dd>
+          </div>
+        ) : null}
         {row.grip_preset ? (
           <div>
             <dt className="text-[var(--tfmc-stone)]">Grip</dt>

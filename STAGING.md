@@ -157,11 +157,18 @@ Bow kinds need multi-frame PNGs with the **same id prefix**: `{id}.png` + `{id}_
    - `skins-api.plugin-key`: same as compose `PLUGIN_KEY` (default `dev-plugin-key`)
    - `pack-apply.ia-contents-path`: absolute path to live ItemsAdder `contents/`
    - `pack-apply.categories-path`: absolute path to ArmourShop `Categories/`
+   - `pack-apply.force-reload-time`: `"06:00"` server-local daily force pull + IA refresh (blank disables)
+   - `pack-apply.ia-reload-delay-seconds`: seconds between `iareload` and `iazip` (default `5`)
 2. Link Discord + mint + redeem (Step 5 / mint section above).
-3. On `http://127.0.0.1:13001/skins`: choose kind + filtered **`base_set`** (no `item`); grip only for `large_handheld`; upload PNGs named per Planning naming docs.
-4. Staff **Approve** in `#bot-feed` (outcome DM).
-5. In game (admin): `/armourshop pack pull` — expect `wrote` / shop / lp / `queued=N`.
-6. Deferred IA reload: when server is **empty**, or on **restart**, ArmourShop runs console **`iazip`**, then `POST /skins/plugin/applied`. Confirm id left the approved list:
+3. On `http://127.0.0.1:13001/skins`: choose kind + filtered **`base_set`** (no `item`); grip only for `large_handheld`; upload PNGs named with a **base id** (API stores `{player_key}_{base_id}`). Optional **Apply name** adds colours/styles. Site blocks if you already have that name or base id.
+4. Staff **Approve** in `#bot-feed` (embed shows Minecraft + Discord names, not raw UUIDs).
+5. Pack apply happens via:
+   - **Manual:** `/armourshop pack pull` (force — runs even with players online)
+   - **Empty server:** last player quit → auto pull + IA refresh if queue/API pending
+   - **Daily:** `force-reload-time` (force)
+   Expect console: pack write / shop / LP (API, no `lp` chat) / `iareload` → delay → `iazip` / applied ack.
+   Shop YAML uses plain `name` + separate `colour` (string or list) + optional `add-name` / `styles` (TLibs gradient at runtime).
+6. Confirm id left the approved list:
 
 ```bash
 curl -s http://127.0.0.1:18001/skins/plugin/approved \
@@ -169,21 +176,24 @@ curl -s http://127.0.0.1:18001/skins/plugin/approved \
 ```
 
 7. Issuer opens ArmourShop → set under **Player Armor** (`ps_armor`) or **Player Items** (`ps_items`) → apply onto matching BaseSet gear in inventory.
+8. Staff delete (optional): `/armourshop submission delete <submission-uuid>` clears shop + pack + LP and marks API `revoked`.
 
 Operator checklist:
 
-- [ ] Config: staging API + live `pack-apply.*` paths
-- [ ] Upload armor or handheld/large with kind + `base_set`
-- [ ] Approve → `/armourshop pack pull` wrote + queued
-- [ ] Empty server or restart → `iazip` → applied ack (id gone from approved)
+- [ ] Redeploy API (migrate backfills `player_key`); bot; rebuild ArmourShop (+ TLibs if needed)
+- [ ] Config: staging API + live `pack-apply.*` paths (+ force time / IA delay)
+- [ ] Link/re-link keeps same `player_key`; two players can use same PNG basename
+- [ ] Upload blocked when same player reuses name or base id
+- [ ] Approve → pack pull wrote prefixed slug; `#bot-feed` shows names
+- [ ] `/armourshop submission delete <id>` removes shop/pack; status revoked
 - [ ] Issuer sees set and applies onto matching BaseSet gear
 
-Failure modes: players online delays `iazip`; LuckPerms missing so shop hides set; wrong BaseSet gear in inventory; bow frame names must share the same `{id}` prefix.
+Failure modes: players online delays non-force IA refresh; LuckPerms missing so shop hides set; wrong BaseSet gear in inventory; bow frame names must share the same `{id}` prefix; Mojibake `Â` means jar/source encoding still wrong; base id too long after 8-char prefix (shorten PNG id).
 
 Checkpoint:
 
 ```text
-approve → pack pull → shop + LP → iazip → applied → issuer applies skin
+approve → pack pull → shop + LP API → iareload → iazip → applied → issuer applies skin
 ```
 
 ## Keys (compose defaults)

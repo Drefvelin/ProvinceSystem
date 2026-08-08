@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS submissions (
     display_name TEXT NOT NULL,
     grip_preset TEXT,
     base_set TEXT,
+    add_name INTEGER NOT NULL DEFAULT 0,
+    name_colours TEXT,
+    name_styles TEXT,
     status TEXT NOT NULL,
     deny_reason TEXT,
     dir_path TEXT NOT NULL,
@@ -44,7 +47,13 @@ CREATE TABLE IF NOT EXISTS discord_links (
     discord_user_id TEXT NOT NULL UNIQUE,
     minecraft_name TEXT,
     discord_username TEXT,
+    player_key TEXT UNIQUE,
     linked_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS player_keys (
+    player_uuid TEXT PRIMARY KEY,
+    player_key TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS discord_link_codes (
@@ -81,6 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_submissions_slug ON submissions(slug);
 CREATE INDEX IF NOT EXISTS idx_codes_hash ON codes(code_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_discord_links_discord ON discord_links(discord_user_id);
+CREATE INDEX IF NOT EXISTS idx_player_keys_key ON player_keys(player_key);
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_hash ON discord_link_codes(code_hash);
 CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
     ON skin_notifications(delivered_at, created_at);

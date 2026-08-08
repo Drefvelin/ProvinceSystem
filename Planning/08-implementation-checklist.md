@@ -105,6 +105,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] Deferred IA reload + `POST /plugin/applied` ([8.05](./batches/step-8/05-reload-and-ack.md))
 - [ ] Staging E2E armor/melee Flow 2 ([8.06](./batches/step-8/06-docs-e2e.md))
 - [x] Bow / large_bow / crossbow writers + harness + apply ([8.07](./batches/step-8/07-bow-crossbow-writers.md))
+- [x] Name colour / encoding / website Apply name ([step-9](./batches/step-9/00-index.md))
+- [x] Player key prefix, collision check, staff delete, bot names ([step-10](./batches/step-10/00-index.md))
 
 **Done when:** Flow 2 complete for melee/armor in [12](./12-end-to-end-flows.md); bow kinds after 8.07.
 

@@ -136,8 +136,11 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `player_uuid` | from code |
 | `code_id` | FK |
 | `kind` | `armor_set` \| `handheld` \| `large_handheld` \| `bow` \| `large_bow` \| `crossbow` \| later `item_3d` \| `shield` (`item` disabled) |
-| `slug` | validated snake_case; unique among non-denied actives |
-| `display_name` | human string |
+| `slug` | `{player_key}_{base_id}` from PNG basenames + Discord-link player key |
+| `display_name` | human string (plain text; colours/styles are separate) |
+| `add_name` | bool; when true, ArmourShop renames gear with styled name |
+| `name_colours` | JSON array of `#RRGGBB` or legacy `§c` / `&c` (1 = solid, 2+ = gradient) |
+| `name_styles` | JSON array: `bold` / `italic` / `underline` / `strikethrough` |
 | `grip_preset` | nullable; required when `kind=large_handheld` (`bottom` \| `middle` \| `top`) |
 | `base_set` | ArmourShop BaseSet id; required; must match kind allowlist ([step-8](./batches/step-8/00-index.md)) |
 | `status` | `pending` \| `approved` \| `denied` \| `applied` |
@@ -147,11 +150,13 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `discord_message_id` | nullable |
 | `discord_user_id` | from `discord_links` at submit; required for new uploads |
 
+Also: durable `player_keys` (`player_uuid` → `player_key`); `discord_links.player_key` denormalized. Status may be `revoked` after staff delete.
+
 ### Disk (API pending)
 
 ```text
 backend/src/data/skins/{submission_id}/
-  meta.json          # slug, kind, display_name, uuid, grip_preset?, base_set
+  meta.json          # slug, kind, display_name, grip_preset?, base_set, add_name, name_colours, name_styles
   …fixed stems per kind…
 ```
 
@@ -241,7 +246,10 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/redeem` | `{ "code" }` → session |
-| `POST /skins/submissions` | Multipart: kind, display_name (Item name), `base_set` (tier/type), optional grip_preset; optional slug (scripts); skin id from upload filenames; **requires Discord link** for session UUID |
+| `POST /skins/submissions` | Multipart: kind, display_name (Item name, plain), `base_set` (tier/type), optional grip_preset; optional `add_name`, `name_colours` / `name_styles` (JSON arrays); optional slug (scripts); base id from upload filenames → stored as `{player_key}_{base_id}`; **requires Discord link**; rejects same-player active name/base_id conflict |
+| `GET /skins/submissions/check` | Session: `display_name` / `base_id` → `{ ok, conflicts }` |
+| `GET /skins/plugin/submissions/{id}` | Plugin: metadata for delete |
+| `POST /skins/plugin/submissions/{id}/revoke` | Plugin: mark `revoked` (frees slug) |
 | `GET /skins/submissions/{id}` | Status for owner session |
 
 ### Discord bot → API (`X-Staff-Key`)
@@ -267,9 +275,9 @@ Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; not
 1. Enter code → redeem  
 2. Choose kind (no `item`) → **fixed slots** (armor: 6; handheld/large: 1; bow/large_bow: 4; crossbow: 5)  
 3. Pick **`base_set`** filtered by kind (armor tier or applicable type); large also picks grip  
-4. Enter **Item name** (ArmourShop label); upload PNGs whose **file names** follow [07](./07-naming-conventions.md) (skin id from basename)  
-5. Client-side size hints; server still enforces exact pixels + `base_set` pairing  
-6. Submit → status page (API rejects if Discord not linked)  
+4. Enter **Item name** (plain text stored as `display_name`); optional **Apply name** unlocks colours (hex / § palette; 2+ = gradient), styles, and a live preview  
+5. Client-side size hints; server still enforces exact pixels + `base_set` pairing + colour/style allowlists  
+6. Submit → status page shows plain name + apply-name note (API rejects if Discord not linked)  
 7. No accounts; no Discord id fields on the form  
 
 ## Discord bot

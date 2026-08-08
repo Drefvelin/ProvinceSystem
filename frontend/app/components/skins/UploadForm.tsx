@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSubmission, SkinsApiError } from "../../../lib/skins/api";
+import { createSubmission, checkSubmissionConflict, SkinsApiError } from "../../../lib/skins/api";
 import {
   baseSetLabel,
   baseSetPickerTitle,
@@ -24,6 +24,14 @@ import {
   CROSSBOW_SUFFIXES,
   assertUploadFilenames,
 } from "../../../lib/skins/slug";
+import {
+  LEGACY_PALETTE,
+  NAME_STYLES,
+  normalizePreviewHex,
+  previewSpans,
+  previewStyleCss,
+  type NameStyle,
+} from "../../../lib/skins/namePreview";
 import KindPicker from "./KindPicker";
 
 const GRIPS = ["bottom", "middle", "top"] as const;
@@ -104,6 +112,10 @@ export default function UploadForm({ sessionToken }: Props) {
   const [kind, setKind] = useState<SkinKind>("armor_set");
   const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
   const [itemName, setItemName] = useState("");
+  const [applyName, setApplyName] = useState(false);
+  const [colours, setColours] = useState<string[]>(["#ffffff"]);
+  const [styles, setStyles] = useState<NameStyle[]>([]);
+  const [hexDraft, setHexDraft] = useState("#55ff55");
   const [grip, setGrip] = useState<(typeof GRIPS)[number]>("bottom");
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
@@ -114,6 +126,13 @@ export default function UploadForm({ sessionToken }: Props) {
     setError(null);
     setBaseSet(defaultBaseSet(kind));
   }, [kind]);
+
+  useEffect(() => {
+    if (!applyName) {
+      setColours(["#ffffff"]);
+      setStyles([]);
+    }
+  }, [applyName]);
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
@@ -142,8 +161,9 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
+    let baseId: string;
     try {
-      assertUploadFilenames(kind, files);
+      baseId = assertUploadFilenames(kind, files);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid file names");
       return;
@@ -167,14 +187,53 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
+    if (applyName) {
+      const normalized = colours
+        .map((c) => normalizePreviewHex(c))
+        .filter((c): c is string => Boolean(c));
+      if (colours.length > 0 && normalized.length !== colours.length) {
+        setError("Each colour must be #RRGGBB or a legacy § code");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
+      const check = await checkSubmissionConflict({
+        sessionToken,
+        display_name: name,
+        base_id: baseId,
+      });
+      if (!check.ok) {
+        const reasons = new Set(
+          check.conflicts.flatMap((c) => c.reasons || [])
+        );
+        if (reasons.has("display_name") && reasons.has("base_id")) {
+          setError(
+            "You already have an active skin with this item name and file id. Ask staff to delete it, or change the name/files."
+          );
+        } else if (reasons.has("display_name")) {
+          setError(
+            `You already have an active skin named "${name}". Choose a different item name.`
+          );
+        } else {
+          setError(
+            `You already have an active skin with file id "${baseId}". Rename your PNG(s).`
+          );
+        }
+        setLoading(false);
+        return;
+      }
+
       const result = await createSubmission({
         sessionToken,
         kind,
         display_name: name,
         base_set: baseSet,
         grip_preset: kind === "large_handheld" ? grip : null,
+        add_name: applyName,
+        name_colours: applyName ? colours : undefined,
+        name_styles: applyName ? styles : undefined,
         files: uploadFiles,
       });
       router.push(`/skins/${result.id}`);
@@ -193,6 +252,33 @@ export default function UploadForm({ sessionToken }: Props) {
 
   const inputClass =
     "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60";
+
+  const spans = applyName ? previewSpans(itemName.trim() || "Preview", colours) : [];
+  const styleCss = previewStyleCss(styles);
+
+  function addColour(token: string) {
+    const hex = normalizePreviewHex(token);
+    if (!hex) {
+      setError("Invalid colour (use #RRGGBB)");
+      return;
+    }
+    if (colours.length >= 8) {
+      setError("At most 8 colours");
+      return;
+    }
+    setError(null);
+    setColours((prev) => [...prev, hex]);
+  }
+
+  function removeColour(index: number) {
+    setColours((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function toggleStyle(style: NameStyle) {
+    setStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-6">
@@ -237,6 +323,138 @@ export default function UploadForm({ sessionToken }: Props) {
           placeholder="Blue Knight"
         />
       </label>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]">
+        <input
+          type="checkbox"
+          checked={applyName}
+          disabled={loading}
+          onChange={(e) => setApplyName(e.target.checked)}
+          className="accent-[var(--tfmc-accent)]"
+        />
+        Apply name (colour / style on the item when equipped)
+      </label>
+
+      {applyName ? (
+        <fieldset className="flex flex-col gap-4 border-0 p-0">
+          <legend className="sr-only">Name colours and styles</legend>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+              Colours
+            </span>
+            <span className="text-xs text-[var(--tfmc-mist)]">
+              One colour = solid. Two or more = gradient across the name.
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {colours.map((c, i) => (
+                <button
+                  key={`${c}-${i}`}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => removeColour(i)}
+                  title="Remove colour"
+                  className="inline-flex items-center gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] px-2 py-1 text-xs text-[var(--tfmc-cream)]"
+                >
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm border border-black/40"
+                    style={{ backgroundColor: normalizePreviewHex(c) || c }}
+                  />
+                  {c}
+                  <span aria-hidden>×</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="color"
+                value={normalizePreviewHex(hexDraft) || "#55ff55"}
+                disabled={loading}
+                onChange={(e) => setHexDraft(e.target.value)}
+                className="h-9 w-12 cursor-pointer bg-transparent"
+              />
+              <input
+                type="text"
+                value={hexDraft}
+                disabled={loading}
+                onChange={(e) => setHexDraft(e.target.value)}
+                className={`${inputClass} max-w-[8rem]`}
+                placeholder="#55ff55"
+                maxLength={7}
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => addColour(hexDraft)}
+                className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)]"
+              >
+                Add colour
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {LEGACY_PALETTE.map((p) => (
+                <button
+                  key={p.code}
+                  type="button"
+                  disabled={loading}
+                  title={`${p.label} (§${p.code})`}
+                  onClick={() => addColour(p.hex)}
+                  className="h-5 w-5 rounded-sm border border-black/50"
+                  style={{ backgroundColor: p.hex }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+              Styles
+            </span>
+            <div className="flex flex-wrap gap-3">
+              {NAME_STYLES.map((s) => (
+                <label
+                  key={s}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={styles.includes(s)}
+                    disabled={loading}
+                    onChange={() => toggleStyle(s)}
+                    className="accent-[var(--tfmc-accent)]"
+                  />
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+              Preview
+            </span>
+            <div
+              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[#1a1a1a] px-4 py-3"
+              aria-live="polite"
+            >
+              <p
+                className="m-0 text-xl tracking-wide"
+                style={{
+                  ...styleCss,
+                  fontFamily:
+                    'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
+                }}
+              >
+                {spans.map((span, i) => (
+                  <span key={i} style={{ color: span.color }}>
+                    {span.char === " " ? "\u00a0" : span.char}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
+        </fieldset>
+      ) : null}
 
       {kind === "large_handheld" ? (
         <fieldset className="flex flex-col gap-2">
@@ -297,6 +515,11 @@ export default function UploadForm({ sessionToken }: Props) {
           {error}
         </p>
       ) : null}
+
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        After you submit, it can take up to 5 minutes for your request to enter
+        the system. You will receive a Discord DM when it does.
+      </p>
 
       <button
         type="submit"

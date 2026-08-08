@@ -44,13 +44,16 @@ from src.skins.submissions import (
     SlugConflictError,
     SubmissionError,
     approve_submission,
+    check_player_conflicts,
     create_submission,
     deny_submission,
     get_submission_for_owner,
+    get_submission_for_plugin,
     list_approved_pending_apply,
     list_pending,
     mark_applied,
     resolve_submission_file,
+    revoke_submission,
 )
 
 logger = logging.getLogger("skins.routes")
@@ -234,6 +237,20 @@ def post_redeem(body: RedeemBody):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@skins_router.get("/submissions/check")
+def get_submissions_check(
+    authorization: str | None = Header(default=None),
+    display_name: str | None = None,
+    base_id: str | None = None,
+):
+    session = _session_from_auth(authorization)
+    return check_player_conflicts(
+        session["player_uuid"],
+        display_name=display_name,
+        base_id=base_id,
+    )
+
+
 @skins_router.post("/submissions")
 async def post_submissions(
     authorization: str | None = Header(default=None),
@@ -242,6 +259,9 @@ async def post_submissions(
     base_set: str = Form(...),
     slug: str | None = Form(default=None),
     grip_preset: str | None = Form(default=None),
+    add_name: str | None = Form(default=None),
+    name_colours: str | None = Form(default=None),
+    name_styles: str | None = Form(default=None),
     helmet: UploadFile | None = File(default=None),
     chestplate: UploadFile | None = File(default=None),
     leggings: UploadFile | None = File(default=None),
@@ -276,6 +296,36 @@ async def post_submissions(
             files_bytes[name] = await upload.read()
             filenames[name] = upload.filename
 
+    want_add = str(add_name or "").strip().lower() in ("1", "true", "yes", "on")
+    colours_list: list[str] | None = None
+    styles_list: list[str] | None = None
+    if name_colours and name_colours.strip():
+        try:
+            import json as _json
+
+            parsed = _json.loads(name_colours)
+            if isinstance(parsed, list):
+                colours_list = [str(x) for x in parsed]
+            else:
+                raise ValueError("not a list")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="name_colours must be a JSON array"
+            ) from e
+    if name_styles and name_styles.strip():
+        try:
+            import json as _json
+
+            parsed = _json.loads(name_styles)
+            if isinstance(parsed, list):
+                styles_list = [str(x) for x in parsed]
+            else:
+                raise ValueError("not a list")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="name_styles must be a JSON array"
+            ) from e
+
     try:
         return create_submission(
             session,
@@ -286,6 +336,9 @@ async def post_submissions(
             base_set=base_set,
             slug=slug,
             filenames=filenames,
+            add_name=want_add,
+            name_colours=colours_list,
+            name_styles=styles_list,
         )
     except SlugConflictError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -400,6 +453,31 @@ def plugin_approved(
 ):
     _require_plugin(x_plugin_key)
     return {"submissions": list_approved_pending_apply(since)}
+
+
+@skins_router.get("/plugin/submissions/{submission_id}")
+def plugin_submission_get(
+    submission_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    row = get_submission_for_plugin(submission_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return row
+
+
+@skins_router.post("/plugin/submissions/{submission_id}/revoke")
+def plugin_submission_revoke(
+    submission_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return revoke_submission(submission_id)
+    except SubmissionError as e:
+        status = 404 if "not found" in str(e).lower() else 400
+        raise HTTPException(status_code=status, detail=str(e)) from e
 
 
 @skins_router.get("/plugin/submissions/{submission_id}/files/{filename}")

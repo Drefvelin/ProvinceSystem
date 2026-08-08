@@ -27,7 +27,7 @@ Ban cog is **notification + logging only**. It does not ban players on the Minec
 New cog (e.g. `skinsreview` / `tfmcskins`) in `tfmc_bot/`:
 
 1. Discover pending submissions: poll `GET /skins/staff/pending` (`X-Staff-Key`) and/or slash post-by-id.
-2. Post to **`#bot-feed`** (staff category; channel id via env/config): embed with id, slug, display name, kind, grip_preset, player UUID.
+2. Post to **`#bot-feed`**: embed with Item name, kind, base set, grip, **Minecraft name**, **Discord mention/username**, submission id; footer may show `player_key` / slug. Do **not** show raw MC UUID or Discord snowflake as fields.
 3. **Attach raw submission PNGs** (helmet/chestplate/… or texture) via staff file download — **not** the review-sheet for MVP. Review-sheet / rendered multi-view comes later when the render system exists.
 4. Buttons: **Approve** / **Deny**.
 5. Deny opens modal for reason.

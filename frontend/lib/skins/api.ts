@@ -85,11 +85,27 @@ export type SubmissionPublic = {
   display_name: string;
   grip_preset: string | null;
   base_set: string | null;
+  add_name?: boolean;
+  name_colours?: string[];
+  name_styles?: string[];
+  player_key?: string | null;
   status: string;
   deny_reason: string | null;
   created_at: string;
   reviewed_at: string | null;
   applied_at: string | null;
+};
+
+export type SubmissionCheckResult = {
+  ok: boolean;
+  conflicts: Array<{
+    id: string;
+    slug: string;
+    display_name: string;
+    status: string;
+    kind: string;
+    reasons: string[];
+  }>;
 };
 
 export type CreateSubmissionInput = {
@@ -98,8 +114,39 @@ export type CreateSubmissionInput = {
   display_name: string;
   base_set: string;
   grip_preset?: string | null;
+  add_name?: boolean;
+  name_colours?: string[];
+  name_styles?: string[];
   files: Record<string, File>;
 };
+
+export async function checkSubmissionConflict(input: {
+  sessionToken: string;
+  display_name: string;
+  base_id?: string;
+}): Promise<SubmissionCheckResult> {
+  const params = new URLSearchParams();
+  if (input.display_name.trim()) {
+    params.set("display_name", input.display_name.trim());
+  }
+  if (input.base_id?.trim()) {
+    params.set("base_id", input.base_id.trim());
+  }
+  const res = await fetch(
+    `${getApiBase()}/skins/submissions/check?${params.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${input.sessionToken}` },
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new SkinsApiError(
+      detailMessage(data, `Conflict check failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as SubmissionCheckResult;
+}
 
 export async function createSubmission(
   input: CreateSubmissionInput
@@ -110,6 +157,15 @@ export async function createSubmission(
   form.append("base_set", input.base_set);
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);
+  }
+  if (input.add_name) {
+    form.append("add_name", "true");
+    if (input.name_colours?.length) {
+      form.append("name_colours", JSON.stringify(input.name_colours));
+    }
+    if (input.name_styles?.length) {
+      form.append("name_styles", JSON.stringify(input.name_styles));
+    }
   }
   for (const [name, file] of Object.entries(input.files)) {
     form.append(name, file, file.name);

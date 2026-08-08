@@ -91,6 +91,37 @@ def assert_slug(slug: str) -> str:
     return slug
 
 
+def prefix_slug(player_key: str, base_id: str) -> str:
+    """Build `{player_key}_{base_id}` and validate full skin id length."""
+    key = (player_key or "").strip()
+    base = assert_slug(base_id)
+    if not key or not SLUG_RE.fullmatch(key):
+        raise SlugError("Invalid player key for skin id")
+    full = f"{key}_{base}"
+    if not SLUG_RE.fullmatch(full):
+        raise SlugError(
+            f"Skin file id '{base}' is too long once prefixed "
+            f"(max {48 - len(key) - 1} characters for your account). "
+            "Shorten your PNG base name."
+        )
+    if "__" in full:
+        raise SlugError(
+            "Skin file name id cannot contain double underscores (__)."
+        )
+    return full
+
+
+def base_id_from_slug(slug: str, player_key: str | None) -> str:
+    """Strip `{player_key}_` prefix when present; else return slug as base."""
+    s = (slug or "").strip()
+    key = (player_key or "").strip()
+    if key:
+        prefix = f"{key}_"
+        if s.startswith(prefix) and len(s) > len(prefix):
+            return s[len(prefix) :]
+    return s
+
+
 def slugify_display_name(display_name: str) -> str:
     """Suggest a skin id from an item name (tests / helpers only)."""
     s = (display_name or "").lower()

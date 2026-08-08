@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from .codes import generate_plaintext_code, hash_secret
-from .db import connect
+from .db import connect, get_or_create_player_key
 from .plugin_notices import enqueue_link_success
 
 
@@ -119,6 +119,8 @@ def complete_link(
                 "This Discord account is already linked to a different Minecraft player"
             )
 
+        player_key = get_or_create_player_key(conn, player_uuid)
+
         conn.execute(
             "DELETE FROM discord_links WHERE player_uuid = ?",
             (player_uuid,),
@@ -127,10 +129,17 @@ def complete_link(
             """
             INSERT INTO discord_links (
                 player_uuid, discord_user_id, minecraft_name,
-                discord_username, linked_at
-            ) VALUES (?, ?, ?, ?, ?)
+                discord_username, player_key, linked_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (player_uuid, discord_id, minecraft_name, username, linked_at),
+            (
+                player_uuid,
+                discord_id,
+                minecraft_name,
+                username,
+                player_key,
+                linked_at,
+            ),
         )
         conn.execute(
             "UPDATE discord_link_codes SET used_at = ? WHERE id = ?",
@@ -148,6 +157,7 @@ def complete_link(
         "discord_user_id": discord_id,
         "discord_username": username,
         "minecraft_name": minecraft_name,
+        "player_key": player_key,
         "linked_at": linked_at,
     }
 
@@ -164,6 +174,67 @@ def get_discord_id_for_uuid(player_uuid: str) -> str | None:
     if row is None:
         return None
     return str(row["discord_user_id"])
+
+
+def get_link_for_uuid(player_uuid: str) -> dict | None:
+    """Active Discord link row for UUID, including player_key."""
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return None
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT player_uuid, discord_user_id, minecraft_name,
+                   discord_username, player_key, linked_at
+            FROM discord_links
+            WHERE player_uuid = ?
+            """,
+            (uuid,),
+        ).fetchone()
+        if row is None:
+            return None
+        key = str(row["player_key"] or "").strip()
+        if not key:
+            key = get_or_create_player_key(conn, uuid)
+            conn.execute(
+                "UPDATE discord_links SET player_key = ? WHERE player_uuid = ?",
+                (key, uuid),
+            )
+            conn.commit()
+        return {
+            "player_uuid": str(row["player_uuid"]),
+            "discord_user_id": str(row["discord_user_id"]),
+            "minecraft_name": row["minecraft_name"],
+            "discord_username": row["discord_username"],
+            "player_key": key,
+            "linked_at": row["linked_at"],
+        }
+
+
+def get_player_key_for_uuid(player_uuid: str) -> str | None:
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return None
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT player_key FROM player_keys WHERE player_uuid = ?",
+            (uuid,),
+        ).fetchone()
+        if row is not None and str(row["player_key"] or "").strip():
+            return str(row["player_key"]).strip()
+        link = conn.execute(
+            "SELECT player_key FROM discord_links WHERE player_uuid = ?",
+            (uuid,),
+        ).fetchone()
+        if link is not None and str(link["player_key"] or "").strip():
+            key = str(link["player_key"]).strip()
+            conn.execute(
+                "INSERT OR IGNORE INTO player_keys (player_uuid, player_key) VALUES (?, ?)",
+                (uuid, key),
+            )
+            conn.commit()
+            return key
+    return None
 
 
 def unlink_by_uuid(player_uuid: str) -> dict:
@@ -234,6 +305,7 @@ if __name__ == "__main__":
         conn.execute(
             "DELETE FROM plugin_notices WHERE player_uuid IN (?, ?)", (u1, u2)
         )
+        conn.execute("DELETE FROM player_keys WHERE player_uuid IN (?, ?)", (u1, u2))
         conn.commit()
 
     started = start_link(u1, "TestPlayer")
@@ -243,6 +315,8 @@ if __name__ == "__main__":
     assert done["discord_user_id"] == d1
     assert done["minecraft_name"] == "TestPlayer"
     assert done["discord_username"] == "DiscordOne"
+    assert done.get("player_key") and len(done["player_key"]) == 8
+    key1 = done["player_key"]
     assert get_discord_id_for_uuid(u1) == d1
 
     notices = list_undelivered_plugin_notices()
@@ -256,12 +330,13 @@ if __name__ == "__main__":
     assert again.get("already_linked") is True
     assert again.get("discord_username") == "DiscordOne"
 
-    # Relink requires unlink first
+    # Relink requires unlink first — player_key must survive
     unlink_by_uuid(u1)
     started2 = start_link(u1, "TestPlayer")
     assert "code" in started2
-    complete_link(started2["code"], d2, discord_username="DiscordTwo")
+    done2 = complete_link(started2["code"], d2, discord_username="DiscordTwo")
     assert get_discord_id_for_uuid(u1) == d2
+    assert done2["player_key"] == key1
 
     # Discord id taken by u1 — u2 cannot claim it
     started3 = start_link(u2)

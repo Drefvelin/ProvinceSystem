@@ -108,6 +108,10 @@ def write_submission_files(
     files: dict[str, bytes],
     grip_preset: str | None = None,
     base_set: str | None = None,
+    *,
+    add_name: bool = False,
+    name_colours: list[str] | None = None,
+    name_styles: list[str] | None = None,
 ) -> Path:
     """
     Write PNGs under SKINS_DIR/{submission_id}/ with fixed stems.
@@ -154,6 +158,9 @@ def write_submission_files(
             "display_name": display_name,
             "grip_preset": grip_preset,
             "base_set": base_set,
+            "add_name": bool(add_name),
+            "name_colours": list(name_colours or []),
+            "name_styles": list(name_styles or []),
             "created_at": _iso_now(),
         }
         (out_dir / "meta.json").write_text(

@@ -1,6 +1,6 @@
 # 07 — Naming conventions
 
-Players enter an **Item name** (ArmourShop label). The technical skin id comes from **PNG file names** (and later matching JSON). The site and API enforce conventions and show clear errors when names are wrong.
+Players enter an **Item name** (ArmourShop label). The technical skin id comes from **PNG file names** (base id), then the API prefixes a stable **player key**.
 
 Style locked: **`lowercase_snake_case`** (same family as `tfmc_armor` ids like `forestman_chain_helmet`).
 
@@ -8,21 +8,32 @@ Style locked: **`lowercase_snake_case`** (same family as `tfmc_armor` ids like `
 
 | Field | Used for | Who sets it |
 |-------|----------|-------------|
-| **Item name** (`display_name`) | ArmourShop label, IA `display_name`, Discord embed | Player types it (spaces/capitals OK) |
-| **Skin id** (`slug`, internal) | Files on disk, IA item ids, ArmourShop set key, LP | Taken from PNG basename(s) — **not** a form field for players |
+| **Item name** (`display_name`) | ArmourShop label, IA display, Discord title | Player types it (spaces/capitals OK; may match another player) |
+| **Base id** (from PNG basenames) | Player upload convention | Taken from PNG basename(s) — **not** a form field |
+| **Skin id** (`slug`) | Disk / IA / shop / LP | `{player_key}_{base_id}` — API adds `player_key` |
 
-Do not ask players for a “slug”. Staff Discord embeds may still show the technical id.
+Do not ask players for a “slug”. Staff Discord embeds show names; footer may include key/slug.
 
-## Skin id rules (from file names)
+## Player key
 
-- Regex: `^[a-z][a-z0-9_]{1,47}$` (2–48 chars total)
+- Minted on first Discord link (`discord_links` / durable `player_keys`): 8 chars `[a-z][a-z0-9]{7}`.
+- Survives unlink/re-link for the same Minecraft UUID.
+- API startup backfills any linked account missing a key.
+
+## Skin id rules
+
+**Base id** (from files) and **full slug** (after prefix):
+
+- Regex: `^[a-z][a-z0-9_]{1,47}$` (2–48 chars total) — full slug must still match after `{player_key}_` is prepended (shorten base id if needed).
 - Must start with a letter
 - Only `a-z`, `0-9`, `_`
 - No spaces, hyphens, capitals, dots, unicode, or leading/trailing `_`
 - No double underscores `__`
-- Must be unique among submissions that are `pending`, `approved`, or `applied` (denied ids may be reused)
+- Full slug must be unique among `pending` / `approved` / `applied` (`denied` / `revoked` may reuse)
 
-Reserved ids: `test`, `texture`, `null`, `undefined`, `admin`, `tfmc`.
+Same player cannot submit another **active** skin with the same **base id** or same **display_name** (case-insensitive). Website checks before submit; API enforces.
+
+Reserved base ids: `test`, `texture`, `null`, `undefined`, `admin`, `tfmc`.
 
 ## Upload filenames (required)
 

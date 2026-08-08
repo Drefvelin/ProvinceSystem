@@ -42,6 +42,8 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-8/05-reload-and-ack](./step-8/05-reload-and-ack.md) | 8 | Deferred reload + applied | Ack after IA reload |
 | [step-8/06-docs-e2e](./step-8/06-docs-e2e.md) | 8 | Docs + staging E2E | Armor/melee Flow 2 green |
 | [step-8/07-bow-crossbow-writers](./step-8/07-bow-crossbow-writers.md) | 8 | Bow / crossbow writers | Harness + apply for bow kinds |
+| [step-9/00-index](./step-9/00-index.md) | 9 | Name colour / encoding / web | Gradient + Apply name |
+| [step-10/00-index](./step-10/00-index.md) | 10 | Player key / delete / bot names | Prefixed slug + staff delete |
 
 **Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop).
 

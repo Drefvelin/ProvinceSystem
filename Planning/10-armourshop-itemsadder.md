@@ -135,7 +135,9 @@ ia.tfmc_submissions:{slug}
 ```
 
 - Two categories: **`ps_armor`** (`is-item: false`) and **`ps_items`** (`is-item: true`)  
-- Set key = `{slug}`; SkinSet `set: {base_set}` from upload (filtered by kind — [step-8](./batches/step-8/00-index.md))  
+- Set key = `{slug}` (`{player_key}_{base_id}`); SkinSet `set: {base_set}` from upload (filtered by kind — [step-8](./batches/step-8/00-index.md))  
+- SkinSet display: plain `name`, separate `colour` (string or list of `#RRGGBB` / legacy codes), optional `add-name`, optional `styles` (`bold` / `italic` / `underline` / `strikethrough`). Runtime formatting via TLibs `applyColourGradient` (+ styles). Jar sources use `\u00A7` / UTF-8 to avoid GUI `Â` mojibake.  
+- Staff: `/armourshop submission delete <submissionId>` removes shop SkinSet + `tfmc_submissions` pack files + LP node + API `revoked`, then IA refresh.  
 - `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`  
 - Gate with `permission: armourshop.submission.{slug}` (Bukkit `hasPermission`; LP grants the node)  
 - **No scroll** on player submission sets  
