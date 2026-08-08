@@ -176,7 +176,7 @@ curl -s http://127.0.0.1:18001/skins/plugin/approved \
 ```
 
 7. Issuer opens ArmourShop → set under **Player Armor** (`ps_armor`) or **Player Items** (`ps_items`) → apply onto matching BaseSet gear in inventory.
-8. Staff delete (optional): `/armourshop submission delete <submission-uuid>` clears shop + pack + LP and marks API `revoked`.
+8. Staff delete (optional): `/armourshop submission delete <submission-uuid>` clears shop + pack + LP and marks API `revoked` (works for pre–player-key slugs too; tab-completes deletable ids).
 
 Operator checklist:
 

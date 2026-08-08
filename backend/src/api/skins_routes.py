@@ -50,6 +50,7 @@ from src.skins.submissions import (
     get_submission_for_owner,
     get_submission_for_plugin,
     list_approved_pending_apply,
+    list_deletable_submissions,
     list_pending,
     mark_applied,
     resolve_submission_file,
@@ -453,6 +454,15 @@ def plugin_approved(
 ):
     _require_plugin(x_plugin_key)
     return {"submissions": list_approved_pending_apply(since)}
+
+
+@skins_router.get("/plugin/submissions/deletable")
+def plugin_submissions_deletable(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """List pending/approved/applied submissions for staff delete tab-complete."""
+    _require_plugin(x_plugin_key)
+    return {"submissions": list_deletable_submissions()}
 
 
 @skins_router.get("/plugin/submissions/{submission_id}")

@@ -656,6 +656,30 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
     }
 
 
+def list_deletable_submissions() -> list[dict]:
+    """Active submissions staff can delete (pending / approved / applied)."""
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, slug, display_name, kind, status, created_at
+            FROM submissions
+            WHERE status IN (?, ?, ?)
+            ORDER BY created_at DESC
+            """,
+            ACTIVE_STATUSES,
+        ).fetchall()
+    return [
+        {
+            "id": row["id"],
+            "slug": row["slug"],
+            "display_name": row["display_name"],
+            "kind": row["kind"],
+            "status": row["status"],
+        }
+        for row in rows
+    ]
+
+
 def revoke_submission(submission_id: str) -> dict:
     """Mark submission revoked so slug can be reused and won't re-apply."""
     sid = (submission_id or "").strip()
