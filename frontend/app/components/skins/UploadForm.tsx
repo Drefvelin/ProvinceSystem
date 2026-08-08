@@ -38,6 +38,8 @@ type Props = {
 
 type TierEntry = {
   tier: string;
+  /** Display suffix for this tier (default Iron/Steel/…). */
+  alias: string;
   files: Record<string, File | null>;
 };
 
@@ -117,13 +119,24 @@ export default function UploadForm({ sessionToken }: Props) {
   function addTier(tier: string) {
     if (!tier || tiers.some((entry) => entry.tier === tier)) return;
     if (tiers.length >= MAX_TIERS) return;
-    setTiers((prev) => [...prev, { tier, files: {} }]);
+    setTiers((prev) => [
+      ...prev,
+      { tier, alias: baseSetLabel(tier), files: {} },
+    ]);
     setTierToAdd("");
     setError(null);
   }
 
   function removeTier(tier: string) {
     setTiers((prev) => prev.filter((entry) => entry.tier !== tier));
+  }
+
+  function setTierAlias(tier: string, alias: string) {
+    setTiers((prev) =>
+      prev.map((entry) =>
+        entry.tier === tier ? { ...entry, alias } : entry
+      )
+    );
   }
 
   function setTierFile(tier: string, field: string, file: File | null) {
@@ -154,6 +167,17 @@ export default function UploadForm({ sessionToken }: Props) {
     if (isArmor && tiers.length < 1) {
       setError("Add at least 1 armor tier");
       return;
+    }
+
+    if (isArmor) {
+      for (const entry of tiers) {
+        if (!entry.alias.trim()) {
+          setError(
+            `Tier alias required for ${baseSetLabel(entry.tier)} (e.g. ${baseSetLabel(entry.tier)} or Scout)`
+          );
+          return;
+        }
+      }
     }
 
     if (kind === "large_handheld" && !grip) {
@@ -242,6 +266,11 @@ export default function UploadForm({ sessionToken }: Props) {
         display_name: name,
         base_set: isArmor ? null : baseSet,
         tiers: isArmor ? tiers.map((entry) => entry.tier) : undefined,
+        tier_aliases: isArmor
+          ? Object.fromEntries(
+              tiers.map((entry) => [entry.tier, entry.alias.trim()])
+            )
+          : undefined,
         grip_preset: kind === "large_handheld" ? grip : null,
         add_name: applyName,
         name_colours: colours.length ? colours : undefined,
@@ -353,7 +382,9 @@ export default function UploadForm({ sessionToken }: Props) {
           Item name
         </span>
         <span className="text-xs text-[var(--tfmc-mist)]">
-          Shown in ArmourShop. Spaces and capitals are fine.
+          {isArmor
+            ? "Base name before the tier alias (e.g. Norain → Norain Iron / Norain Scout). Spaces and capitals are fine."
+            : "Shown in ArmourShop. Spaces and capitals are fine."}
         </span>
         <input
           type="text"
@@ -555,7 +586,13 @@ export default function UploadForm({ sessionToken }: Props) {
           </legend>
           <p className="text-xs text-[var(--tfmc-mist)]">
             Add 1–6 tiers. Each tier needs all six armor PNGs (helmet,
-            chestplate, leggings, boots, layer 1, layer 2).
+            chestplate, leggings, boots, layer 1, layer 2). The pack name
+            becomes{" "}
+            <span className="text-[var(--tfmc-cream)]">
+              {itemName.trim() || "Name"} {tiers[0]?.alias.trim() || "Iron"}
+            </span>{" "}
+            (plus Helmet/Chestplate/…). Override the alias per tier if you
+            want e.g. Scout instead of Iron.
           </p>
 
           {tiers.length > 0 ? (
@@ -565,7 +602,7 @@ export default function UploadForm({ sessionToken }: Props) {
                   key={entry.tier}
                   className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-[var(--tfmc-cream)]">
                       {baseSetLabel(entry.tier)}
                     </span>
@@ -578,6 +615,29 @@ export default function UploadForm({ sessionToken }: Props) {
                       Remove tier
                     </button>
                   </div>
+                  <label className="flex flex-col gap-2 text-left">
+                    <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                      Tier name alias
+                    </span>
+                    <input
+                      type="text"
+                      value={entry.alias}
+                      disabled={loading}
+                      maxLength={32}
+                      placeholder={baseSetLabel(entry.tier)}
+                      onChange={(e) =>
+                        setTierAlias(entry.tier, e.target.value)
+                      }
+                      className={inputClass}
+                    />
+                    <span className="text-xs text-[var(--tfmc-mist)]">
+                      In-game:{" "}
+                      {(itemName.trim() || "Name") +
+                        " " +
+                        (entry.alias.trim() || baseSetLabel(entry.tier))}{" "}
+                      Chestplate
+                    </span>
+                  </label>
                   <div className="flex flex-col gap-4">
                     {fileFields.map((field) => (
                       <label key={field} className="flex flex-col gap-2 text-left">

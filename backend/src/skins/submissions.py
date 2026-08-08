@@ -14,9 +14,11 @@ from .db import SKINS_DIR, connect
 from .discord_link import get_link_for_uuid
 from .naming import (
     ARMOR_FIELDS,
+    ARMOR_TIER_LABELS,
     ARMOR_TIERS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
+    MAX_TIER_ALIAS_LEN,
     SlugError,
     build_submission_id,
     sanitize_ign,
@@ -110,6 +112,27 @@ def _row_json_list(row: sqlite3.Row, key: str) -> list[str]:
     return [str(x) for x in data if x is not None and str(x).strip()]
 
 
+def _row_json_object(row: sqlite3.Row, key: str) -> dict[str, str]:
+    if key not in row.keys():
+        return {}
+    raw = row[key]
+    if raw is None or raw == "":
+        return {}
+    if isinstance(raw, dict):
+        return {str(k): str(v) for k, v in raw.items() if v is not None}
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {
+        str(k): str(v)
+        for k, v in data.items()
+        if v is not None and str(v).strip()
+    }
+
+
 def _row_add_name(row: sqlite3.Row) -> bool:
     if "add_name" not in row.keys():
         return False
@@ -170,6 +193,7 @@ def _public_row(row: sqlite3.Row) -> dict:
         "grip_preset": row["grip_preset"],
         "base_set": _row_base_set(row),
         "tiers": _row_json_list(row, "tiers"),
+        "tier_aliases": _row_json_object(row, "tier_aliases"),
         "add_name": _row_add_name(row),
         "name_colours": _row_json_list(row, "name_colours"),
         "name_styles": _row_json_list(row, "name_styles"),
@@ -225,6 +249,34 @@ def _validate_tiers(raw: list[str] | None) -> list[str]:
             raise SubmissionError(f"duplicate tier '{tier}'")
         seen.add(tier)
         out.append(tier)
+    return out
+
+
+def _validate_tier_aliases(
+    tiers: list[str], raw: dict[str, str] | None
+) -> dict[str, str]:
+    """Per-tier display suffix. Missing → default Iron/Steel/… labels."""
+    incoming: dict[str, str] = {}
+    if raw:
+        for key, value in raw.items():
+            tier = str(key).strip().lower()
+            if tier not in tiers:
+                raise SubmissionError(
+                    f"tier_aliases key '{key}' is not in this submission's tiers"
+                )
+            alias = str(value or "").strip()
+            if not alias:
+                continue
+            if len(alias) > MAX_TIER_ALIAS_LEN:
+                raise SubmissionError(
+                    f"tier alias for '{tier}' max length is {MAX_TIER_ALIAS_LEN}"
+                )
+            incoming[tier] = alias
+    out: dict[str, str] = {}
+    for tier in tiers:
+        out[tier] = incoming.get(tier) or ARMOR_TIER_LABELS.get(
+            tier, tier.capitalize()
+        )
     return out
 
 
@@ -328,6 +380,7 @@ def create_submission(
     base_set: str | None = None,
     *,
     tiers: list[str] | None = None,
+    tier_aliases: dict[str, str] | None = None,
     filenames: dict[str, str | None] | None = None,
     add_name: bool = False,
     name_colours: list[str] | None = None,
@@ -366,8 +419,10 @@ def create_submission(
     styles_json = json.dumps(styles) if styles else None
 
     tier_list: list[str] | None
+    aliases: dict[str, str] | None
     if kind == "armor_set":
         tier_list = _validate_tiers(tiers)
+        aliases = _validate_tier_aliases(tier_list, tier_aliases)
         base: str | None = None
         for tier in tier_list:
             missing = [
@@ -380,7 +435,10 @@ def create_submission(
     else:
         if tiers:
             raise SubmissionError("tiers are only allowed for armor_set")
+        if tier_aliases:
+            raise SubmissionError("tier_aliases are only allowed for armor_set")
         tier_list = None
+        aliases = None
         base = _validate_base_set(kind, base_set)
         if kind in BOW_KINDS:
             missing = [f for f in BOW_FRAME_FIELDS if f not in files_bytes]
@@ -448,6 +506,7 @@ def create_submission(
         )
 
     tiers_json = json.dumps(tier_list) if tier_list else None
+    aliases_json = json.dumps(aliases) if aliases else None
     dir_path = f"skins/{submission_id}"
     created_at = _iso_now()
     code_id = session_row["code_id"]
@@ -458,12 +517,13 @@ def create_submission(
             """
             INSERT INTO submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
-                grip_preset, base_set, tiers, add_name, name_colours, name_styles,
+                grip_preset, base_set, tiers, tier_aliases, add_name,
+                name_colours, name_styles,
                 status, deny_reason, dir_path,
                 created_at, reviewed_at, applied_at, discord_message_id,
                 discord_user_id
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
                 NULL, NULL, NULL, ?
             )
             """,
@@ -477,6 +537,7 @@ def create_submission(
                 grip,
                 base,
                 tiers_json,
+                aliases_json,
                 1 if want_add_name else 0,
                 colours_json,
                 styles_json,
@@ -497,6 +558,7 @@ def create_submission(
             grip_preset=grip,
             base_set=base,
             tiers=tier_list,
+            tier_aliases=aliases,
             add_name=want_add_name,
             name_colours=colours,
             name_styles=styles,
@@ -655,6 +717,7 @@ def list_pending() -> list[dict]:
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
                 "tiers": _row_json_list(row, "tiers"),
+                "tier_aliases": _row_json_object(row, "tier_aliases"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),
@@ -700,6 +763,7 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
                 "grip_preset": row["grip_preset"],
                 "base_set": _row_base_set(row),
                 "tiers": _row_json_list(row, "tiers"),
+                "tier_aliases": _row_json_object(row, "tier_aliases"),
                 "add_name": _row_add_name(row),
                 "name_colours": _row_json_list(row, "name_colours"),
                 "name_styles": _row_json_list(row, "name_styles"),

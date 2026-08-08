@@ -86,6 +86,7 @@ export type SubmissionPublic = {
   grip_preset: string | null;
   base_set: string | null;
   tiers?: string[];
+  tier_aliases?: Record<string, string>;
   add_name?: boolean;
   name_colours?: string[];
   name_styles?: string[];
@@ -114,6 +115,7 @@ export type CreateSubmissionInput = {
   display_name: string;
   base_set?: string | null;
   tiers?: string[];
+  tier_aliases?: Record<string, string>;
   grip_preset?: string | null;
   add_name?: boolean;
   name_colours?: string[];
@@ -156,6 +158,9 @@ export async function createSubmission(
   }
   if (input.tiers?.length) {
     form.append("tiers", JSON.stringify(input.tiers));
+  }
+  if (input.tier_aliases && Object.keys(input.tier_aliases).length) {
+    form.append("tier_aliases", JSON.stringify(input.tier_aliases));
   }
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);

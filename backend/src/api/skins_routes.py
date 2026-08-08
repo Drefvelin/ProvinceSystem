@@ -271,6 +271,7 @@ async def post_submissions(
     name_colours_raw = form.get("name_colours")
     name_styles_raw = form.get("name_styles")
     tiers_raw = form.get("tiers")
+    tier_aliases_raw = form.get("tier_aliases")
 
     tiers_list: list[str] | None = None
     if tiers_raw:
@@ -282,6 +283,18 @@ async def post_submissions(
         except Exception as e:
             raise HTTPException(
                 status_code=400, detail="tiers must be a JSON array"
+            ) from e
+
+    tier_aliases_map: dict[str, str] | None = None
+    if tier_aliases_raw and str(tier_aliases_raw).strip():
+        try:
+            parsed = json.loads(str(tier_aliases_raw))
+            if not isinstance(parsed, dict):
+                raise ValueError("not an object")
+            tier_aliases_map = {str(k): str(v) for k, v in parsed.items()}
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="tier_aliases must be a JSON object"
             ) from e
 
     files_bytes: dict[str, bytes] = {}
@@ -347,6 +360,7 @@ async def post_submissions(
             grip_preset=grip_preset or None,
             base_set=base_set or None,
             tiers=tiers_list,
+            tier_aliases=tier_aliases_map,
             filenames=filenames,
             add_name=want_add,
             name_colours=colours_list,

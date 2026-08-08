@@ -115,6 +115,7 @@ def write_submission_files(
     add_name: bool = False,
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
+    tier_aliases: dict[str, str] | None = None,
 ) -> Path:
     """
     Write PNGs under SKINS_DIR/{submission_id}/ with fixed stems.
@@ -169,6 +170,7 @@ def write_submission_files(
             "grip_preset": grip_preset,
             "base_set": base_set,
             "tiers": list(tiers or []),
+            "tier_aliases": dict(tier_aliases or {}),
             "add_name": bool(add_name),
             "name_colours": list(name_colours or []),
             "name_styles": list(name_styles or []),

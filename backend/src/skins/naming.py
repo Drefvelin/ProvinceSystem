@@ -25,6 +25,18 @@ ARMOR_TIERS = frozenset(
     {"iron", "steel", "abyssalite", "mythril", "mage", "infantry"}
 )
 
+# Default display suffix per tier (matches hand-authored shop YAML: "Osenic Iron").
+ARMOR_TIER_LABELS: dict[str, str] = {
+    "iron": "Iron",
+    "steel": "Steel",
+    "abyssalite": "Abyssalite",
+    "mythril": "Mythril",
+    "mage": "Mage",
+    "infantry": "Infantry",
+}
+
+MAX_TIER_ALIAS_LEN = 32
+
 ARMOR_ICON_FIELDS = ("helmet", "chestplate", "leggings", "boots")
 ARMOR_LAYER_FIELDS = ("layer_1", "layer_2")
 ARMOR_FIELDS = ARMOR_ICON_FIELDS + ARMOR_LAYER_FIELDS

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     grip_preset TEXT,
     base_set TEXT,
     tiers TEXT,
+    tier_aliases TEXT,
     add_name INTEGER NOT NULL DEFAULT 0,
     name_colours TEXT,
     name_styles TEXT,
