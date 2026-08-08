@@ -4,9 +4,11 @@ import type { SkinKind } from "../../../lib/skins/sizes";
 
 const OPTIONS: { value: SkinKind; label: string }[] = [
   { value: "armor_set", label: "Armor set" },
-  { value: "item", label: "Item (16×16)" },
   { value: "handheld", label: "Handheld (16×16)" },
   { value: "large_handheld", label: "Large handheld (32×32)" },
+  { value: "bow", label: "Bow (16×16, 4 frames)" },
+  { value: "large_bow", label: "Large bow (32×32, 4 frames)" },
+  { value: "crossbow", label: "Crossbow (16×16, 5 frames)" },
 ];
 
 type Props = {

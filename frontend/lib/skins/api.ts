@@ -84,6 +84,7 @@ export type SubmissionPublic = {
   slug: string;
   display_name: string;
   grip_preset: string | null;
+  base_set: string | null;
   status: string;
   deny_reason: string | null;
   created_at: string;
@@ -95,6 +96,7 @@ export type CreateSubmissionInput = {
   sessionToken: string;
   kind: string;
   display_name: string;
+  base_set: string;
   grip_preset?: string | null;
   files: Record<string, File>;
 };
@@ -105,6 +107,7 @@ export async function createSubmission(
   const form = new FormData();
   form.append("kind", input.kind);
   form.append("display_name", input.display_name);
+  form.append("base_set", input.base_set);
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);
   }

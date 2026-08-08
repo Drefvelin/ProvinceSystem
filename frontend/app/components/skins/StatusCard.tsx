@@ -36,6 +36,14 @@ export default function StatusCard({ row }: Props) {
           <dt className="text-[var(--tfmc-stone)]">Kind</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.kind}</dd>
         </div>
+        {row.base_set ? (
+          <div>
+            <dt className="text-[var(--tfmc-stone)]">
+              {row.kind === "armor_set" ? "Armor tier" : "Applicable type"}
+            </dt>
+            <dd className="text-[var(--tfmc-cream)]">{row.base_set}</dd>
+          </div>
+        ) : null}
         <div>
           <dt className="text-[var(--tfmc-stone)]">Item name</dt>
           <dd className="text-[var(--tfmc-cream)]">{row.display_name}</dd>

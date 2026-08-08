@@ -102,6 +102,7 @@ def _item_sheet(
     slug: str,
     kind: str,
     grip_preset: str | None,
+    base_set: str | None,
     out_dir: Path,
 ) -> bytes:
     path = out_dir / f"{slug}.png"
@@ -110,6 +111,8 @@ def _item_sheet(
 
     display = 192
     caption = f"kind={kind}"
+    if base_set:
+        caption += f"  base={base_set}"
     if grip_preset:
         caption += f"  grip={grip_preset}"
 
@@ -159,6 +162,7 @@ def build_review_sheet(submission_id: str) -> bytes | None:
     kind = row["kind"]
     slug = row["slug"]
     grip = row["grip_preset"]
+    base_set = row["base_set"] if "base_set" in row.keys() else None
     out_dir = SKINS_DIR / submission_id
     if not out_dir.is_dir():
         raise ReviewSheetError("Submission files directory missing")
@@ -166,5 +170,5 @@ def build_review_sheet(submission_id: str) -> bytes | None:
     if kind == "armor_set":
         return _armor_sheet(slug, out_dir)
     if kind in ITEM_KINDS:
-        return _item_sheet(slug, kind, grip, out_dir)
+        return _item_sheet(slug, kind, grip, base_set, out_dir)
     raise ReviewSheetError(f"Unsupported kind for review sheet: {kind}")

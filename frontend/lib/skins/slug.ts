@@ -18,6 +18,18 @@ export const ARMOR_SUFFIXES: Record<string, string> = {
   layer_2: "_layer_2.png",
 };
 
+export const BOW_SUFFIXES: Record<string, string> = {
+  texture: ".png",
+  pull_0: "_0.png",
+  pull_1: "_1.png",
+  pull_2: "_2.png",
+};
+
+export const CROSSBOW_SUFFIXES: Record<string, string> = {
+  ...BOW_SUFFIXES,
+  charged: "_charged.png",
+};
+
 const ARMOR_LABELS: Record<string, string> = {
   helmet: "Helmet",
   chestplate: "Chestplate",
@@ -25,6 +37,14 @@ const ARMOR_LABELS: Record<string, string> = {
   boots: "Boots",
   layer_1: "Layer 1",
   layer_2: "Layer 2",
+};
+
+const BOW_LABELS: Record<string, string> = {
+  texture: "Standby texture",
+  pull_0: "Pull 0",
+  pull_1: "Pull 1",
+  pull_2: "Pull 2",
+  charged: "Charged",
 };
 
 export function assertSlugClient(id: string): void {
@@ -103,12 +123,75 @@ export function skinIdFromArmorFilenames(
   return ids[0];
 }
 
+function skinIdFromPrefixedFilenames(
+  files: Record<string, File | null | undefined>,
+  suffixes: Record<string, string>,
+  kindLabel: string
+): string {
+  const ids: string[] = [];
+  for (const [field, suffix] of Object.entries(suffixes)) {
+    const label = BOW_LABELS[field] || field;
+    const file = files[field];
+    if (!file) {
+      throw new Error(`Missing ${label} file.`);
+    }
+    const name = basename(file.name);
+    if (field === "texture") {
+      if (!name.endsWith(".png") || name.slice(0, -4).endsWith("_0")
+        || name.slice(0, -4).endsWith("_1")
+        || name.slice(0, -4).endsWith("_2")
+        || name.slice(0, -4).endsWith("_charged")) {
+        throw new Error(
+          `${label} must be named exactly \`{id}.png\` (example: \`blue_shortbow.png\`). Got \`${name}\`.`
+        );
+      }
+      const stem = name.slice(0, -".png".length);
+      try {
+        assertSlugClient(stem);
+      } catch {
+        throw new Error(
+          `${label} file \`${name}\` has an invalid id. Use lowercase letters, numbers, underscores only.`
+        );
+      }
+      ids.push(stem);
+      continue;
+    }
+    if (!name.endsWith(suffix)) {
+      throw new Error(
+        `${label} file must be named exactly \`{id}${suffix}\` (example: \`blue_shortbow${suffix}\`). Got \`${name}\`.`
+      );
+    }
+    const stem = name.slice(0, -suffix.length);
+    try {
+      assertSlugClient(stem);
+    } catch {
+      throw new Error(
+        `${label} file \`${name}\` has an invalid id. Use lowercase letters, numbers, underscores only.`
+      );
+    }
+    ids.push(stem);
+  }
+  const unique = new Set(ids);
+  if (unique.size !== 1) {
+    throw new Error(
+      `All ${kindLabel} PNGs must share the same id prefix as the base \`{id}.png\` (check your file names).`
+    );
+  }
+  return ids[0];
+}
+
 export function assertUploadFilenames(
   kind: string,
   files: Record<string, File | null | undefined>
 ): string {
   if (kind === "armor_set") {
     return skinIdFromArmorFilenames(files);
+  }
+  if (kind === "bow" || kind === "large_bow") {
+    return skinIdFromPrefixedFilenames(files, BOW_SUFFIXES, "bow");
+  }
+  if (kind === "crossbow") {
+    return skinIdFromPrefixedFilenames(files, CROSSBOW_SUFFIXES, "crossbow");
   }
   const texture = files.texture;
   if (!texture) {

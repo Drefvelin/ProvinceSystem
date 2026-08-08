@@ -10,14 +10,55 @@ from pathlib import Path
 
 from .db import SKINS_DIR, connect
 from .discord_link import get_discord_id_for_uuid
-from .naming import SlugError, resolve_submission_slug
+from .naming import (
+    BOW_FRAME_FIELDS,
+    CROSSBOW_FRAME_FIELDS,
+    SlugError,
+    resolve_submission_slug,
+)
 from .notifications import enqueue_submitted
-from .storage import ARMOR_FIELDS, StorageError, write_submission_files
+from .storage import (
+    ARMOR_FIELDS,
+    BOW_KINDS,
+    CROSSBOW_KINDS,
+    StorageError,
+    write_submission_files,
+)
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
 ALLOWED_KINDS = frozenset(
-    {"armor_set", "item", "handheld", "large_handheld"}
+    {
+        "armor_set",
+        "handheld",
+        "large_handheld",
+        "bow",
+        "large_bow",
+        "crossbow",
+    }
 )
+BASE_SETS: dict[str, frozenset[str]] = {
+    "armor_set": frozenset(
+        {"iron", "steel", "abyssalite", "mythril", "mage", "infantry"}
+    ),
+    "handheld": frozenset(
+        {
+            "swords",
+            "battleaxes",
+            "daggers",
+            "warhammers",
+            "shortswords",
+            "hatchets",
+            "hoes",
+            "knives",
+        }
+    ),
+    "large_handheld": frozenset(
+        {"spears", "polearms", "greathammers", "staffs"}
+    ),
+    "bow": frozenset({"shortbows"}),
+    "large_bow": frozenset({"longbows"}),
+    "crossbow": frozenset({"crossbows"}),
+}
 GRIP_PRESETS = frozenset({"bottom", "middle", "top"})
 MAX_DISPLAY_NAME = 80
 
@@ -34,6 +75,12 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _row_base_set(row: sqlite3.Row) -> str | None:
+    if "base_set" not in row.keys():
+        return None
+    return row["base_set"]
+
+
 def _public_row(row: sqlite3.Row) -> dict:
     return {
         "id": row["id"],
@@ -41,6 +88,7 @@ def _public_row(row: sqlite3.Row) -> dict:
         "slug": row["slug"],
         "display_name": row["display_name"],
         "grip_preset": row["grip_preset"],
+        "base_set": _row_base_set(row),
         "status": row["status"],
         "deny_reason": row["deny_reason"],
         "created_at": row["created_at"],
@@ -50,6 +98,18 @@ def _public_row(row: sqlite3.Row) -> dict:
         if "discord_user_id" in row.keys()
         else None,
     }
+
+
+def _validate_base_set(kind: str, base_set: str | None) -> str:
+    raw = (base_set or "").strip()
+    if not raw:
+        raise SubmissionError("base_set is required")
+    allowed = BASE_SETS.get(kind)
+    if allowed is None or raw not in allowed:
+        raise SubmissionError(
+            f"base_set '{raw}' is not valid for kind '{kind}'"
+        )
+    return raw
 
 
 def slug_taken(slug: str) -> bool:
@@ -71,15 +131,21 @@ def create_submission(
     display_name: str,
     files_bytes: dict[str, bytes],
     grip_preset: str | None = None,
+    base_set: str | None = None,
     *,
     slug: str | None = None,
     filenames: dict[str, str | None] | None = None,
 ) -> dict:
     kind = (kind or "").strip()
+    if kind == "item":
+        raise SubmissionError("kind 'item' is disabled")
     if kind not in ALLOWED_KINDS:
         raise SubmissionError(
-            "kind must be armor_set, item, handheld, or large_handheld"
+            "kind must be armor_set, handheld, large_handheld, "
+            "bow, large_bow, or crossbow"
         )
+
+    base = _validate_base_set(kind, base_set)
 
     display = (display_name or "").strip()
     if not display:
@@ -98,6 +164,14 @@ def create_submission(
 
     if kind == "armor_set":
         missing = [f for f in ARMOR_FIELDS if f not in files_bytes]
+        if missing:
+            raise SubmissionError(f"Missing files: {', '.join(missing)}")
+    elif kind in BOW_KINDS:
+        missing = [f for f in BOW_FRAME_FIELDS if f not in files_bytes]
+        if missing:
+            raise SubmissionError(f"Missing files: {', '.join(missing)}")
+    elif kind in CROSSBOW_KINDS:
+        missing = [f for f in CROSSBOW_FRAME_FIELDS if f not in files_bytes]
         if missing:
             raise SubmissionError(f"Missing files: {', '.join(missing)}")
     elif "texture" not in files_bytes:
@@ -132,9 +206,13 @@ def create_submission(
             """
             INSERT INTO submissions (
                 id, player_uuid, code_id, kind, slug, display_name,
-                grip_preset, status, deny_reason, dir_path, created_at,
-                reviewed_at, applied_at, discord_message_id, discord_user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, NULL, NULL, NULL, ?)
+                grip_preset, base_set, status, deny_reason, dir_path,
+                created_at, reviewed_at, applied_at, discord_message_id,
+                discord_user_id
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
+                NULL, NULL, NULL, ?
+            )
             """,
             (
                 submission_id,
@@ -144,6 +222,7 @@ def create_submission(
                 slug,
                 display,
                 grip,
+                base,
                 dir_path,
                 created_at,
                 discord_id,
@@ -159,6 +238,7 @@ def create_submission(
             display,
             files_bytes,
             grip_preset=grip,
+            base_set=base,
         )
     except StorageError:
         _rollback_submission(submission_id)
@@ -295,6 +375,7 @@ def list_pending() -> list[dict]:
                 "kind": row["kind"],
                 "display_name": row["display_name"],
                 "grip_preset": row["grip_preset"],
+                "base_set": _row_base_set(row),
                 "created_at": row["created_at"],
                 "discord_user_id": row["discord_user_id"]
                 if "discord_user_id" in row.keys()
@@ -329,6 +410,7 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
                 "kind": row["kind"],
                 "display_name": row["display_name"],
                 "grip_preset": row["grip_preset"],
+                "base_set": _row_base_set(row),
                 "reviewed_at": row["reviewed_at"],
                 "files": _list_png_files(row["id"]),
             }

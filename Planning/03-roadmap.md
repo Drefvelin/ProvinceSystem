@@ -123,13 +123,21 @@ See [05-skins-system.md](./05-skins-system.md).
 
 **Repo:** `Workspace/armourshop` + ItemsAdder — [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md)
 
+Mint codes are done ([step-6](./batches/step-6/00-index.md)). Remaining B3 splits into:
+
+| Phase | Batches | Detail |
+|-------|---------|--------|
+| Pack writer | [step-7](./batches/step-7/00-index.md) | Write `tfmc_submissions` from fixtures; grip templates; harness (no live poll) |
+| Plugin integrate | [step-8](./batches/step-8/00-index.md) | `base_set` pairing; pull; shop; LP; reload; bow writers (8.07) |
+
 | Work | Detail |
 |------|--------|
-| Mint codes | In-game command; UUID bound; show once |
-| Pull approved | Fetch payloads from API (`kind`, `grip_preset`, files) |
-| Write pack | `contents/tfmc_submissions/` YAML + textures; **templates** for item/handheld/large grip displays |
-| Shop + LP | Category/set YAML; `armourshop.submission.{slug}` |
-| Deferred reload | IA reload when empty or on restart; queue otherwise |
+| Mint codes | Done — `/armourshop token create` |
+| Pack writer | YAML + textures; armor/handheld/large (Step 7); bow/large_bow/crossbow in 8.07 |
+| Target select | Kind + filtered `base_set` (armor tier or type); no `item`; guns/shields/helmets deferred ([step-8](./batches/step-8/00-index.md)) |
+| Pull approved | Fetch payloads (`kind`, `grip_preset`, `base_set`, files) |
+| Shop + LP | `ps_armor` / `ps_items`; `armourshop.submission.{slug}` |
+| Deferred reload | IA reload when empty or on restart; ack when reload done |
 
 **Done when:** Code → upload → Discord approve → skin usable in ArmourShop for that UUID without manual file copy.
 
@@ -156,7 +164,7 @@ Quotas, retention, module template, optional brewery stub.
 
 1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
 2. **B2 skins cog** — staff can review with PNG sheets without curl  
-3. **B3 ArmourShop** — real server apply + display templates  
+3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
 4. **A1 realm card + mobile** in parallel whenever free  
 5. **B4 / A1 cropped overlays / B5** as capacity allows  
 

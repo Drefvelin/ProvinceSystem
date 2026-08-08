@@ -1,13 +1,13 @@
 # Step 6 — In-game skins token (batch index)
 
 **Repos:** `Workspace/armourshop` (ProvinceSystem codes API already exists)  
-**Depends on:** Step 5 Discord link (recommended before upload; not required to mint)
+**Depends on:** Step 5 Discord link (required before mint)
 
 Parent: [../../10-armourshop-itemsadder.md](../../10-armourshop-itemsadder.md), [../../05-skins-system.md](../../05-skins-system.md).
 
 ## Goal
 
-Players run **`/armourshop token create`**, get a UUID-bound skins code with **click-to-copy** chat, redeem it on the website, and upload — no curl, no typing UUID.
+Players run **`/armourshop token create`**, get a UUID-bound skins code with **click-to-copy** chat, redeem it on the website, and upload — no curl, no typing UUID. Mint requires an active Discord link.
 
 ## Locked rules
 
@@ -18,7 +18,7 @@ Players run **`/armourshop token create`**, get a UUID-bound skins code with **c
 | API | `POST /skins/codes` + `X-Plugin-Key` (no API changes) |
 | Permission | `armourshop.token.create` (default false) or `armourshop.admin` |
 | Chat | Bungee `COPY_TO_CLIPBOARD` via `player.spigot().sendMessage` |
-| Mint vs link | Discord link **not** required to mint; website still requires link to upload |
+| Mint vs link | Discord link **required** to mint (`POST /skins/codes` returns 400 if unlinked) |
 | Also | `/linkdiscord` uses same click-to-copy for its code |
 
 ## Scope
@@ -26,9 +26,9 @@ Players run **`/armourshop token create`**, get a UUID-bound skins code with **c
 | In | Out |
 |----|-----|
 | Chat helper + `issueSkinsCode` client | IA apply / pull approved |
-| `/armourshop token create` + tab completer | Refusing mint if Discord unlinked |
-| Click-to-copy on link + token codes | Website redeem UI changes |
-| Docs + staging checklist | OAuth |
+| `/armourshop token create` + tab completer | Website redeem UI changes |
+| Click-to-copy on link + token codes | OAuth |
+| Docs + staging checklist | |
 
 ## Batch order
 

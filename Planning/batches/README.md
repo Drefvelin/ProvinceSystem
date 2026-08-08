@@ -27,9 +27,24 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-6/01-chat-and-api-client](./step-6/01-chat-and-api-client.md) | 6 | Click-to-copy + codes client | `/linkdiscord` copies |
 | [step-6/02-token-command](./step-6/02-token-command.md) | 6 | `/armourshop token create` + tab | Mint + redeem on site |
 | [step-6/03-docs-verify](./step-6/03-docs-verify.md) | 6 | Staging checklist | Checkpoint green |
+| [step-7/00-index](./step-7/00-index.md) | 7 | Pack writer overview | — |
+| [step-7/01-scaffold](./step-7/01-scaffold.md) | 7 | `tfmc_submissions` scaffold + paths | Namespace + config keys |
+| [step-7/02-armor-writer](./step-7/02-armor-writer.md) | 7 | `armor_set` writer | Fixture armor YAML+PNGs |
+| [step-7/03-flat-item-writers](./step-7/03-flat-item-writers.md) | 7 | `item` + `handheld` | `generate: true` + parent |
+| [step-7/04-grip-templates](./step-7/04-grip-templates.md) | 7 | Grip JSONs + `large_handheld` | `generate: false` + templates |
+| [step-7/05-harness-verify](./step-7/05-harness-verify.md) | 7 | Fixture harness | All four kinds on disk |
+| [step-7/06-docs](./step-7/06-docs.md) | 7 | Docs + dry-run | Checklist green |
+| [step-8/00-index](./step-8/00-index.md) | 8 | Plugin integrate overview | — |
+| [step-8/01-base-set-api](./step-8/01-base-set-api.md) | 8 | `base_set` API | Validate + approved payload |
+| [step-8/02-base-set-ui](./step-8/02-base-set-ui.md) | 8 | Tier/type dropdowns | Enabled kinds; filtered `base_set` |
+| [step-8/03-pull-and-write](./step-8/03-pull-and-write.md) | 8 | Pull + pack write | Approved → `tfmc_submissions` |
+| [step-8/04-shop-and-lp](./step-8/04-shop-and-lp.md) | 8 | Shop YAML + LP | `ps_armor`/`ps_items` + permission |
+| [step-8/05-reload-and-ack](./step-8/05-reload-and-ack.md) | 8 | Deferred reload + applied | Ack after IA reload |
+| [step-8/06-docs-e2e](./step-8/06-docs-e2e.md) | 8 | Docs + staging E2E | Armor/melee Flow 2 green |
+| [step-8/07-bow-crossbow-writers](./step-8/07-bow-crossbow-writers.md) | 8 | Bow / crossbow writers | Harness + apply for bow kinds |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = ArmourShop token mint.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop).
 
-**Later:** ArmourShop IA apply; ban-role mute; review-sheet in Discord.
+**Later:** Ban-role mute; review-sheet in Discord; `item_3d` / `shield`.
 
 Parent playbook: [../README.md](../README.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)

@@ -13,7 +13,14 @@ from src.skins.auth import (
     require_plugin_key,
     require_staff_key,
 )
-from src.skins.codes import CodeError, get_session, issue_code, redeem_code
+from src.skins.codes import (
+    CodeError,
+    get_session,
+    issue_code,
+    list_active_codes,
+    redeem_code,
+    revoke_code,
+)
 from src.skins.discord_link import (
     LinkError,
     complete_link,
@@ -61,6 +68,10 @@ class DenyBody(BaseModel):
 
 class AppliedBody(BaseModel):
     submission_ids: list[str]
+
+
+class RevokeCodeBody(BaseModel):
+    code: str = Field(..., min_length=1)
 
 
 class LinkStartBody(BaseModel):
@@ -113,6 +124,26 @@ def post_codes(
     _require_plugin(x_plugin_key)
     try:
         return issue_code(body.player_uuid)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/plugin/codes/active")
+def plugin_codes_active(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return {"codes": list_active_codes()}
+
+
+@skins_router.post("/plugin/codes/revoke")
+def plugin_codes_revoke(
+    body: RevokeCodeBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return revoke_code(body.code)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -178,6 +209,7 @@ async def post_submissions(
     authorization: str | None = Header(default=None),
     kind: str = Form(...),
     display_name: str = Form(...),
+    base_set: str = Form(...),
     slug: str | None = Form(default=None),
     grip_preset: str | None = Form(default=None),
     helmet: UploadFile | None = File(default=None),
@@ -187,6 +219,10 @@ async def post_submissions(
     layer_1: UploadFile | None = File(default=None),
     layer_2: UploadFile | None = File(default=None),
     texture: UploadFile | None = File(default=None),
+    pull_0: UploadFile | None = File(default=None),
+    pull_1: UploadFile | None = File(default=None),
+    pull_2: UploadFile | None = File(default=None),
+    charged: UploadFile | None = File(default=None),
 ):
     session = _session_from_auth(authorization)
 
@@ -198,6 +234,10 @@ async def post_submissions(
         "layer_1": layer_1,
         "layer_2": layer_2,
         "texture": texture,
+        "pull_0": pull_0,
+        "pull_1": pull_1,
+        "pull_2": pull_2,
+        "charged": charged,
     }
     files_bytes: dict[str, bytes] = {}
     filenames: dict[str, str | None] = {}
@@ -213,6 +253,7 @@ async def post_submissions(
             display_name,
             files_bytes,
             grip_preset=grip_preset,
+            base_set=base_set,
             slug=slug,
             filenames=filenames,
         )

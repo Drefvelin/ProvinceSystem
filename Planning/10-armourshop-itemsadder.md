@@ -55,19 +55,39 @@ sequenceDiagram
 
 Create namespace once (scaffold empty pack), then ArmourShop appends per submission.
 
+**Scaffold layout** (in both Copy and live `contents/`):
+
+```text
+tfmc_submissions/
+  configs/
+    namespace.yml              # info.namespace: tfmc_submissions
+  resourcepack/assets/tfmc_submissions/
+    textures/
+      armor_icons/
+      armor_layers/
+      item/
+    models/
+      item/                   # grip templates in step-7.04
+```
+
+Keep Copy and live in sync when changing scaffold. Dry-run writers should target Copy (or a temp contents root) via `pack-apply.ia-contents-path`.
+
 **Armor set** (2D) — mirror `tfmc_armor`:
 
 - `armors_rendering.{slug}` with `layer_1` / `layer_2`
 - Four items: `{slug}_helmet|chestplate|leggings|boots` with `generate: true`, icon textures, `custom_armor: {slug}`
 - Expect icons 16×16 and layers 64×32 (API already enforced)
 
-**2D items** — single item id `{slug}`, texture `{slug}`:
+**2D / weapon skins** — single item id `{slug}`, texture `{slug}`:
 
-| Kind | ArmourShop responsibility |
-|------|---------------------------|
-| `item` | Flat / generated parent + standard `display` template |
-| `handheld` | Handheld parent + sword-style orientation `display` |
-| `large_handheld` | 32×32 scale template + **`grip_preset`** → locked translation/scale set (`bottom` / `middle` / `top`) |
+| Kind | Resource | Model JSON |
+|------|----------|------------|
+| `handheld` | `generate: true` + `parent: item/handheld` | None (IA generates) |
+| `large_handheld` | `generate: false` + `model_path` | Thin per-skin JSON parenting one of **3 grip templates** (`bottom` / `middle` / `top`) |
+| `bow` / `large_bow` / `crossbow` | TBD — [8.07](./batches/step-8/07-bow-crossbow-writers.md) | Pull/draw (and crossbow charged) frames |
+| `item` | — | **Disabled** for player upload |
+
+`base_set` → SkinSet `set:` mapping: [step-8/00-index](./batches/step-8/00-index.md).
 
 Donor never hand-edits JSON for these kinds. Staff review art + preset via Discord PNG sheet.
 
@@ -76,6 +96,13 @@ Donor never hand-edits JSON for these kinds. Staff review art + preset via Disco
 **Shield** (later) — one model + texture from donor; ArmourShop **clones** model and applies locked **blocking** `display` (and any IA blocking override). Do not require a second mesh upload.
 
 Never add new skins via manual `custom_model_data` lists in `tfmc_pack`.
+
+### Step 7 vs Step 8
+
+| Step | What |
+|------|------|
+| [step-7](./batches/step-7/00-index.md) | Pack writer + fixture harness → files on disk |
+| [step-8](./batches/step-8/00-index.md) | `base_set` + pull + shop + LP + reload; bow writers in 8.07 |
 
 ## Discord link (before skins upload)
 
@@ -87,13 +114,15 @@ Players must bind Minecraft ↔ Discord before a website upload is accepted.
 | `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
 | `/armourshop token create` | In game | `POST /skins/codes`; click-to-copy; perm `armourshop.token.create` |
 
-Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token). Full IA apply remains separate (B3).
+Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
 
 ## Display ownership
 
-| Kind | Who authors `display` |
-|------|------------------------|
-| `armor_set`, `item`, `handheld`, `large_handheld` | ArmourShop templates (grip selects among large templates) |
+| Kind | Who authors `display` / models |
+|------|--------------------------------|
+| `armor_set`, `handheld` | IA auto-gen (`generate: true` + parent); no shipped per-skin JSON |
+| `large_handheld` | ArmourShop **grip template** JSONs + thin per-skin model (`generate: false`) |
+| `bow`, `large_bow`, `crossbow` | ArmourShop writers ([8.07](./batches/step-8/07-bow-crossbow-writers.md)); pull/draw templates |
 | `item_3d`, `shield` | Donor Blockbench JSON (required keys); ArmourShop adds shield blocking clone only |
 
 ## ArmourShop shop integration
@@ -105,11 +134,13 @@ ia.tfmc_submissions:{slug}_helmet
 ia.tfmc_submissions:{slug}
 ```
 
-- Set key / category entry id = `{slug}`  
-- Optional dedicated category e.g. “Player Submissions”  
-- Gate with `permission: armourshop.submission.{slug}` (already supported on `SkinSet` / categories)
+- Two categories: **`ps_armor`** (`is-item: false`) and **`ps_items`** (`is-item: true`)  
+- Set key = `{slug}`; SkinSet `set: {base_set}` from upload (filtered by kind — [step-8](./batches/step-8/00-index.md))  
+- `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`  
+- Gate with `permission: armourshop.submission.{slug}` (Bukkit `hasPermission`; LP grants the node)  
+- **No scroll** on player submission sets  
 
-Apply path stays existing `ArmorMerger.merge` + IA id.
+Apply path stays existing `ArmorMerger.merge` + IA id (inventory item must match the chosen BaseSet).
 
 ## LuckPerms
 
@@ -121,19 +152,22 @@ On revoke/deny-after-apply (if ever): remove node and optionally disable IA perm
 Same policy as map regen when possible:
 
 1. Write files immediately.  
-2. If players online → mark pending reload.  
-3. When `onlineCount == 0` or on restart → ItemsAdder pack rebuild / reload command.  
-4. Ack `applied` to API when pack is live (or when files are written + reload queued—pick one rule and stick to it; prefer ack when reload completed).
+2. If players online → mark pending reload (`pending-reload.yml`).  
+3. When `onlineCount == 0` or on restart/enable → console **`iazip`** (reload configs + regenerate resourcepack).  
+4. On `ItemsAdderPackCompressedEvent` → `POST /skins/plugin/applied` (not only when files are written).
 
 ## Config (plugin)
 
 | Key | Purpose |
 |-----|---------|
-| API base URL | ProvinceSystem |
-| Plugin key | `X-Plugin-Key` |
-| IA contents path | Absolute path to `ItemsAdder/contents` |
-| ArmourShop categories path | Where to write YAML |
-| Reload command / API | How to trigger IA |
+| `skins-api.base-url` | ProvinceSystem (no trailing slash) |
+| `skins-api.plugin-key` | `X-Plugin-Key` |
+| `pack-apply.ia-contents-path` | Absolute path to ItemsAdder `contents/` (parent of namespaces). Dry-run: `ItemsAdder Copy/.../contents`; live: server `plugins/ItemsAdder/contents` |
+| `pack-apply.categories-path` | Absolute path to ArmourShop `Categories/` |
+| `start-points` | Armor category GUI slots |
+| `item-start-points` | Item category GUI slots — **required** for item shop layout |
+
+**Config merge note (server drop `config_new.yml`):** keep `item-start-points` from the live server config and merge into jar `config.yml` ([batch 8.04](./batches/step-8/04-shop-and-lp.md)). Keep `pack-apply.*` from the jar. Do **not** commit staging `base-url` / `plugin-key` as defaults — leave `change-me` + localhost in repo; put real values only on the server / STAGING docs.
 
 Mirror the REST style of SimpleFactions `RestServer`, but **secrets in config.yml**, not hardcoded hashes in source.
 
@@ -145,10 +179,10 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 
 - [x] `/linkdiscord` → `link/start` ([step-5/04](./batches/step-5/04-armourshop-linkdiscord.md))  
 - [x] `/armourshop token create` → `POST /skins/codes` + click-to-copy ([step-6](./batches/step-6/00-index.md))  
-- [ ] Scaffold empty `tfmc_submissions` on live + copy  
-- [ ] Pull + write `armor_set`, `item`, `handheld`, `large_handheld` (grip templates)  
-- [ ] Category YAML + LP  
-- [ ] Deferred reload + applied ack  
+- [x] Scaffold empty `tfmc_submissions` + `pack-apply` paths ([step-7/01](./batches/step-7/01-scaffold.md))  
+- [x] Pack writer + harness ([step-7](./batches/step-7/00-index.md) 02–05)  
+- [x] `base_set` API/UI + pull + shop + LP + reload + applied ([step-8](./batches/step-8/00-index.md) 01–06; live STAGING E2E boxes in [STAGING.md](../STAGING.md))  
+- [x] Bow / large_bow / crossbow writers ([step-8/07](./batches/step-8/07-bow-crossbow-writers.md); staging apply unchecked)  
 - [ ] `item_3d` + `shield` (blocking auto) later  
 
 ## See also

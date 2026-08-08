@@ -4,13 +4,26 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSubmission, SkinsApiError } from "../../../lib/skins/api";
 import {
-  ARMOR_FIELDS,
+  baseSetLabel,
+  baseSetPickerTitle,
+  baseSetsForKind,
+  defaultBaseSet,
+} from "../../../lib/skins/baseSets";
+import {
   assertFileSize,
   expectedSizeForField,
+  fileFieldsForKind,
+  isBowFrameKind,
+  isLargeTextureKind,
   sizeHint,
   type SkinKind,
 } from "../../../lib/skins/sizes";
-import { ARMOR_SUFFIXES, assertUploadFilenames } from "../../../lib/skins/slug";
+import {
+  ARMOR_SUFFIXES,
+  BOW_SUFFIXES,
+  CROSSBOW_SUFFIXES,
+  assertUploadFilenames,
+} from "../../../lib/skins/slug";
 import KindPicker from "./KindPicker";
 
 const GRIPS = ["bottom", "middle", "top"] as const;
@@ -26,7 +39,11 @@ const fieldLabel: Record<string, string> = {
   boots: "Boots (16×16)",
   layer_1: "Layer 1 (64×32)",
   layer_2: "Layer 2 (64×32)",
-  texture: "Texture",
+  texture: "Standby texture",
+  pull_0: "Pull 0",
+  pull_1: "Pull 1",
+  pull_2: "Pull 2",
+  charged: "Charged",
 };
 
 function namingHint(kind: SkinKind): string {
@@ -36,15 +53,56 @@ function namingHint(kind: SkinKind): string {
       "_boots, _layer_1, _layer_2 (same your_id on all six). Example: blue_knight_helmet.png"
     );
   }
+  if (kind === "bow" || kind === "large_bow") {
+    return (
+      "Four PNGs with the same id: your_id.png, your_id_0.png, your_id_1.png, " +
+      "your_id_2.png. Example: blue_shortbow.png + blue_shortbow_0.png …"
+    );
+  }
+  if (kind === "crossbow") {
+    return (
+      "Five PNGs with the same id: your_id.png, _0, _1, _2, and your_id_charged.png. " +
+      "Example: blue_cross.png … blue_cross_charged.png"
+    );
+  }
   return (
     "PNG file name becomes the skin id: use your_id.png " +
     "(lowercase letters, numbers, underscores). Example: blue_knight.png"
   );
 }
 
+function requiredNameHint(kind: SkinKind, field: string): string {
+  if (kind === "armor_set") {
+    return `Required name: …${ARMOR_SUFFIXES[field]}`;
+  }
+  if (isBowFrameKind(kind)) {
+    const suffixes =
+      kind === "crossbow" ? CROSSBOW_SUFFIXES : BOW_SUFFIXES;
+    const suffix = suffixes[field];
+    if (field === "texture") {
+      return "Required name: your_id.png";
+    }
+    return `Required name: your_id${suffix}`;
+  }
+  return "Required name: your_id.png";
+}
+
+function slotLabel(kind: SkinKind, field: string): string {
+  if (kind === "armor_set") {
+    return fieldLabel[field] || field;
+  }
+  const size = isLargeTextureKind(kind) ? "32×32" : "16×16";
+  const base = fieldLabel[field] || field;
+  if (isBowFrameKind(kind) || field === "texture") {
+    return `${base} (${size})`;
+  }
+  return `Texture (${size})`;
+}
+
 export default function UploadForm({ sessionToken }: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<SkinKind>("armor_set");
+  const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
   const [itemName, setItemName] = useState("");
   const [grip, setGrip] = useState<(typeof GRIPS)[number]>("bottom");
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -54,10 +112,11 @@ export default function UploadForm({ sessionToken }: Props) {
   useEffect(() => {
     setFiles({});
     setError(null);
+    setBaseSet(defaultBaseSet(kind));
   }, [kind]);
 
-  const fileFields =
-    kind === "armor_set" ? [...ARMOR_FIELDS] : (["texture"] as const);
+  const fileFields = fileFieldsForKind(kind);
+  const baseOptions = baseSetsForKind(kind);
 
   function setFile(field: string, file: File | null) {
     setFiles((prev) => ({ ...prev, [field]: file }));
@@ -70,6 +129,11 @@ export default function UploadForm({ sessionToken }: Props) {
     const name = itemName.trim();
     if (!name) {
       setError("Item name is required (shown in ArmourShop)");
+      return;
+    }
+
+    if (!baseSet || !baseOptions.includes(baseSet)) {
+      setError(`Choose a ${baseSetPickerTitle(kind).toLowerCase()}`);
       return;
     }
 
@@ -109,6 +173,7 @@ export default function UploadForm({ sessionToken }: Props) {
         sessionToken,
         kind,
         display_name: name,
+        base_set: baseSet,
         grip_preset: kind === "large_handheld" ? grip : null,
         files: uploadFiles,
       });
@@ -135,6 +200,25 @@ export default function UploadForm({ sessionToken }: Props) {
 
       <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
       <p className="text-sm text-[var(--tfmc-mist)]">{namingHint(kind)}</p>
+
+      <label className="flex flex-col gap-2 text-left">
+        <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+          {baseSetPickerTitle(kind)}
+        </span>
+        <select
+          value={baseSet}
+          disabled={loading}
+          onChange={(e) => setBaseSet(e.target.value)}
+          className={inputClass}
+          required
+        >
+          {baseOptions.map((id) => (
+            <option key={id} value={id}>
+              {baseSetLabel(id)}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
@@ -185,19 +269,11 @@ export default function UploadForm({ sessionToken }: Props) {
         {fileFields.map((field) => (
           <label key={field} className="flex flex-col gap-2 text-left">
             <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-              {kind === "armor_set"
-                ? fieldLabel[field]
-                : `Texture (${kind === "large_handheld" ? "32×32" : "16×16"})`}
+              {slotLabel(kind, field)}
             </span>
-            {kind === "armor_set" ? (
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                Required name: …{ARMOR_SUFFIXES[field]}
-              </span>
-            ) : (
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                Required name: your_id.png
-              </span>
-            )}
+            <span className="text-xs text-[var(--tfmc-mist)]">
+              {requiredNameHint(kind, field)}
+            </span>
             <input
               type="file"
               accept="image/png,.png"

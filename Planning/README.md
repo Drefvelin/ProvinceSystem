@@ -70,7 +70,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2–6: API, UI, Discord review, Discord link, in-game token  
+13. [batches/README.md](./batches/README.md) — Step 2–8: API, UI, Discord review, link, token, pack writer, plugin apply  
 
 ## Success criteria (full platform)
 

@@ -113,9 +113,11 @@ link → redeem + upload → submitted DM → Approve/Deny → outcome DM
 
 1. Deploy `Builds/ArmourShop/armourshop-1.1.2.jar` with `skins-api.base-url` / `plugin-key` pointing at staging.
 2. Grant LP `armourshop.token.create` (or use `armourshop.admin`).
-3. Optional first: `/linkdiscord` → Discord complete (required before **upload**, not for mint).
+3. `/linkdiscord` → Discord complete (**required before mint**).
 4. `/armourshop token create` → click the aqua code to copy (tab: `token` → `create`).
 5. Open `http://127.0.0.1:13001/skins`, redeem, upload → `#bot-feed` / DMs as Step 5.
+
+Admin: `/armourshop listtokens` lists unused unexpired codes (issuer + red `[Delete]` → `/armourshop token delete <code>`).
 
 Operator checklist:
 
@@ -141,6 +143,46 @@ ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 user@amp-host
 ```
 
 Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID), wait for `#bot-feed` (or `/skinsreview post <id>`).
+
+## Step 8 — Flow 2 apply (armor / melee)
+
+End-to-end for kinds with pack writers: **`armor_set`**, **`handheld`**, **`large_handheld`**, **`bow`**, **`large_bow`**, **`crossbow`**.
+
+Bow kinds need multi-frame PNGs with the **same id prefix**: `{id}.png` + `{id}_0.png` / `_1` / `_2` (crossbow also `{id}_charged.png`). Sizes: bow/crossbow 16×16; large_bow 32×32.
+
+1. Deploy latest `Builds/ArmourShop/armourshop-*.jar`. On the **server** `plugins/ArmourShop/config.yml` (do not commit secrets):
+   - `skins-api.base-url`: `http://127.0.0.1:18001` (or host-reachable staging API)
+   - `skins-api.plugin-key`: same as compose `PLUGIN_KEY` (default `dev-plugin-key`)
+   - `pack-apply.ia-contents-path`: absolute path to live ItemsAdder `contents/`
+   - `pack-apply.categories-path`: absolute path to ArmourShop `Categories/`
+2. Link Discord + mint + redeem (Step 5 / mint section above).
+3. On `http://127.0.0.1:13001/skins`: choose kind + filtered **`base_set`** (no `item`); grip only for `large_handheld`; upload PNGs named per Planning naming docs.
+4. Staff **Approve** in `#bot-feed` (outcome DM).
+5. In game (admin): `/armourshop pack pull` — expect `wrote` / shop / lp / `queued=N`.
+6. Deferred IA reload: when server is **empty**, or on **restart**, ArmourShop runs console **`iazip`**, then `POST /skins/plugin/applied`. Confirm id left the approved list:
+
+```bash
+curl -s http://127.0.0.1:18001/skins/plugin/approved \
+  -H "X-Plugin-Key: dev-plugin-key"
+```
+
+7. Issuer opens ArmourShop → set under **Player Armor** (`ps_armor`) or **Player Items** (`ps_items`) → apply onto matching BaseSet gear in inventory.
+
+Operator checklist:
+
+- [ ] Config: staging API + live `pack-apply.*` paths
+- [ ] Upload armor or handheld/large with kind + `base_set`
+- [ ] Approve → `/armourshop pack pull` wrote + queued
+- [ ] Empty server or restart → `iazip` → applied ack (id gone from approved)
+- [ ] Issuer sees set and applies onto matching BaseSet gear
+
+Failure modes: players online delays `iazip`; LuckPerms missing so shop hides set; wrong BaseSet gear in inventory; bow frame names must share the same `{id}` prefix.
+
+Checkpoint:
+
+```text
+approve → pack pull → shop + LP → iazip → applied → issuer applies skin
+```
 
 ## Keys (compose defaults)
 

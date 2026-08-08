@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code_hash TEXT NOT NULL UNIQUE,
+    code_plaintext TEXT,
     player_uuid TEXT NOT NULL,
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     slug TEXT NOT NULL,
     display_name TEXT NOT NULL,
     grip_preset TEXT,
+    base_set TEXT,
     status TEXT NOT NULL,
     deny_reason TEXT,
     dir_path TEXT NOT NULL,

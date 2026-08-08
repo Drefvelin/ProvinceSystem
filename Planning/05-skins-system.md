@@ -6,7 +6,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 
 ## Goals
 
-- Donators submit **armor sets** (2D) or **item skins** (`item` / `handheld` / `large_handheld`; 3D + shields later).
+- Donators submit **armor sets** (2D) or **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`; `item` disabled for now; 3D + shields later).
 - No website logins; codes from ArmourShop bound to player UUID.
 - Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
 - ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates.
@@ -16,15 +16,20 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 | Kind | Files (after rename) | Exact sizes | IA approach |
 |------|----------------------|-------------|-------------|
 | `armor_set` | `{slug}_helmet.png`, `{slug}_chestplate.png`, `{slug}_leggings.png`, `{slug}_boots.png`, `{slug}_layer_1.png`, `{slug}_layer_2.png` | Icons **16×16**; layers **64×32** | Like `tfmc_armor`: `generate: true` icons + `armors_rendering` with two layers |
-| `item` | `{slug}.png` | **16×16** | Flat / `item/generated`-style; ArmourShop fills display |
-| `handheld` | `{slug}.png` | **16×16** | Sword-style handheld parent + display template |
-| `large_handheld` | `{slug}.png` | **32×32** | Greathammer/staff scale; requires **`grip_preset`** |
-| `item_3d` (later) | `{slug}.png` + `{slug}.json` | Texture + JSON size caps (tiered); JSON must include required `display` keys | Cooking-style: `generate: false` + `model_path` (includes 3D helmets as **single items**, not armor sets) |
-| `shield` (later) | model + texture (one mesh) | Same 3D caps; required `display` keys | ArmourShop clones model and applies locked **blocking** display — donor does not upload a second mesh |
+| `handheld` | `{slug}.png` | **16×16** | Sword-style handheld parent (`generate: true`) |
+| `large_handheld` | `{slug}.png` | **32×32** | `generate: false` + thin model parenting ArmourShop **grip template** JSON (`bottom` / `middle` / `top`) |
+| `bow` | `{slug}.png` + `{slug}_0/_1/_2.png` | **16×16** | BOW + `generate: true` pull frames |
+| `large_bow` | same four PNGs | **32×32** | Large bow thin models + locked display |
+| `crossbow` | four + `{slug}_charged.png` | **16×16** | CROSSBOW + `generate: true` |
+| `item` | — | — | **Disabled** for upload (no use yet) |
+| `item_3d` (later) | `{slug}.png` + `{slug}.json` | Texture + JSON size caps (tiered); JSON must include required `display` keys | Cooking-style: `generate: false` + `model_path` |
+| `shield` (later) | model + texture (one mesh) | Same 3D caps; required `display` keys | ArmourShop clones model + locked **blocking** display |
 
-**MVP / Step 2 API:** `armor_set` + `item` + `handheld` + `large_handheld`.  
-**Retired:** `item_2d` (replaced by the three 2D item kinds above).  
-**Track B4:** `item_3d` + `shield`.
+**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`.  
+**`base_set` pairing** (type/tier → kind): see [step-8/00-index](./batches/step-8/00-index.md).  
+**Deferred:** guns (`rifles`/`pistols`/`shotguns`/`launchers`), `shields`, `helmets` BaseSets.  
+**Track B4:** `item_3d` + `shield`.  
+**Apply:** Pack writer [step-7](./batches/step-7/00-index.md) (armor/handheld/large); live apply + bow writers [step-8](./batches/step-8/00-index.md).
 
 Original upload **file names must follow convention** (they define the skin id); the API stores fixed stems under the submission folder.
 
@@ -32,9 +37,9 @@ Original upload **file names must follow convention** (they define the skin id);
 
 | `grip_preset` | Meaning | Who expands to `display` |
 |---------------|---------|---------------------------|
-| `bottom` | Hold near bottom of art (hammer/staff-like) | ArmourShop template |
-| `middle` | Hold mid-art | ArmourShop template |
-| `top` | Hold toward top (longsword-like) | ArmourShop template |
+| `bottom` | Hold near bottom of art (hammer/staff-like) | Shared grip **template** model JSON (ArmourShop ships three); thin per-skin model parents the template |
+| `middle` | Hold mid-art | Same |
+| `top` | Hold toward top (longsword-like) | Same |
 
 Store preset id on the submission / `meta.json`. Do not put grip in filenames.
 
@@ -130,10 +135,11 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `id` | Public id for Discord |
 | `player_uuid` | from code |
 | `code_id` | FK |
-| `kind` | `armor_set` \| `item` \| `handheld` \| `large_handheld` \| later `item_3d` \| `shield` |
+| `kind` | `armor_set` \| `handheld` \| `large_handheld` \| `bow` \| `large_bow` \| `crossbow` \| later `item_3d` \| `shield` (`item` disabled) |
 | `slug` | validated snake_case; unique among non-denied actives |
 | `display_name` | human string |
 | `grip_preset` | nullable; required when `kind=large_handheld` (`bottom` \| `middle` \| `top`) |
+| `base_set` | ArmourShop BaseSet id; required; must match kind allowlist ([step-8](./batches/step-8/00-index.md)) |
 | `status` | `pending` \| `approved` \| `denied` \| `applied` |
 | `deny_reason` | nullable |
 | `dir_path` | relative folder under `data/skins/` |
@@ -145,7 +151,7 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 
 ```text
 backend/src/data/skins/{submission_id}/
-  meta.json          # slug, kind, display_name, uuid, grip_preset?
+  meta.json          # slug, kind, display_name, uuid, grip_preset?, base_set
   …fixed stems per kind…
 ```
 
@@ -156,8 +162,11 @@ Compose: mount `backend/src/data` like `input` / `output`.
 - Slug: see [07-naming-conventions.md](./07-naming-conventions.md) — reject before storing files.
 - PNG: magic bytes `\x89PNG`; max bytes (e.g. 2MB each); **exact** pixel sizes below — wrong size → **400**.
 - `armor_set`: six PNGs; icons 16×16; layers 64×32.
-- `item` / `handheld`: one PNG, 16×16.
+- `handheld`: one PNG, 16×16.
 - `large_handheld`: one PNG, 32×32 + non-empty `grip_preset` in allowed set.
+- `bow` / `large_bow`: four PNGs (`{id}.png`, `{id}_0.png`, `{id}_1.png`, `{id}_2.png`), same id; sizes 16×16 / 32×32.
+- `crossbow`: five PNGs (bow four + `{id}_charged.png`), all 16×16.
+- `base_set`: required for enabled kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md)); reject `kind=item`.
 - `item_3d` / `shield` (later): PNG + JSON; JSON parseable; required `display` keys present; combined size capped (default &lt; 30KB json+texture unless tier raises it); no path traversal in strings.
 - Never accept zip archives in MVP.
 
@@ -205,7 +214,9 @@ items:
   # chestplate / leggings / boots likewise
 ```
 
-`item` / `handheld` / `large_handheld`: single item; ArmourShop applies parent + `display` from kind/grip templates (donor does not edit JSON for 2D).
+`handheld`: single item; `generate: true` + `parent: item/handheld`.  
+`large_handheld`: `generate: false`; thin model parents a shipped grip template (`bottom` / `middle` / `top`).  
+`bow` / `large_bow` / `crossbow`: writers in [step-8/07](./batches/step-8/07-bow-crossbow-writers.md). Donor does not edit JSON for these kinds.
 
 Do **not** add manual `custom_model_data` overrides under `minecraft` (legacy `tfmc_pack` style).
 
@@ -222,7 +233,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | `POST /skins/discord/link/start` | `{ "player_uuid", "minecraft_name?" }` → `{ "code", "expires_at" }` |
 | `POST /skins/discord/link/unlink` | `{ "player_uuid" }` → clear link for that UUID |
 | `POST /skins/codes` | `{ "player_uuid" }` → `{ "code", "expires_at" }` |
-| `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`) |
+| `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`, `base_set`) |
 | `POST /skins/plugin/applied` | Ack submission ids |
 
 ### Web → API (after redeem)
@@ -230,7 +241,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/redeem` | `{ "code" }` → session |
-| `POST /skins/submissions` | Multipart: kind, display_name (Item name), optional grip_preset; optional slug (scripts); skin id from upload filenames; **requires Discord link** for session UUID |
+| `POST /skins/submissions` | Multipart: kind, display_name (Item name), `base_set` (tier/type), optional grip_preset; optional slug (scripts); skin id from upload filenames; **requires Discord link** for session UUID |
 | `GET /skins/submissions/{id}` | Status for owner session |
 
 ### Discord bot → API (`X-Staff-Key`)
@@ -254,11 +265,12 @@ Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; not
 ## Frontend (`/skins`)
 
 1. Enter code → redeem  
-2. Choose kind → **fixed slots** (armor: 6; item/handheld/large_handheld: 1 texture; large requires grip preset picker)  
-3. Enter **Item name** (ArmourShop label); upload PNGs whose **file names** follow [07](./07-naming-conventions.md) (skin id from basename)  
-4. Client-side size hints; server still enforces exact pixels  
-5. Submit → status page (API rejects if Discord not linked)  
-6. No accounts; no Discord id fields on the form  
+2. Choose kind (no `item`) → **fixed slots** (armor: 6; handheld/large: 1; bow/large_bow: 4; crossbow: 5)  
+3. Pick **`base_set`** filtered by kind (armor tier or applicable type); large also picks grip  
+4. Enter **Item name** (ArmourShop label); upload PNGs whose **file names** follow [07](./07-naming-conventions.md) (skin id from basename)  
+5. Client-side size hints; server still enforces exact pixels + `base_set` pairing  
+6. Submit → status page (API rejects if Discord not linked)  
+7. No accounts; no Discord id fields on the form  
 
 ## Discord bot
 

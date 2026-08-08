@@ -82,13 +82,31 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 **Done when:** Donator (LP) mints in game, clicks to copy, redeems on `/skins` without curl.
 
-### S4 — ArmourShop apply
+### S4a — Pack writer (dry-run)
 
-**Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)
+**Repo:** `Workspace/armourshop` — [batches/step-7](./batches/step-7/00-index.md)
 
-- [ ] Config URL/key/paths; code command; pull; write `tfmc_submissions` with kind/grip templates; shop YAML; LP; deferred reload; applied ack
+- [x] Scaffold empty `tfmc_submissions`; document IA contents path config
+- [x] Writer: `armor_set` (`generate: true` + `armors_rendering`)
+- [x] Writer: `item` / `handheld` (`generate: true` + parent)
+- [x] Grip templates + `large_handheld` (`generate: false` + thin models)
+- [x] Fixture harness writes all four kinds to an out dir
 
-**Done when:** Flow 2 complete in [12](./12-end-to-end-flows.md).
+**Done when:** Harness produces valid pack files without Discord/live poll.
+
+### S4b — Plugin apply (live)
+
+**Repo:** ProvinceSystem + `Workspace/armourshop` — [batches/step-8](./batches/step-8/00-index.md) · [10](./10-armourshop-itemsadder.md)
+
+- [x] API: `base_set` + kind allowlists / pairing; reject `item` ([8.01](./batches/step-8/01-base-set-api.md))
+- [x] UI: enabled kinds; filtered tier/type dropdowns; no `item` ([8.02](./batches/step-8/02-base-set-ui.md))
+- [x] Pull `GET /plugin/approved` + pack write for armor/handheld/large ([8.03](./batches/step-8/03-pull-and-write.md))
+- [x] Shop `ps_armor` / `ps_items` + LP `armourshop.submission.{slug}`; merge `item-start-points` ([8.04](./batches/step-8/04-shop-and-lp.md))
+- [x] Deferred IA reload + `POST /plugin/applied` ([8.05](./batches/step-8/05-reload-and-ack.md))
+- [ ] Staging E2E armor/melee Flow 2 ([8.06](./batches/step-8/06-docs-e2e.md))
+- [x] Bow / large_bow / crossbow writers + harness + apply ([8.07](./batches/step-8/07-bow-crossbow-writers.md))
+
+**Done when:** Flow 2 complete for melee/armor in [12](./12-end-to-end-flows.md); bow kinds after 8.07.
 
 ### S5 — Item 3D + shield + harden
 

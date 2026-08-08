@@ -57,24 +57,20 @@ def main() -> None:
     client = TestClient(app)
     suffix = uuid.uuid4().hex[:8]
     player = "00000000-0000-0000-0000-000000000208"
+    unlinked_player = f"00000000-0000-0000-0000-{uuid.uuid4().hex[:12]}"
 
-    # Issue + redeem
+    # Mint without Discord link must fail
     r = client.post(
         "/skins/codes",
-        json={"player_uuid": player},
+        json={"player_uuid": unlinked_player},
         headers={"X-Plugin-Key": PLUGIN},
     )
-    if r.status_code != 200:
-        fail(f"issue code: {r.status_code} {r.text}")
-    code = r.json()["code"]
+    if r.status_code != 400:
+        fail(f"issue code without link expected 400, got {r.status_code} {r.text}")
+    if "linkdiscord" not in r.text.lower() and "discord" not in r.text.lower():
+        fail(f"issue code without link expected discord message: {r.text}")
 
-    r = client.post("/skins/redeem", json={"code": code})
-    if r.status_code != 200:
-        fail(f"redeem: {r.status_code} {r.text}")
-    token = r.json()["session_token"]
-    auth = {"Authorization": f"Bearer {token}"}
-
-    # Discord link required before upload (5.02)
+    # Discord link required before mint
     r = client.post(
         "/skins/discord/link/start",
         json={"player_uuid": player, "minecraft_name": "Smoke"},
@@ -89,6 +85,52 @@ def main() -> None:
     )
     if r.status_code != 200:
         fail(f"link complete: {r.status_code} {r.text}")
+
+    # Issue + active list + redeem
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue code: {r.status_code} {r.text}")
+    code = r.json()["code"]
+
+    r = client.get("/skins/plugin/codes/active", headers={"X-Plugin-Key": PLUGIN})
+    if r.status_code != 200:
+        fail(f"list active codes: {r.status_code} {r.text}")
+    active_codes = [c.get("code") for c in r.json().get("codes", [])]
+    if code not in active_codes:
+        fail(f"issued code missing from active list: {active_codes}")
+
+    # Separate code for revoke path
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue revoke-target code: {r.status_code} {r.text}")
+    revoke_target = r.json()["code"]
+    r = client.post(
+        "/skins/plugin/codes/revoke",
+        json={"code": revoke_target},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200 or not r.json().get("ok"):
+        fail(f"revoke code: {r.status_code} {r.text}")
+    r = client.get("/skins/plugin/codes/active", headers={"X-Plugin-Key": PLUGIN})
+    if revoke_target in [c.get("code") for c in r.json().get("codes", [])]:
+        fail("revoked code still in active list")
+    r = client.post("/skins/redeem", json={"code": revoke_target})
+    if r.status_code != 400:
+        fail(f"redeem revoked expected 400, got {r.status_code} {r.text}")
+
+    r = client.post("/skins/redeem", json={"code": code})
+    if r.status_code != 200:
+        fail(f"redeem: {r.status_code} {r.text}")
+    token = r.json()["session_token"]
+    auth = {"Authorization": f"Bearer {token}"}
 
     # Unlink by UUID then re-link (guards + unlink path)
     r = client.post(
@@ -130,9 +172,9 @@ def main() -> None:
     layer = make_png(64, 32)
     large_tex = make_png(32, 32)
 
-    # Armor upload — filenames define skin id
+    # Negative: armor + wrong base_set
     armor_slug = f"smoke_armor_{suffix}"
-    files = [
+    armor_files = [
         ("helmet", (f"{armor_slug}_helmet.png", icon, "image/png")),
         ("chestplate", (f"{armor_slug}_chestplate.png", icon, "image/png")),
         ("leggings", (f"{armor_slug}_leggings.png", icon, "image/png")),
@@ -140,23 +182,55 @@ def main() -> None:
         ("layer_1", (f"{armor_slug}_layer_1.png", layer, "image/png")),
         ("layer_2", (f"{armor_slug}_layer_2.png", layer, "image/png")),
     ]
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Bad Armor",
+            "base_set": "swords",
+        },
+        files=armor_files,
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"armor+swords expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "item",
+            "display_name": "Disabled Item",
+            "base_set": "swords",
+        },
+        files=[("texture", (f"smoke_item_{suffix}.png", icon, "image/png"))],
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"kind=item expected 400, got {r.status_code} {r.text}")
+
+    # Armor upload — filenames define skin id
     data = {
         "kind": "armor_set",
         "display_name": "Smoke Armor",
+        "base_set": "iron",
     }
-    r = client.post("/skins/submissions", data=data, files=files, headers=auth)
+    r = client.post(
+        "/skins/submissions", data=data, files=armor_files, headers=auth
+    )
     if r.status_code != 200:
         fail(f"armor upload: {r.status_code} {r.text}")
     armor = r.json()
     armor_id = armor["id"]
     if armor.get("slug") != armor_slug:
         fail(f"armor slug expected {armor_slug}, got {armor.get('slug')}")
+    if armor.get("base_set") != "iron":
+        fail(f"armor base_set expected iron, got {armor.get('base_set')}")
     if armor.get("discord_user_id") != DISCORD_ID:
         fail(
             f"armor discord_user_id expected {DISCORD_ID}, "
             f"got {armor.get('discord_user_id')}"
         )
-    print(f"armor submission {armor_id}")
+    print(f"armor submission {armor_id} base_set={armor['base_set']}")
 
     staff = {"X-Staff-Key": STAFF}
     r = client.get("/skins/staff/notifications", headers=staff)
@@ -193,6 +267,52 @@ def main() -> None:
         fail(f"redeem 2: {r.status_code} {r.text}")
     auth2 = {"Authorization": f"Bearer {r.json()['session_token']}"}
 
+    # handheld + wrong base_set
+    hand_slug = f"smoke_hand_{suffix}"
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Bad Hand",
+            "base_set": "spears",
+        },
+        files=[("texture", (f"{hand_slug}.png", icon, "image/png"))],
+        headers=auth2,
+    )
+    if r.status_code != 400:
+        fail(f"handheld+spears expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Smoke Hand",
+            "base_set": "swords",
+        },
+        files=[("texture", (f"{hand_slug}.png", icon, "image/png"))],
+        headers=auth2,
+    )
+    if r.status_code != 200:
+        fail(f"handheld upload: {r.status_code} {r.text}")
+    hand = r.json()
+    hand_id = hand["id"]
+    if hand.get("base_set") != "swords":
+        fail(f"handheld base_set expected swords, got {hand.get('base_set')}")
+    print(f"handheld submission {hand_id} base_set={hand['base_set']}")
+
+    # Third session for large
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue code 3: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem 3: {r.status_code} {r.text}")
+    auth3 = {"Authorization": f"Bearer {r.json()['session_token']}"}
+
     large_slug = f"smoke_large_{suffix}"
     r = client.post(
         "/skins/submissions",
@@ -200,9 +320,10 @@ def main() -> None:
             "kind": "large_handheld",
             "display_name": "Smoke Large",
             "grip_preset": "bottom",
+            "base_set": "spears",
         },
         files=[("texture", (f"{large_slug}.png", large_tex, "image/png"))],
-        headers=auth2,
+        headers=auth3,
     )
     if r.status_code != 200:
         fail(f"large upload: {r.status_code} {r.text}")
@@ -212,14 +333,23 @@ def main() -> None:
         fail(f"large slug expected {large_slug}, got {large.get('slug')}")
     if large.get("grip_preset") != "bottom":
         fail(f"expected grip_preset=bottom, got {large.get('grip_preset')}")
+    if large.get("base_set") != "spears":
+        fail(f"large base_set expected spears, got {large.get('base_set')}")
     if large.get("discord_user_id") != DISCORD_ID:
         fail(
             f"large discord_user_id expected {DISCORD_ID}, "
             f"got {large.get('discord_user_id')}"
         )
-    print(f"large submission {large_id} grip={large['grip_preset']}")
+    print(
+        f"large submission {large_id} grip={large['grip_preset']} "
+        f"base_set={large['base_set']}"
+    )
 
-    for sid, label in ((armor_id, "armor"), (large_id, "large")):
+    for sid, label in (
+        (armor_id, "armor"),
+        (hand_id, "handheld"),
+        (large_id, "large"),
+    ):
         r = client.get(f"/skins/submissions/{sid}/review-sheet", headers=staff)
         if r.status_code != 200:
             fail(f"review-sheet {label}: {r.status_code} {r.text}")
@@ -231,8 +361,8 @@ def main() -> None:
     if r.status_code != 401:
         fail(f"review-sheet without key expected 401, got {r.status_code}")
 
-    # Approve both
-    for sid in (armor_id, large_id):
+    # Approve all three
+    for sid in (armor_id, hand_id, large_id):
         r = client.post(f"/skins/submissions/{sid}/approve", headers=staff)
         if r.status_code != 200:
             fail(f"approve {sid}: {r.status_code} {r.text}")
@@ -244,10 +374,18 @@ def main() -> None:
     by_id = {s["id"]: s for s in r.json().get("submissions", [])}
     if armor_id not in by_id:
         fail("armor missing from plugin approved list")
+    if hand_id not in by_id:
+        fail("handheld missing from plugin approved list")
     if large_id not in by_id:
         fail("large missing from plugin approved list")
+    if by_id[armor_id].get("base_set") != "iron":
+        fail("armor base_set missing on approved list")
+    if by_id[hand_id].get("base_set") != "swords":
+        fail("handheld base_set missing on approved list")
     if by_id[large_id].get("grip_preset") != "bottom":
         fail("large grip_preset missing on approved list")
+    if by_id[large_id].get("base_set") != "spears":
+        fail("large base_set missing on approved list")
     print("plugin approved list ok")
 
     r = client.post(
@@ -268,7 +406,7 @@ def main() -> None:
         fail("large should still be on approved list")
     print("applied ack ok")
 
-    print("ALL OK — Step 5 smoke passed (link + notify + review)")
+    print("ALL OK — Step 8.01 smoke passed (base_set + pairing)")
     sys.exit(0)
 
 

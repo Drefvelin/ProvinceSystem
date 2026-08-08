@@ -63,20 +63,20 @@ flowchart TB
 | 1 | Donator | In-game: `/armourshop token create` (perm `armourshop.token.create` / admin; LP for donators later) |
 | 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once (**click-to-copy**) |
 | 3 | Donator | Website `/skins`: redeem code |
-| 4 | Donator | Chooses kind (+ grip for large); enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) (skin id from filenames) |
-| 5 | API | Requires Discord link; validates naming ([07](./07-naming-conventions.md)) and **exact pixel sizes**; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
+| 4 | Donator | Chooses kind (no `item`); picks **`base_set`** filtered by kind (armor tier or type); grip for large; enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) |
+| 5 | API | Requires Discord link; validates naming, **exact pixel sizes**, and `base_set`↔kind pairing; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
 | 5b | tfmc_bot | DM player: submission received |
-| 6 | tfmc_bot | Skins cog posts review embed to `#bot-feed` **with raw submission PNGs** (review-sheet later) |
+| 6 | tfmc_bot | Skins cog posts review embed to `#bot-feed` **with raw submission PNGs** (+ kind / `base_set` / grip) |
 | 7 | Staff | Approve or Deny (+ reason) from visuals |
 | 8 | API | Status `approved` / `denied` |
 | 8b | tfmc_bot | DM player: approved, or denied + reason |
-| 9 | ArmourShop | Pulls approved; writes `tfmc_submissions` from kind/grip templates; shop YAML; LP `armourshop.submission.{slug}` |
+| 9 | ArmourShop | Pulls approved; writes `tfmc_submissions` (armor/handheld/large now; bow kinds after [8.07](./batches/step-8/07-bow-crossbow-writers.md)); shop set in `ps_armor` / `ps_items` with `set: {base_set}`; LP `armourshop.submission.{slug}` |
 | 10 | ArmourShop | Deferred IA reload when safe; ack `applied` |
-| 11 | Donator | Opens ArmourShop; sees set; applies to gear |
+| 11 | Donator | Opens ArmourShop; sees set; applies onto matching BaseSet gear |
 
-**Armor files:** 4 icons (16×16) + 2 layers (64×32). **Item / handheld:** one 16×16 PNG. **Large handheld:** one 32×32 PNG + grip. Upload **file names** define skin id ([07](./07-naming-conventions.md)).
+**Armor files:** 4 icons (16×16) + 2 layers (64×32); tier one of iron/steel/abyssalite/mythril/mage/infantry. **Handheld:** one 16×16 + type (swords, axes, …). **Large handheld:** one 32×32 + grip + type (spears, staffs, …). **Bow / large_bow / crossbow:** after 8.07. Upload **file names** define skin id ([07](./07-naming-conventions.md)).
 
-**Failure modes:** not Discord-linked; bad PNG file names / id; wrong pixel size; incomplete armor slots; Discord double-approve; closed DMs (review still works); reload while players online; LP missing so shop hides set.
+**Failure modes:** not Discord-linked; bad PNG file names / id; wrong pixel size; incomplete armor slots; bad/missing `base_set` or wrong kind pairing; Discord double-approve; closed DMs (review still works); reload while players online; LP missing so shop hides set; wrong BaseSet gear in inventory so apply finds nothing.
 
 ---
 
@@ -130,7 +130,7 @@ sequenceDiagram
 ## Definition of done (platform MVP)
 
 - Flow 1 works on live map (existing; UX polish ongoing).  
-- Flow 2 works for armor_set + item/handheld/large_handheld with Discord approve (PNG sheet) and ArmourShop apply.  
+- Flow 2 works for armor_set + handheld/large_handheld with Discord approve (PNG sheet) and ArmourShop apply; bow kinds after [8.07](./batches/step-8/07-bow-crossbow-writers.md).  
 - Flow 3 DM/log works today; role add/clear ships with bot track.  
 - Naming enforced on Flow 2.  
 - Local testing possible for API/UI without Paper ([06](./06-local-development.md)).  

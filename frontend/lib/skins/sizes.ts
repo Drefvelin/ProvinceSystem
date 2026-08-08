@@ -1,4 +1,10 @@
-export type SkinKind = "armor_set" | "item" | "handheld" | "large_handheld";
+export type SkinKind =
+  | "armor_set"
+  | "handheld"
+  | "large_handheld"
+  | "bow"
+  | "large_bow"
+  | "crossbow";
 
 export type Size = { w: number; h: number };
 
@@ -21,6 +27,34 @@ export const ARMOR_FIELDS = [
   ...ARMOR_LAYER_FIELDS,
 ] as const;
 
+export const BOW_PULL_FIELDS = ["pull_0", "pull_1", "pull_2"] as const;
+export const BOW_FRAME_FIELDS = ["texture", ...BOW_PULL_FIELDS] as const;
+export const CROSSBOW_FRAME_FIELDS = [
+  ...BOW_FRAME_FIELDS,
+  "charged",
+] as const;
+
+export function isLargeTextureKind(kind: SkinKind): boolean {
+  return kind === "large_handheld" || kind === "large_bow";
+}
+
+export function isBowFrameKind(kind: SkinKind): boolean {
+  return kind === "bow" || kind === "large_bow" || kind === "crossbow";
+}
+
+export function fileFieldsForKind(kind: SkinKind): readonly string[] {
+  if (kind === "armor_set") {
+    return ARMOR_FIELDS;
+  }
+  if (kind === "bow" || kind === "large_bow") {
+    return BOW_FRAME_FIELDS;
+  }
+  if (kind === "crossbow") {
+    return CROSSBOW_FRAME_FIELDS;
+  }
+  return ["texture"];
+}
+
 export function expectedSizeForField(
   kind: SkinKind,
   field: string
@@ -34,8 +68,18 @@ export function expectedSizeForField(
     }
     return null;
   }
+  if (isBowFrameKind(kind)) {
+    if (
+      field === "texture" ||
+      field.startsWith("pull_") ||
+      field === "charged"
+    ) {
+      return isLargeTextureKind(kind) ? LARGE_SIZE : ITEM_SIZE;
+    }
+    return null;
+  }
   if (field === "texture") {
-    return kind === "large_handheld" ? LARGE_SIZE : ITEM_SIZE;
+    return isLargeTextureKind(kind) ? LARGE_SIZE : ITEM_SIZE;
   }
   return null;
 }
@@ -44,7 +88,16 @@ export function sizeHint(kind: SkinKind): string {
   if (kind === "armor_set") {
     return "Icons must be 16×16; layers must be 64×32.";
   }
-  if (kind === "large_handheld") {
+  if (kind === "large_bow") {
+    return "All four bow frames must be 32×32.";
+  }
+  if (kind === "bow") {
+    return "All four bow frames must be 16×16.";
+  }
+  if (kind === "crossbow") {
+    return "All five crossbow frames must be 16×16.";
+  }
+  if (isLargeTextureKind(kind)) {
     return "Texture must be 32×32.";
   }
   return "Texture must be 16×16.";
@@ -69,7 +122,6 @@ export function readPngSize(file: File): Promise<Size> {
         }
       }
       const view = new DataView(buf);
-      // IHDR type at offset 12
       const type = String.fromCharCode(
         bytes[12],
         bytes[13],
@@ -82,7 +134,8 @@ export function readPngSize(file: File): Promise<Size> {
       }
       resolve({ w: view.getUint32(16), h: view.getUint32(20) });
     };
-    reader.onerror = () => reject(new Error(`${file.name}: could not read file`));
+    reader.onerror = () =>
+      reject(new Error(`${file.name}: could not read file`));
     reader.readAsArrayBuffer(file.slice(0, 24));
   });
 }
