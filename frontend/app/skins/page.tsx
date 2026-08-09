@@ -1,36 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RedeemForm from "../components/skins/RedeemForm";
 import UploadForm from "../components/skins/UploadForm";
 import {
   clearSession,
+  getLastSubmissionId,
   getSession,
   isSessionValid,
   type SkinsSession,
 } from "../../lib/skins/session";
+import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { isUiDev } from "../../lib/skins/uiDev";
 
 export default function SkinsPage() {
+  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<SkinsSession | null>(null);
 
   useEffect(() => {
     const existing = getSession();
     if (isSessionValid(existing)) {
+      const lastId = isUiDev() ? null : getLastSubmissionId();
+      if (lastId) {
+        router.replace(`/skins/${encodeURIComponent(lastId)}`);
+        return;
+      }
       setSessionState(existing);
     } else if (existing) {
       clearSession();
     }
     setReady(true);
-  }, []);
+  }, [router]);
 
   function onRedeemed(next: SkinsSession) {
     setSessionState(next);
-  }
-
-  function onClear() {
-    clearSession();
-    setSessionState(null);
   }
 
   if (!ready) {
@@ -50,15 +55,9 @@ export default function SkinsPage() {
       {session && isSessionValid(session) ? (
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {session.expires_at}
+            Session expires {formatExpiresIn(session.expires_at)} (
+            {formatLocal(session.expires_at)})
           </p>
-          <button
-            type="button"
-            onClick={onClear}
-            className="mt-2 text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
-          >
-            Clear session
-          </button>
           <UploadForm sessionToken={session.session_token} />
         </div>
       ) : (

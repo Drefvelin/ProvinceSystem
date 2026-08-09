@@ -1,133 +1,163 @@
 # 07 — Naming conventions
 
-Players do not know (or follow) pack conventions. The site and API **enforce** technical names. Display names can be friendly; file names and ItemsAdder ids cannot.
+Players enter an **Item name** (ArmourShop label). The technical submission id is derived by the **API** from the player's linked **Minecraft IGN** plus the item name — never from upload filenames and never a random UUID.
 
-Style locked: **`lowercase_snake_case`** (same family as existing `tfmc_armor` ids like `forestman_chain_helmet`).
+Style locked: **`lowercase_snake_case`** (same family as `tfmc_armor` ids like `forestman_chain_helmet`).
 
 ## Two names per submission
 
-| Field | Used for | Allowed |
-|-------|----------|---------|
-| **display_name** | ArmourShop label, IA `display_name`, Discord embed | Spaces, punctuation; length-capped. Not used as path/id. |
-| **slug** | Files, IA item ids, ArmourShop set key, LP node | Strict regex only |
+| Field | Used for | Who sets it |
+|-------|----------|-------------|
+| **Item name** (`display_name`) | ArmourShop label, IA display, Discord title | Player types it (spaces/capitals OK; may match another player) |
+| **Submission id** (`id` == `slug`) | Disk / IA / shop / LP / delete / tab-complete | API builds it: `{sanitized_ign}_{slugify(display_name)}` |
 
-Players may type a display name; UI auto-slugifies then **shows the slug for confirmation**. They may edit the slug, but it must pass validation before submit.
+Do not ask players for a "slug" or an id. Staff Discord embeds show the human id directly (e.g. `drefvelin_blue_knight`), plus Minecraft/Discord names — never a UUID.
 
-## Slug rules
+## Submission id (was: player key + base id)
 
-- Regex: `^[a-z][a-z0-9_]{1,47}$` (2–48 chars total)
+- **No `player_key`.** The old mint/backfill/`player_keys` system is gone; `discord_links.player_key` is no longer written. (A legacy `player_key` column may still exist on disk from old migrations — SQLite can't cleanly `DROP COLUMN`; it is simply unused.)
+- **IGN source:** `discord_links.minecraft_name`, captured at submit time and sanitized to `[a-z0-9_]+` (lowercased, non-alnum runs collapsed to `_`, leading digit gets a `p_`/`skin_` guard, capped to 16 chars). Frozen into the id at creation — a later IGN change only affects **new** submissions, not existing ones.
+- **Item name → slug fragment:** `slugify_display_name` lowercases, collapses separators to `_`, and caps length so the combined id fits the 48-char rule.
+- **Full id:** `{sanitized_ign}_{slugify(display_name)}`, e.g. IGN `Drefvelin` + item name `Blue Knight` → `drefvelin_blue_knight`. This one string is the API `id`, the `slug` (identical — no separate field), the pack/shop family key, the delete/tab-complete token, and the Discord embed id.
+
+## Skin id rules
+
+- Regex: `^[a-z][a-z0-9_]{1,47}$` (2–48 chars total).
 - Must start with a letter
 - Only `a-z`, `0-9`, `_`
 - No spaces, hyphens, capitals, dots, unicode, or leading/trailing `_`
-- Must be unique among submissions that are `pending`, `approved`, or `applied` (denied slugs may be reused)
+- No double underscores `__`
+- Must be unique among `pending` / `approved` / `applied` (`denied` / `revoked` may reuse)
 
-### Reject examples
+Same player cannot submit another **active** skin with the same **display_name** slug (case-insensitive) — which also means the same resulting id, since the IGN prefix is fixed per player. Different IGNs naturally produce different ids even with the same item name. Website checks before submit; API enforces.
 
-| Input | Why |
-|-------|-----|
-| `texture` / relying on upload name `texture.png` | Generic; upload names are ignored anyway |
-| `My Skin` | Spaces, capitals |
-| `BlueKnight` | Capitals |
-| `blue-knight` | Hyphen |
-| `blue knight` | Space |
-| `1cool_armor` | Must start with a letter |
-| `_blue` | Leading underscore / must start with letter |
-| `blue__knight` | Allowed by regex but **discourage**; prefer single `_` — reject double underscore in UI |
-| Empty / one character | Too short |
+Reserved ids: `test`, `texture`, `null`, `undefined`, `admin`, `tfmc`.
 
-Also reject reserved slugs: `test`, `texture`, `null`, `undefined`, `admin`, `tfmc`, and any slug already used by curated packs if you maintain a blocklist.
+## Upload filenames (ignored for identity)
 
-## Upload filenames
+Filenames are **freeform** — the API only validates PNG magic bytes, max size, and exact pixel dimensions per slot. It never reads the upload filename to derive an id; server-side stems always come from the submission id (and tier, for armor).
 
-**Ignored completely.** Clients may send `blob` or `IMG_1234.PNG`. Server writes only fixed stems:
+### `armor_set` (multi-tier)
 
-### `armor_set`
+One submission holds **1–6 tiers** from the allowlist `iron | steel | abyssalite | mythril | mage | infantry`. Each tier needs all six multipart fields:
 
 ```text
-{slug}_helmet.png
-{slug}_chestplate.png
-{slug}_leggings.png
-{slug}_boots.png
-{slug}_layer_1.png
-{slug}_layer_2.png
+{tier}_helmet
+{tier}_chestplate
+{tier}_leggings
+{tier}_boots
+{tier}_layer_1
+{tier}_layer_2
 ```
 
-Form fields (suggested names): `helmet`, `chestplate`, `leggings`, `boots`, `layer_1`, `layer_2`.
+Plus a form field `tiers` — a JSON array, e.g. `["iron","steel"]`. The uploaded **filenames** can be anything (`foo.png`, `my_texture_final.png`, …); only the field name matters. Server writes fixed disk stems `{tier}_helmet.png`, …, under `data/skins/{id}/`.
 
-Exact sizes (API reject otherwise): icons **16×16**; layers **64×32**.
+Exact sizes: icons **16×16**; layers **64×32**.
 
-### `item` / `handheld` / `large_handheld`
+**Unique textures:** every PNG in a submission must have distinct upload bytes (SHA-256 of the file). Re-uploading the same file for two slots or two tiers is rejected.
+
+*Legacy single-tier path:* unprefixed fields (`helmet`, `chestplate`, …) plus `base_set` are still accepted and mapped onto a single tier (named by `base_set`, default `iron`) for backward compatibility. Prefer the multi-tier `tiers` + prefixed-field form for anything new.
+
+### `handheld` / `large_handheld`
+
+One `texture` field, freeform filename. Server writes `{id}.png`.
+
+Sizes: `handheld` **16×16**; `large_handheld` **32×32**.
+`large_handheld` also requires `grip_preset` (`bottom` \| `middle` \| `top`) — a form field, not derived from anything filename-related.
+
+### `bow` / `large_bow`
+
+Fields `texture`, `pull_0`, `pull_1`, `pull_2` (freeform filenames). Server writes:
 
 ```text
-{slug}.png
+{id}.png
+{id}_0.png
+{id}_1.png
+{id}_2.png
 ```
 
-Field: `texture`.  
-Sizes: `item` and `handheld` **16×16**; `large_handheld` **32×32**.  
-`large_handheld` also requires form/body field `grip_preset` (`bottom` \| `middle` \| `top`) — stored in DB/`meta.json`, **not** in the filename.
+Sizes: `bow` **16×16**; `large_bow` **32×32**.
 
-(`item_2d` is retired; use the three kinds above.)
+### `crossbow`
 
-### `item_3d` (later)
+Bow four fields plus `charged`. Server writes:
 
 ```text
-{slug}.png
-{slug}.json
+{id}.png
+{id}_0.png
+{id}_1.png
+{id}_2.png
+{id}_charged.png
+{id}_arrow.png
 ```
 
-Fields: `texture`, `model`. JSON must include required `display` keys (see [05](./05-skins-system.md) / [10](./10-armourshop-itemsadder.md)).
+Size: **16×16**.
 
-### `shield` (later)
+All enabled non-armor kinds also require **`base_set`** (ArmourShop BaseSet id: type filtered by kind) — a form field, not derived from filenames; see [step-8](./batches/step-8/00-index.md). Kind `item` is not selectable. Armor uses `tiers` instead of `base_set` (`base_set` is null/unused for `armor_set`).
 
-Model + texture stems TBD with ArmourShop; one mesh; blocking display is **generated at apply**, not a second upload filename.
-
-## Derived identifiers
-
-| Surface | Pattern |
-|---------|---------|
-| IA namespace | `tfmc_submissions` |
-| IA armor piece ids | `{slug}_helmet`, `{slug}_chestplate`, `{slug}_leggings`, `{slug}_boots` |
-| IA `armors_rendering` key | `{slug}` |
-| IA item id (all non-armor kinds) | `{slug}` |
-| Full item ref | `ia.tfmc_submissions:{id}` |
-| ArmourShop set key | `{slug}` |
-| LP permission | `armourshop.submission.{slug}` |
-| Texture path (armor icons) | `armor_icons/{slug}_helmet` (etc.) |
-| Layer paths | `armor_layers/{slug}_layer_1`, `armor_layers/{slug}_layer_2` |
-
-## Auto-slugify (UI helper)
-
-Pseudocode for suggesting a slug from display name:
+### `item_3d` / `shield` / `helmet_3d`
 
 ```text
-s = display_name.lower()
-s = replace non [a-z0-9] with _
-s = collapse multiple _ to one
-s = strip leading/trailing _
-if s empty or starts with digit: prefix "skin_"
-if len < 2: reject
-if len > 48: truncate to 48, strip trailing _
-if not match regex: show error, do not submit
+{id}.png
+{id}.json
 ```
 
-Always show the result and require explicit confirm if the user did not type the slug themselves.
+Same `{id}` stem on both. Multipart fields: `texture` + `model`. API autofills missing `display` tabs then validates ([step-13](./batches/step-13/00-index.md)). Shield blocking model is **not** uploaded (ArmourShop clones at apply).
 
-## API validation (server must re-check)
+`base_set`: `item_3d` → handheld ∪ large_handheld; `shield` → `shields`; `helmet_3d` → `helmets`.
+
+### `gun` ([step-14](./batches/step-14/00-index.md) / [step-15](./batches/step-15/00-index.md))
 
 ```text
-function assertSlug(slug):
-  if not regex.fullmatch(r"[a-z][a-z0-9_]{1,47}", slug): raise 400
-  if "__" in slug: raise 400
-  if slug in RESERVED: raise 400
-  if slugTaken(slug): raise 409
+{id}.png
+{id}_carry.json
+{id}_reload.json
+{id}_aim.json
 ```
 
-Never trust client-provided destination filenames. Build paths only from `submission_id` + validated `slug` + fixed suffixes.
+Multipart: `texture`, `carry_model`, `reload_model`, `aim_model`. Display autofill per model as `item_3d`.  
+`base_set`: `rifles` \| `pistols` \| `shotguns` \| `launchers`.  
+Apply writes IA items (STONE_HOE carry/reload, CROSSBOW aim) + GaG `skins.yml` `ia.tfmc_submissions:{id}_*`; shop `gunskin({id})`.
 
-## Staff / Discord
+### Armor 3D helmet (per tier)
 
-Embeds show **display_name**, **slug**, **kind**, and **grip_preset** when set, plus the **review PNG sheet**. Deny reason can mention art / hold / display issues; naming and wrong pixel sizes should not reach staff — blocked at upload.
+When tier is listed in `helmet_3d_tiers`:
 
-## Player-facing copy (suggested)
+```text
+{tier}_helmet_model.json
+{tier}_helmet_texture.png
+```
 
-> Technical name (slug): lowercase letters, numbers, and underscores only. Example: `blue_knight`. No spaces or capitals. Your uploaded file names do not matter — use the labeled slots for helmet, chestplate, layers, etc.
+No `{tier}_helmet.png` for that tier. Flat tiers still use `{tier}_helmet.png`.
+
+## After validation (server storage)
+
+Server writes under `data/skins/{submission_id}/` using fixed stems derived from the submission id (and tier, for armor) — never from the client's original filenames. `meta.json` in that folder records `id`, `slug`, `kind`, `tiers`, `base_set`, etc.
+
+## ItemsAdder / ArmourShop mapping
+
+| Use | Pattern |
+|-----|---------|
+| IA armor piece ids (per tier) | `{id}_{tier}_helmet`, … |
+| IA `armors_rendering` key (per tier) | `{id}_{tier}` |
+| IA item id (non-armor) | `{id}` |
+| ArmourShop set key, non-armor | `{id}` |
+| ArmourShop set key, armor (per tier) | `{id}_{tier}` |
+| Gun shop item | `gunskin({id})` |
+| LP permission (shared across tiers) | `armourshop.submission.{id}` |
+
+## Player-facing copy (examples)
+
+> Item name: what ArmourShop shows (e.g. Blue Knight).
+> Upload any PNG file — the name doesn't matter, just make sure it's the right size for that slot.
+
+## Staff Discord
+
+Staff get **one composite `review_sheet.png`**: nearest-neighbor upscaled textures plus a coloured display-name header (not raw 16×16 attachments). Embeds still show **Submission id**, **Item name**, **kind**, **Tiers** / **Base set**, **grip**, **Minecraft** / **Discord** names, **Colours** / **Apply name**.
+
+The website status page shows the same review sheet after submit.
+
+## Name colours vs Apply name
+
+- **`name_colours` / `name_styles`** — how the SkinSet display name looks in ArmourShop (shop YAML `colour` / `styles`). Independent of apply-name.
+- **`add_name`** — when applying the skin in-game, keep the base item’s existing name on the skinned piece. Does **not** gate colours.

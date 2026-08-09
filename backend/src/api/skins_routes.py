@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
@@ -13,20 +14,48 @@ from src.skins.auth import (
     require_plugin_key,
     require_staff_key,
 )
-from src.skins.codes import CodeError, get_session, issue_code, redeem_code
-from src.skins.naming import SlugError
+from src.skins.codes import (
+    CodeError,
+    get_session,
+    issue_code,
+    list_active_codes,
+    redeem_code,
+    revoke_code,
+)
+from src.skins.discord_link import (
+    LinkError,
+    complete_link,
+    start_link,
+    unlink_by_discord_id,
+    unlink_by_uuid,
+)
+from src.skins.plugin_notices import (
+    ack_plugin_notices,
+    list_undelivered_plugin_notices,
+)
+from src.skins.naming import ARMOR_FIELDS, SlugError
+from src.skins.notifications import (
+    NotificationError,
+    ack_notification,
+    list_undelivered,
+)
 from src.skins.review_sheet import ReviewSheetError, build_review_sheet
 from src.skins.storage import StorageError
 from src.skins.submissions import (
     SlugConflictError,
     SubmissionError,
     approve_submission,
+    check_player_conflicts,
     create_submission,
     deny_submission,
     get_submission_for_owner,
+    get_submission_for_plugin,
     list_approved_pending_apply,
+    list_deletable_submissions,
+    list_pending,
     mark_applied,
     resolve_submission_file,
+    revoke_submission,
 )
 
 logger = logging.getLogger("skins.routes")
@@ -48,6 +77,33 @@ class DenyBody(BaseModel):
 
 class AppliedBody(BaseModel):
     submission_ids: list[str]
+
+
+class RevokeCodeBody(BaseModel):
+    code: str = Field(..., min_length=1)
+
+
+class LinkStartBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    minecraft_name: str | None = None
+
+
+class LinkCompleteBody(BaseModel):
+    code: str = Field(..., min_length=1)
+    discord_user_id: str = Field(..., min_length=1)
+    discord_username: str | None = None
+
+
+class PluginNoticesAckBody(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+
+
+class LinkUnlinkUuidBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+
+
+class LinkUnlinkDiscordBody(BaseModel):
+    discord_user_id: str = Field(..., min_length=1)
 
 
 def _session_from_auth(authorization: str | None):
@@ -86,6 +142,95 @@ def post_codes(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@skins_router.get("/plugin/codes/active")
+def plugin_codes_active(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return {"codes": list_active_codes()}
+
+
+@skins_router.post("/plugin/codes/revoke")
+def plugin_codes_revoke(
+    body: RevokeCodeBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return revoke_code(body.code)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/start")
+def post_discord_link_start(
+    body: LinkStartBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return start_link(body.player_uuid, body.minecraft_name)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/complete")
+def post_discord_link_complete(
+    body: LinkCompleteBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return complete_link(
+            body.code,
+            body.discord_user_id,
+            discord_username=body.discord_username,
+        )
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/plugin/notices")
+def plugin_notices_list(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return {"notices": list_undelivered_plugin_notices()}
+
+
+@skins_router.post("/plugin/notices/ack")
+def plugin_notices_ack(
+    body: PluginNoticesAckBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return ack_plugin_notices(body.ids)
+
+
+@skins_router.post("/discord/link/unlink")
+def post_discord_link_unlink(
+    body: LinkUnlinkUuidBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return unlink_by_uuid(body.player_uuid)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/link/unlink-discord")
+def post_discord_link_unlink_discord(
+    body: LinkUnlinkDiscordBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return unlink_by_discord_id(body.discord_user_id)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @skins_router.post("/redeem")
 def post_redeem(body: RedeemBody):
     try:
@@ -94,45 +239,146 @@ def post_redeem(body: RedeemBody):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@skins_router.post("/submissions")
-async def post_submissions(
+@skins_router.get("/submissions/check")
+def get_submissions_check(
     authorization: str | None = Header(default=None),
-    kind: str = Form(...),
-    slug: str = Form(...),
-    display_name: str = Form(...),
-    grip_preset: str | None = Form(default=None),
-    helmet: UploadFile | None = File(default=None),
-    chestplate: UploadFile | None = File(default=None),
-    leggings: UploadFile | None = File(default=None),
-    boots: UploadFile | None = File(default=None),
-    layer_1: UploadFile | None = File(default=None),
-    layer_2: UploadFile | None = File(default=None),
-    texture: UploadFile | None = File(default=None),
+    display_name: str | None = None,
+    submission_id: str | None = None,
 ):
     session = _session_from_auth(authorization)
+    return check_player_conflicts(
+        session["player_uuid"],
+        display_name=display_name,
+        submission_id=submission_id,
+    )
 
-    uploads = {
-        "helmet": helmet,
-        "chestplate": chestplate,
-        "leggings": leggings,
-        "boots": boots,
-        "layer_1": layer_1,
-        "layer_2": layer_2,
-        "texture": texture,
-    }
+
+@skins_router.post("/submissions")
+async def post_submissions(
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    session = _session_from_auth(authorization)
+    form = await request.form()
+
+    kind = str(form.get("kind") or "")
+    display_name = str(form.get("display_name") or "")
+    base_set_raw = form.get("base_set")
+    base_set = str(base_set_raw).strip() if base_set_raw else None
+    grip_preset_raw = form.get("grip_preset")
+    grip_preset = str(grip_preset_raw).strip() if grip_preset_raw else None
+    add_name_raw = form.get("add_name")
+    name_colours_raw = form.get("name_colours")
+    name_styles_raw = form.get("name_styles")
+    tiers_raw = form.get("tiers")
+    tier_aliases_raw = form.get("tier_aliases")
+    helmet_3d_tiers_raw = form.get("helmet_3d_tiers")
+
+    tiers_list: list[str] | None = None
+    if tiers_raw:
+        try:
+            parsed = json.loads(str(tiers_raw))
+            if not isinstance(parsed, list):
+                raise ValueError("not a list")
+            tiers_list = [str(x) for x in parsed]
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="tiers must be a JSON array"
+            ) from e
+
+    tier_aliases_map: dict[str, str] | None = None
+    if tier_aliases_raw and str(tier_aliases_raw).strip():
+        try:
+            parsed = json.loads(str(tier_aliases_raw))
+            if not isinstance(parsed, dict):
+                raise ValueError("not an object")
+            tier_aliases_map = {str(k): str(v) for k, v in parsed.items()}
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="tier_aliases must be a JSON object"
+            ) from e
+
+    helmet_3d_list: list[str] | None = None
+    if helmet_3d_tiers_raw and str(helmet_3d_tiers_raw).strip():
+        try:
+            parsed = json.loads(str(helmet_3d_tiers_raw))
+            if not isinstance(parsed, list):
+                raise ValueError("not a list")
+            helmet_3d_list = [str(x) for x in parsed]
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="helmet_3d_tiers must be a JSON array"
+            ) from e
+
     files_bytes: dict[str, bytes] = {}
-    for name, upload in uploads.items():
-        if upload is not None:
-            files_bytes[name] = await upload.read()
+    filenames: dict[str, str | None] = {}
+    for key, value in form.multi_items():
+        if hasattr(value, "read") and hasattr(value, "filename"):
+            files_bytes[str(key)] = await value.read()
+            filenames[str(key)] = value.filename
+
+    if kind == "armor_set" and not tiers_list:
+        has_unprefixed = any(field in files_bytes for field in ARMOR_FIELDS)
+        if has_unprefixed:
+            tier = (base_set or "iron").strip().lower()
+            tiers_list = [tier]
+            remapped: dict[str, bytes] = {}
+            remapped_names: dict[str, str | None] = {}
+            for field in ARMOR_FIELDS:
+                if field in files_bytes:
+                    tier_key = f"{tier}_{field}"
+                    remapped[tier_key] = files_bytes[field]
+                    remapped_names[tier_key] = filenames.get(field)
+            files_bytes = {
+                k: v for k, v in files_bytes.items() if k not in ARMOR_FIELDS
+            }
+            filenames = {
+                k: v for k, v in filenames.items() if k not in ARMOR_FIELDS
+            }
+            files_bytes.update(remapped)
+            filenames.update(remapped_names)
+
+    want_add = str(add_name_raw or "").strip().lower() in ("1", "true", "yes", "on")
+    colours_list: list[str] | None = None
+    styles_list: list[str] | None = None
+    if name_colours_raw and str(name_colours_raw).strip():
+        try:
+            parsed = json.loads(str(name_colours_raw))
+            if isinstance(parsed, list):
+                colours_list = [str(x) for x in parsed]
+            else:
+                raise ValueError("not a list")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="name_colours must be a JSON array"
+            ) from e
+    if name_styles_raw and str(name_styles_raw).strip():
+        try:
+            parsed = json.loads(str(name_styles_raw))
+            if isinstance(parsed, list):
+                styles_list = [str(x) for x in parsed]
+            else:
+                raise ValueError("not a list")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="name_styles must be a JSON array"
+            ) from e
 
     try:
         return create_submission(
             session,
             kind,
-            slug,
             display_name,
             files_bytes,
-            grip_preset=grip_preset,
+            grip_preset=grip_preset or None,
+            base_set=base_set or None,
+            tiers=tiers_list,
+            tier_aliases=tier_aliases_map,
+            helmet_3d_tiers=helmet_3d_list,
+            filenames=filenames,
+            add_name=want_add,
+            name_colours=colours_list,
+            name_styles=styles_list,
         )
     except SlugConflictError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -155,9 +401,24 @@ def get_submission(
 @skins_router.get("/submissions/{submission_id}/review-sheet")
 def get_review_sheet(
     submission_id: str,
+    authorization: str | None = Header(default=None),
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
 ):
-    _require_staff(x_staff_key)
+    """Staff key or owning player session may fetch the composite sheet."""
+    staff_ok = False
+    if x_staff_key:
+        try:
+            require_staff_key(x_staff_key)
+            staff_ok = True
+        except AuthError:
+            staff_ok = False
+
+    if not staff_ok:
+        session = _session_from_auth(authorization)
+        row = get_submission_for_owner(submission_id, session["player_uuid"])
+        if row is None:
+            raise HTTPException(status_code=404, detail="Submission not found")
+
     try:
         data = build_review_sheet(submission_id)
     except ReviewSheetError as e:
@@ -198,6 +459,54 @@ def post_deny(
     return result
 
 
+@skins_router.get("/staff/pending")
+def staff_pending(
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return {"submissions": list_pending()}
+
+
+@skins_router.get("/staff/notifications")
+def staff_notifications(
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return {"notifications": list_undelivered()}
+
+
+@skins_router.post("/staff/notifications/{notification_id}/ack")
+def staff_notification_ack(
+    notification_id: int,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return ack_notification(notification_id)
+    except NotificationError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@skins_router.get("/staff/submissions/{submission_id}/files/{filename}")
+def staff_file(
+    submission_id: str,
+    filename: str,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    path = resolve_submission_file(submission_id, filename)
+    if path is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    media = (
+        "image/png"
+        if filename.lower().endswith(".png")
+        else "application/json"
+        if filename.lower().endswith(".json")
+        else "application/octet-stream"
+    )
+    return FileResponse(path, media_type=media, filename=filename)
+
+
 @skins_router.get("/plugin/approved")
 def plugin_approved(
     since: str | None = None,
@@ -205,6 +514,40 @@ def plugin_approved(
 ):
     _require_plugin(x_plugin_key)
     return {"submissions": list_approved_pending_apply(since)}
+
+
+@skins_router.get("/plugin/submissions/deletable")
+def plugin_submissions_deletable(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """List pending/approved/applied submissions for staff delete tab-complete."""
+    _require_plugin(x_plugin_key)
+    return {"submissions": list_deletable_submissions()}
+
+
+@skins_router.get("/plugin/submissions/{submission_id}")
+def plugin_submission_get(
+    submission_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    row = get_submission_for_plugin(submission_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return row
+
+
+@skins_router.post("/plugin/submissions/{submission_id}/revoke")
+def plugin_submission_revoke(
+    submission_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return revoke_submission(submission_id)
+    except SubmissionError as e:
+        status = 404 if "not found" in str(e).lower() else 400
+        raise HTTPException(status_code=status, detail=str(e)) from e
 
 
 @skins_router.get("/plugin/submissions/{submission_id}/files/{filename}")
@@ -217,7 +560,13 @@ def plugin_file(
     path = resolve_submission_file(submission_id, filename)
     if path is None:
         raise HTTPException(status_code=404, detail="File not found")
-    media = "image/png" if filename.lower().endswith(".png") else "application/octet-stream"
+    media = (
+        "image/png"
+        if filename.lower().endswith(".png")
+        else "application/json"
+        if filename.lower().endswith(".json")
+        else "application/octet-stream"
+    )
     return FileResponse(path, media_type=media, filename=filename)
 
 

@@ -1,0 +1,35 @@
+name: tfmc-staging
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      # Host 8001 is often taken; use 18001 for staging
+      - "18001:8000"
+    environment:
+      - SKINS_DEV=1
+      - STAFF_KEY=dev-staff-key
+      - PLUGIN_KEY=dev-plugin-key
+    volumes:
+      - ./backend/src/output:/app/src/output
+      - ./backend/src/input:/app/src/input
+      - ./backend/src/defines:/app/src/defines
+      - ./backend/src/data:/app/src/data
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://127.0.0.1:18001
+    ports:
+      - "13001:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

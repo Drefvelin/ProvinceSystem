@@ -17,12 +17,14 @@ flowchart TD
     B0[B0_ShellPlusLocal]
     B1[B1_SkinsMVP]
     B2[B2_DiscordSkins]
+    B25[B2_5_LinkAndDMs]
     B3[B3_ArmourShopApply]
     B4[B4_Item3D_Shield_Bake]
     B5[B5_Harden]
     B0 --> B1
     B1 --> B2
-    B2 --> B3
+    B2 --> B25
+    B25 --> B3
     B3 --> B4
     B4 --> B5
   end
@@ -99,38 +101,58 @@ See [05-skins-system.md](./05-skins-system.md).
 
 | Work | Detail |
 |------|--------|
-| Skins cog | Pending notify, **attach review PNG sheet**, Approve / Deny + reason → staff API |
-| Ban cog update | On `/minecraftban` (or paired command): add Discord **banned** role; add `/minecraftunban` (or clear) to remove it |
+| Skins cog | Pending notify → `#bot-feed`, **attach raw PNGs**, Approve / Deny + reason → staff API (review-sheet later) |
+| Ban cog update | **After** skins Discord MVP: on `/minecraftban` add Discord **banned** role; `/minecraftunban` to remove |
 | Scope | Discord mute/notify only — **in-game bans stay in-game commands** |
 
-**Done when:** Submission review works in Discord with images; banned role toggles for channel mute.
+**Done when:** Submission review works in Discord with raw images in `#bot-feed` (ban role is a follow-on).
+
+### B2.5 — Discord link + player DMs
+
+**Repos:** ProvinceSystem + `tfmc_bot` + ArmourShop — [batches/step-5](./batches/step-5/00-index.md)
+
+| Work | Detail |
+|------|--------|
+| Link API | `/linkdiscord` in game → start; Discord `/linkdiscord <code>` → complete; durable UUID ↔ Discord id |
+| Upload gate | Submissions require link; stamp `discord_user_id` |
+| Player DMs | Submitted (outbox poll); approved / denied (+ reason) from cog |
+
+**Done when:** Link + upload + three DMs work on staging without typing ids on the site.
 
 ### B3 — ArmourShop bridge
 
 **Repo:** `Workspace/armourshop` + ItemsAdder — [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md)
 
+Mint codes are done ([step-6](./batches/step-6/00-index.md)). Remaining B3 splits into:
+
+| Phase | Batches | Detail |
+|-------|---------|--------|
+| Pack writer | [step-7](./batches/step-7/00-index.md) | Write `tfmc_submissions` from fixtures; grip templates; harness (no live poll) |
+| Plugin integrate | [step-8](./batches/step-8/00-index.md) | `base_set` pairing; pull; shop; LP; reload; bow writers (8.07) |
+
 | Work | Detail |
 |------|--------|
-| Mint codes | In-game command; UUID bound; show once |
-| Pull approved | Fetch payloads from API (`kind`, `grip_preset`, files) |
-| Write pack | `contents/tfmc_submissions/` YAML + textures; **templates** for item/handheld/large grip displays |
-| Shop + LP | Category/set YAML; `armourshop.submission.{slug}` |
-| Deferred reload | IA reload when empty or on restart; queue otherwise |
+| Mint codes | Done — `/armourshop token create` |
+| Pack writer | YAML + textures; armor/handheld/large (Step 7); bow/large_bow/crossbow in 8.07 |
+| Target select | Kind + filtered `base_set` (armor tier or type); no `item`; guns/shields/helmets deferred ([step-8](./batches/step-8/00-index.md)) |
+| Pull approved | Fetch payloads (`kind`, `grip_preset`, `base_set`, files) |
+| Shop + LP | `ps_armor` / `ps_items`; `armourshop.submission.{slug}` |
+| Deferred reload | IA reload when empty or on restart; ack when reload done |
 
 **Done when:** Code → upload → Discord approve → skin usable in ArmourShop for that UUID without manual file copy.
 
-### B4 — Item 3D + shield + viewer bake
+### B4 — Item 3D + shield + helmet 3D ([step-13](./batches/step-13/00-index.md))
 
 | Work | Detail |
 |------|--------|
-| Kind `item_3d` | PNG + JSON; required `display` keys; cooking-style `generate: false` + `model_path` |
-| Kind `shield` | One model+texture; ArmourShop auto **blocking** display clone |
-| Helmets | Single-item 3D skins, **not** armor sets |
-| Size / tier caps | Default json+texture &lt; 30KB; optional higher caps from code tier |
-| Review bake | Multi-view PNG sheet (gui/ground/hands/blocking) for Discord; shared view-only site renderer later |
+| Kind `item_3d` | PNG + JSON; display autofill; `generate: false` + `model_path` |
+| Kind `shield` | One model+texture; ArmourShop auto **round blocking** display clone |
+| Kind `helmet_3d` | Standalone 3D helmet (`set: helmets`); also per-tier on `armor_set` via `helmet_3d_tiers` |
+| Size caps | PNG ≤ 2 MiB; JSON ≤ 512 KiB |
+| Review bake | **Deferred** — multi-view PNG sheet / site viewer later |
 | ArmourShop apply | Write model + texture under `tfmc_submissions` |
 
-**Done when:** 3D/shield path matches 2D workflow including staff PNG review.
+**Done when:** 3D/shield/helmet path matches 2D workflow (upload → approve → apply). Multi-view bake later.
 
 ### B5 — Harden and expand
 
@@ -142,7 +164,7 @@ Quotas, retention, module template, optional brewery stub.
 
 1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
 2. **B2 skins cog** — staff can review with PNG sheets without curl  
-3. **B3 ArmourShop** — real server apply + display templates  
+3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
 4. **A1 realm card + mobile** in parallel whenever free  
 5. **B4 / A1 cropped overlays / B5** as capacity allows  
 

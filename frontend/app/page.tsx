@@ -28,7 +28,7 @@ export default function HubPage() {
           TFMC
         </h1>
         <p className="hub-rise-delay mt-4 max-w-md text-lg text-[var(--tfmc-mist)] sm:text-xl">
-          TF Minecraft — explore the world map and submit donator skins.
+          Maps and donator skins for TFMC.
         </p>
         <div className="hub-fade-delay mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link

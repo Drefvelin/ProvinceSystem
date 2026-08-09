@@ -2,39 +2,50 @@
 
 End-to-end design for donator texture submissions on **ProvinceSystem** (store + review state).  
 
-**See also:** [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) (MC apply), [11-discord-bot.md](./11-discord-bot.md) (staff UI), [07-naming-conventions.md](./07-naming-conventions.md) (slugs), [12-end-to-end-flows.md](./12-end-to-end-flows.md) (full journey).
+**See also:** [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) (MC apply), [11-discord-bot.md](./11-discord-bot.md) (staff UI), [07-naming-conventions.md](./07-naming-conventions.md) (Item name vs IGN-derived id), [12-end-to-end-flows.md](./12-end-to-end-flows.md) (full journey), [step-11](./batches/step-11/00-index.md) (IGN ids + multi-tier armor).
 
 ## Goals
 
-- Donators submit **armor sets** (2D) or **item skins** (`item` / `handheld` / `large_handheld`; 3D + shields later).
+- Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), and **guns** (`gun`; `item` disabled).
 - No website logins; codes from ArmourShop bound to player UUID.
-- Staff approve/deny in Discord (deny includes reason), with **PNG review sheets** attached.
-- ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates.
+- Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
+- ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates for 2D; 3D uses donor JSON after API display autofill. Guns append GaG `skins.yml` with `ia.…` ids (STONE_HOE carry/reload, CROSSBOW aim); stock GaG skins may still use material.CMD.
 
 ## Upload kinds
 
-| Kind | Files (after rename) | Exact sizes | IA approach |
+| Kind | Multipart fields (server writes fixed stems; filenames ignored) | Exact sizes | IA approach |
 |------|----------------------|-------------|-------------|
-| `armor_set` | `{slug}_helmet.png`, `{slug}_chestplate.png`, `{slug}_leggings.png`, `{slug}_boots.png`, `{slug}_layer_1.png`, `{slug}_layer_2.png` | Icons **16×16**; layers **64×32** | Like `tfmc_armor`: `generate: true` icons + `armors_rendering` with two layers |
-| `item` | `{slug}.png` | **16×16** | Flat / `item/generated`-style; ArmourShop fills display |
-| `handheld` | `{slug}.png` | **16×16** | Sword-style handheld parent + display template |
-| `large_handheld` | `{slug}.png` | **32×32** | Greathammer/staff scale; requires **`grip_preset`** |
-| `item_3d` (later) | `{slug}.png` + `{slug}.json` | Texture + JSON size caps (tiered); JSON must include required `display` keys | Cooking-style: `generate: false` + `model_path` (includes 3D helmets as **single items**, not armor sets) |
-| `shield` (later) | model + texture (one mesh) | Same 3D caps; required `display` keys | ArmourShop clones model and applies locked **blocking** display — donor does not upload a second mesh |
+| `armor_set` | Per tier (`tiers` JSON): flat `{tier}_helmet` **or** 3D `{tier}_helmet_model` + `{tier}_helmet_texture` (via `helmet_3d_tiers`); always chest/legs/boots/layers | Icons **16×16**; layers **64×32**; 3D: PNG + JSON caps | One SkinSet **per tier**; 3D helmet `generate: false` + `model_path` |
+| `handheld` | `texture` | **16×16** | Sword-style handheld parent (`generate: true`) |
+| `large_handheld` | `texture` | **32×32** | `generate: false` + thin model parenting ArmourShop **grip template** JSON (`bottom` / `middle` / `top`) |
+| `bow` | `texture`, `pull_0`, `pull_1`, `pull_2` | **16×16** | BOW + `generate: true` pull frames |
+| `large_bow` | same four fields | **32×32** | Large bow thin models + locked display |
+| `crossbow` | bow four + `charged` | **16×16** | CROSSBOW + `generate: true` |
+| `item` | — | — | **Disabled** for upload (no use yet) |
+| `item_3d` | `texture` + `model` | PNG ≤ 2 MiB; JSON ≤ 512 KiB; required `display` after autofill | `generate: false` + `model_path` |
+| `shield` | `texture` + `model` (one mesh) | Same 3D caps | ArmourShop clones model + locked **round blocking** display Δ |
+| `helmet_3d` | `texture` + `model` | Same 3D caps; `head` required | `generate: false` + `model_path`; `set: helmets` |
+| `gun` | `texture` + `carry_model` + `reload_model` + `aim_model` | Same 3D caps; display as `item_3d` per model | IA STONE_HOE×2 + CROSSBOW; **GaG** `skins.yml` `ia.…`; shop `gunskin({id})` |
 
-**MVP / Step 2 API:** `armor_set` + `item` + `handheld` + `large_handheld`.  
-**Retired:** `item_2d` (replaced by the three 2D item kinds above).  
-**Track B4:** `item_3d` + `shield`.
+**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `gun`.  
+**`base_set` pairing:** [step-8/00-index](./batches/step-8/00-index.md) + [step-13](./batches/step-13/00-index.md) + [step-14](./batches/step-14/00-index.md). Armor uses `tiers` + optional `helmet_3d_tiers`.  
+**Deferred:** multi-view review bake.  
+**Track B4 / Step 13:** `item_3d` + `shield` + `helmet_3d`. **Step 14:** `gun` upload/apply. **Step 15:** GaG IA ids (no CMD dual-write).  
+**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md).
 
-Original upload filenames are **ignored**; the API stores only the fixed stems above.
+### Display autofill (3D kinds)
+
+API merges defaults into donor `display` (player keys win). Required after merge: both thirdperson, both firstperson, `ground`, `gui`, `fixed`. `head` required for `shield`, `helmet_3d`, and armor-tier 3D helmets only. Gun models use the same 7 tabs as `item_3d` (no `head`).
+
+Upload **filenames are ignored** for identity (Step 11) — the API validates PNG/JSON and writes fixed stems from the submission id (and tier, for armor). See [07-naming-conventions.md](./07-naming-conventions.md).
 
 ### Grip presets (`large_handheld` only)
 
 | `grip_preset` | Meaning | Who expands to `display` |
 |---------------|---------|---------------------------|
-| `bottom` | Hold near bottom of art (hammer/staff-like) | ArmourShop template |
-| `middle` | Hold mid-art | ArmourShop template |
-| `top` | Hold toward top (longsword-like) | ArmourShop template |
+| `bottom` | Hold near bottom of art (hammer/staff-like) | Shared grip **template** model JSON (ArmourShop ships three); thin per-skin model parents the template |
+| `middle` | Hold mid-art | Same |
+| `top` | Hold toward top (longsword-like) | Same |
 
 Store preset id on the submission / `meta.json`. Do not put grip in filenames.
 
@@ -49,15 +60,18 @@ sequenceDiagram
   participant Discord
   participant IA as ItemsAdder
 
-  Player->>AS: command generate skin code
-  AS->>API: POST /skins/codes
-  API-->>AS: plaintext code once
-  AS-->>Player: show code
+  Player->>AS: /linkdiscord then /armourshop token create
+  AS->>API: POST link/start then POST /skins/codes
+  API-->>AS: link code / skins code once (click-to-copy in chat)
+  Note over Player,Discord: Discord /linkdiscord CODE binds UUID
+  AS-->>Player: show skins code
   Player->>Web: redeem code
   Web->>API: POST /skins/redeem
-  Player->>Web: slug display_name kind files
+  Player->>Web: Item name + kind + tier(s) + any PNG files
   Web->>API: POST /skins/submissions
-  API->>Discord: notify pending plus review PNG sheet
+  API->>API: require Discord link stamp discord_user_id
+  API->>Discord: notify pending plus raw PNG files
+  Discord->>Player: DM submitted then approve or deny outcome
   Discord->>API: approve or deny
   AS->>API: GET /skins/plugin/approved
   API-->>AS: payload
@@ -76,7 +90,36 @@ sequenceDiagram
 | Revocation | Staff/plugin can invalidate a code row |
 | Tier limits (later) | Optional higher 3D byte caps from code / donator tier |
 
-Eligibility (donator rank) is enforced **in ArmourShop** before calling issue.
+Eligibility (donator rank) is enforced **in ArmourShop** via permission `armourshop.token.create` (assigned with LP for donator ranks later). Command: `/armourshop token create`.
+
+Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md)).
+
+## Discord link (MC ↔ Discord)
+
+Durable bind so the bot can DM the player. No OAuth; no Discord fields on the website.
+
+| Step | Who | What |
+|------|-----|------|
+| 1 | Player in game | `/linkdiscord` → ArmourShop `POST /skins/discord/link/start` with online UUID |
+| 2 | Player in Discord | `/linkdiscord <code>` → bot `POST /skins/discord/link/complete` with their Discord user id |
+| 3 | API | Stores `discord_links` row (`player_uuid` ↔ `discord_user_id`) |
+| Unlink | Player | In-game `/unlinkdiscord` → `POST …/link/unlink` (plugin); or Discord `/unlinkdiscord` → `POST …/link/unlink-discord` (staff) |
+
+Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected. Skin upload codes are **one-time** (`redeemed_at`).
+
+### SQLite — `discord_links` / `discord_link_codes`
+
+| Table | Notes |
+|-------|-------|
+| `discord_links` | `player_uuid` unique, `discord_user_id` unique, `linked_at`, optional `minecraft_name` |
+| `discord_link_codes` | one-time code hash, UUID, expiry (~10–15m), `used_at` |
+
+### Player DMs
+
+| Event | How |
+|-------|-----|
+| Submitted | Outbox `skin_notifications` (`type=submitted`); bot polls + ack |
+| Approved / denied | Cog DMs after successful staff API call (deny includes reason) |
 
 ## Storage
 
@@ -95,36 +138,47 @@ Eligibility (donator rank) is enforced **in ArmourShop** before calling issue.
 
 | Column | Notes |
 |--------|-------|
-| `id` | Public id for Discord |
+| `id` | Human submission id: `{sanitized_ign}_{slugify(display_name)}` — public id for Discord, disk, pack/shop, delete/tab-complete |
 | `player_uuid` | from code |
 | `code_id` | FK |
-| `kind` | `armor_set` \| `item` \| `handheld` \| `large_handheld` \| later `item_3d` \| `shield` |
-| `slug` | validated snake_case; unique among non-denied actives |
-| `display_name` | human string |
+| `kind` | `armor_set` \| `handheld` \| `large_handheld` \| `bow` \| `large_bow` \| `crossbow` \| later `item_3d` \| `shield` (`item` disabled) |
+| `slug` | Same string as `id` (no separate field — kept as a column alias for older call sites) |
+| `display_name` | human string (plain text; colours/styles are separate) |
+| `add_name` | bool; when true, applying the skin keeps the base item’s display name on the result (independent of colours) |
+| `name_colours` | JSON array of `#RRGGBB` or legacy `§c` / `&c` (1 = solid, 2+ = gradient); SkinSet shop look — not gated on `add_name` |
+| `name_styles` | JSON array: `bold` / `italic` / `underline` / `strikethrough` |
 | `grip_preset` | nullable; required when `kind=large_handheld` (`bottom` \| `middle` \| `top`) |
-| `status` | `pending` \| `approved` \| `denied` \| `applied` |
+| `base_set` | ArmourShop BaseSet id; required for non-armor kinds, must match kind allowlist ([step-8](./batches/step-8/00-index.md)); **null/unused for `armor_set`** |
+| `tiers` | JSON array of 1–6 armor tier ids (`iron\|steel\|abyssalite\|mythril\|mage\|infantry`); only set for `armor_set` |
+| `status` | `pending` \| `approved` \| `denied` \| `applied` \| `revoked` |
 | `deny_reason` | nullable |
 | `dir_path` | relative folder under `data/skins/` |
 | `created_at` / `reviewed_at` / `applied_at` | |
 | `discord_message_id` | nullable |
+| `discord_user_id` | from `discord_links` at submit; required for new uploads |
+
+**No `player_key`** (Step 11 removed the mint/backfill/`player_keys` table and `discord_links.player_key`; a leftover unused column may remain on disk since SQLite can't cleanly `DROP COLUMN`). Status may be `revoked` after staff delete.
 
 ### Disk (API pending)
 
 ```text
 backend/src/data/skins/{submission_id}/
-  meta.json          # slug, kind, display_name, uuid, grip_preset?
-  …fixed stems per kind…
+  meta.json          # id, slug, kind, display_name, grip_preset?, base_set, tiers, add_name, name_colours, name_styles
+  …fixed stems per kind (per-tier for armor)…
 ```
 
 Compose: mount `backend/src/data` like `input` / `output`.
 
 ## Validation
 
-- Slug: see [07-naming-conventions.md](./07-naming-conventions.md) — reject before storing files.
+- Id: see [07-naming-conventions.md](./07-naming-conventions.md) — reject before storing files. Filenames are **not** part of validation identity, only PNG bytes/dimensions are checked.
 - PNG: magic bytes `\x89PNG`; max bytes (e.g. 2MB each); **exact** pixel sizes below — wrong size → **400**.
-- `armor_set`: six PNGs; icons 16×16; layers 64×32.
-- `item` / `handheld`: one PNG, 16×16.
-- `large_handheld`: one PNG, 32×32 + non-empty `grip_preset` in allowed set.
+- `armor_set`: 1–6 tiers from the allowlist, each with six PNGs (fields `{tier}_helmet`, …); icons 16×16; layers 64×32; duplicate/invalid/missing tiers → **400**.
+- `handheld`: one PNG (`texture`), 16×16.
+- `large_handheld`: one PNG (`texture`), 32×32 + non-empty `grip_preset` in allowed set.
+- `bow` / `large_bow`: four fields (`texture`, `pull_0`, `pull_1`, `pull_2`); sizes 16×16 / 32×32.
+- `crossbow`: five fields (bow four + `charged`), all 16×16.
+- `base_set`: required for enabled **non-armor** kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md)); reject `kind=item`. Armor uses `tiers` instead (`base_set` ignored/null).
 - `item_3d` / `shield` (later): PNG + JSON; JSON parseable; required `display` keys present; combined size capped (default &lt; 30KB json+texture unless tier raises it); no path traversal in strings.
 - Never accept zip archives in MVP.
 
@@ -134,44 +188,49 @@ Staff must see submissions visually without opening Blockbench.
 
 | Phase | What the API serves | Who consumes |
 |-------|---------------------|--------------|
-| Step 2 / MVP 2D | Staff-auth **contact sheet** PNG: armor = six labeled tiles; item kinds = texture + kind/grip caption | Discord cog attaches image to pending embed; curl for local review |
-| Later (3D / shield) | Multi-view bake: `gui`, `ground`, first/third person hands; shield also **blocking** (auto display) | Same Discord path; site view-only viewer shares the renderer |
+| **Step 4 Discord MVP** | Individual on-disk PNGs via staff file download | Bot attaches raw files to `#bot-feed` |
+| Step 2+ / curl | Staff-auth **contact sheet** PNG (`review-sheet`): armor = six labeled tiles; item kinds = texture + kind/grip caption | curl / later Discord when render system ships |
+| Later (3D / shield) | Multi-view bake: `gui`, `ground`, first/third person hands; shield also **blocking** | Discord + site view-only viewer |
 
-- Discord does **not** embed interactive WebGL — only **pre-baked PNG**(s).
-- Interactive orbit viewer is website-only and deferred (shared view-only renderer with the bake pipeline).
-- Endpoint sketch: `GET /skins/submissions/{id}/review-sheet` with `X-Staff-Key` → `image/png`.
+- Discord does **not** embed interactive WebGL — only static images (raw files now; pre-baked sheets later).
+- Interactive orbit viewer is website-only and deferred.
+- Endpoints: `GET /skins/submissions/{id}/review-sheet` (staff); staff file GET under `/skins/staff/...` (Step 4.01).
 
 ## ItemsAdder shape (ArmourShop writes)
 
 Namespace: **`tfmc_submissions`**.
 
-Armor set YAML mirrors `tfmc_armor` (example pattern):
+Armor set YAML mirrors `tfmc_armor`, **once per tier** (`{id}_{tier}` root key), example for one tier:
 
 ```yaml
 info:
   namespace: tfmc_submissions
 armors_rendering:
-  {slug}:
+  {id}_{tier}:
     color: '#ffffff'
-    layer_1: armor_layers/{slug}_layer_1
-    layer_2: armor_layers/{slug}_layer_2
+    layer_1: armor_layers/{id}_{tier}_layer_1
+    layer_2: armor_layers/{id}_{tier}_layer_2
     use_color: false
 items:
-  {slug}_helmet:
+  {id}_{tier}_helmet:
     display_name: '{display_name} Helmet'
-    permission: {slug}
+    permission: {id}
     resource:
       generate: true
       textures:
-      - armor_icons/{slug}_helmet
+      - armor_icons/{id}_{tier}_helmet
     specific_properties:
       armor:
         slot: head
-        custom_armor: {slug}
+        custom_armor: {id}_{tier}
   # chestplate / leggings / boots likewise
 ```
 
-`item` / `handheld` / `large_handheld`: single item; ArmourShop applies parent + `display` from kind/grip templates (donor does not edit JSON for 2D).
+A 2-tier submission (e.g. `iron` + `steel`) writes two independent `armors_rendering` roots and eight items, sharing one LP grant on the bare `{id}`.
+
+`handheld`: single item; `generate: true` + `parent: item/handheld`.  
+`large_handheld`: `generate: false`; thin model parents a shipped grip template (`bottom` / `middle` / `top`).  
+`bow` / `large_bow` / `crossbow`: writers in [step-8/07](./batches/step-8/07-bow-crossbow-writers.md). Donor does not edit JSON for these kinds.
 
 Do **not** add manual `custom_model_data` overrides under `minecraft` (legacy `tfmc_pack` style).
 
@@ -185,8 +244,10 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 
 | Method | Purpose |
 |--------|---------|
+| `POST /skins/discord/link/start` | `{ "player_uuid", "minecraft_name?" }` → `{ "code", "expires_at" }` |
+| `POST /skins/discord/link/unlink` | `{ "player_uuid" }` → clear link for that UUID |
 | `POST /skins/codes` | `{ "player_uuid" }` → `{ "code", "expires_at" }` |
-| `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`) |
+| `GET /skins/plugin/approved?since=…` | New approvals + file URLs or multipart manifest (includes `kind`, `grip_preset`, `base_set`) |
 | `POST /skins/plugin/applied` | Ack submission ids |
 
 ### Web → API (after redeem)
@@ -194,33 +255,43 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | Method | Purpose |
 |--------|---------|
 | `POST /skins/redeem` | `{ "code" }` → session |
-| `POST /skins/submissions` | Multipart: kind, slug, display_name, optional grip_preset, fixed file fields |
+| `POST /skins/submissions` | Multipart: `kind`, `display_name` (Item name, plain); non-armor: `base_set` (tier/type) + optional `grip_preset`; armor: `tiers` (JSON array, 1–6) + per-tier prefixed fields (legacy: unprefixed fields + `base_set` select one tier); optional `add_name`, `name_colours` / `name_styles` (JSON arrays); id is server-computed from IGN + item name (**not** a request field); filenames ignored; **requires Discord link**; rejects same-player active display_name conflict |
+| `GET /skins/submissions/check` | Session: `display_name` only → `{ ok, conflicts }` |
+| `GET /skins/plugin/submissions/{id}` | Plugin: metadata for delete |
+| `POST /skins/plugin/submissions/{id}/revoke` | Plugin: mark `revoked` (frees slug) |
 | `GET /skins/submissions/{id}` | Status for owner session |
 
 ### Discord bot → API (`X-Staff-Key`)
 
 | Method | Purpose |
 |--------|---------|
-| `GET /skins/submissions/{id}/review-sheet` | PNG contact sheet / later multi-view bake |
+| `POST /skins/discord/link/complete` | `{ "code", "discord_user_id" }` → durable link |
+| `POST /skins/discord/link/unlink-discord` | `{ "discord_user_id" }` → clear link for that Discord id |
+| `GET /skins/staff/pending` | List `status=pending` (includes `discord_user_id` when set) |
+| `GET /skins/staff/notifications` | Undelivered player notify rows (`submitted`, …) |
+| `POST /skins/staff/notifications/{id}/ack` | Mark notification delivered |
+| `GET /skins/staff/submissions/{id}/files/{filename}` | Download one PNG under that submission dir |
+| `GET /skins/submissions/{id}/review-sheet` | Contact sheet (optional for Discord later) |
 | `POST /skins/submissions/{id}/approve` | |
 | `POST /skins/submissions/{id}/deny` | `{ "reason" }` |
 
 ### API → Discord
 
-Webhook or bot poll: submission id, slug, kind, grip_preset, UUID, **review-sheet image** (staff-auth URL), buttons.
+Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; notification poll for **submitted** DMs; approve/deny handlers send outcome DMs.
 
 ## Frontend (`/skins`)
 
 1. Enter code → redeem  
-2. Choose kind → **fixed slots** (armor: 6; item/handheld/large_handheld: 1 texture; large requires grip preset picker)  
-3. Enter **display name** + **slug** (show live validation / auto-slugify then confirm)  
-4. Client-side size hints; server still enforces exact pixels  
-5. Submit → status page  
-6. No accounts  
+2. Choose kind (no `item`) → **fixed slots** (armor: 6 per tier; handheld/large: 1; bow/large_bow: 4; crossbow: 5)  
+3. Armor: **Add tier** flow — pick from remaining allowlist tiers, one 6-slot panel per tier, ≥1 required, ≤6 total; non-armor: pick **`base_set`** filtered by kind; large also picks grip  
+4. Enter **Item name** (plain text stored as `display_name`, shared across all tiers); set **colours** / **styles** / live preview anytime; optional **Apply name** is separate (keep base item name when equipped)  
+5. Client-side size hints; server still enforces exact pixels + tier/`base_set` allowlists + colour/style allowlists (filenames themselves are never checked)  
+6. Submit → **Submitting…** spinner until create finishes (composite `review_sheet.png` written); status page shows that sheet plus id, tiers/base set, name look, apply-name  
+7. No accounts; no Discord id fields on the form  
 
 ## Discord bot
 
-Skins review cog + ban-role behavior: **[11-discord-bot.md](./11-discord-bot.md)**. In-game bans stay on the MC server.
+Skins review + `/linkdiscord` + player DMs: **[11-discord-bot.md](./11-discord-bot.md)** · [batches/step-5](./batches/step-5/00-index.md). In-game bans stay on the MC server.
 
 ## SimpleFactions
 

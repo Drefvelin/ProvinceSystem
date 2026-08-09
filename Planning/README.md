@@ -10,9 +10,9 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 |-----------|------|------|
 | **ProvinceSystem** | `ProvinceSystem/` (`dev` branch) | Website + FastAPI: interactive maps, skins redeem/upload/status, SQLite |
 | **SimpleFactions** | `Workspace/simplefactions/` | Map bridge: nation JSON upload, queue, regen, province lookup |
-| **ArmourShop** | `Workspace/armourshop/` | Skins bridge: mint codes, pull approvals, write pack + shop YAML, LP |
+| **ArmourShop** | `Workspace/armourshop/` | Skins bridge: `/linkdiscord`; mint codes; pull approvals; write pack + shop YAML, LP |
 | **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player content goes in namespace **`tfmc_submissions`** |
-| **tfmc_bot** | `tfmc_bot/` | Red Discord bot: skins review; ban/warn DMs; Discord banned-role mute |
+| **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review (`#bot-feed`); `/linkdiscord` + player DMs; ban/warn DMs; Discord banned-role mute (later) |
 
 ## Product lines
 
@@ -26,12 +26,13 @@ Future tools (e.g. BreweryX helpers) plug into the same website shell.
 
 - **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
 - **No site logins** — skins use ArmourShop-issued UUID-bound codes.
+- **Discord link** — in-game `/linkdiscord` + Discord `/linkdiscord <code>` bind UUID ↔ Discord id; required before upload; player DMs for submitted / approved / denied — [batches/step-5](./batches/step-5/00-index.md).
 - **SQLite + disk** for skins metadata/files on the API.
 - **SimpleFactions = map only**; **ArmourShop = skins pack writer**.
 - **`tfmc_submissions`** pack; IA auto CMD (like armor/cooking), not legacy `tfmc_pack` CMD overrides.
-- **Armor set** = 4 icons (16×16) + 2 layers (64×32); **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; later **item_3d** / **shield**.
-- **Naming:** `lowercase_snake_case` slugs; upload filenames ignored — [07-naming-conventions.md](./07-naming-conventions.md).
-- **Staff review:** Discord embeds **pre-baked PNG review sheets** from the API (not interactive WebGL).
+- **Armor set** = 4 icons (16×16) + 2 layers (64×32); optional per-tier **3D helmet**; **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; **item_3d** / **shield** / **helmet_3d** — [step-13](./batches/step-13/00-index.md).
+- **Naming:** Item name for ArmourShop; id from IGN + display name — [07-naming-conventions.md](./07-naming-conventions.md).
+- **Staff review (Discord MVP):** posts to `#bot-feed` with **raw submission PNGs**; approve/deny via Red cog. Review-sheet attach later. Bot = [Red](https://github.com/cog-creators/red-discordbot) on AMP — [11](./11-discord-bot.md).
 - **Bot** does not ban on Minecraft; Discord DMs + roles only.
 
 ## Threat model (intentional)
@@ -59,7 +60,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 **Skins**
 
 8. [05-skins-system.md](./05-skins-system.md) — website/API contracts and kinds  
-9. [07-naming-conventions.md](./07-naming-conventions.md) — slug and file stems  
+9. [07-naming-conventions.md](./07-naming-conventions.md) — Item name vs filename-derived skin id  
 10. [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) — apply on the MC server  
 11. [11-discord-bot.md](./11-discord-bot.md) — skins cog + ban role  
 
@@ -69,7 +70,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2 API + Step 3 shell/skins UI batches (on `skins-api`)  
+13. [batches/README.md](./batches/README.md) — Step 2–13: API, UI, Discord, pack writer, plugin apply, 3D kinds  
 
 ## Success criteria (full platform)
 
@@ -80,8 +81,8 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Skins**
 
-- Code → upload (armor_set / item / handheld / large_handheld) → Discord approve (PNG sheet) → ArmourShop writes pack → player can apply skin.
-- Naming enforced; no shareable codes granting another UUID the cosmetic.
+- Link Discord → code → upload (armor_set / item / handheld / large_handheld) → Discord approve in `#bot-feed` (raw PNGs MVP) → ArmourShop writes pack → player can apply skin.
+- Naming enforced; no shareable codes granting another UUID the cosmetic; player DMs for submit / approve / deny.
 
 **Bot**
 

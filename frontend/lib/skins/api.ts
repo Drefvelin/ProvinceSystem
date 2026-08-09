@@ -42,6 +42,18 @@ async function parseJson(res: Response): Promise<unknown> {
   }
 }
 
+/** fetch with a clearer error when the API is unreachable. */
+async function apiFetch(
+  input: string,
+  init?: RequestInit
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error("Upload failed. Please try again.");
+  }
+}
+
 export type RedeemResult = {
   session_token: string;
   player_uuid: string;
@@ -50,7 +62,7 @@ export type RedeemResult = {
 };
 
 export async function redeemCode(code: string): Promise<RedeemResult> {
-  const res = await fetch(`${getApiBase()}/skins/redeem`, {
+  const res = await apiFetch(`${getApiBase()}/skins/redeem`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code: code.trim() }),
@@ -84,6 +96,12 @@ export type SubmissionPublic = {
   slug: string;
   display_name: string;
   grip_preset: string | null;
+  base_set: string | null;
+  tiers?: string[];
+  tier_aliases?: Record<string, string>;
+  add_name?: boolean;
+  name_colours?: string[];
+  name_styles?: string[];
   status: string;
   deny_reason: string | null;
   created_at: string;
@@ -91,30 +109,92 @@ export type SubmissionPublic = {
   applied_at: string | null;
 };
 
+export type SubmissionCheckResult = {
+  ok: boolean;
+  conflicts: Array<{
+    id: string;
+    slug: string;
+    display_name: string;
+    status: string;
+    kind: string;
+    reasons: string[];
+  }>;
+};
+
 export type CreateSubmissionInput = {
   sessionToken: string;
   kind: string;
-  slug: string;
   display_name: string;
+  base_set?: string | null;
+  tiers?: string[];
+  tier_aliases?: Record<string, string>;
+  helmet_3d_tiers?: string[];
   grip_preset?: string | null;
+  add_name?: boolean;
+  name_colours?: string[];
+  name_styles?: string[];
   files: Record<string, File>;
 };
+
+export async function checkSubmissionConflict(input: {
+  sessionToken: string;
+  display_name: string;
+}): Promise<SubmissionCheckResult> {
+  const params = new URLSearchParams();
+  if (input.display_name.trim()) {
+    params.set("display_name", input.display_name.trim());
+  }
+  const res = await apiFetch(
+    `${getApiBase()}/skins/submissions/check?${params.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${input.sessionToken}` },
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new SkinsApiError(
+      detailMessage(data, `Conflict check failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as SubmissionCheckResult;
+}
 
 export async function createSubmission(
   input: CreateSubmissionInput
 ): Promise<SubmissionPublic> {
   const form = new FormData();
   form.append("kind", input.kind);
-  form.append("slug", input.slug);
   form.append("display_name", input.display_name);
+  if (input.base_set) {
+    form.append("base_set", input.base_set);
+  }
+  if (input.tiers?.length) {
+    form.append("tiers", JSON.stringify(input.tiers));
+  }
+  if (input.tier_aliases && Object.keys(input.tier_aliases).length) {
+    form.append("tier_aliases", JSON.stringify(input.tier_aliases));
+  }
+  if (input.helmet_3d_tiers?.length) {
+    form.append("helmet_3d_tiers", JSON.stringify(input.helmet_3d_tiers));
+  }
   if (input.grip_preset) {
     form.append("grip_preset", input.grip_preset);
+  }
+  if (input.add_name) {
+    form.append("add_name", "true");
+  }
+  if (input.name_colours?.length) {
+    form.append("name_colours", JSON.stringify(input.name_colours));
+  }
+  if (input.name_styles?.length) {
+    form.append("name_styles", JSON.stringify(input.name_styles));
   }
   for (const [name, file] of Object.entries(input.files)) {
     form.append(name, file, file.name);
   }
 
-  const res = await fetch(`${getApiBase()}/skins/submissions`, {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${input.sessionToken}` },
     body: form,
@@ -130,11 +210,32 @@ export async function createSubmission(
   return data as SubmissionPublic;
 }
 
+export async function getReviewSheet(
+  id: string,
+  sessionToken: string
+): Promise<string> {
+  const res = await apiFetch(
+    `${getApiBase()}/skins/submissions/${id}/review-sheet`,
+    {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+    }
+  );
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new SkinsApiError(
+      detailMessage(data, `Could not load review sheet (${res.status})`),
+      res.status
+    );
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export async function getSubmission(
   id: string,
   sessionToken: string
 ): Promise<SubmissionPublic> {
-  const res = await fetch(`${getApiBase()}/skins/submissions/${id}`, {
+  const res = await apiFetch(`${getApiBase()}/skins/submissions/${id}`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
   });
   const data = await parseJson(res);

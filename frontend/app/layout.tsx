@@ -17,7 +17,7 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "TFMC",
-  description: "TF Minecraft — maps, skins, and server tools.",
+  description: "Maps, skins, and server tools for TFMC.",
   icons: {
     icon: "/server-icon.png",
   },

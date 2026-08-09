@@ -47,10 +47,21 @@ def _code_ttl_hours() -> int:
         return 48
 
 
+def _has_discord_link(player_uuid: str) -> bool:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM discord_links WHERE player_uuid = ? LIMIT 1",
+            (player_uuid,),
+        ).fetchone()
+    return row is not None
+
+
 def issue_code(player_uuid: str) -> dict:
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise CodeError("player_uuid is required")
+    if not _has_discord_link(uuid):
+        raise CodeError("Link Discord in-game with /linkdiscord first")
 
     plaintext = generate_plaintext_code()
     now = _utcnow()
@@ -60,14 +71,84 @@ def issue_code(player_uuid: str) -> dict:
     with connect() as conn:
         conn.execute(
             """
-            INSERT INTO codes (code_hash, player_uuid, created_at, expires_at, redeemed_at, revoked)
-            VALUES (?, ?, ?, ?, NULL, 0)
+            INSERT INTO codes (
+                code_hash, code_plaintext, player_uuid, created_at, expires_at,
+                redeemed_at, revoked
+            )
+            VALUES (?, ?, ?, ?, ?, NULL, 0)
             """,
-            (hash_secret(plaintext), uuid, _iso(now), expires_at),
+            (hash_secret(plaintext), plaintext, uuid, _iso(now), expires_at),
         )
         conn.commit()
 
     return {"code": plaintext, "expires_at": expires_at}
+
+
+def list_active_codes() -> list[dict]:
+    """Unused, unrevoked, unexpired codes that still have plaintext."""
+    now = _iso(_utcnow())
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                c.code_plaintext AS code,
+                c.player_uuid AS player_uuid,
+                d.minecraft_name AS minecraft_name,
+                c.created_at AS created_at,
+                c.expires_at AS expires_at
+            FROM codes c
+            LEFT JOIN discord_links d ON d.player_uuid = c.player_uuid
+            WHERE c.revoked = 0
+              AND c.redeemed_at IS NULL
+              AND c.expires_at > ?
+              AND c.code_plaintext IS NOT NULL
+              AND TRIM(c.code_plaintext) != ''
+            ORDER BY c.created_at ASC
+            """,
+            (now,),
+        ).fetchall()
+    return [
+        {
+            "code": row["code"],
+            "player_uuid": row["player_uuid"],
+            "minecraft_name": row["minecraft_name"],
+            "created_at": row["created_at"],
+            "expires_at": row["expires_at"],
+        }
+        for row in rows
+    ]
+
+
+def revoke_code(plaintext: str) -> dict:
+    code = (plaintext or "").strip()
+    if not code:
+        raise CodeError("code is required")
+
+    code_hash = hash_secret(code)
+    now = _utcnow()
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM codes WHERE code_hash = ?",
+            (code_hash,),
+        ).fetchone()
+
+        if row is None:
+            raise CodeError("Invalid code")
+        if row["revoked"]:
+            raise CodeError("Code has already been revoked")
+        if row["redeemed_at"]:
+            raise CodeError("Code has already been redeemed")
+        if _parse_iso(row["expires_at"]) < now:
+            raise CodeError("Code has expired")
+
+        conn.execute(
+            "UPDATE codes SET revoked = 1 WHERE id = ?",
+            (row["id"],),
+        )
+        conn.commit()
+
+    return {"ok": True, "code": code}
 
 
 def redeem_code(plaintext: str) -> dict:

@@ -49,25 +49,75 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 ### S3 — Discord skins cog
 
-**Repo:** `tfmc_bot` — [11](./11-discord-bot.md)
+**Repo:** `tfmc_bot` (Red on AMP) — [11](./11-discord-bot.md) · [batches/step-4](./batches/step-4/00-index.md)
 
-- [ ] Pending embed + **review PNG sheet** + Approve/Deny + staff API + message update
+- [x] Staff API: pending list + staff file download
+- [x] Cog: `#bot-feed` embed + **raw PNG** attachments + Approve/Deny + message update
+- [x] Poll (or slash) intake without duplicate posts
 
-**Done when:** Staff can review staging submissions in Discord from images.
+**Done when:** Staff can review staging/local submissions in Discord from raw files (review-sheet attach later).
 
-### S4 — ArmourShop apply
+**Verified:** Step 4 batches 4.01–4.05 implemented; AMP E2E against local/staging API is the runtime check.
 
-**Repo:** `Workspace/armourshop` — [10](./10-armourshop-itemsadder.md)
+### S3.5 — Discord link + player DMs
 
-- [ ] Config URL/key/paths; code command; pull; write `tfmc_submissions` with kind/grip templates; shop YAML; LP; deferred reload; applied ack
+**Repos:** ProvinceSystem + `tfmc_bot` + ArmourShop `/linkdiscord` — [batches/step-5](./batches/step-5/00-index.md)
 
-**Done when:** Flow 2 complete in [12](./12-end-to-end-flows.md).
+- [x] Link API: start (plugin) + complete (staff) + `discord_links`
+- [x] Submit requires link; stamp `discord_user_id`; submitted notification outbox
+- [x] Cog: `/linkdiscord`; DMs for submitted / approved / denied
+- [x] ArmourShop: `/linkdiscord` → `link/start`
+- [x] Smoke green (`skins_e2e_smoke.py` — link + notify + review)
+- [ ] Live Discord DM path on staging/AMP — operator checklist in [STAGING.md](../STAGING.md)
 
-### S5 — Item 3D + shield + harden
+**Done when:** Player links once, uploads without typing Discord/MC ids, and receives the three DMs (live path verified on staging).
 
-- [ ] `item_3d` / `shield` API/UI + display-key validation + ArmourShop apply (shield blocking auto)
-- [ ] Multi-view review bake for Discord; shared view-only site renderer
-- [ ] Quotas, retention, reserved slugs, tier size caps
+### S3.6 — In-game skins token
+
+**Repo:** `Workspace/armourshop` — [batches/step-6](./batches/step-6/00-index.md)
+
+- [x] Click-to-copy chat helper; `POST /skins/codes` client; `/linkdiscord` uses copy
+- [x] `/armourshop token create` + tab complete; perm `armourshop.token.create`
+- [ ] Staging: mint → redeem on site → upload
+
+**Done when:** Donator (LP) mints in game, clicks to copy, redeems on `/skins` without curl.
+
+### S4a — Pack writer (dry-run)
+
+**Repo:** `Workspace/armourshop` — [batches/step-7](./batches/step-7/00-index.md)
+
+- [x] Scaffold empty `tfmc_submissions`; document IA contents path config
+- [x] Writer: `armor_set` (`generate: true` + `armors_rendering`)
+- [x] Writer: `item` / `handheld` (`generate: true` + parent)
+- [x] Grip templates + `large_handheld` (`generate: false` + thin models)
+- [x] Fixture harness writes all four kinds to an out dir
+
+**Done when:** Harness produces valid pack files without Discord/live poll.
+
+### S4b — Plugin apply (live)
+
+**Repo:** ProvinceSystem + `Workspace/armourshop` — [batches/step-8](./batches/step-8/00-index.md) · [10](./10-armourshop-itemsadder.md)
+
+- [x] API: `base_set` + kind allowlists / pairing; reject `item` ([8.01](./batches/step-8/01-base-set-api.md))
+- [x] UI: enabled kinds; filtered tier/type dropdowns; no `item` ([8.02](./batches/step-8/02-base-set-ui.md))
+- [x] Pull `GET /plugin/approved` + pack write for armor/handheld/large ([8.03](./batches/step-8/03-pull-and-write.md))
+- [x] Shop `ps_armor` / `ps_items` + LP `armourshop.submission.{slug}`; merge `item-start-points` ([8.04](./batches/step-8/04-shop-and-lp.md))
+- [x] Deferred IA reload + `POST /plugin/applied` ([8.05](./batches/step-8/05-reload-and-ack.md))
+- [ ] Staging E2E armor/melee Flow 2 ([8.06](./batches/step-8/06-docs-e2e.md))
+- [x] Bow / large_bow / crossbow writers + harness + apply ([8.07](./batches/step-8/07-bow-crossbow-writers.md))
+- [x] Name colour / encoding / website Apply name ([step-9](./batches/step-9/00-index.md))
+- [x] Player key prefix, collision check, staff delete, bot names ([step-10](./batches/step-10/00-index.md))
+- [x] IGN-based human ids (no `player_key`), ignore upload filenames, multi-tier armor (1–6), deferred-only delete ([step-11](./batches/step-11/00-index.md))
+
+**Done when:** Flow 2 complete for melee/armor in [12](./12-end-to-end-flows.md); bow kinds after 8.07.
+
+### S5 — Item 3D + shield + helmet 3D ([step-13](./batches/step-13/00-index.md))
+
+- [x] `item_3d` / `shield` / `helmet_3d` API/UI + display autofill + ArmourShop apply (shield blocking auto; armor per-tier 3D helmet)
+- [x] Guns carry/reload/aim ([step-14](./batches/step-14/00-index.md))
+- [x] GaG resolve IA ids instead of CMD ([step-15](./batches/step-15/00-index.md))
+- [ ] Multi-view review bake for Discord; shared view-only site renderer (**later**)
+- [ ] Quotas, retention, reserved slugs, tier size caps (**later**)
 
 ---
 
@@ -130,4 +180,5 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Bot | Skins review with sheets; ban DM/log + banned role add/clear |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP: item_3d, shield, full map overlay crop, brewery module, SF secret cleanup if not done.
+Post-MVP later: multi-view 3D review bake, full map overlay crop, brewery module, SF secret cleanup if not done.  
+Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs.

@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code_hash TEXT NOT NULL UNIQUE,
+    code_plaintext TEXT,
     player_uuid TEXT NOT NULL,
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
@@ -16,6 +17,12 @@ CREATE TABLE IF NOT EXISTS submissions (
     slug TEXT NOT NULL,
     display_name TEXT NOT NULL,
     grip_preset TEXT,
+    base_set TEXT,
+    tiers TEXT,
+    tier_aliases TEXT,
+    add_name INTEGER NOT NULL DEFAULT 0,
+    name_colours TEXT,
+    name_styles TEXT,
     status TEXT NOT NULL,
     deny_reason TEXT,
     dir_path TEXT NOT NULL,
@@ -23,6 +30,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     reviewed_at TEXT,
     applied_at TEXT,
     discord_message_id TEXT,
+    discord_user_id TEXT,
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
@@ -36,7 +44,50 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
+CREATE TABLE IF NOT EXISTS discord_links (
+    player_uuid TEXT PRIMARY KEY,
+    discord_user_id TEXT NOT NULL UNIQUE,
+    minecraft_name TEXT,
+    discord_username TEXT,
+    linked_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS discord_link_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_hash TEXT NOT NULL UNIQUE,
+    player_uuid TEXT NOT NULL,
+    minecraft_name TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS skin_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    submission_id TEXT NOT NULL,
+    discord_user_id TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS plugin_notices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    player_uuid TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
 CREATE INDEX IF NOT EXISTS idx_submissions_slug ON submissions(slug);
 CREATE INDEX IF NOT EXISTS idx_codes_hash ON codes(code_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_discord_links_discord ON discord_links(discord_user_id);
+CREATE INDEX IF NOT EXISTS idx_discord_link_codes_hash ON discord_link_codes(code_hash);
+CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
+    ON skin_notifications(delivered_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_plugin_notices_undelivered
+    ON plugin_notices(delivered_at, created_at);
