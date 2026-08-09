@@ -31,6 +31,7 @@ import {
   previewStyleCss,
   type NameStyle,
 } from "../../../lib/skins/namePreview";
+import FancyCheckbox from "./FancyCheckbox";
 import KindPicker from "./KindPicker";
 
 const GRIPS = ["bottom", "middle", "top"] as const;
@@ -115,7 +116,7 @@ export default function UploadForm({ sessionToken }: Props) {
   const [tiers, setTiers] = useState<TierEntry[]>([]);
   const [tierToAdd, setTierToAdd] = useState<string>("");
   const [itemName, setItemName] = useState("");
-  const [applyName, setApplyName] = useState(false);
+  const [applyName, setApplyName] = useState(true);
   const [colours, setColours] = useState<string[]>(["#ffffff"]);
   const [styles, setStyles] = useState<NameStyle[]>([]);
   const [hexDraft, setHexDraft] = useState("#55ff55");
@@ -462,13 +463,11 @@ export default function UploadForm({ sessionToken }: Props) {
         />
       </label>
 
-      <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--tfmc-cream)]">
-        <input
-          type="checkbox"
+      <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[var(--tfmc-cream)]">
+        <FancyCheckbox
           checked={applyName}
           disabled={loading}
-          onChange={(e) => setApplyName(e.target.checked)}
-          className="mt-0.5 accent-[var(--tfmc-accent)]"
+          onChange={setApplyName}
         />
         <span>
           Apply name when equipped
@@ -576,14 +575,13 @@ export default function UploadForm({ sessionToken }: Props) {
             {NAME_STYLES.map((s) => (
               <label
                 key={s}
-                className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]"
               >
-                <input
-                  type="checkbox"
+                <FancyCheckbox
                   checked={styles.includes(s)}
                   disabled={loading}
                   onChange={() => toggleStyle(s)}
-                  className="accent-[var(--tfmc-accent)]"
+                  className="mt-0"
                 />
                 {s}
               </label>
@@ -708,15 +706,14 @@ export default function UploadForm({ sessionToken }: Props) {
                       Chestplate
                     </span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]">
-                    <input
-                      type="checkbox"
+                  <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]">
+                    <FancyCheckbox
                       checked={entry.helmet3d}
                       disabled={loading}
-                      onChange={(e) =>
-                        setTierHelmet3d(entry.tier, e.target.checked)
+                      onChange={(checked) =>
+                        setTierHelmet3d(entry.tier, checked)
                       }
-                      className="accent-[var(--tfmc-accent)]"
+                      className="mt-0"
                     />
                     3D Helmet
                   </label>
