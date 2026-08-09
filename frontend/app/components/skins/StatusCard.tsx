@@ -11,15 +11,15 @@ function statusMessage(row: SubmissionPublic): string {
     case "pending":
       return (
         "Submitted. It can take up to 5 minutes for your request to enter the " +
-        "review system — you will get a Discord DM when it does. After that, " +
+        "review system. You will get a Discord DM when it does. After that, " +
         "staff will review it."
       );
     case "denied":
       return row.deny_reason?.trim()
-        ? `Denied — ${row.deny_reason.trim()}`
-        : "Denied — No reason given.";
+        ? `Denied: ${row.deny_reason.trim()}`
+        : "Denied. No reason given.";
     case "approved":
-      return "Approved — waiting to be applied on the server.";
+      return "Approved. Waiting to be applied on the server.";
     case "applied":
       return "Live on the server.";
     case "revoked":
@@ -47,7 +47,7 @@ export default function StatusCard({ row }: Props) {
       setSheetError(null);
       const session = getSession();
       if (!isSessionValid(session) || !session) {
-        setSheetError("Session expired — cannot load preview.");
+        setSheetError("Session expired. Cannot load preview.");
         setSheetLoading(false);
         return;
       }

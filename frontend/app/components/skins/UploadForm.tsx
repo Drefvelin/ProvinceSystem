@@ -72,7 +72,7 @@ const fieldLabel: Record<string, string> = {
 
 function namingHint(): string {
   return (
-    "File names can be anything — the server renames your PNGs automatically " +
+    "File names can be anything; the server renames your PNGs automatically " +
     "from your item name. Sizes still matter (see above)."
   );
 }
@@ -227,17 +227,6 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
-    if (isArmor) {
-      for (const entry of tiers) {
-        if (!entry.alias.trim()) {
-          setError(
-            `Tier alias required for ${baseSetLabel(entry.tier)} (e.g. ${baseSetLabel(entry.tier)} or Scout)`
-          );
-          return;
-        }
-      }
-    }
-
     if (kind === "large_handheld" && !grip) {
       setError("Choose a grip preset");
       return;
@@ -330,7 +319,10 @@ export default function UploadForm({ sessionToken }: Props) {
         tiers: isArmor ? tiers.map((entry) => entry.tier) : undefined,
         tier_aliases: isArmor
           ? Object.fromEntries(
-              tiers.map((entry) => [entry.tier, entry.alias.trim()])
+              tiers.map((entry) => [
+                entry.tier,
+                entry.alias.trim() || baseSetLabel(entry.tier),
+              ])
             )
           : undefined,
         helmet_3d_tiers: isArmor
@@ -412,7 +404,7 @@ export default function UploadForm({ sessionToken }: Props) {
           />
           <p className="text-lg text-[var(--tfmc-cream)]">Submitting…</p>
           <p className="text-center text-sm text-[var(--tfmc-mist)]">
-            Uploading textures — please wait.
+            Uploading textures. Please wait.
           </p>
         </div>
       ) : null}
@@ -449,7 +441,7 @@ export default function UploadForm({ sessionToken }: Props) {
         </span>
         <span className="text-xs text-[var(--tfmc-mist)]">
           {isArmor
-            ? "Base name before the tier alias (e.g. Norain → Norain Iron / Norain Scout). Spaces and capitals are fine."
+            ? "Base name before the tier label (e.g. Norain becomes Norain Iron). Spaces and capitals are fine."
             : "Shown in ArmourShop. Spaces and capitals are fine."}
         </span>
         <input
@@ -648,14 +640,15 @@ export default function UploadForm({ sessionToken }: Props) {
             Armor tiers
           </legend>
           <p className="text-xs text-[var(--tfmc-mist)]">
-            Add 1–6 tiers. Each tier needs chestplate, leggings, boots, and both
-            layers. Helmet is either a 16×16 icon or a 3D model (checkbox). The
-            pack name becomes{" "}
+            Add 1 to 6 tiers (Iron, Steel, Abyssalite, Mythril, Mage, Infantry).
+            Each tier needs chestplate, leggings, boots, and both layers. Helmet
+            is a 16×16 icon or a 3D model. Pack name example:{" "}
             <span className="text-[var(--tfmc-cream)]">
-              {itemName.trim() || "Name"} {tiers[0]?.alias.trim() || "Iron"}
+              {itemName.trim() || "Name"}{" "}
+              {tiers[0]?.alias.trim() ||
+                (tiers[0] ? baseSetLabel(tiers[0].tier) : "Iron")}
             </span>{" "}
-            (plus Helmet/Chestplate/…). Override the alias per tier if you
-            want e.g. Scout instead of Iron.
+            Helmet / Chestplate / …. Alias per tier is optional.
           </p>
 
           {tiers.length > 0 ? (
@@ -685,7 +678,7 @@ export default function UploadForm({ sessionToken }: Props) {
                   </div>
                   <label className="flex flex-col gap-2 text-left">
                     <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-                      Tier name alias
+                      Tier name alias (optional)
                     </span>
                     <input
                       type="text"

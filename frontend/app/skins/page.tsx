@@ -12,6 +12,7 @@ import {
   type SkinsSession,
 } from "../../lib/skins/session";
 import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+import { isUiDev } from "../../lib/skins/uiDev";
 
 export default function SkinsPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function SkinsPage() {
   useEffect(() => {
     const existing = getSession();
     if (isSessionValid(existing)) {
-      const lastId = getLastSubmissionId();
+      const lastId = isUiDev() ? null : getLastSubmissionId();
       if (lastId) {
         router.replace(`/skins/${encodeURIComponent(lastId)}`);
         return;
