@@ -34,5 +34,5 @@ Then open the website locally:
 Notes:
 
 - `reset --hard` drops local edits (including chmod dirtiness). Always `chmod +x` again after.
-- Branch is `tfmc-bot` — change the two `tfmc-bot` lines if staging tracks another branch.
-- Does **not** update the Paper ArmourShop jar; copy that onto the MC server separately when needed.
+- Staging tracks **`site-rework`** (`git checkout` / `reset --hard` above). Change those two lines only if the box tracks another branch.
+- Does **not** update the Paper ArmourShop / TFMCWeb jars; copy those onto the MC server separately when needed.

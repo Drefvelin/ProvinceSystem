@@ -15,13 +15,13 @@ Data lives only under this clone (`backend/src/data`, etc.).
 
 Staging boxes should track the remote branch **exactly**. Do **not** keep local edits (including `chmod +x` dirtying the scripts — that makes `git pull` fail with “local changes would be overwritten”).
 
-Use your staging path (`~/ProvinceSystem` or `~/tfmc-staging`). Checkout the branch you run on staging (often `tfmc-bot`). After `reset --hard`, always `chmod +x` again before running scripts.
+Use your staging path (`~/ProvinceSystem` or `~/tfmc-staging`). Checkout the branch you run on staging (**`site-rework`**). After `reset --hard`, always `chmod +x` again before running scripts.
 
 ```bash
 cd ~/ProvinceSystem
 git fetch origin
-git checkout tfmc-bot
-git reset --hard origin/tfmc-bot
+git checkout site-rework
+git reset --hard origin/site-rework
 chmod +x scripts/staging-*.sh
 ```
 
@@ -34,7 +34,7 @@ First-time clone:
 ```bash
 git clone <ProvinceSystem-git-url> ~/tfmc-staging
 cd ~/tfmc-staging
-git checkout tfmc-bot
+git checkout site-rework
 chmod +x scripts/staging-*.sh
 ./scripts/staging-down.sh
 ./scripts/staging-up.sh
