@@ -97,7 +97,8 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
   if (typeof body.scope === "string" && body.scope.trim()) {
     out.scope = body.scope.trim();
   }
-  if (body.staff === true || body.staff === "true") {
+  const staffRaw = (data as Record<string, unknown> | null)?.staff;
+  if (staffRaw === true || staffRaw === "true") {
     out.staff = true;
   }
   return out;
