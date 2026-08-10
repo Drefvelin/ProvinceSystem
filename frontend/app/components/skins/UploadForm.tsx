@@ -146,14 +146,13 @@ function acceptForField(field: string): string {
 
 export default function UploadForm({ sessionToken }: Props) {
   const router = useRouter();
-  // TEMP demo default — remove after hand-preview tuning
-  const [kind, setKind] = useState<SkinKind>("crossbow");
-  const [baseSet, setBaseSet] = useState(defaultBaseSet("crossbow"));
+  const [kind, setKind] = useState<SkinKind>("armor_set");
+  const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
   const [tiers, setTiers] = useState<TierEntry[]>([]);
   const [tierToAdd, setTierToAdd] = useState<string>("");
   /** Which added tier the armor mannequin preview shows. */
   const [previewArmorTier, setPreviewArmorTier] = useState<string>("");
-  const [itemName, setItemName] = useState("Demo Crossbow");
+  const [itemName, setItemName] = useState("");
   const [applyName, setApplyName] = useState(true);
   const [colours, setColours] = useState<string[]>(["#ffffff"]);
   const [styles, setStyles] = useState<NameStyle[]>([]);
@@ -164,171 +163,12 @@ export default function UploadForm({ sessionToken }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
 
-  // TEMP: auto-load demo assets so we can iterate without re-picking files
   useEffect(() => {
     setTiers([]);
     setTierToAdd("");
     setError(null);
     setBaseSet(defaultBaseSet(kind));
-
-    let cancelled = false;
-
-    if (kind === "item_3d") {
-      setItemName("Test Block");
-      (async () => {
-        try {
-          const [modelRes, texRes] = await Promise.all([
-            fetch("/demo/text_block.json"),
-            fetch("/demo/test_block.png"),
-          ]);
-          if (!modelRes.ok || !texRes.ok || cancelled) return;
-          const modelBlob = await modelRes.blob();
-          const texBlob = await texRes.blob();
-          if (cancelled) return;
-          setFiles({
-            model: new File([modelBlob], "text_block.json", {
-              type: "application/json",
-            }),
-            texture: new File([texBlob], "test_block.png", {
-              type: "image/png",
-            }),
-          });
-        } catch {
-          if (!cancelled) setFiles({});
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (kind === "helmet_3d") {
-      setItemName("Adventurer Hat");
-      (async () => {
-        try {
-          const [modelRes, texRes] = await Promise.all([
-            fetch("/demo/adventurer_hat.json"),
-            fetch("/demo/adventurer_hat.png"),
-          ]);
-          if (!modelRes.ok || !texRes.ok || cancelled) return;
-          const modelBlob = await modelRes.blob();
-          const texBlob = await texRes.blob();
-          if (cancelled) return;
-          setFiles({
-            model: new File([modelBlob], "adventurer_hat.json", {
-              type: "application/json",
-            }),
-            texture: new File([texBlob], "adventurer_hat.png", {
-              type: "image/png",
-            }),
-          });
-        } catch {
-          if (!cancelled) setFiles({});
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (kind === "gun") {
-      setItemName("Matchlock Rifle");
-      (async () => {
-        try {
-          const [carryRes, reloadRes, aimRes, texRes] = await Promise.all([
-            fetch("/demo/rifle_matchlock_carry.json"),
-            fetch("/demo/rifle_matchlock_reload.json"),
-            fetch("/demo/rifle_matchlock_aim.json"),
-            fetch("/demo/rifle_matchlock.png"),
-          ]);
-          if (
-            !carryRes.ok ||
-            !reloadRes.ok ||
-            !aimRes.ok ||
-            !texRes.ok ||
-            cancelled
-          ) {
-            return;
-          }
-          const [carryBlob, reloadBlob, aimBlob, texBlob] = await Promise.all([
-            carryRes.blob(),
-            reloadRes.blob(),
-            aimRes.blob(),
-            texRes.blob(),
-          ]);
-          if (cancelled) return;
-          setFiles({
-            carry_model: new File([carryBlob], "rifle_matchlock_carry.json", {
-              type: "application/json",
-            }),
-            reload_model: new File(
-              [reloadBlob],
-              "rifle_matchlock_reload.json",
-              { type: "application/json" }
-            ),
-            aim_model: new File([aimBlob], "rifle_matchlock_aim.json", {
-              type: "application/json",
-            }),
-            texture: new File([texBlob], "rifle_matchlock.png", {
-              type: "image/png",
-            }),
-          });
-        } catch {
-          if (!cancelled) setFiles({});
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (kind === "crossbow") {
-      setItemName("Demo Crossbow");
-      (async () => {
-        try {
-          const names = [
-            "crossbow_standby",
-            "crossbow_pull_0",
-            "crossbow_pull_1",
-            "crossbow_pull_2",
-            "crossbow_charged",
-          ] as const;
-          const responses = await Promise.all(
-            names.map((n) => fetch(`/demo/${n}.png`))
-          );
-          if (responses.some((r) => !r.ok) || cancelled) return;
-          const blobs = await Promise.all(responses.map((r) => r.blob()));
-          if (cancelled) return;
-          setFiles({
-            texture: new File([blobs[0]!], "crossbow_standby.png", {
-              type: "image/png",
-            }),
-            pull_0: new File([blobs[1]!], "crossbow_pull_0.png", {
-              type: "image/png",
-            }),
-            pull_1: new File([blobs[2]!], "crossbow_pull_1.png", {
-              type: "image/png",
-            }),
-            pull_2: new File([blobs[3]!], "crossbow_pull_2.png", {
-              type: "image/png",
-            }),
-            charged: new File([blobs[4]!], "crossbow_charged.png", {
-              type: "image/png",
-            }),
-          });
-        } catch {
-          if (!cancelled) setFiles({});
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }
-
     setFiles({});
-    return () => {
-      cancelled = true;
-    };
   }, [kind]);
 
   const fileFields = fileFieldsForKind(kind);
