@@ -170,7 +170,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 7. Ban role (bot moderation) — parallel with S3+  
 8. **TFMCWeb / Step 17** — done (docs + staging checklist); tick [08-docs-verify](./batches/step-17/08-docs-verify.md) on live staging ([13](./13-tfmcweb.md))  
 9. **Staff curated skins / Step 18** — **done** (18.01–18.07); tick staging [06-docs-verify](./batches/step-18/06-docs-verify.md) / [STAGING.md](../STAGING.md)  
-10. Cropped overlays / character creator as capacity allows  
+10. **Character creator / Step 19 Phase 1** — **done** (19.01–19.06); tick staging [06-docs-verify](./batches/step-19/06-docs-verify.md) / [STAGING.md](../STAGING.md)  
+11. Cropped overlays / Phases 2–4 (kit, lore knife, character skins) as capacity allows  
 
 ---
 
@@ -184,5 +185,5 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | TFMCWeb | Survival Discord gate; `/token create skin`; ArmourShop no longer owns link |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP later: character creator UI, Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
-Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs. Step 16 (upload model preview) planned. Step 17 (TFMCWeb) **17.01–17.08 done**. Step 18 (staff curated skins → `tfmc_armorshop`) **18.01–18.07 done** — tick [STAGING.md](../STAGING.md) Step 18 on live. Character creator UI still out of scope.
+Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
+Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging. Phases 2–4 (kit, lore knife, character skins) after Phase 1 staging green.

@@ -1,7 +1,7 @@
 # 13 — TFMCWeb (identity, tokens, Discord gate)
 
-**Status:** Implemented ([step-17](./batches/step-17/00-index.md) 17.01–17.08). Character creator UI still out of scope.  
-**Repos:** `Workspace/tfmcweb/` (Bukkit plugin) · `ProvinceSystem` · `tfmc_bot` · soft-depends `Workspace/rpcharacters` · consumers `armourshop` (pack only); later SimpleFactions / character creator.
+**Status:** Implemented ([step-17](./batches/step-17/00-index.md) 17.01–17.08). Character creator Phase 1 **implemented** ([14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging in [STAGING.md](../STAGING.md).  
+**Repos:** `Workspace/tfmcweb/` (Bukkit plugin) · `ProvinceSystem` · `tfmc_bot` · soft-depends `Workspace/rpcharacters` · consumers `armourshop` (pack only); SimpleFactions / character creator via TFMCWeb.
 
 Companion: [11-discord-bot.md](./11-discord-bot.md) · skins tokens today: [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) · batches: [step-17](./batches/step-17/00-index.md).
 
@@ -9,7 +9,7 @@ Companion: [11-discord-bot.md](./11-discord-bot.md) · skins tokens today: [10-a
 
 ## Why
 
-ArmourShop historically owned Discord link (`/linkdiscord`), skins token mint, plugin-notice poll, and HTTP to ProvinceSystem. **TFMCWeb** now owns identity + tokens ([17.04](./batches/step-17/04-tfmcweb-scaffold.md)–[17.06](./batches/step-17/06-armourshop-cutover.md)); ArmourShop keeps pack apply. SimpleFactions has its own HTTP. Character creation will need the same identity + codes.
+ArmourShop historically owned Discord link (`/linkdiscord`), skins token mint, plugin-notice poll, and HTTP to ProvinceSystem. **TFMCWeb** now owns identity + tokens ([17.04](./batches/step-17/04-tfmcweb-scaffold.md)–[17.06](./batches/step-17/06-armourshop-cutover.md)); ArmourShop keeps pack apply. SimpleFactions has its own HTTP. Character creation uses the same identity + scoped codes.
 
 **TFMCWeb** is the single TFMC-specific gate to ProvinceSystem (like **TFMCCore** is TFMC-specific gameplay; **TLibs** stays portable).
 
@@ -28,7 +28,7 @@ ArmourShop historically owned Discord link (`/linkdiscord`), skins token mint, p
 | Alts | **None** — one Discord ↔ one Minecraft UUID (already UNIQUE in `discord_links`; keep hard) |
 | Leave Discord | **1 hour grace** — if they rejoin within 1h, stay linked (needed for donator rank re-apply rejoins). After grace → unlink + freeze |
 | Freeze | Use **RPCharacters** freeze; **do not** touch characters / wipe / deactivate. New freeze reason only |
-| Character creator UI | Later; this doc only enables **identity + `/token create character`** |
+| Character creator UI | [14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md) — Phase 1 **shipped** (`/character`); redeem `POST /skins/character/redeem` (session **1h** / Remember me **30d**); this doc owns identity + mint only |
 | Commands | Player: `/token …`, `/linkdiscord` (alias). Admin: `/web …`. Warnings: `/warning …` (TFMCWeb) |
 | Bans | Keep **Essentials** `/tempban` / `/ban`; TFMCWeb listens and mirrors to Discord bot |
 | Warnings | New in-game `/warning` (TFMCWeb) → player chat + web store + bot DM (today’s `/minecraftwarn` is manual Discord-only) |
@@ -120,7 +120,7 @@ Rules:
 
 - Must be Discord-linked and not past grace (Survival players).
 - Codes bound to UUID (same threat model as skins — no shareable account takeover).
-- Session TTL per feature (skins stay ~1h session after redeem; character TBD).
+- Session TTL: skins ~1h after redeem; character default **1h**, Remember me **30d** ([14-character-creator.md](./14-character-creator.md)).
 
 Admin `/web` does **not** mint player tokens.
 
@@ -228,7 +228,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 
 Completed in step-17: TFMCWeb owns link, notices, and `/token create`; ArmourShop keeps pack apply + admin token list/delete. Staging LP: migrate `armourshop.token.create` → `tfmcweb.token.create`.
 
-Still later: SimpleFactions REST through TFMCWeb; character creator UI consuming `/token create character`.
+Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 is shipped ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); Phases 2–4 remain deferred.
 
 ---
 
@@ -262,4 +262,4 @@ Staging verify script: [08-docs-verify.md](./batches/step-17/08-docs-verify.md).
 
 ## Next step
 
-Character creator UI (and optional identity path rename / SimpleFactions fold-in) — **after** staging Step 17 checklist is green. Do not start character creator until then.
+Character creator Phase 1 is **done** — tick staging in [STAGING.md](../STAGING.md) / [06-docs-verify](./batches/step-19/06-docs-verify.md). Phases 2–4 (kit / lore knife / Mojang skins) stay deferred. Prefer Step 17 staging green before pre-launch donator create.

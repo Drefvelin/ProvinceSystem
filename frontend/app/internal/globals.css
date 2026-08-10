@@ -66,6 +66,22 @@ body {
   animation: hub-fade 1s ease-out 0.35s both;
 }
 
+.char-rise {
+  animation: hub-rise 0.7s ease-out both;
+}
+
+.char-rise-delay {
+  animation: hub-rise 0.7s ease-out 0.12s both;
+}
+
+.char-row {
+  animation: hub-fade 0.5s ease-out both;
+}
+
+.char-step {
+  animation: hub-rise 0.55s ease-out both;
+}
+
 @keyframes kind-tile-in {
   from {
     opacity: 0.65;

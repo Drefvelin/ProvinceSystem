@@ -138,6 +138,64 @@ def migrate() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS creation_catalog (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                payload TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS character_creates (
+                id TEXT PRIMARY KEY,
+                player_uuid TEXT NOT NULL,
+                client_request_id TEXT,
+                payload TEXT NOT NULL,
+                status TEXT NOT NULL,
+                character_id TEXT,
+                error TEXT,
+                created_at TEXT NOT NULL,
+                applied_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_character_creates_client_req
+            ON character_creates(player_uuid, client_request_id)
+            WHERE client_request_id IS NOT NULL AND TRIM(client_request_id) != ''
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_creates_pending
+            ON character_creates(status, created_at)
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS character_roster (
+                player_uuid TEXT NOT NULL,
+                character_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL,
+                race TEXT,
+                class TEXT,
+                created_at TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (player_uuid, character_id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_roster_player
+            ON character_roster(player_uuid)
+            """
+        )
         if "staff" not in _column_names(conn, "submissions"):
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN staff INTEGER NOT NULL DEFAULT 0"

@@ -21,14 +21,15 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 1. **Map** — Live borders on the web; SimpleFactions keeps the API fed; ProvinceSystem generates and serves images.  
 2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`. Staff curated: staff token → auto-approve → `tfmc_armorshop` + category/scroll ([step-18](./batches/step-18/00-index.md)).  
 3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
-4. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
+4. **Characters** — Web creator Phase 1 **shipped**: sync stages from RPCharacters, token redeem + Remember me, attribute point-buy, `/character` UI — [14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md); tick staging in [STAGING.md](../STAGING.md).  
+5. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
 
-Future tools (character creator, BreweryX helpers) plug into the same website shell + TFMCWeb.
+Future tools (BreweryX helpers, character Phases 2–4) plug into the same website shell + TFMCWeb.
 
 ## Locked decisions
 
 - **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
-- **No site logins** — skins use TFMCWeb-issued UUID-bound codes (`/token create skin`).
+- **No site logins** — skins and characters use TFMCWeb-issued UUID-bound codes (`/token create skin` / `character`); redeem → API session (character Remember me = 30d).
 - **Discord link** — in-game `/linkdiscord` + Discord `/linkdiscord <code>` bind UUID ↔ Discord id; required before upload; player DMs for submitted / approved / denied — [batches/step-5](./batches/step-5/00-index.md). **Owner: TFMCWeb** ([13](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 - **Discord gate** — Survival players must be linked + in guild; **1h grace** on leave; freeze via RPCharacters (characters untouched); no alts; staff/helpers non-Survival not gated — [13](./13-tfmcweb.md).
 - **SQLite + disk** for skins metadata/files on the API.
@@ -73,13 +74,18 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 12. [13-tfmcweb.md](./13-tfmcweb.md) — TFMCWeb plugin, Discord gate, tokens, warn/ban mirror  
 13. [batches/step-17](./batches/step-17/00-index.md) — build order to stand it up  
 
+**Characters**
+
+14. [14-character-creator.md](./14-character-creator.md) — web creator Phase 1 + deferred phases  
+15. [batches/step-19](./batches/step-19/00-index.md) — Phase 1 batches  
+
 **Local**
 
-14. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
+16. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
 
 **Build batches (plan + implement)**
 
-15. [batches/README.md](./batches/README.md) — Step 2–18: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff curated skins
+17. [batches/README.md](./batches/README.md) — Step 2–19: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff skins, character creator Phase 1
 
 ## Success criteria (full platform)
 

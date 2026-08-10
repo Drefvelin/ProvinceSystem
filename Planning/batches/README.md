@@ -52,9 +52,10 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-16/00-index](./step-16/00-index.md) | 16 | Upload 3D model preview | JSON+PNG WebGL viewer on `/skins` |
 | [step-17/00-index](./step-17/00-index.md) | 17 | TFMCWeb identity + Discord gate | **17.01–17.08 done**; tick staging [08](./step-17/08-docs-verify.md) |
 | [step-18/00-index](./step-18/00-index.md) | 18 | Staff skins → `tfmc_armorshop` | **18.01–18.07 done**; tick staging [06](./step-18/06-docs-verify.md) / [STAGING](../../STAGING.md) |
+| [step-19/00-index](./step-19/00-index.md) | 19 | Web character creator (Phase 1) | **19.01–19.06 done**; tick staging [06](./step-19/06-docs-verify.md) / [STAGING](../../STAGING.md) |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1.
 
-**Later:** Character creator UI; SimpleFactions via TFMCWeb; migrate legacy `tfmc_armor` if desired.
+**Later:** Step 19 Phases 2–4 (kit, lore knife, character skins); SimpleFactions via TFMCWeb; migrate legacy `tfmc_armor` if desired.
 
-Parent playbook: [../README.md](../README.md) · TFMCWeb: [../13-tfmcweb.md](../13-tfmcweb.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)
+Parent playbook: [../README.md](../README.md) · TFMCWeb: [../13-tfmcweb.md](../13-tfmcweb.md) · Characters: [../14-character-creator.md](../14-character-creator.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)

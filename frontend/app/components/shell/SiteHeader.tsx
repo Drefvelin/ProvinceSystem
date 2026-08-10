@@ -4,6 +4,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/map/main", label: "Map" },
   { href: "/skins", label: "Skins" },
+  { href: "/character", label: "Character" },
 ] as const;
 
 export default function SiteHeader() {

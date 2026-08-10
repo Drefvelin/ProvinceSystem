@@ -93,7 +93,7 @@ Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
 1. Survival: `/linkdiscord` (TFMCWeb) → Discord `/linkdiscord code:<CODE>` → notices via TFMCWeb poller.
 2. `/token create skin` → click-copy → redeem + upload on `http://127.0.0.1:13001/skins`.
 3. Approve/Deny in `#bot-feed` → outcome DMs (skinsreview).
-4. Optional: `/token create character` (redeem stub 501 until character creator).
+4. Optional: `/token create character` → redeem on `http://127.0.0.1:13001/character` (Remember me optional; see Step 19).
 5. `/armourshop token create` redirects to `/token create skin` (obsolete AS mint).
 
 If already linked, `/linkdiscord` does not mint a new code. Use `/unlinkdiscord` (in-game or Discord) to relink. One Discord ↔ one UUID.
@@ -140,6 +140,46 @@ Checkpoint:
 catalog sync → /token create skin staff → redeem + dropdowns → auto-approve
   → pack pull → tfmc_armorshop + category/scroll → shop usable
   → skin delete clears pack+category (not tfmc_armor)
+```
+
+## Step 19 — Web character creator (Phase 1)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-19/00-index.md](./Planning/batches/step-19/00-index.md) · checklist [06-docs-verify](./Planning/batches/step-19/06-docs-verify.md).
+
+**Code:** 19.01–19.06 done (attribute point-buy, catalog sync, redeem + Remember me, create/list + RPC ingest, `/character` UI, docs). Prefer Step 17 staging green before pre-launch donator create. Phases 2–4 (kit, lore knife, character skins) are out of this checklist.
+
+### Deploy
+
+1. ProvinceSystem API on staging (characters routes + DB migrate for `creation_catalog` / `character_creates` / `character_roster`).
+2. `Builds/RPCharacters/` jar with `plugins/RPCharacters/config.yml` `characters-api.base-url` / `plugin-key` (same plugin key as skins). Reload pushes creation catalog; join or `/rpcharacter pending sync` applies web creates; roster push keeps the site list current.
+3. Frontend with `/character` (+ `/character/create`); `NEXT_PUBLIC_API_URL` → staging API (`http://127.0.0.1:18001`).
+4. `Builds/TFMCWeb/tfmcweb-*.jar` — `/token create character` mint message points at site redeem. LP: `tfmcweb.token.create` (character scope).
+
+**API smokes (from `backend/`):** `python scripts/character_session_smoke.py`, `creation_catalog_smoke.py`, `character_ingest_smoke.py`.
+
+### Locked (do not reinvent on staging)
+
+- Token single-use → session; default **1h**; Remember me **30d**; Log out revokes  
+- Attribute sheet: pool **12**, max **+2**/stat, cost of *n*-th rank = **n**  
+- No knife / Mojang skin UI required for Phase 1  
+
+### Operator checklist
+
+- [ ] `/token create character` → redeem on `/character` (1h default)
+- [ ] Remember me → still logged in after browser restart (within 30d)
+- [ ] Log out → must mint a new token
+- [ ] In-game attribute sheet: exactly 12 points, max +2/stat, costs 1 then 2
+- [ ] Catalog sync after RPC reload updates web options
+- [ ] Web create → character in RPCharacters + listed on site
+- [ ] Dead characters visible on site
+- [ ] Slot limit enforced
+- [ ] No knife / player-skin UI required
+
+Checkpoint:
+
+```text
+attribute sheet → catalog sync → redeem + Remember me
+  → web wizard → RPC ingest → /character list alive/dead
 ```
 
 ## Step 5 — Discord link + player DMs (historical)

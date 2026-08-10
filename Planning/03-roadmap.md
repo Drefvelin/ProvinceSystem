@@ -194,7 +194,7 @@ Quotas, retention, module template, optional brewery stub.
 | C5 ArmourShop cutover | Done — pack apply only; AS mint redirects to `/token create skin` |
 | C6 Warn + ban mirror | Done — `/warning`; Essentials ban → Discord + Banned role |
 
-**Out of Track C:** Character creator UI (follow-on; token stub exists).
+**Out of Track C:** Character creator UI — owned by Track E / [14](./14-character-creator.md) (token stub exists here).
 
 **Done when:** Survival requires Discord link (with 1h leave grace); staff non-Survival not gated; TFMCWeb owns identity/tokens.
 
@@ -217,6 +217,24 @@ Quotas, retention, module template, optional brewery stub.
 
 ---
 
+## Track E — Web character creator
+
+**Status:** **E1 / Step 19 Phase 1 implemented** ([14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging in [STAGING.md](../STAGING.md).  
+**Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend
+
+| Phase | Detail |
+|-------|--------|
+| E1 / Step 19 | Attribute point-buy; creation catalog sync; redeem + Remember me; create/list; `/character` UI — **done** |
+| E2 | Starter kit in RPC (48h cooldown) |
+| E3 | Ascended lore knife (approve/deny) |
+| E4 | Character skin wardrobe (optional Mojang/masked) |
+
+**Locked:** Attribute pool 12, max +2/stat, cost *n* for *n*-th rank; session 1h / Remember me 30d.
+
+**Out of Track E Phase 1:** Kit, lore knife, player skins.
+
+---
+
 ## Priority for “finished product ASAP”
 
 1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
@@ -224,6 +242,7 @@ Quotas, retention, module template, optional brewery stub.
 3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
 4. **A1 realm card + mobile** in parallel whenever free  
 5. **Track C / step-17** — **done** (staging checklist for humans)  
-6. **Step 18 / Track D** — **code done**; human staging verify on live; then character creator / B4.5 / overlays as capacity allows  
+6. **Step 18 / Track D** — **code done**; human staging verify on live  
+7. **Track E / step-19 Phase 1** — **code done**; human staging verify; then E2–E4 / overlays as capacity allows  
 
-Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d/shield. Character creator UI remains out of scope until Track C staging is green.
+Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.

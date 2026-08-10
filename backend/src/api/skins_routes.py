@@ -19,6 +19,7 @@ from src.skins.codes import (
     get_session,
     issue_code,
     list_active_codes,
+    redeem_character_code,
     redeem_code,
     revoke_code,
 )
@@ -82,6 +83,11 @@ class IssueCodeBody(BaseModel):
 
 class RedeemBody(BaseModel):
     code: str = Field(..., min_length=1)
+
+
+class CharacterRedeemBody(BaseModel):
+    code: str = Field(..., min_length=1)
+    remember_me: bool = False
 
 
 class DenyBody(BaseModel):
@@ -203,12 +209,13 @@ def plugin_codes_revoke(
 
 
 @skins_router.post("/character/redeem")
-def post_character_redeem(body: RedeemBody):
-    """Stub until character creator ships."""
-    raise HTTPException(
-        status_code=501,
-        detail="Character creator redeem is not available yet",
-    )
+def post_character_redeem(body: CharacterRedeemBody):
+    """Redeem a character-scoped code into a Bearer session (optional Remember me)."""
+    try:
+        return redeem_character_code(body.code, remember_me=body.remember_me)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @skins_router.post("/discord/link/start")
 def post_discord_link_start(

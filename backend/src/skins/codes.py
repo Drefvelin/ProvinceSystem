@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from .db import connect
 
 SESSION_TTL_HOURS = 1
+CHARACTER_REMEMBER_TTL_DAYS = 30
 ALLOWED_SCOPES = frozenset({"skin", "character", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
 
@@ -241,6 +242,88 @@ def redeem_code(plaintext: str) -> dict:
     }
 
 
+def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
+    """Consume a character-scoped code and create a Bearer session."""
+    code = (plaintext or "").strip()
+    if not code:
+        raise CodeError("code is required")
+
+    code_hash = hash_secret(code)
+    now = _utcnow()
+    remember = bool(remember_me)
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM codes WHERE code_hash = ?",
+            (code_hash,),
+        ).fetchone()
+
+        if row is None:
+            raise CodeError("Invalid code")
+        if row["revoked"]:
+            raise CodeError("Code has been revoked")
+        if row["redeemed_at"]:
+            raise CodeError("Code has already been redeemed")
+        if _parse_iso(row["expires_at"]) < now:
+            raise CodeError("Code has expired")
+        scope = _row_scope(row)
+        if scope != "character":
+            raise CodeError("This code is for skins, not character creation")
+
+        session_token = secrets.token_urlsafe(32)
+        if remember:
+            session_expires = now + timedelta(days=CHARACTER_REMEMBER_TTL_DAYS)
+        else:
+            session_expires = now + timedelta(hours=SESSION_TTL_HOURS)
+        session_expires_at = _iso(session_expires)
+        created_at = _iso(now)
+
+        conn.execute(
+            "UPDATE codes SET redeemed_at = ? WHERE id = ?",
+            (created_at, row["id"]),
+        )
+        conn.execute(
+            """
+            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                hash_secret(session_token),
+                row["id"],
+                row["player_uuid"],
+                session_expires_at,
+                created_at,
+            ),
+        )
+        conn.commit()
+
+    return {
+        "session_token": session_token,
+        "player_uuid": row["player_uuid"],
+        "expires_at": session_expires_at,
+        "code_id": row["id"],
+        "scope": scope,
+        "remember_me": remember,
+    }
+
+
+def revoke_session(token: str) -> dict:
+    """Delete the session for this Bearer token (idempotent)."""
+    raw = (token or "").strip()
+    if not raw:
+        return {"ok": True, "revoked": False}
+
+    with connect() as conn:
+        cur = conn.execute(
+            "DELETE FROM sessions WHERE token_hash = ?",
+            (hash_secret(raw),),
+        )
+        conn.commit()
+        deleted = cur.rowcount > 0
+
+    return {"ok": True, "revoked": deleted}
+
+
 def get_session(token: str) -> dict | None:
     raw = (token or "").strip()
     if not raw:
@@ -317,6 +400,37 @@ def _self_test() -> None:
         raise AssertionError("expected character code skins redeem to fail")
     except CodeError as e:
         assert "character creation" in str(e).lower()
+
+    char_session = redeem_character_code(char["code"], remember_me=False)
+    assert char_session.get("scope") == "character"
+    assert char_session.get("remember_me") is False
+    assert get_session(char_session["session_token"]) is not None
+    exp1 = _parse_iso(char_session["expires_at"])
+    assert timedelta(minutes=50) < (exp1 - _utcnow()) < timedelta(hours=2)
+
+    try:
+        redeem_character_code(char["code"])
+        raise AssertionError("expected second character redeem to fail")
+    except CodeError as e:
+        assert "already been redeemed" in str(e).lower()
+
+    skin_for_char = issue_code(uuid, "skin")
+    try:
+        redeem_character_code(skin_for_char["code"])
+        raise AssertionError("expected skin code on character redeem to fail")
+    except CodeError as e:
+        assert "skins" in str(e).lower()
+
+    char2 = issue_code(uuid, "character")
+    remembered = redeem_character_code(char2["code"], remember_me=True)
+    assert remembered.get("remember_me") is True
+    exp30 = _parse_iso(remembered["expires_at"])
+    assert timedelta(days=29) < (exp30 - _utcnow()) < timedelta(days=31)
+
+    revoked = revoke_session(remembered["session_token"])
+    assert revoked["ok"] is True and revoked["revoked"] is True
+    assert get_session(remembered["session_token"]) is None
+    assert revoke_session(remembered["session_token"])["revoked"] is False
 
     try:
         issue_code(uuid, "bogus")
