@@ -1,10 +1,10 @@
-import { join } from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Absolute ProvinceSystem root so ../shared/skins resolves (local + Docker).
+  // ProvinceSystem root so ../shared/skins constants resolve under turbopack.
+  // Docker copies shared → /shared (see frontend/Dockerfile).
   turbopack: {
-    root: join(__dirname, ".."),
+    root: "..",
   },
   devIndicators: false,
 };

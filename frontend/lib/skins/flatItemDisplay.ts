@@ -11,10 +11,10 @@ type HandTabs = Record<
   Required<DisplayTab>
 >;
 
-const HANDHELD_TP = constants.preview.handheld_tp as HandTabs;
-const BOW_TP = constants.preview.bow_tp as HandTabs;
-const CROSSBOW_TP = constants.preview.crossbow_tp as HandTabs;
-const LARGE_BOW_TP = constants.large_bow.display as HandTabs;
+const HANDHELD_TP = constants.preview.handheld_tp as unknown as HandTabs;
+const BOW_TP = constants.preview.bow_tp as unknown as HandTabs;
+const CROSSBOW_TP = constants.preview.crossbow_tp as unknown as HandTabs;
+const LARGE_BOW_TP = constants.large_bow.display as unknown as HandTabs;
 
 function clampGripY(y: number): number {
   if (!Number.isFinite(y)) return GRIP_Y_DEFAULT;

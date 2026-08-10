@@ -3,12 +3,12 @@ import constants from "../../../shared/skins/pack_model_constants.json";
 
 type Vec3 = [number, number, number];
 
-const ROUND_IDLE_TP = constants.shield.round_idle as Record<
+const ROUND_IDLE_TP = constants.shield.round_idle as unknown as Record<
   "thirdperson_righthand" | "thirdperson_lefthand",
   Required<DisplayTab>
 >;
 
-const ROUND_BLOCKING_DELTA_TP = constants.shield.round_blocking_delta as Record<
+const ROUND_BLOCKING_DELTA_TP = constants.shield.round_blocking_delta as unknown as Record<
   "thirdperson_righthand" | "thirdperson_lefthand",
   { rotation: Vec3; translation: Vec3 }
 >;
