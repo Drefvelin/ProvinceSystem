@@ -812,12 +812,12 @@ export default function ModelPreview({
         <p className="text-xs text-[var(--tfmc-mist)]">
           {mannequinPreview
             ? playerSkinFile
-              ? `Previewing on ${playerSkinFile.name} · auto ${armModel === "slim" ? "slim" : "classic"} arms (local only). Drag to orbit, scroll to zoom.`
+              ? `Previewing on ${playerSkinFile.name}. Drag to orbit, scroll to zoom.`
               : `Display: ${slotStatusLabel(slot, gun)}${
                   showShieldMode ? ` · ${shieldMode}` : ""
                 }${
                   showFrameChips ? ` · ${frame}` : ""
-                } · auto ${armModel === "slim" ? "slim" : "classic"} arms. Optional: upload your skin PNG. Drag to orbit, scroll to zoom.`
+                }. Optional: upload your skin PNG. Drag to orbit, scroll to zoom.`
             : "Drag to orbit, scroll to zoom."}
         </p>
       ) : null}

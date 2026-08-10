@@ -105,13 +105,6 @@ const fieldLabel: Record<string, string> = {
   charged: "Charged",
 };
 
-function namingHint(): string {
-  return (
-    "File names can be anything; the server renames your PNGs automatically " +
-    "from your item name. Sizes still matter (see above)."
-  );
-}
-
 function slotLabel(kind: SkinKind, field: string): string {
   if (kind === "armor_set") {
     return fieldLabel[field] || field;
@@ -472,8 +465,9 @@ export default function UploadForm({ sessionToken }: Props) {
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-6">
       <KindPicker value={kind} onChange={setKind} disabled={loading} />
 
-      <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
-      <p className="text-sm text-[var(--tfmc-mist)]">{namingHint()}</p>
+      {sizeHint(kind) ? (
+        <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
+      ) : null}
 
       {!isArmor ? (
         <label className="flex flex-col gap-2 text-left">

@@ -86,7 +86,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   shield: {
     title: "Shield 3D",
-    summary: "3D shield model plus texture. Blocking pose is generated automatically.",
+    summary: "3D shield model plus texture.",
     steps: [
       "Choose the shield base set.",
       "Upload Blockbench JSON + texture PNG.",

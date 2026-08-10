@@ -322,11 +322,8 @@ export default function ArmorPreview({
       </div>
       {status === "ready" ? (
         <p className="text-xs text-[var(--tfmc-mist)]">
-          {use3dHelm
-            ? "3D helmet on head · "
-            : "Flat helm from layer_1 · "}
-          auto {armModel === "slim" ? "slim" : "classic"} arms. Drag to orbit,
-          scroll to zoom.
+          {use3dHelm ? "3D helmet on head. " : ""}
+          Drag to orbit, scroll to zoom.
         </p>
       ) : null}
     </div>

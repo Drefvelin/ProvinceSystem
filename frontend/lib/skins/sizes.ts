@@ -129,7 +129,7 @@ export function expectedSizeForField(
 
 export function sizeHint(kind: SkinKind): string {
   if (kind === "armor_set") {
-    return "Icons must be 16×16; layers must be 64×32. 3D helmet: any PNG + Blockbench JSON.";
+    return "Icons must be 16×16; layers must be 64×32.";
   }
   if (kind === "large_bow") {
     return "All four bow frames must be 32×32.";
@@ -141,7 +141,7 @@ export function sizeHint(kind: SkinKind): string {
     return "All five crossbow frames must be 16×16.";
   }
   if (isModel3dKind(kind) || isGunKind(kind)) {
-    return "Upload a texture PNG and Blockbench model JSON (display autofilled if missing). Guns need carry, reload, and aim models.";
+    return "";
   }
   if (isLargeTextureKind(kind)) {
     return "Texture must be 32×32.";
