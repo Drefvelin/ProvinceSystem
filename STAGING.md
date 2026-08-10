@@ -85,7 +85,7 @@ Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
    - `api.plugin-key`: same as API `PLUGIN_API_KEY`
 3. ArmourShop cutover jar (pack apply only; `skins-api` still for approved packs).
 4. RPCharacters with Discord gate freeze API.
-5. Bot: skinsreview `guild_id` + leave/join; minecraftban `API_BASE_URL` / `STAFF_KEY` / `BANNED_ROLE_ID` (must be set for role checks).
+5. Bot: skinsreview `guild_id` + leave/join; minecraftban `config.yml` (`api_base_url`, `staff_key`, `banned_role_id` — role id required for role checks).
 6. LuckPerms: `tfmcweb.token.create` (migrate from `armourshop.token.create`); staff `tfmcweb.warning`.
 
 ### Link + mint (operator)

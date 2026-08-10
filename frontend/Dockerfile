@@ -1,12 +1,15 @@
 # --- BUILD STAGE ---
+# Build context must be ProvinceSystem root (see docker-compose*.yml)
+# so ../shared/skins constants resolve (import → /shared/...).
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-COPY . .
+COPY frontend/ ./
+COPY shared /shared
 
 # Baked into the Next client bundle at build time
 ARG NEXT_PUBLIC_API_URL=http://127.0.0.1:8000

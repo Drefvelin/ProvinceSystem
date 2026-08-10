@@ -18,7 +18,7 @@ No new feature code in this batch. Tick boxes on the live staging server.
 - [ ] **ProvinceSystem** API with identity grace + moderation routes (17.02, 17.07)
 - [ ] **TFMCWeb** jar: `plugins/TFMCWeb/config.yml` → `api.base-url` / `api.plugin-key` (same plugin key as staging)
 - [ ] **ArmourShop** cutover jar: pack apply only; no link/notice/player mint (17.06)
-- [ ] **tfmc_bot** skinsreview: `guild_id` / leave-join; minecraftban: `API_BASE_URL`, `STAFF_KEY`, `BANNED_ROLE_ID` (non-zero for role check)
+- [ ] **tfmc_bot** skinsreview: `guild_id` / leave-join; minecraftban `config.yml`: `api_base_url`, `staff_key`, `banned_role_id` (non-zero for role check)
 - [ ] LuckPerms: grant `tfmcweb.token.create` (and `tfmcweb.warning` for staff) where `armourshop.token.create` used to be
 
 ## Staging pass checklist

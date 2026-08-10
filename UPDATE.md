@@ -4,8 +4,8 @@ SSH into the AMP host, `cd` into your staging clone yourself (`~/ProvinceSystem`
 
 ```bash
 git fetch origin
-git checkout tfmc-bot
-git reset --hard origin/tfmc-bot
+git checkout site-rework
+git reset --hard origin/site-rework
 chmod +x scripts/staging-*.sh
 ./scripts/staging-down.sh
 ./scripts/staging-up.sh

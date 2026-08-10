@@ -20,7 +20,7 @@ Batches: [batches/step-4/00-index.md](./batches/step-4/00-index.md) (staff revie
 | **minecraftban** | `tfmc_bot/minecraftban/` | Slash `/minecraftban`, `/minecraftwarn` (manual); polls moderation outbox for auto warn/ban/unban + Banned role |
 | **tfmcbotstaus** | `tfmc_bot/tfmcbotstaus/` | Rotates bot presence / activity |
 
-Ban cog is **notification + logging only**. It does not ban players on the Minecraft server. Staff ban in-game with **Essentials**; Discord DMs + **Banned** role are mirrored automatically via TFMCWeb ([13-tfmcweb.md](./13-tfmcweb.md), [step-17.07](./batches/step-17/07-warn-and-ban-mirror.md)). Env: `API_BASE_URL`, `STAFF_KEY`, `BANNED_ROLE_ID`.
+Ban cog is **notification + logging only**. It does not ban players on the Minecraft server. Staff ban in-game with **Essentials**; Discord DMs + **Banned** role are mirrored automatically via TFMCWeb ([13-tfmcweb.md](./13-tfmcweb.md), [step-17.07](./batches/step-17/07-warn-and-ban-mirror.md)). Config: `minecraftban/config.yml` (`api_base_url`, `staff_key`, `banned_role_id`) — env overrides still work.
 
 ## Guild leave / join (Step 17) — bot half implemented
 

@@ -2,7 +2,9 @@ name: tfmc-staging
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       # Host 8001 is often taken; use 18001 for staging
       - "18001:8000"
@@ -21,7 +23,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://127.0.0.1:18001
     ports:
