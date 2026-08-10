@@ -19,6 +19,7 @@ from .naming import (
     CROSSBOW_FRAME_FIELDS,
     MAX_TIER_ALIAS_LEN,
     SlugError,
+    build_staff_submission_id,
     build_submission_id,
     sanitize_ign,
     slugify_display_name,
@@ -382,6 +383,48 @@ def slug_taken(slug: str) -> bool:
     return row is not None
 
 
+def staff_skin_set_key_taken(
+    slug: str,
+    kind: str,
+    tiers: list[str] | None,
+) -> str | None:
+    """Return a colliding shop/set key among active submissions, else None.
+
+    Covers bare submission ids and armor ``{id}_{tier}`` shop keys so staff
+    collisions do not depend only on the last catalog sync.
+    """
+    candidate: set[str] = {(slug or "").strip()}
+    if kind == "armor_set":
+        for tier in tiers or []:
+            t = (tier or "").strip()
+            if t:
+                candidate.add(f"{slug}_{t}")
+    candidate.discard("")
+    if not candidate:
+        return None
+
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, kind, tiers FROM submissions
+            WHERE status IN (?, ?, ?)
+            """,
+            ACTIVE_STATUSES,
+        ).fetchall()
+
+    for row in rows:
+        existing: set[str] = {str(row["id"])}
+        if row["kind"] == "armor_set":
+            for tier in _row_json_list(row, "tiers"):
+                t = (tier or "").strip()
+                if t:
+                    existing.add(f"{row['id']}_{t}")
+        overlap = candidate & existing
+        if overlap:
+            return sorted(overlap)[0]
+    return None
+
+
 def check_player_conflicts(
     player_uuid: str,
     *,
@@ -570,49 +613,60 @@ def create_submission(
             "Minecraft name missing — re-link Discord or wait for API migrate"
         )
 
-    try:
-        submission_id = build_submission_id(minecraft_name, display)
-    except SlugError:
-        raise
-
-    slug = submission_id
-
-    conflict = check_player_conflicts(
-        player_uuid, display_name=display, submission_id=submission_id
-    )
-    if not conflict["ok"]:
-        reasons = set()
-        for c in conflict["conflicts"]:
-            reasons.update(c.get("reasons") or [])
-        if "display_name" in reasons and "id" in reasons:
-            msg = (
-                "You already have an active skin with this item name "
-                "and id. Delete it in-game or choose a different item name."
-            )
-        elif "display_name" in reasons:
-            msg = (
-                "You already have an active skin named "
-                f"'{display}'. Choose a different item name "
-                "or ask staff to delete the old one."
-            )
-        else:
-            msg = (
-                f"You already have an active skin with id '{submission_id}'. "
-                "Choose a different item name or ask staff to delete the old one."
-            )
-        raise SubmissionError(msg)
-
-    if slug_taken(submission_id):
-        raise SlugConflictError(
-            f"A skin with id '{submission_id}' is already in use. "
-            "Choose a different item name and try again."
-        )
-
     is_staff = False
     try:
         is_staff = bool(session_row["staff"])
     except (KeyError, IndexError, TypeError):
         is_staff = False
+
+    try:
+        if is_staff:
+            submission_id = build_staff_submission_id(display)
+        else:
+            submission_id = build_submission_id(minecraft_name, display)
+    except SlugError:
+        raise
+
+    slug = submission_id
+
+    if not is_staff:
+        conflict = check_player_conflicts(
+            player_uuid, display_name=display, submission_id=submission_id
+        )
+        if not conflict["ok"]:
+            reasons = set()
+            for c in conflict["conflicts"]:
+                reasons.update(c.get("reasons") or [])
+            if "display_name" in reasons and "id" in reasons:
+                msg = (
+                    "You already have an active skin with this item name "
+                    "and id. Delete it in-game or choose a different item name."
+                )
+            elif "display_name" in reasons:
+                msg = (
+                    "You already have an active skin named "
+                    f"'{display}'. Choose a different item name "
+                    "or ask staff to delete the old one."
+                )
+            else:
+                msg = (
+                    f"You already have an active skin with id '{submission_id}'. "
+                    "Choose a different item name or ask staff to delete the old one."
+                )
+            raise SubmissionError(msg)
+
+        if slug_taken(submission_id):
+            raise SlugConflictError(
+                f"A skin with id '{submission_id}' is already in use. "
+                "Choose a different item name and try again."
+            )
+    else:
+        taken = staff_skin_set_key_taken(submission_id, kind, tier_list)
+        if taken:
+            raise SlugConflictError(
+                f"Skin set key '{taken}' is invalid — already in use by an "
+                "active submission. Choose a different item name."
+            )
 
     category_raw = (category or "").strip() or None
     scroll_raw = (scroll or "").strip() or None
@@ -699,6 +753,11 @@ def create_submission(
             )
             conn.commit()
         except sqlite3.IntegrityError as e:
+            if is_staff:
+                raise SlugConflictError(
+                    f"Skin set key '{submission_id}' is invalid — already in use. "
+                    "Choose a different item name."
+                ) from e
             raise SlugConflictError(
                 f"A skin with id '{submission_id}' is already in use. "
                 "Choose a different item name, or ask staff to delete the old one."
@@ -979,7 +1038,10 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
     if row is None:
         return None
     names = _link_names(row["player_uuid"])
-    return {
+    is_staff = False
+    if "staff" in row.keys():
+        is_staff = bool(row["staff"])
+    out = {
         "id": row["id"],
         "player_uuid": row["player_uuid"],
         "slug": row["slug"],
@@ -989,15 +1051,32 @@ def get_submission_for_plugin(submission_id: str) -> dict | None:
         "base_set": _row_base_set(row),
         "tiers": _row_json_list(row, "tiers"),
         "minecraft_name": names.get("minecraft_name"),
+        "staff": is_staff,
+        "category": None,
+        "ia_namespace": None,
     }
+    if is_staff:
+        from .catalog import IA_NAMESPACE_ARMOURSHOP
+
+        out["category"] = (
+            row["category"] if "category" in row.keys() else None
+        )
+        out["ia_namespace"] = IA_NAMESPACE_ARMOURSHOP
+    return out
+
+
+def _row_is_staff(row: sqlite3.Row) -> bool:
+    if "staff" not in row.keys():
+        return False
+    return bool(row["staff"])
 
 
 def list_deletable_submissions() -> list[dict]:
-    """Active submissions staff can delete (pending / approved / applied)."""
+    """Active player-lane submissions for /armourshop submission delete tab-complete."""
     with connect() as conn:
         rows = conn.execute(
             """
-            SELECT id, slug, display_name, kind, status, created_at
+            SELECT id, slug, display_name, kind, status, created_at, staff
             FROM submissions
             WHERE status IN (?, ?, ?)
             ORDER BY created_at DESC
@@ -1013,6 +1092,33 @@ def list_deletable_submissions() -> list[dict]:
             "status": row["status"],
         }
         for row in rows
+        if not _row_is_staff(row)
+    ]
+
+
+def list_deletable_staff_skins() -> list[dict]:
+    """Active staff-lane skins for /armourshop skin delete tab-complete."""
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, slug, display_name, kind, status, created_at, staff, category
+            FROM submissions
+            WHERE status IN (?, ?, ?)
+            ORDER BY created_at DESC
+            """,
+            ACTIVE_STATUSES,
+        ).fetchall()
+    return [
+        {
+            "id": row["id"],
+            "slug": row["slug"],
+            "display_name": row["display_name"],
+            "kind": row["kind"],
+            "status": row["status"],
+            "category": row["category"] if "category" in row.keys() else None,
+        }
+        for row in rows
+        if _row_is_staff(row)
     ]
 
 

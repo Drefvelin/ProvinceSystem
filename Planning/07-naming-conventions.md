@@ -8,17 +8,24 @@ Style locked: **`lowercase_snake_case`** (same family as `tfmc_armor` ids like `
 
 | Field | Used for | Who sets it |
 |-------|----------|-------------|
-| **Item name** (`display_name`) | ArmourShop label, IA display, Discord title | Player types it (spaces/capitals OK; may match another player) |
-| **Submission id** (`id` == `slug`) | Disk / IA / shop / LP / delete / tab-complete | API builds it: `{sanitized_ign}_{slugify(display_name)}` |
+| **Item name** (`display_name`) | ArmourShop label, IA display, Discord title | Player / staff types it (spaces/capitals OK) |
+| **Submission id** (`id` == `slug`) | Disk / IA / shop / LP / delete / tab-complete | API builds it (see lanes below) |
 
-Do not ask players for a "slug" or an id. Staff Discord embeds show the human id directly (e.g. `drefvelin_blue_knight`), plus Minecraft/Discord names — never a UUID.
+### Player lane
+
+API builds `{sanitized_ign}_{slugify(display_name)}` from the linked Minecraft IGN plus item name. Do not ask players for a "slug" or an id. Staff Discord embeds show the human id directly (e.g. `drefvelin_blue_knight`), plus Minecraft/Discord names — never a UUID.
+
+### Staff lane (curated shop skins)
+
+API builds **display-slug only**: `slugify(display_name)` (e.g. item name `Blue Levy` → `blue_levy`). No MC IGN prefix — the key must be unique in the target ArmourShop category (catalog `skin_sets` + active DB submissions). Collision → reject as invalid; choose a different item name. Pack namespace is `tfmc_armorshop`; delete via `/armourshop skin delete`.
 
 ## Submission id (was: player key + base id)
 
 - **No `player_key`.** The old mint/backfill/`player_keys` system is gone; `discord_links.player_key` is no longer written. (A legacy `player_key` column may still exist on disk from old migrations — SQLite can't cleanly `DROP COLUMN`; it is simply unused.)
-- **IGN source:** `discord_links.minecraft_name`, captured at submit time and sanitized to `[a-z0-9_]+` (lowercased, non-alnum runs collapsed to `_`, leading digit gets a `p_`/`skin_` guard, capped to 16 chars). Frozen into the id at creation — a later IGN change only affects **new** submissions, not existing ones.
+- **IGN source (player only):** `discord_links.minecraft_name`, captured at submit time and sanitized to `[a-z0-9_]+` (lowercased, non-alnum runs collapsed to `_`, leading digit gets a `p_`/`skin_` guard, capped to 16 chars). Frozen into the id at creation — a later IGN change only affects **new** submissions, not existing ones.
 - **Item name → slug fragment:** `slugify_display_name` lowercases, collapses separators to `_`, and caps length so the combined id fits the 48-char rule.
-- **Full id:** `{sanitized_ign}_{slugify(display_name)}`, e.g. IGN `Drefvelin` + item name `Blue Knight` → `drefvelin_blue_knight`. This one string is the API `id`, the `slug` (identical — no separate field), the pack/shop family key, the delete/tab-complete token, and the Discord embed id.
+- **Player full id:** `{sanitized_ign}_{slugify(display_name)}`, e.g. IGN `Drefvelin` + item name `Blue Knight` → `drefvelin_blue_knight`.
+- **Staff full id:** `slugify(display_name)` only (same string is API `id`, `slug`, pack/shop family key, and delete/tab-complete token).
 
 ## Skin id rules
 

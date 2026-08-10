@@ -62,6 +62,7 @@ from src.skins.submissions import (
     get_submission_for_owner,
     get_submission_for_plugin,
     list_approved_pending_apply,
+    list_deletable_staff_skins,
     list_deletable_submissions,
     list_pending,
     mark_applied,
@@ -679,9 +680,18 @@ def plugin_approved(
 def plugin_submissions_deletable(
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
-    """List pending/approved/applied submissions for staff delete tab-complete."""
+    """Player-lane ids for /armourshop submission delete tab-complete."""
     _require_plugin(x_plugin_key)
     return {"submissions": list_deletable_submissions()}
+
+
+@skins_router.get("/plugin/skins/deletable")
+def plugin_skins_deletable(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Staff-lane ids for /armourshop skin delete tab-complete."""
+    _require_plugin(x_plugin_key)
+    return {"skins": list_deletable_staff_skins()}
 
 
 @skins_router.get("/plugin/submissions/{submission_id}")

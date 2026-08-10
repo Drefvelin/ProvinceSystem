@@ -13,7 +13,7 @@
 3. **Shop** — staff path: upsert SkinSet into `Categories/<category>.yml` with `scroll:` from payload; armor pieces / item / `gunskin({id})` as today but `ia.tfmc_armorshop:…`. **Do not** write `ps_armor`/`ps_items`; **do not** grant `armourshop.submission.*`.
 4. **Player path** — unchanged (`tfmc_submissions` + `ps_*` + LP).
 5. **Reload/ack** — same deferred IA reload + `markApplied` for both lanes.
-6. **Delete** (if staff delete exists later) — out of this batch unless trivial; player delete stays submissions-only.
+6. **Delete** — player: `/armourshop submission delete` (submissions + `ps_*` + LP). Staff: `/armourshop skin delete` ([07-staff-delete-ids](./07-staff-delete-ids.md)) clears `tfmc_armorshop` + `{category}.yml`; never legacy `tfmc_armor`.
 
 ## Build
 

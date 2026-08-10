@@ -228,13 +228,15 @@ def validate_staff_landing(
                 )
         if skin_set_exists(cat, slug):
             raise CatalogError(
-                f"skin set '{slug}' already exists in category '{cat['id']}'"
+                f"Skin set key '{slug}' is invalid — already exists in "
+                f"category '{cat['id']}'. Choose a different item name."
             )
         for tier in tier_list:
             key = f"{slug}_{tier}"
             if skin_set_exists(cat, key):
                 raise CatalogError(
-                    f"skin set '{key}' already exists in category '{cat['id']}'"
+                    f"Skin set key '{key}' is invalid — already exists in "
+                    f"category '{cat['id']}'. Choose a different item name."
                 )
         return {
             "category": str(cat["id"]),
@@ -247,7 +249,8 @@ def validate_staff_landing(
     scroll_id = require_scroll(catalog, scroll or "")
     if skin_set_exists(cat, slug):
         raise CatalogError(
-            f"skin set '{slug}' already exists in category '{cat['id']}'"
+            f"Skin set key '{slug}' is invalid — already exists in "
+            f"category '{cat['id']}'. Choose a different item name."
         )
     return {
         "category": str(cat["id"]),

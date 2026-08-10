@@ -21,7 +21,10 @@
 - [ ] Staff armor → `tfmc_armorshop` + chosen `a_*` category + scroll; usable in shop  
 - [ ] Staff gun → applies (IA + GaG) into item category  
 - [ ] Player `/token create skin` → still Discord review + `tfmc_submissions` / `ps_*`  
-- [ ] No bot post for staff submit  
+- [ ] No bot / `#bot-feed` post for staff submit
+- [ ] Staff skin id is display-slug only (no MC IGN); reusing an existing category key is rejected
+- [ ] `/armourshop skin delete <id>` clears `tfmc_armorshop` + category YAML + API row (not legacy `tfmc_armor`)
+- [ ] `/armourshop submission delete` still only for player `ps_*` lane
 
 Also mirrored under [STAGING.md](../../../STAGING.md) Step 18.
 

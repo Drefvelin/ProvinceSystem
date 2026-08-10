@@ -102,7 +102,7 @@ def slugify_display_name(display_name: str, *, max_len: int = 48) -> str:
 
 def build_submission_id(minecraft_name: str | None, display_name: str) -> str:
     """
-    `{sanitized_ign}_{slugify(display_name)}` — API id, pack family, delete key.
+    `{sanitized_ign}_{slugify(display_name)}` — player API id, pack family, delete key.
     """
     ign = sanitize_ign(minecraft_name)
     # Reserve room for ign + underscore within 48 chars
@@ -115,6 +115,19 @@ def build_submission_id(minecraft_name: str | None, display_name: str) -> str:
         raise SlugError(
             "Could not build a valid skin id from your Minecraft name "
             "and item name. Shorten the item name and try again."
+        ) from e
+
+
+def build_staff_submission_id(display_name: str) -> str:
+    """
+    Display-slug only — staff curated skins land in real shop categories without an IGN prefix.
+    """
+    try:
+        return assert_slug(slugify_display_name(display_name))
+    except SlugError as e:
+        raise SlugError(
+            "Could not build a valid skin set key from the item name. "
+            "Use letters/numbers, shorten it, and try again."
         ) from e
 
 

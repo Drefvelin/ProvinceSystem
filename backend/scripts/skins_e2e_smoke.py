@@ -27,7 +27,7 @@ from fastapi.testclient import TestClient
 
 from server import app
 from src.skins.db import connect, migrate
-from src.skins.naming import ARMOR_FIELDS, build_submission_id
+from src.skins.naming import ARMOR_FIELDS, build_submission_id, slugify_display_name
 
 STAFF = "dev-staff-key"
 PLUGIN = "dev-plugin-key"
@@ -694,7 +694,7 @@ def main() -> None:
 
     # --- Step 18.02: staff token + auto-approve ---
     collision_name = "Staff Collision"
-    collision_slug = build_submission_id(IGN, collision_name)
+    collision_slug = slugify_display_name(collision_name)
     catalog_body = {
         "categories": [
             {
@@ -858,6 +858,14 @@ def main() -> None:
         fail(f"staff handheld submit: {r.status_code} {r.text}")
     staff_hand = r.json()
     staff_hand_id = staff_hand["id"]
+    expected_staff_hand_id = slugify_display_name("Staff Curated Blade")
+    if staff_hand_id != expected_staff_hand_id:
+        fail(
+            f"staff id should be display-slug only "
+            f"'{expected_staff_hand_id}', got '{staff_hand_id}'"
+        )
+    if "_" + IGN.lower() in staff_hand_id or staff_hand_id.startswith(IGN.lower() + "_"):
+        fail(f"staff id must not include MC IGN: {staff_hand_id}")
     if staff_hand.get("status") != "approved":
         fail(f"staff handheld status expected approved, got {staff_hand.get('status')}")
     if staff_hand.get("staff") is not True:
@@ -892,6 +900,32 @@ def main() -> None:
     if row.get("ia_namespace") != "tfmc_armorshop":
         fail(f"plugin approved ia_namespace wrong: {row.get('ia_namespace')}")
     print(f"staff handheld {staff_hand_id} auto-approved + plugin DTO ok")
+
+    r = client.get(f"/skins/plugin/submissions/{staff_hand_id}", headers=plugin)
+    if r.status_code != 200:
+        fail(f"plugin get staff skin: {r.status_code} {r.text}")
+    got = r.json()
+    if got.get("staff") is not True:
+        fail("plugin get missing staff=true")
+    if got.get("category") != "i_weapons":
+        fail(f"plugin get category wrong: {got.get('category')}")
+    if got.get("ia_namespace") != "tfmc_armorshop":
+        fail(f"plugin get ia_namespace wrong: {got.get('ia_namespace')}")
+
+    r = client.get("/skins/plugin/submissions/deletable", headers=plugin)
+    if r.status_code != 200:
+        fail(f"player deletable after staff: {r.status_code} {r.text}")
+    player_deletable = {s.get("id") for s in r.json().get("submissions", [])}
+    if staff_hand_id in player_deletable:
+        fail("staff skin must not appear on player deletable list")
+
+    r = client.get("/skins/plugin/skins/deletable", headers=plugin)
+    if r.status_code != 200:
+        fail(f"staff skins deletable: {r.status_code} {r.text}")
+    staff_deletable = {s.get("id") for s in r.json().get("skins", [])}
+    if staff_hand_id not in staff_deletable:
+        fail(f"staff deletable missing {staff_hand_id}: {staff_deletable}")
+    print("staff vs player deletable lists ok")
 
     # New staff session for armor_set + tier_scrolls
     r = client.post(
@@ -929,7 +963,7 @@ def main() -> None:
         fail(f"staff armor tier_scrolls wrong: {staff_armor.get('tier_scrolls')}")
     print(f"staff armor {staff_armor['id']} tier_scrolls ok")
 
-    print("ALL OK — Step 11 + 18.02 smoke (staff token / auto-approve)")
+    print("ALL OK — Step 11 + 18.02/18.07 smoke (staff token / display-slug / deletable)")
     sys.exit(0)
 
 

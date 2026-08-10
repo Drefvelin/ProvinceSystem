@@ -110,7 +110,7 @@ Checkpoint: see [08-docs-verify.md](./Planning/batches/step-17/08-docs-verify.md
 
 **Playbook:** [Planning/batches/step-18/00-index.md](./Planning/batches/step-18/00-index.md) · checklist [Planning/batches/step-18/06-docs-verify.md](./Planning/batches/step-18/06-docs-verify.md).
 
-**Code:** 18.01–18.06 done (API catalog + staff codes, TFMCWeb mint, ArmourShop `tfmc_armorshop` apply, web dropdowns). Tick boxes below on live staging.
+**Code:** 18.01–18.07 done (API catalog + staff codes, TFMCWeb mint, ArmourShop `tfmc_armorshop` apply, web dropdowns, display-only staff ids, `/armourshop skin delete`). Tick boxes below on live staging.
 
 ### Deploy
 
@@ -130,12 +130,16 @@ Checkpoint: see [08-docs-verify.md](./Planning/batches/step-17/08-docs-verify.md
 - [ ] Staff gun → IA + GaG `skins.yml` + item category entry
 - [ ] Player `/token create skin` → still Discord review + `tfmc_submissions` / `ps_*` + LP
 - [ ] No bot / `#bot-feed` post for staff submit
+- [ ] Staff skin id is display-slug only (no MC IGN); reusing an existing category key is rejected as invalid
+- [ ] `/armourshop skin delete <id>` clears `tfmc_armorshop` + chosen category YAML + API row (legacy `tfmc_armor` untouched)
+- [ ] `/armourshop submission delete` refuses staff ids; player lane still clears `ps_*` + LP
 
 Checkpoint:
 
 ```text
 catalog sync → /token create skin staff → redeem + dropdowns → auto-approve
   → pack pull → tfmc_armorshop + category/scroll → shop usable
+  → skin delete clears pack+category (not tfmc_armor)
 ```
 
 ## Step 5 — Discord link + player DMs (historical)

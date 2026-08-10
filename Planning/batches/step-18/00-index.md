@@ -26,6 +26,8 @@ ArmourShop **syncs catalog** (categories, existing skin sets, scrolls) to Provin
 | Guns | **In scope** — same gun path; only landing + auto-approve differ |
 | Player tokens | Cannot set category/scroll; cannot write `tfmc_armorshop` |
 | Staff categories | Curated `a_*` / `i_*` / etc. — **omit** `ps_armor` / `ps_items` from staff dropdown |
+| Staff submission id | **Display-slug only** (`slugify(item name)`); no MC IGN prefix; collision = invalid |
+| Delete | Player: `/armourshop submission delete` · Staff: `/armourshop skin delete` (clears `tfmc_armorshop` + category YAML; never legacy `tfmc_armor`) |
 
 ## Suggested build order
 
@@ -35,6 +37,7 @@ ArmourShop **syncs catalog** (categories, existing skin sets, scrolls) to Provin
 4. **[04-pack-staff-apply](./04-pack-staff-apply.md)** — `tfmc_armorshop` scaffold; writers + shop upsert into chosen category; no LP for staff; guns included.
 5. **[05-web-staff-ui](./05-web-staff-ui.md)** — Catalog-driven dropdowns; staff session UX.
 6. **[06-docs-verify](./06-docs-verify.md)** — Docs + staging checklist.
+7. **[07-staff-delete-ids](./07-staff-delete-ids.md)** — Display-only staff ids + `/armourshop skin delete`.
 
 **Immediate next action:** tick human staging on live ([STAGING.md](../../../STAGING.md) Step 18 / [06-docs-verify](./06-docs-verify.md)).
 
@@ -56,4 +59,4 @@ catalog sync → staff token + auto-approve API → TFMCWeb mint
 
 ## Status
 
-**18.01–18.06 done** (code + docs). Next: operators tick staging checklist on live.
+**18.01–18.07 done** (code + docs). Next: operators tick staging checklist on live.
