@@ -129,6 +129,25 @@ def migrate() -> None:
             "CREATE INDEX IF NOT EXISTS idx_moderation_notifications_undelivered "
             "ON moderation_notifications(delivered_at, created_at)"
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS armourshop_catalog (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                payload TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        if "staff" not in _column_names(conn, "submissions"):
+            conn.execute(
+                "ALTER TABLE submissions ADD COLUMN staff INTEGER NOT NULL DEFAULT 0"
+            )
+        if "category" not in _column_names(conn, "submissions"):
+            conn.execute("ALTER TABLE submissions ADD COLUMN category TEXT")
+        if "scroll" not in _column_names(conn, "submissions"):
+            conn.execute("ALTER TABLE submissions ADD COLUMN scroll TEXT")
+        if "tier_scrolls" not in _column_names(conn, "submissions"):
+            conn.execute("ALTER TABLE submissions ADD COLUMN tier_scrolls TEXT")
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")

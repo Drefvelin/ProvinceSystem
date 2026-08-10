@@ -29,6 +29,8 @@ export default function RedeemForm({ onRedeemed }: Props) {
         session_token: result.session_token,
         player_uuid: result.player_uuid,
         expires_at: result.expires_at,
+        ...(result.staff ? { staff: true as const } : {}),
+        ...(result.scope ? { scope: result.scope } : {}),
       };
       setSession(session);
       onRedeemed(session);

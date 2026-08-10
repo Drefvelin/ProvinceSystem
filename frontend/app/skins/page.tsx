@@ -56,8 +56,14 @@ export default function SkinsPage() {
           <p className="text-sm text-[var(--tfmc-stone)]">
             Session expires {formatExpiresIn(session.expires_at)} (
             {formatLocal(session.expires_at)})
+            {session.staff ? (
+              <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
+            ) : null}
           </p>
-          <UploadForm sessionToken={session.session_token} />
+          <UploadForm
+            sessionToken={session.session_token}
+            staff={session.staff === true}
+          />
         </div>
       ) : (
         <>

@@ -39,7 +39,9 @@ BOW_SIZE = (16, 16)
 LARGE_BOW_SIZE = (32, 32)
 CROSSBOW_SIZE = (16, 16)
 
+BOW_KINDS = frozenset({"bow", "large_bow"})
 CROSSBOW_KINDS = frozenset({"crossbow"})
+ITEM_KINDS = frozenset({"handheld", "large_handheld", "item"})
 MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
 GUN_KIND = "gun"
 GUN_MODEL_FIELDS = ("carry_model", "reload_model", "aim_model")

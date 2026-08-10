@@ -100,6 +100,23 @@ flowchart TB
 
 ---
 
+## Flow 2b — Staff curated skin (no Discord review)
+
+**Actors:** Staff, TFMCWeb, website, ArmourShop, ItemsAdder. **Batches:** [step-18](./batches/step-18/00-index.md).
+
+| Step | Who | What |
+|------|-----|------|
+| 0 | ArmourShop | On load: sync categories + skin-set keys + scrolls → API |
+| 1 | Staff | `/token create skin staff` → redeem on `/skins` |
+| 2 | Staff | Same kind upload + **category** + **scroll** dropdowns |
+| 3 | API | Auto-approve (no bot / pending) |
+| 4 | ArmourShop | Pull → write **`tfmc_armorshop`** + upsert chosen category YAML with scroll |
+| 5 | Staff/players | Apply via ArmourShop using scroll (not submission LP) |
+
+Mint is **TFMCWeb** (`/token create skin staff`), not ArmourShop (the diagram under Flow map still shows the older AS mint path for the player lane). Guns use the same staff path. Player Flow 2 unchanged.
+
+---
+
 ## Flow map (skins + map together)
 
 ```mermaid

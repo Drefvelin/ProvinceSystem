@@ -657,6 +657,8 @@ def main() -> None:
             "handheld name_styles missing on approved list: "
             f"{by_id[hand_id].get('name_styles')}"
         )
+    if by_id[armor_id].get("staff"):
+        fail("player armor should not be staff on approved list")
     print("plugin approved list ok (armor tiers include iron+steel, base_set null)")
 
     r = client.post(
@@ -690,7 +692,244 @@ def main() -> None:
             fail(f"deletable id looks like a UUID, expected human id: {sid}")
     print("deletable list ok (human ids, tab-complete ready)")
 
-    print("ALL OK — Step 11 smoke (IGN ids + multi-tier)")
+    # --- Step 18.02: staff token + auto-approve ---
+    collision_name = "Staff Collision"
+    collision_slug = build_submission_id(IGN, collision_name)
+    catalog_body = {
+        "categories": [
+            {
+                "id": "a_medieval",
+                "name": "Medieval",
+                "is_item": False,
+                "skin_sets": [collision_slug],
+            },
+            {
+                "id": "i_weapons",
+                "name": "Weapons",
+                "is_item": True,
+                "skin_sets": [],
+            },
+        ],
+        "scrolls": [
+            {"id": "m.loot.rare_item_skin_scroll", "label": "Rare item"},
+            {"id": "m.loot.iron_armor_scroll", "label": "Iron armor"},
+        ],
+    }
+    r = client.put(
+        "/skins/plugin/catalog",
+        json=catalog_body,
+        headers=plugin,
+    )
+    if r.status_code != 200:
+        fail(f"catalog put: {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue player code (staff fields reject): {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem player (staff fields reject): {r.status_code} {r.text}")
+    if r.json().get("staff") is not False:
+        fail(f"player redeem staff expected false, got {r.json().get('staff')}")
+    player_auth = {"Authorization": f"Bearer {r.json()['session_token']}"}
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Player No Staff Fields",
+            "base_set": "swords",
+            "category": "i_weapons",
+            "scroll": "m.loot.rare_item_skin_scroll",
+        },
+        files={"texture": ("t.png", icon, "image/png")},
+        headers=player_auth,
+    )
+    if r.status_code != 400:
+        fail(
+            f"player category/scroll expected 400, got {r.status_code} {r.text}"
+        )
+    print("player reject staff fields ok")
+
+    r = client.put(
+        "/skins/plugin/catalog",
+        json={"categories": [], "scrolls": []},
+        headers=plugin,
+    )
+    if r.status_code != 200:
+        fail(f"empty catalog put: {r.status_code} {r.text}")
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player, "scope": "skin_staff"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue skin_staff (empty catalog): {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem skin_staff (empty catalog): {r.status_code} {r.text}")
+    empty_auth = {"Authorization": f"Bearer {r.json()['session_token']}"}
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Staff Empty Catalog",
+            "base_set": "swords",
+            "category": "i_weapons",
+            "scroll": "m.loot.rare_item_skin_scroll",
+        },
+        files={"texture": ("t.png", icon, "image/png")},
+        headers=empty_auth,
+    )
+    if r.status_code != 400 or "catalog not synced" not in (
+        r.json().get("detail") or ""
+    ):
+        fail(f"empty catalog expected 400, got {r.status_code} {r.text}")
+    r = client.put(
+        "/skins/plugin/catalog",
+        json=catalog_body,
+        headers=plugin,
+    )
+    if r.status_code != 200:
+        fail(f"catalog restore: {r.status_code} {r.text}")
+    print("empty catalog reject ok")
+
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player, "scope": "skin_staff"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue skin_staff code: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem skin_staff: {r.status_code} {r.text}")
+    redeem_body = r.json()
+    if redeem_body.get("scope") != "skin_staff" or redeem_body.get("staff") is not True:
+        fail(f"skin_staff redeem flags wrong: {redeem_body}")
+    staff_auth = {"Authorization": f"Bearer {redeem_body['session_token']}"}
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": collision_name,
+            "base_set": "swords",
+            "category": "a_medieval",
+            "scroll": "m.loot.rare_item_skin_scroll",
+        },
+        files={"texture": ("t.png", icon, "image/png")},
+        headers=staff_auth,
+    )
+    if r.status_code != 400 or "already exists" not in (r.json().get("detail") or ""):
+        fail(f"staff collision expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Staff Curated Blade",
+            "base_set": "swords",
+            "category": "nope",
+            "scroll": "m.loot.rare_item_skin_scroll",
+        },
+        files={"texture": ("t.png", icon, "image/png")},
+        headers=staff_auth,
+    )
+    if r.status_code != 400:
+        fail(f"bad category expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Staff Curated Blade",
+            "base_set": "swords",
+            "category": "i_weapons",
+            "scroll": "m.loot.rare_item_skin_scroll",
+        },
+        files={"texture": ("t.png", icon, "image/png")},
+        headers=staff_auth,
+    )
+    if r.status_code != 200:
+        fail(f"staff handheld submit: {r.status_code} {r.text}")
+    staff_hand = r.json()
+    staff_hand_id = staff_hand["id"]
+    if staff_hand.get("status") != "approved":
+        fail(f"staff handheld status expected approved, got {staff_hand.get('status')}")
+    if staff_hand.get("staff") is not True:
+        fail("staff handheld response missing staff=true")
+    if staff_hand.get("category") != "i_weapons":
+        fail(f"staff handheld category wrong: {staff_hand.get('category')}")
+    if staff_hand.get("scroll") != "m.loot.rare_item_skin_scroll":
+        fail(f"staff handheld scroll wrong: {staff_hand.get('scroll')}")
+
+    r = client.get("/skins/staff/notifications", headers=staff)
+    if r.status_code != 200:
+        fail(f"staff notifications after staff submit: {r.status_code} {r.text}")
+    if any(
+        n.get("submission_id") == staff_hand_id and n.get("type") == "submitted"
+        for n in r.json().get("notifications", [])
+    ):
+        fail("staff submit should not enqueue skin_notifications")
+
+    r = client.get("/skins/plugin/approved", headers=plugin)
+    if r.status_code != 200:
+        fail(f"plugin approved after staff: {r.status_code} {r.text}")
+    by_id = {s["id"]: s for s in r.json().get("submissions", [])}
+    row = by_id.get(staff_hand_id)
+    if not row:
+        fail("staff handheld missing from plugin approved")
+    if row.get("staff") is not True:
+        fail("plugin approved staff flag missing")
+    if row.get("category") != "i_weapons":
+        fail(f"plugin approved category wrong: {row.get('category')}")
+    if row.get("scroll") != "m.loot.rare_item_skin_scroll":
+        fail(f"plugin approved scroll wrong: {row.get('scroll')}")
+    if row.get("ia_namespace") != "tfmc_armorshop":
+        fail(f"plugin approved ia_namespace wrong: {row.get('ia_namespace')}")
+    print(f"staff handheld {staff_hand_id} auto-approved + plugin DTO ok")
+
+    # New staff session for armor_set + tier_scrolls
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player, "scope": "skin_staff"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue skin_staff code 2: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem skin_staff 2: {r.status_code} {r.text}")
+    staff_auth2 = {"Authorization": f"Bearer {r.json()['session_token']}"}
+    staff_armor_tiers = ["iron"]
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "armor_set",
+            "display_name": "Staff Curated Plate",
+            "tiers": json.dumps(staff_armor_tiers),
+            "category": "a_medieval",
+            "tier_scrolls": json.dumps(
+                {"iron": "m.loot.iron_armor_scroll"}
+            ),
+        },
+        files=armor_tier_files(staff_armor_tiers),
+        headers=staff_auth2,
+    )
+    if r.status_code != 200:
+        fail(f"staff armor submit: {r.status_code} {r.text}")
+    staff_armor = r.json()
+    if staff_armor.get("status") != "approved":
+        fail(f"staff armor status expected approved, got {staff_armor.get('status')}")
+    if staff_armor.get("tier_scrolls") != {"iron": "m.loot.iron_armor_scroll"}:
+        fail(f"staff armor tier_scrolls wrong: {staff_armor.get('tier_scrolls')}")
+    print(f"staff armor {staff_armor['id']} tier_scrolls ok")
+
+    print("ALL OK — Step 11 + 18.02 smoke (staff token / auto-approve)")
     sys.exit(0)
 
 

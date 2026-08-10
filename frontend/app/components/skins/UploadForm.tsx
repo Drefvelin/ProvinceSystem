@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSubmission, checkSubmissionConflict, SkinsApiError } from "../../../lib/skins/api";
+import { createSubmission, checkSubmissionConflict, getCatalog, SkinsApiError } from "../../../lib/skins/api";
+import type { SkinsCatalog } from "../../../lib/skins/catalog";
+import { filterStaffCategories } from "../../../lib/skins/catalog";
 import { setLastSubmissionId } from "../../../lib/skins/session";
 import {
   ARMOR_TIERS,
@@ -74,6 +76,8 @@ function resolveModelPreviewFiles(
 
 type Props = {
   sessionToken: string;
+  /** Staff curated lane — category/scroll required. */
+  staff?: boolean;
 };
 
 type TierEntry = {
@@ -82,6 +86,8 @@ type TierEntry = {
   alias: string;
   /** When true, helmet is model+texture instead of 16×16 icon. */
   helmet3d: boolean;
+  /** Staff only: scroll id for this tier. */
+  scroll: string;
   files: Record<string, File | null>;
 };
 
@@ -137,7 +143,7 @@ function acceptForField(field: string): string {
   return "image/png,.png";
 }
 
-export default function UploadForm({ sessionToken }: Props) {
+export default function UploadForm({ sessionToken, staff = false }: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<SkinKind>("armor_set");
   const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
@@ -155,6 +161,10 @@ export default function UploadForm({ sessionToken }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [catalog, setCatalog] = useState<SkinsCatalog | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
+  const [scroll, setScroll] = useState("");
 
   useEffect(() => {
     setTiers([]);
@@ -162,11 +172,45 @@ export default function UploadForm({ sessionToken }: Props) {
     setError(null);
     setBaseSet(defaultBaseSet(kind));
     setFiles({});
+    setCategory("");
+    setScroll("");
   }, [kind]);
+
+  useEffect(() => {
+    if (!staff) {
+      setCatalog(null);
+      setCatalogError(null);
+      return;
+    }
+    let cancelled = false;
+    setCatalogError(null);
+    void getCatalog()
+      .then((data) => {
+        if (!cancelled) setCatalog(data);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setCatalog(null);
+        setCatalogError(
+          err instanceof SkinsApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Could not load catalog"
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [staff]);
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
   const isArmor = kind === "armor_set";
+  const staffCategories = catalog
+    ? filterStaffCategories(catalog.categories, kind)
+    : [];
+  const staffScrolls = catalog?.scrolls ?? [];
   const previewFiles = resolveModelPreviewFiles(kind, files);
 
   const remainingTiers: string[] = ARMOR_TIERS.filter(
@@ -211,7 +255,13 @@ export default function UploadForm({ sessionToken }: Props) {
     if (tiers.length >= MAX_TIERS) return;
     setTiers((prev) => [
       ...prev,
-      { tier, alias: baseSetLabel(tier), helmet3d: false, files: {} },
+      {
+        tier,
+        alias: baseSetLabel(tier),
+        helmet3d: false,
+        scroll: "",
+        files: {},
+      },
     ]);
     setTierToAdd("");
     setError(null);
@@ -225,6 +275,14 @@ export default function UploadForm({ sessionToken }: Props) {
     setTiers((prev) =>
       prev.map((entry) =>
         entry.tier === tier ? { ...entry, alias } : entry
+      )
+    );
+  }
+
+  function setTierScroll(tier: string, scrollId: string) {
+    setTiers((prev) =>
+      prev.map((entry) =>
+        entry.tier === tier ? { ...entry, scroll: scrollId } : entry
       )
     );
   }
@@ -273,6 +331,35 @@ export default function UploadForm({ sessionToken }: Props) {
     if (isArmor && tiers.length < 1) {
       setError("Add at least 1 armor tier");
       return;
+    }
+
+    if (staff) {
+      if (!category.trim()) {
+        setError("Choose a shop category");
+        return;
+      }
+      if (catalogError || !catalog) {
+        setError(catalogError || "Catalog not loaded — wait or refresh");
+        return;
+      }
+      if (staffCategories.length < 1) {
+        setError("No matching shop categories in catalog for this kind");
+        return;
+      }
+      if (isArmor) {
+        const missing = tiers.filter((e) => !e.scroll.trim());
+        if (missing.length) {
+          setError(
+            `Choose a scroll for each armor tier (${missing
+              .map((e) => baseSetLabel(e.tier))
+              .join(", ")})`
+          );
+          return;
+        }
+      } else if (!scroll.trim()) {
+        setError("Choose a scroll");
+        return;
+      }
     }
 
     if (kind === "large_handheld") {
@@ -386,6 +473,14 @@ export default function UploadForm({ sessionToken }: Props) {
         add_name: applyName,
         name_colours: colours.length ? colours : undefined,
         name_styles: styles.length ? styles : undefined,
+        category: staff ? category.trim() : undefined,
+        scroll: staff && !isArmor ? scroll.trim() : undefined,
+        tier_scrolls:
+          staff && isArmor
+            ? Object.fromEntries(
+                tiers.map((entry) => [entry.tier, entry.scroll.trim()])
+              )
+            : undefined,
         files: uploadFiles,
       });
       setLastSubmissionId(result.id);
@@ -467,6 +562,74 @@ export default function UploadForm({ sessionToken }: Props) {
 
       {sizeHint(kind) ? (
         <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
+      ) : null}
+
+      {staff ? (
+        <fieldset className="flex flex-col gap-4 border-0 p-0">
+          <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
+            Shop landing
+          </legend>
+          {catalogError ? (
+            <p className="text-sm text-[#e8a0a0]" role="alert">
+              {catalogError}
+            </p>
+          ) : !catalog ? (
+            <p className="text-xs text-[var(--tfmc-mist)]">Loading catalog…</p>
+          ) : (
+            <>
+              <label className="flex flex-col gap-2 text-left">
+                <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                  Category
+                </span>
+                <select
+                  value={category}
+                  disabled={loading || staffCategories.length < 1}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">Select category…</option>
+                  {staffCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name || c.id}
+                    </option>
+                  ))}
+                </select>
+                {staffCategories.length < 1 ? (
+                  <span className="text-xs text-[#e8a0a0]">
+                    No categories for this kind (catalog may be empty or only
+                    ps_*).
+                  </span>
+                ) : null}
+              </label>
+              {!isArmor ? (
+                <label className="flex flex-col gap-2 text-left">
+                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                    Scroll
+                  </span>
+                  <select
+                    value={scroll}
+                    disabled={loading || staffScrolls.length < 1}
+                    onChange={(e) => setScroll(e.target.value)}
+                    className={inputClass}
+                    required
+                  >
+                    <option value="">Select scroll…</option>
+                    {staffScrolls.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label || s.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="text-xs text-[var(--tfmc-mist)]">
+                  Choose a scroll on each armor tier below.
+                </p>
+              )}
+            </>
+          )}
+        </fieldset>
       ) : null}
 
       {!isArmor ? (
@@ -756,6 +919,29 @@ export default function UploadForm({ sessionToken }: Props) {
                       Chestplate
                     </span>
                   </label>
+                  {staff ? (
+                    <label className="flex flex-col gap-2 text-left">
+                      <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                        Scroll
+                      </span>
+                      <select
+                        value={entry.scroll}
+                        disabled={loading || staffScrolls.length < 1}
+                        onChange={(e) =>
+                          setTierScroll(entry.tier, e.target.value)
+                        }
+                        className={inputClass}
+                        required
+                      >
+                        <option value="">Select scroll…</option>
+                        {staffScrolls.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label || s.id}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                   <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]">
                     <FancyCheckbox
                       checked={entry.helmet3d}
@@ -934,8 +1120,9 @@ export default function UploadForm({ sessionToken }: Props) {
       ) : null}
 
       <p className="text-sm text-[var(--tfmc-mist)]">
-        After you submit, it can take up to 5 minutes for your request to enter
-        the system. You will receive a Discord DM when it does.
+        {staff
+          ? "Staff uploads auto-approve and land in the curated shop pack (no Discord review)."
+          : "After you submit, it can take up to 5 minutes for your request to enter the system. You will receive a Discord DM when it does."}
       </p>
 
       <button

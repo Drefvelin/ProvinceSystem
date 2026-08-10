@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS submissions (
     applied_at TEXT,
     discord_message_id TEXT,
     discord_user_id TEXT,
+    staff INTEGER NOT NULL DEFAULT 0,
+    category TEXT,
+    scroll TEXT,
+    tier_scrolls TEXT,
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
@@ -118,3 +122,9 @@ CREATE INDEX IF NOT EXISTS idx_player_warnings_uuid
     ON player_warnings(player_uuid, created_at);
 CREATE INDEX IF NOT EXISTS idx_moderation_notifications_undelivered
     ON moderation_notifications(delivered_at, created_at);
+
+CREATE TABLE IF NOT EXISTS armourshop_catalog (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);

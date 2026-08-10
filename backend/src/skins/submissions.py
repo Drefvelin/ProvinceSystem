@@ -223,7 +223,8 @@ def _validate_name_styles(raw: list[str] | None) -> list[str]:
 
 
 def _public_row(row: sqlite3.Row) -> dict:
-    return {
+    is_staff = bool(row["staff"]) if "staff" in row.keys() else False
+    out = {
         "id": row["id"],
         "kind": row["kind"],
         "slug": row["slug"],
@@ -244,7 +245,14 @@ def _public_row(row: sqlite3.Row) -> dict:
         "discord_user_id": row["discord_user_id"]
         if "discord_user_id" in row.keys()
         else None,
+        "staff": is_staff,
     }
+    if is_staff:
+        out["category"] = row["category"] if "category" in row.keys() else None
+        out["scroll"] = row["scroll"] if "scroll" in row.keys() else None
+        tiers_map = _row_json_object(row, "tier_scrolls")
+        out["tier_scrolls"] = tiers_map or None
+    return out
 
 
 def _link_names(player_uuid: str) -> dict:
@@ -438,7 +446,7 @@ def check_player_conflicts(
 
 
 def create_submission(
-    session_row: sqlite3.Row,
+    session_row,
     kind: str,
     display_name: str,
     files_bytes: dict[str, bytes],
@@ -452,6 +460,9 @@ def create_submission(
     add_name: bool = False,
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
+    category: str | None = None,
+    scroll: str | None = None,
+    tier_scrolls: dict[str, str] | None = None,
 ) -> dict:
     _ = filenames  # upload names ignored for identity
 
@@ -597,6 +608,43 @@ def create_submission(
             "Choose a different item name and try again."
         )
 
+    is_staff = False
+    try:
+        is_staff = bool(session_row["staff"])
+    except (KeyError, IndexError, TypeError):
+        is_staff = False
+
+    category_raw = (category or "").strip() or None
+    scroll_raw = (scroll or "").strip() or None
+    has_staff_fields = bool(category_raw or scroll_raw or tier_scrolls)
+    staff_category: str | None = None
+    staff_scroll: str | None = None
+    staff_tier_scrolls_json: str | None = None
+
+    if not is_staff:
+        if has_staff_fields:
+            raise SubmissionError(
+                "category, scroll, and tier_scrolls are only allowed for staff tokens"
+            )
+    else:
+        from .catalog import CatalogError, validate_staff_landing
+
+        try:
+            landing = validate_staff_landing(
+                category=category_raw,
+                scroll=scroll_raw,
+                tier_scrolls=tier_scrolls,
+                kind=kind,
+                tiers=tier_list,
+                slug=slug,
+            )
+        except CatalogError as e:
+            raise SubmissionError(str(e)) from e
+        staff_category = landing["category"]
+        staff_scroll = landing["scroll"]
+        if landing["tier_scrolls"] is not None:
+            staff_tier_scrolls_json = json.dumps(landing["tier_scrolls"])
+
     tiers_json = json.dumps(tier_list) if tier_list else None
     aliases_json = json.dumps(aliases) if aliases else None
     h3d_json = json.dumps(h3d_list) if h3d_list else None
@@ -604,6 +652,8 @@ def create_submission(
     created_at = _iso_now()
     code_id = session_row["code_id"]
     discord_id = str(link["discord_user_id"])
+    status = "approved" if is_staff else "pending"
+    reviewed_at = created_at if is_staff else None
 
     with connect() as conn:
         try:
@@ -615,10 +665,10 @@ def create_submission(
                     add_name, name_colours, name_styles,
                     status, deny_reason, dir_path,
                     created_at, reviewed_at, applied_at, discord_message_id,
-                    discord_user_id
+                    discord_user_id, staff, category, scroll, tier_scrolls
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?,
-                    NULL, NULL, NULL, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
+                    ?, NULL, NULL, ?, ?, ?, ?, ?
                 )
                 """,
                 (
@@ -636,9 +686,15 @@ def create_submission(
                     1 if want_add_name else 0,
                     colours_json,
                     styles_json,
+                    status,
                     dir_path,
                     created_at,
+                    reviewed_at,
                     discord_id,
+                    1 if is_staff else 0,
+                    staff_category,
+                    staff_scroll,
+                    staff_tier_scrolls_json,
                 ),
             )
             conn.commit()
@@ -679,13 +735,14 @@ def create_submission(
         _rollback_submission(submission_id)
         raise
 
-    enqueue_submitted(
-        submission_id,
-        discord_id,
-        display_name=display,
-        kind=kind,
-        slug=slug,
-    )
+    if not is_staff:
+        enqueue_submitted(
+            submission_id,
+            discord_id,
+            display_name=display,
+            kind=kind,
+            slug=slug,
+        )
 
     with connect() as conn:
         row = conn.execute(
@@ -873,27 +930,40 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
     result = []
     for row in rows:
         names = _link_names(row["player_uuid"])
-        result.append(
-            {
-                "id": row["id"],
-                "player_uuid": row["player_uuid"],
-                "slug": row["slug"],
-                "kind": row["kind"],
-                "display_name": row["display_name"],
-                "grip_preset": row["grip_preset"],
-                "base_set": _row_base_set(row),
-                "tiers": _row_json_list(row, "tiers"),
-                "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
-                "tier_aliases": _row_json_object(row, "tier_aliases"),
-                "add_name": _row_add_name(row),
-                "name_colours": _row_json_list(row, "name_colours"),
-                "name_styles": _row_json_list(row, "name_styles"),
-                "reviewed_at": row["reviewed_at"],
-                "minecraft_name": names.get("minecraft_name"),
-                "discord_username": names.get("discord_username"),
-                "files": _list_asset_files(row["id"]),
-            }
-        )
+        is_staff = False
+        if "staff" in row.keys():
+            is_staff = bool(row["staff"])
+        entry = {
+            "id": row["id"],
+            "player_uuid": row["player_uuid"],
+            "slug": row["slug"],
+            "kind": row["kind"],
+            "display_name": row["display_name"],
+            "grip_preset": row["grip_preset"],
+            "base_set": _row_base_set(row),
+            "tiers": _row_json_list(row, "tiers"),
+            "helmet_3d_tiers": _row_json_list(row, "helmet_3d_tiers"),
+            "tier_aliases": _row_json_object(row, "tier_aliases"),
+            "add_name": _row_add_name(row),
+            "name_colours": _row_json_list(row, "name_colours"),
+            "name_styles": _row_json_list(row, "name_styles"),
+            "reviewed_at": row["reviewed_at"],
+            "minecraft_name": names.get("minecraft_name"),
+            "discord_username": names.get("discord_username"),
+            "files": _list_asset_files(row["id"]),
+            "staff": is_staff,
+        }
+        if is_staff:
+            from .catalog import IA_NAMESPACE_ARMOURSHOP
+
+            entry["category"] = (
+                row["category"] if "category" in row.keys() else None
+            )
+            entry["scroll"] = row["scroll"] if "scroll" in row.keys() else None
+            tiers_map = _row_json_object(row, "tier_scrolls")
+            entry["tier_scrolls"] = tiers_map or None
+            entry["ia_namespace"] = IA_NAMESPACE_ARMOURSHOP
+        result.append(entry)
     return result
 
 

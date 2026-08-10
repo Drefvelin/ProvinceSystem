@@ -43,6 +43,7 @@ from src.skins.moderation import (
     list_undelivered_moderation,
     record_warning,
 )
+from src.skins.catalog import CatalogError, get_catalog, replace_catalog
 from src.skins.naming import ARMOR_FIELDS, SlugError
 from src.skins.notifications import (
     NotificationError,
@@ -502,6 +503,23 @@ async def post_submissions(
                 status_code=400, detail="name_styles must be a JSON array"
             ) from e
 
+    category_raw = form.get("category")
+    category = str(category_raw).strip() if category_raw else None
+    scroll_raw = form.get("scroll")
+    scroll = str(scroll_raw).strip() if scroll_raw else None
+    tier_scrolls_raw = form.get("tier_scrolls")
+    tier_scrolls_map: dict[str, str] | None = None
+    if tier_scrolls_raw and str(tier_scrolls_raw).strip():
+        try:
+            parsed = json.loads(str(tier_scrolls_raw))
+            if not isinstance(parsed, dict):
+                raise ValueError("not an object")
+            tier_scrolls_map = {str(k): str(v) for k, v in parsed.items()}
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail="tier_scrolls must be a JSON object"
+            ) from e
+
     try:
         return create_submission(
             session,
@@ -517,6 +535,9 @@ async def post_submissions(
             add_name=want_add,
             name_colours=colours_list,
             name_styles=styles_list,
+            category=category,
+            scroll=scroll,
+            tier_scrolls=tier_scrolls_map,
         )
     except SlugConflictError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -716,3 +737,34 @@ def plugin_applied(
     _require_plugin(x_plugin_key)
     applied = mark_applied(body.submission_ids)
     return {"applied": applied}
+
+
+class CatalogBody(BaseModel):
+    categories: list[dict] = Field(default_factory=list)
+    scrolls: list[dict] = Field(default_factory=list)
+
+
+@skins_router.put("/plugin/catalog")
+def plugin_put_catalog(
+    body: CatalogBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """ArmourShop full-replace catalog snapshot (categories + scrolls)."""
+    _require_plugin(x_plugin_key)
+    try:
+        result = replace_catalog(body.model_dump())
+    except CatalogError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {
+        "ok": True,
+        "categories": result["categories_count"],
+        "skin_sets": result["skin_sets_count"],
+        "scrolls": result["scrolls_count"],
+        "updated_at": result["updated_at"],
+    }
+
+
+@skins_router.get("/catalog")
+def skins_get_catalog():
+    """Public catalog for website dropdowns / collision checks."""
+    return get_catalog()

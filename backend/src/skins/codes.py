@@ -5,13 +5,13 @@ from __future__ import annotations
 import hashlib
 import os
 import secrets
-import sqlite3
 from datetime import datetime, timedelta, timezone
 
 from .db import connect
 
 SESSION_TTL_HOURS = 1
-ALLOWED_SCOPES = frozenset({"skin", "character"})
+ALLOWED_SCOPES = frozenset({"skin", "character", "skin_staff"})
+REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
 
 
 class CodeError(ValueError):
@@ -53,7 +53,7 @@ def _normalize_scope(scope: str | None) -> str:
     if not raw:
         raw = "skin"
     if raw not in ALLOWED_SCOPES:
-        raise CodeError("scope must be 'skin' or 'character'")
+        raise CodeError("scope must be 'skin', 'skin_staff', or 'character'")
     return raw
 
 
@@ -66,6 +66,10 @@ def _row_scope(row) -> str:
         return "skin"
     text = str(value).strip().lower()
     return text if text else "skin"
+
+
+def _is_staff_scope(scope: str) -> bool:
+    return (scope or "").strip().lower() == "skin_staff"
 
 
 def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
@@ -199,7 +203,8 @@ def redeem_code(plaintext: str) -> dict:
             raise CodeError("Code has already been redeemed")
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
-        if _row_scope(row) != "skin":
+        scope = _row_scope(row)
+        if scope not in REDEEMABLE_SKIN_SCOPES:
             raise CodeError("This code is for character creation, not skins")
 
         session_token = secrets.token_urlsafe(32)
@@ -231,10 +236,12 @@ def redeem_code(plaintext: str) -> dict:
         "player_uuid": row["player_uuid"],
         "expires_at": session_expires_at,
         "code_id": row["id"],
+        "scope": scope,
+        "staff": _is_staff_scope(scope),
     }
 
 
-def get_session(token: str) -> sqlite3.Row | None:
+def get_session(token: str) -> dict | None:
     raw = (token or "").strip()
     if not raw:
         return None
@@ -242,7 +249,19 @@ def get_session(token: str) -> sqlite3.Row | None:
     now = _utcnow()
     with connect() as conn:
         row = conn.execute(
-            "SELECT * FROM sessions WHERE token_hash = ?",
+            """
+            SELECT
+                s.id AS id,
+                s.token_hash AS token_hash,
+                s.code_id AS code_id,
+                s.player_uuid AS player_uuid,
+                s.expires_at AS expires_at,
+                s.created_at AS created_at,
+                c.scope AS scope
+            FROM sessions s
+            JOIN codes c ON c.id = s.code_id
+            WHERE s.token_hash = ?
+            """,
             (hash_secret(raw),),
         ).fetchone()
 
@@ -250,7 +269,17 @@ def get_session(token: str) -> sqlite3.Row | None:
         return None
     if _parse_iso(row["expires_at"]) < now:
         return None
-    return row
+    scope = _row_scope(row)
+    return {
+        "id": row["id"],
+        "token_hash": row["token_hash"],
+        "code_id": row["code_id"],
+        "player_uuid": row["player_uuid"],
+        "expires_at": row["expires_at"],
+        "created_at": row["created_at"],
+        "scope": scope,
+        "staff": _is_staff_scope(scope),
+    }
 
 
 def _self_test() -> None:

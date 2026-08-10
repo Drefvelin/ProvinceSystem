@@ -9,13 +9,24 @@ Naming: [07-naming-conventions.md](./07-naming-conventions.md).
 
 | Actor | Does |
 |-------|------|
-| ProvinceSystem | Codes, uploads, Discord review state, file store |
-| **TFMCWeb** | `/linkdiscord`, `/unlinkdiscord`, `/token create skin\|character`, notice poller, Survival Discord gate |
-| **ArmourShop** | Pull approved; write IA + shop YAML; LP; deferred reload; admin `listtokens` / `token delete` |
-| ItemsAdder | Loads `tfmc_submissions` after files exist / pack rebuild |
+| ProvinceSystem | Codes, uploads, Discord review (players); staff auto-approve; catalog store |
+| **TFMCWeb** | `/linkdiscord`, `/unlinkdiscord`, `/token create skin\|character\|skin staff`, notice poller, Survival Discord gate |
+| **ArmourShop** | Catalog sync on load; pull approved; write IA + shop YAML; LP for **player** submissions only |
+| ItemsAdder | Loads `tfmc_submissions` (players) and `tfmc_armorshop` (staff curated) |
 | SimpleFactions | Nothing here |
 
-ArmourShop is the **only** writer into live `contents/tfmc_submissions/` for player skins.
+ArmourShop is the **only** writer into live `contents/tfmc_submissions/` (player) and `contents/tfmc_armorshop/` (staff). Legacy hand-edited `tfmc_armor` stays as-is.
+
+## Two lanes
+
+| Lane | Token | Pack | Shop | Unlock | Review |
+|------|-------|------|------|--------|--------|
+| Player | `/token create skin` | `tfmc_submissions` | `ps_armor` / `ps_items` | LP `armourshop.submission.*` | Discord approve |
+| Staff | `/token create skin staff` | **`tfmc_armorshop`** | Chosen `a_*` / `i_*` + **scroll** | Scroll consume | **Auto-approve** (no bot) |
+
+Catalog (categories, skin-set keys, scrolls from AS config) syncs ArmourShop → API on load so website dropdowns stay honest — [step-18](./batches/step-18/00-index.md).
+
+**Ops:** list scrolls under `scrolls:` in ArmourShop `config.yml`. On enable/reload ArmourShop pushes `PUT /skins/plugin/catalog` (fail-soft). Force refresh: `/armourshop catalog sync`. Staff pack pulls write **`tfmc_armorshop`** and upsert the chosen category YAML (not `ps_*`); no submission LP.
 
 ## Paths
 
@@ -118,9 +129,11 @@ Players must bind Minecraft ↔ Discord before a website upload is accepted. **T
 | `/linkdiscord` | In game (TFMCWeb) | `POST /skins/discord/link/start`; click-to-copy code |
 | `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
 | `/token create skin` | In game (TFMCWeb) | `POST /skins/codes` scope=skin; perm `tfmcweb.token.create` |
+| `/token create skin staff` | In game (TFMCWeb) | `POST /skins/codes` scope=skin_staff; perm `tfmcweb.token.create.staff` |
+| `/armourshop catalog sync` | In game (ArmourShop admin) | Push categories + scrolls → API |
 | `/armourshop listtokens` / `token delete` | In game (ArmourShop admin) | List/revoke unused codes |
 
-Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-17](./batches/step-17/00-index.md) (TFMCWeb ownership), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
+Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-17](./batches/step-17/00-index.md) (TFMCWeb ownership), [step-18](./batches/step-18/00-index.md) (staff curated), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
 
 ## Display ownership
 

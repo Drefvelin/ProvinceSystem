@@ -7,9 +7,10 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 ## Goals
 
 - Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), and **guns** (`gun`; `item` disabled).
-- No website logins; codes from TFMCWeb (`/token create skin`) bound to player UUID.
-- Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
-- ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates for 2D; 3D uses donor JSON after API display autofill. Guns append GaG `skins.yml` with `ia.…` ids (STONE_HOE carry/reload, CROSSBOW aim); stock GaG skins may still use material.CMD.
+- No website logins; codes from TFMCWeb (`/token create skin` or **`/token create skin staff`**) bound to player UUID.
+- **Player:** staff approve/deny in Discord; ArmourShop writes **`tfmc_submissions`** + `ps_*` + LP.
+- **Staff curated ([step-18](./batches/step-18/00-index.md)):** auto-approve (no bot); category + scroll on upload; writes **`tfmc_armorshop`** into real ArmourShop categories. Same kinds including guns. Legacy `tfmc_armor` unchanged.
+- ArmourShop owns IA `display` / model templates for 2D; 3D uses donor JSON after API display autofill. Guns append GaG `skins.yml` with `ia.…` ids (STONE_HOE carry/reload, CROSSBOW aim); stock GaG skins may still use material.CMD.
 
 ## Upload kinds
 

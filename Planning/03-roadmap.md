@@ -200,13 +200,30 @@ Quotas, retention, module template, optional brewery stub.
 
 ---
 
+## Track D — Staff curated skins
+
+**Status:** **Implemented** (D1–D5 code in [step-18](./batches/step-18/00-index.md); tick staging in [STAGING.md](../STAGING.md) / [06-docs-verify](./batches/step-18/06-docs-verify.md)).  
+**Repos:** ArmourShop · ProvinceSystem · TFMCWeb · frontend
+
+| Phase | Detail |
+|-------|--------|
+| D1 Catalog sync | Categories + sets + scrolls → API on AS load |
+| D2 Staff token API | Auto-approve; category/scroll on submit |
+| D3 TFMCWeb mint | `/token create skin staff` |
+| D4 Pack apply | `tfmc_armorshop` + real category YAML (all kinds incl. guns) |
+| D5 Web UI | Dropdowns from catalog |
+
+**Out of Track D:** Migrating legacy `tfmc_armor`; changing player Discord review.
+
+---
+
 ## Priority for “finished product ASAP”
 
 1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
 2. **B2 skins cog** — staff can review with PNG sheets without curl  
 3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
 4. **A1 realm card + mobile** in parallel whenever free  
-5. **Track C / step-17** — **done** (staging checklist for humans); then character creator  
-6. **B4 / B4.5 upload preview / A1 cropped overlays / B5** as capacity allows  
+5. **Track C / step-17** — **done** (staging checklist for humans)  
+6. **Step 18 / Track D** — **code done**; human staging verify on live; then character creator / B4.5 / overlays as capacity allows  
 
 Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d/shield. Character creator UI remains out of scope until Track C staging is green.

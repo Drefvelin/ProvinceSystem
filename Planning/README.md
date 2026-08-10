@@ -13,13 +13,13 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 | **SimpleFactions** | `Workspace/simplefactions/` | Map bridge: nation JSON upload, queue, regen, province lookup |
 | **ArmourShop** | `Workspace/armourshop/` | Skins pack writer + apply (identity/tokens owned by TFMCWeb) |
 | **RPCharacters** | `Workspace/rpcharacters/` | Characters + freeze loop; Discord gate via new freeze reason |
-| **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player content goes in namespace **`tfmc_submissions`** |
+| **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player **`tfmc_submissions`**; staff curated **`tfmc_armorshop`**; legacy `tfmc_armor` hand-edited |
 | **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review; link; guild leave/join; ban/warn DMs + Banned role |
 
 ## Product lines
 
 1. **Map** — Live borders on the web; SimpleFactions keeps the API fed; ProvinceSystem generates and serves images.  
-2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`.  
+2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`. Staff curated: staff token → auto-approve → `tfmc_armorshop` + category/scroll ([step-18](./batches/step-18/00-index.md)).  
 3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
 4. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
 
@@ -79,7 +79,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-15. [batches/README.md](./batches/README.md) — Step 2–17: API, UI, Discord, pack writer, plugin apply, 3D kinds, gun IA, upload model preview, TFMCWeb  
+15. [batches/README.md](./batches/README.md) — Step 2–18: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff curated skins
 
 ## Success criteria (full platform)
 

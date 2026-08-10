@@ -106,6 +106,38 @@ If already linked, `/linkdiscord` does not mint a new code. Use `/unlinkdiscord`
 
 Checkpoint: see [08-docs-verify.md](./Planning/batches/step-17/08-docs-verify.md).
 
+## Step 18 — Staff curated skins
+
+**Playbook:** [Planning/batches/step-18/00-index.md](./Planning/batches/step-18/00-index.md) · checklist [Planning/batches/step-18/06-docs-verify.md](./Planning/batches/step-18/06-docs-verify.md).
+
+**Code:** 18.01–18.06 done (API catalog + staff codes, TFMCWeb mint, ArmourShop `tfmc_armorshop` apply, web dropdowns). Tick boxes below on live staging.
+
+### Deploy
+
+1. Latest ProvinceSystem API (staff submit + catalog store).
+2. `Builds/ArmourShop/armourshop-*.jar` — catalog sync + staff pack/shop path.
+3. `Builds/TFMCWeb/tfmcweb-*.jar` — `/token create skin staff`.
+4. Frontend with staff category/scroll UI on `/skins`.
+5. ArmourShop `config.yml`: `scrolls:` list (`id` + `label`); `skins-api` + `pack-apply.*` as for Step 8.
+6. ItemsAdder: `contents/tfmc_armorshop/` scaffold present (beside `tfmc_submissions`).
+7. LuckPerms: grant **`tfmcweb.token.create.staff`** to staff who mint curated codes (does not require `tfmcweb.token.create`).
+
+### Operator checklist
+
+- [ ] Scrolls listed in AS `config.yml`; enable (or `/armourshop catalog sync`) syncs catalog — `GET /skins/catalog` shows categories + scrolls
+- [ ] `/token create skin staff` → redeem on `/skins` → category + scroll dropdowns visible
+- [ ] Staff armor → pack under `tfmc_armorshop` + chosen `a_*` category YAML with scroll; usable in shop via scroll
+- [ ] Staff gun → IA + GaG `skins.yml` + item category entry
+- [ ] Player `/token create skin` → still Discord review + `tfmc_submissions` / `ps_*` + LP
+- [ ] No bot / `#bot-feed` post for staff submit
+
+Checkpoint:
+
+```text
+catalog sync → /token create skin staff → redeem + dropdowns → auto-approve
+  → pack pull → tfmc_armorshop + category/scroll → shop usable
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

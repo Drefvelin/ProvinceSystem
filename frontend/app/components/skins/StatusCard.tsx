@@ -7,6 +7,24 @@ import { formatLocal } from "../../../lib/skins/formatTime";
 import { getSession, isSessionValid } from "../../../lib/skins/session";
 
 function statusMessage(row: SubmissionPublic): string {
+  if (row.staff) {
+    switch (row.status) {
+      case "pending":
+        return "Staff submission — waiting for auto-approve.";
+      case "denied":
+        return row.deny_reason?.trim()
+          ? `Denied: ${row.deny_reason.trim()}`
+          : "Denied. No reason given.";
+      case "approved":
+        return "Approved. Waiting to be applied on the server (curated pack).";
+      case "applied":
+        return "Live on the server in the curated shop pack.";
+      case "revoked":
+        return "Removed from the server.";
+      default:
+        return row.status;
+    }
+  }
   switch (row.status) {
     case "pending":
       return (

@@ -1,0 +1,256 @@
+"""ArmourShop catalog snapshot (categories + scrolls) for website dropdowns."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from typing import Any
+
+
+class CatalogError(ValueError):
+    """Invalid catalog payload."""
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise CatalogError("body must be a JSON object")
+
+    categories_in = raw.get("categories")
+    scrolls_in = raw.get("scrolls")
+    if not isinstance(categories_in, list):
+        raise CatalogError("categories must be a list")
+    if not isinstance(scrolls_in, list):
+        raise CatalogError("scrolls must be a list")
+
+    categories: list[dict[str, Any]] = []
+    for i, row in enumerate(categories_in):
+        if not isinstance(row, dict):
+            raise CatalogError(f"categories[{i}] must be an object")
+        cid = str(row.get("id") or "").strip()
+        if not cid:
+            raise CatalogError(f"categories[{i}].id is required")
+        name = str(row.get("name") or cid).strip() or cid
+        is_item = bool(row.get("is_item", False))
+        sets_in = row.get("skin_sets")
+        if sets_in is None:
+            sets_in = []
+        if not isinstance(sets_in, list):
+            raise CatalogError(f"categories[{i}].skin_sets must be a list")
+        skin_sets: list[str] = []
+        for j, sid in enumerate(sets_in):
+            s = str(sid or "").strip()
+            if not s:
+                raise CatalogError(f"categories[{i}].skin_sets[{j}] is empty")
+            skin_sets.append(s)
+        categories.append(
+            {
+                "id": cid,
+                "name": name,
+                "is_item": is_item,
+                "skin_sets": skin_sets,
+            }
+        )
+
+    scrolls: list[dict[str, str]] = []
+    for i, row in enumerate(scrolls_in):
+        if not isinstance(row, dict):
+            raise CatalogError(f"scrolls[{i}] must be an object")
+        sid = str(row.get("id") or "").strip()
+        if not sid:
+            raise CatalogError(f"scrolls[{i}].id is required")
+        label = str(row.get("label") or sid).strip() or sid
+        scrolls.append({"id": sid, "label": label})
+
+    return {"categories": categories, "scrolls": scrolls}
+
+
+def replace_catalog(raw: dict[str, Any]) -> dict[str, Any]:
+    """Full-replace catalog snapshot. Returns payload + updated_at + counts."""
+    from .db import connect
+
+    payload = _normalize_payload(raw)
+    updated_at = _iso_now()
+    body = json.dumps(payload, separators=(",", ":"))
+
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO armourshop_catalog (id, payload, updated_at)
+            VALUES (1, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                payload = excluded.payload,
+                updated_at = excluded.updated_at
+            """,
+            (body, updated_at),
+        )
+        conn.commit()
+
+    skin_sets = sum(len(c["skin_sets"]) for c in payload["categories"])
+    return {
+        **payload,
+        "updated_at": updated_at,
+        "categories_count": len(payload["categories"]),
+        "skin_sets_count": skin_sets,
+        "scrolls_count": len(payload["scrolls"]),
+    }
+
+
+def get_catalog() -> dict[str, Any]:
+    """Return stored snapshot or empty catalog."""
+    from .db import connect
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT payload, updated_at FROM armourshop_catalog WHERE id = 1"
+        ).fetchone()
+
+    if row is None:
+        return {
+            "categories": [],
+            "scrolls": [],
+            "updated_at": None,
+        }
+
+    try:
+        data = json.loads(row["payload"] or "{}")
+    except json.JSONDecodeError:
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+
+    categories = data.get("categories")
+    scrolls = data.get("scrolls")
+    if not isinstance(categories, list):
+        categories = []
+    if not isinstance(scrolls, list):
+        scrolls = []
+
+    return {
+        "categories": categories,
+        "scrolls": scrolls,
+        "updated_at": row["updated_at"],
+    }
+
+
+IA_NAMESPACE_ARMOURSHOP = "tfmc_armorshop"
+
+
+def require_synced_catalog() -> dict[str, Any]:
+    """Return catalog or raise if ArmourShop has not pushed yet."""
+    catalog = get_catalog()
+    categories = catalog.get("categories") or []
+    scrolls = catalog.get("scrolls") or []
+    if not categories or not scrolls:
+        raise CatalogError("catalog not synced")
+    return catalog
+
+
+def require_category(catalog: dict[str, Any], category_id: str) -> dict[str, Any]:
+    cid = (category_id or "").strip()
+    if not cid:
+        raise CatalogError("category is required")
+    for row in catalog.get("categories") or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("id") or "").strip() == cid:
+            return row
+    raise CatalogError(f"unknown category '{cid}'")
+
+
+def require_scroll(catalog: dict[str, Any], scroll_id: str) -> str:
+    sid = (scroll_id or "").strip()
+    if not sid:
+        raise CatalogError("scroll is required")
+    for row in catalog.get("scrolls") or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("id") or "").strip() == sid:
+            return sid
+    raise CatalogError(f"unknown scroll '{sid}'")
+
+
+def skin_set_exists(category: dict[str, Any], key: str) -> bool:
+    needle = (key or "").strip()
+    if not needle:
+        return False
+    sets = category.get("skin_sets") or []
+    if not isinstance(sets, list):
+        return False
+    for sid in sets:
+        if str(sid or "").strip() == needle:
+            return True
+    return False
+
+
+def validate_staff_landing(
+    *,
+    category: str | None,
+    scroll: str | None,
+    tier_scrolls: dict[str, str] | None,
+    kind: str,
+    tiers: list[str] | None,
+    slug: str,
+) -> dict[str, Any]:
+    """Validate staff category/scroll fields against catalog; reject collisions."""
+    catalog = require_synced_catalog()
+    cat = require_category(catalog, category or "")
+
+    if kind == "armor_set":
+        if scroll and str(scroll).strip():
+            raise CatalogError(
+                "scroll is not allowed for armor_set; use tier_scrolls"
+            )
+        if not tier_scrolls:
+            raise CatalogError(
+                "tier_scrolls is required for staff armor_set"
+            )
+        if not isinstance(tier_scrolls, dict):
+            raise CatalogError("tier_scrolls must be a JSON object")
+        tier_list = list(tiers or [])
+        if not tier_list:
+            raise CatalogError("armor_set requires tiers for staff scrolls")
+        normalized: dict[str, str] = {}
+        for tier in tier_list:
+            raw = tier_scrolls.get(tier)
+            if raw is None or not str(raw).strip():
+                raise CatalogError(
+                    f"tier_scrolls missing scroll for tier '{tier}'"
+                )
+            normalized[tier] = require_scroll(catalog, str(raw))
+        for extra in tier_scrolls:
+            if extra not in tier_list:
+                raise CatalogError(
+                    f"tier_scrolls has unknown tier '{extra}'"
+                )
+        if skin_set_exists(cat, slug):
+            raise CatalogError(
+                f"skin set '{slug}' already exists in category '{cat['id']}'"
+            )
+        for tier in tier_list:
+            key = f"{slug}_{tier}"
+            if skin_set_exists(cat, key):
+                raise CatalogError(
+                    f"skin set '{key}' already exists in category '{cat['id']}'"
+                )
+        return {
+            "category": str(cat["id"]),
+            "scroll": None,
+            "tier_scrolls": normalized,
+        }
+
+    if tier_scrolls:
+        raise CatalogError("tier_scrolls is only allowed for armor_set")
+    scroll_id = require_scroll(catalog, scroll or "")
+    if skin_set_exists(cat, slug):
+        raise CatalogError(
+            f"skin set '{slug}' already exists in category '{cat['id']}'"
+        )
+    return {
+        "category": str(cat["id"]),
+        "scroll": scroll_id,
+        "tier_scrolls": None,
+    }

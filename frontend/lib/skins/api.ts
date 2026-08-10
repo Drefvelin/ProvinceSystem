@@ -1,3 +1,7 @@
+import type { SkinsCatalog } from "./catalog";
+
+export type { CatalogCategory, CatalogScroll, SkinsCatalog } from "./catalog";
+
 /** API base for skins + map (no trailing slash). */
 export function getApiBase(): string {
   const base = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
@@ -59,6 +63,8 @@ export type RedeemResult = {
   player_uuid: string;
   expires_at: string;
   code_id: number;
+  scope?: string;
+  staff?: boolean;
 };
 
 export async function redeemCode(code: string): Promise<RedeemResult> {
@@ -77,17 +83,24 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
     );
   }
 
-  const body = data as Partial<RedeemResult>;
+  const body = data as Partial<RedeemResult> & Record<string, unknown>;
   if (!body.session_token || !body.player_uuid || !body.expires_at) {
     throw new SkinsApiError("Invalid redeem response from API", res.status);
   }
 
-  return {
+  const out: RedeemResult = {
     session_token: body.session_token,
     player_uuid: body.player_uuid,
     expires_at: body.expires_at,
     code_id: Number(body.code_id),
   };
+  if (typeof body.scope === "string" && body.scope.trim()) {
+    out.scope = body.scope.trim();
+  }
+  if (body.staff === true || body.staff === "true") {
+    out.staff = true;
+  }
+  return out;
 }
 
 export type SubmissionPublic = {
@@ -107,6 +120,10 @@ export type SubmissionPublic = {
   created_at: string;
   reviewed_at: string | null;
   applied_at: string | null;
+  staff?: boolean;
+  category?: string | null;
+  scroll?: string | null;
+  tier_scrolls?: Record<string, string> | null;
 };
 
 export type SubmissionCheckResult = {
@@ -133,6 +150,9 @@ export type CreateSubmissionInput = {
   add_name?: boolean;
   name_colours?: string[];
   name_styles?: string[];
+  category?: string | null;
+  scroll?: string | null;
+  tier_scrolls?: Record<string, string> | null;
   files: Record<string, File>;
 };
 
@@ -190,6 +210,15 @@ export async function createSubmission(
   if (input.name_styles?.length) {
     form.append("name_styles", JSON.stringify(input.name_styles));
   }
+  if (input.category) {
+    form.append("category", input.category);
+  }
+  if (input.scroll) {
+    form.append("scroll", input.scroll);
+  }
+  if (input.tier_scrolls && Object.keys(input.tier_scrolls).length) {
+    form.append("tier_scrolls", JSON.stringify(input.tier_scrolls));
+  }
   for (const [name, file] of Object.entries(input.files)) {
     form.append(name, file, file.name);
   }
@@ -208,6 +237,24 @@ export async function createSubmission(
     );
   }
   return data as SubmissionPublic;
+}
+
+export async function getCatalog(): Promise<SkinsCatalog> {
+  const res = await apiFetch(`${getApiBase()}/skins/catalog`);
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new SkinsApiError(
+      detailMessage(data, `Catalog failed (${res.status})`),
+      res.status
+    );
+  }
+  const body = (data || {}) as Partial<SkinsCatalog>;
+  return {
+    categories: Array.isArray(body.categories) ? body.categories : [],
+    scrolls: Array.isArray(body.scrolls) ? body.scrolls : [],
+    updated_at:
+      typeof body.updated_at === "string" ? body.updated_at : null,
+  };
 }
 
 export async function getReviewSheet(

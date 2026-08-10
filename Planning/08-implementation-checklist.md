@@ -169,7 +169,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 6. Map hover card fix (M1 quick win) — parallel anytime  
 7. Ban role (bot moderation) — parallel with S3+  
 8. **TFMCWeb / Step 17** — done (docs + staging checklist); tick [08-docs-verify](./batches/step-17/08-docs-verify.md) on live staging ([13](./13-tfmcweb.md))  
-9. Cropped overlays / character creator (after Step 17 staging green) as capacity allows  
+9. **Staff curated skins / Step 18** — **done** (18.01–18.06); tick staging [06-docs-verify](./batches/step-18/06-docs-verify.md) / [STAGING.md](../STAGING.md)  
+10. Cropped overlays / character creator as capacity allows  
 
 ---
 
@@ -184,4 +185,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: character creator UI, Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
-Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs. Step 16 (upload model preview) planned. Step 17 (TFMCWeb) **17.01–17.08 done**; character creator UI still out of scope.
+Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs. Step 16 (upload model preview) planned. Step 17 (TFMCWeb) **17.01–17.08 done**. Step 18 (staff curated skins → `tfmc_armorshop`) **18.01–18.06 done** — tick [STAGING.md](../STAGING.md) Step 18 on live. Character creator UI still out of scope.
