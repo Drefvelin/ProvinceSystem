@@ -212,6 +212,8 @@ export type CharacterListItem = {
 export type CharacterListResponse = {
   characters: CharacterListItem[];
   player_uuid: string;
+  max_alive_characters?: number;
+  alive_count?: number;
 };
 
 export async function listCharacters(
@@ -231,6 +233,12 @@ export async function listCharacters(
   return {
     characters: Array.isArray(body.characters) ? body.characters : [],
     player_uuid: body.player_uuid || "",
+    max_alive_characters:
+      typeof body.max_alive_characters === "number"
+        ? body.max_alive_characters
+        : undefined,
+    alive_count:
+      typeof body.alive_count === "number" ? body.alive_count : undefined,
   };
 }
 

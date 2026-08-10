@@ -37,9 +37,7 @@ export default function CharacterCreatePage() {
       try {
         const cat = await getCreationCatalog(existing!.session_token);
         if (!cat.updated_at || !(cat.stages || []).length) {
-          setError(
-            "Creation catalog is not synced yet. Ask staff to reload RPCharacters."
-          );
+          setError("Sync issue");
         } else {
           setCatalog(cat);
         }

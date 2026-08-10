@@ -11,7 +11,7 @@ from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
 )
-from src.characters.roster import count_alive
+from src.characters.roster import count_alive, get_max_alive
 
 
 class CreateError(ValueError):
@@ -223,11 +223,8 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         if tid not in traits_by_id:
             raise CreateError(f"attribute trait missing from catalog: {tid}")
 
-    # Soft slot check
-    defaults = _as_dict(slot_limits.get("defaults"), "slot_limits.defaults")
-    default_max = int(defaults.get("max_alive_characters") or 3)
-    hard_cap = int(slot_limits.get("hard_cap") or 10)
-    max_alive = min(default_max, hard_cap)
+    # Soft slot check (per-player entitlement if synced, else catalog default)
+    max_alive = get_max_alive(player_uuid, slot_limits)
     alive = count_alive(player_uuid)
     if alive >= max_alive:
         raise CreateError("no free character slot")
@@ -336,7 +333,8 @@ def list_pending() -> list[dict[str, Any]]:
 
 
 def list_for_player(player_uuid: str) -> dict[str, Any]:
-    from src.characters.roster import list_roster
+    from src.characters.creation_catalog import get_catalog
+    from src.characters.roster import count_alive, get_max_alive, list_roster
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -367,7 +365,19 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
                 "create_id": data["id"],
             }
         )
-    return {"characters": characters, "player_uuid": uuid}
+
+    catalog = get_catalog()
+    raw_limits = catalog.get("slot_limits")
+    slot_limits = raw_limits if isinstance(raw_limits, dict) else {}
+
+    max_alive = get_max_alive(uuid, slot_limits)
+    alive_count = count_alive(uuid)
+    return {
+        "characters": characters,
+        "player_uuid": uuid,
+        "max_alive_characters": max_alive,
+        "alive_count": alive_count,
+    }
 
 
 def mark_applied_results(results: list) -> dict[str, Any]:

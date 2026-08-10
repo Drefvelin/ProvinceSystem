@@ -32,12 +32,18 @@ export default function CharacterPage() {
     setLoadingList(true);
     setListError(null);
     try {
-      const [list, catalog] = await Promise.all([
-        listCharacters(token),
-        getCreationCatalog(token),
-      ]);
+      const list = await listCharacters(token);
       setCharacters(list.characters);
-      setMaxSlots(maxAliveSlots(catalog.slot_limits));
+      if (typeof list.max_alive_characters === "number") {
+        setMaxSlots(list.max_alive_characters);
+      } else {
+        try {
+          const catalog = await getCreationCatalog(token);
+          setMaxSlots(maxAliveSlots(catalog.slot_limits));
+        } catch {
+          setMaxSlots(3);
+        }
+      }
     } catch (err) {
       if (err instanceof CharactersApiError && err.status === 401) {
         clearSession();

@@ -21,7 +21,6 @@ from src.skins.db import connect, migrate
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
-DISCORD_ID = "666666666666666666"
 IGN = "IngestSmoke"
 
 ATTRS = [
@@ -106,7 +105,7 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def ensure_linked(client: TestClient, player: str) -> None:
+def ensure_linked(client: TestClient, player: str, discord_id: str) -> None:
     r = client.post(
         "/skins/discord/link/start",
         json={"player_uuid": player, "minecraft_name": IGN},
@@ -121,7 +120,7 @@ def ensure_linked(client: TestClient, player: str) -> None:
         "/skins/discord/link/complete",
         json={
             "code": body["code"],
-            "discord_user_id": DISCORD_ID,
+            "discord_user_id": discord_id,
             "discord_username": "IngestSmokeDiscord",
         },
         headers={"X-Staff-Key": STAFF},
@@ -168,6 +167,7 @@ def main() -> None:
     migrate()
     client = TestClient(app)
     player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
+    discord_id = str(700000000000000000 + (uuid.uuid4().int % 99999999999999))
 
     r = client.put(
         "/characters/plugin/creation-catalog",
@@ -177,7 +177,7 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"catalog put: {r.status_code} {r.text}")
 
-    ensure_linked(client, player)
+    ensure_linked(client, player, discord_id)
     token = redeem_scope(client, player, "character")
     auth = {"Authorization": f"Bearer {token}"}
 
@@ -264,12 +264,48 @@ def main() -> None:
     r = client.get("/characters", headers=auth)
     if r.status_code != 200:
         fail(f"list: {r.status_code} {r.text}")
-    chars = r.json().get("characters") or []
+    listed = r.json()
+    chars = listed.get("characters") or []
     if not any(c.get("id") == create_id and c.get("status") == "ALIVE" for c in chars):
         fail(f"list missing applied character: {chars}")
+    # Without max_alive on roster, list falls back to catalog default (3)
+    if listed.get("max_alive_characters") != 3:
+        fail(
+            f"list max_alive expected catalog default 3, got {listed.get('max_alive_characters')}"
+        )
     print("OK list shows applied roster character")
 
-    # Fill soft slot limit (default 3 alive)
+    # Per-player entitlement from roster (LP max while online)
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "max_alive_characters": 5,
+            "characters": [
+                {
+                    "id": create_id,
+                    "name": "Smoke Hero",
+                    "status": "ALIVE",
+                    "race": "human",
+                    "class": "warrior",
+                    "created_at": "100",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"roster put with max: {r.status_code} {r.text}")
+
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200:
+        fail(f"list after max: {r.status_code} {r.text}")
+    listed = r.json()
+    if listed.get("max_alive_characters") != 5:
+        fail(f"list max_alive expected 5, got {listed.get('max_alive_characters')}")
+    print("OK roster max_alive_characters=5 -> list returns 5")
+
+    # Fill soft slot limit using player entitlement (5 alive)
     r = client.put(
         "/characters/plugin/roster",
         json={
@@ -282,7 +318,7 @@ def main() -> None:
                     "race": "human",
                     "class": "warrior",
                 }
-                for i in range(3)
+                for i in range(5)
             ],
         },
         headers={"X-Plugin-Key": PLUGIN},
@@ -293,7 +329,31 @@ def main() -> None:
     r = client.post("/characters", json=valid_body(), headers=auth)
     if r.status_code != 400 or "slot" not in r.text.lower():
         fail(f"over slot expected 400 slot, got {r.status_code} {r.text}")
-    print("OK over soft slot limit -> 400")
+    print("OK over soft slot limit (5) -> 400")
+
+    # Offline-style roster omit must not clear stored entitlement
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [
+                {
+                    "id": "slot-0",
+                    "name": "Slot 0",
+                    "status": "ALIVE",
+                    "race": "human",
+                    "class": "warrior",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"roster omit max: {r.status_code} {r.text}")
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200 or r.json().get("max_alive_characters") != 5:
+        fail(f"omit max should keep 5: {r.status_code} {r.text}")
+    print("OK roster without max_alive keeps last entitlement")
 
     print("character_ingest_smoke: all checks passed")
 

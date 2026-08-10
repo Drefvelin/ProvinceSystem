@@ -31,6 +31,54 @@ def count_alive(player_uuid: str) -> int:
     return int(row["n"] if row else 0)
 
 
+def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
+    """Fallback max from creation catalog defaults ∩ hard_cap."""
+    limits = slot_limits if isinstance(slot_limits, dict) else {}
+    defaults = limits.get("defaults") if isinstance(limits.get("defaults"), dict) else {}
+    try:
+        default_max = int(defaults.get("max_alive_characters") or 3)
+    except (TypeError, ValueError):
+        default_max = 3
+    try:
+        hard_cap = int(limits.get("hard_cap") or 10)
+    except (TypeError, ValueError):
+        hard_cap = 10
+    return max(1, min(default_max, hard_cap))
+
+
+def get_stored_max_alive(player_uuid: str) -> int | None:
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return None
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT max_alive_characters FROM character_player_meta
+            WHERE player_uuid = ?
+            """,
+            (uuid,),
+        ).fetchone()
+    if row is None:
+        return None
+    try:
+        return max(1, int(row["max_alive_characters"]))
+    except (TypeError, ValueError):
+        return None
+
+
+def get_max_alive(
+    player_uuid: str,
+    slot_limits: dict[str, Any] | None = None,
+) -> int:
+    """Player entitlement if synced, else catalog default ∩ hard_cap."""
+    stored = get_stored_max_alive(player_uuid)
+    if stored is not None:
+        return stored
+    return catalog_default_max_alive(slot_limits)
+
+
 def list_roster(player_uuid: str) -> list[dict[str, Any]]:
     from src.skins.db import connect
 
@@ -62,7 +110,11 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
     ]
 
 
-def replace_roster(player_uuid: str, characters: list) -> dict[str, Any]:
+def replace_roster(
+    player_uuid: str,
+    characters: list,
+    max_alive_characters: int | None = None,
+) -> dict[str, Any]:
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -70,6 +122,15 @@ def replace_roster(player_uuid: str, characters: list) -> dict[str, Any]:
         raise RosterError("player_uuid is required")
     if not isinstance(characters, list):
         raise RosterError("characters must be a list")
+
+    max_alive: int | None = None
+    if max_alive_characters is not None:
+        try:
+            max_alive = int(max_alive_characters)
+        except (TypeError, ValueError) as e:
+            raise RosterError("max_alive_characters must be an integer") from e
+        if max_alive < 1:
+            raise RosterError("max_alive_characters must be >= 1")
 
     now = _iso_now()
     normalized: list[tuple] = []
@@ -120,6 +181,26 @@ def replace_roster(player_uuid: str, characters: list) -> dict[str, Any]:
             """,
             normalized,
         )
+        if max_alive is not None:
+            conn.execute(
+                """
+                INSERT INTO character_player_meta (
+                    player_uuid, max_alive_characters, updated_at
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT(player_uuid) DO UPDATE SET
+                    max_alive_characters = excluded.max_alive_characters,
+                    updated_at = excluded.updated_at
+                """,
+                (uuid, max_alive, now),
+            )
         conn.commit()
 
-    return {"ok": True, "player_uuid": uuid, "count": len(normalized)}
+    out: dict[str, Any] = {
+        "ok": True,
+        "player_uuid": uuid,
+        "count": len(normalized),
+    }
+    if max_alive is not None:
+        out["max_alive_characters"] = max_alive
+    return out

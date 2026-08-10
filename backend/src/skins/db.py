@@ -196,6 +196,15 @@ def migrate() -> None:
             ON character_roster(player_uuid)
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS character_player_meta (
+                player_uuid TEXT PRIMARY KEY,
+                max_alive_characters INTEGER NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
         if "staff" not in _column_names(conn, "submissions"):
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN staff INTEGER NOT NULL DEFAULT 0"
