@@ -1,0 +1,256 @@
+"""In-game warnings store + Discord moderation outbox (bot polls)."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from typing import Any
+
+from .db import connect
+
+
+class ModerationError(ValueError):
+    """Invalid moderation payload."""
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _enqueue(
+    notice_type: str,
+    discord_user_id: str,
+    player_uuid: str | None,
+    payload: dict[str, Any],
+    *,
+    conn=None,
+) -> int:
+    ntype = (notice_type or "").strip()
+    discord_id = (discord_user_id or "").strip()
+    if not ntype:
+        raise ModerationError("notice type is required")
+    if not discord_id:
+        raise ModerationError("discord_user_id is required for outbox")
+
+    body = json.dumps(payload if isinstance(payload, dict) else {})
+    created_at = _iso_now()
+    uuid = (player_uuid or "").strip() or None
+
+    def _insert(c) -> int:
+        cur = c.execute(
+            """
+            INSERT INTO moderation_notifications (
+                type, discord_user_id, player_uuid, payload, created_at, delivered_at
+            ) VALUES (?, ?, ?, ?, ?, NULL)
+            """,
+            (ntype, discord_id, uuid, body, created_at),
+        )
+        return int(cur.lastrowid)
+
+    if conn is not None:
+        return _insert(conn)
+
+    with connect() as c:
+        notice_id = _insert(c)
+        c.commit()
+        return notice_id
+
+
+def record_warning(
+    player_uuid: str,
+    reason: str,
+    *,
+    staff_uuid: str | None = None,
+    staff_name: str | None = None,
+    discord_user_id: str | None = None,
+    minecraft_name: str | None = None,
+) -> dict:
+    """Persist warning; enqueue Discord DM if discord_user_id present."""
+    uuid = (player_uuid or "").strip()
+    text = (reason or "").strip()
+    if not uuid:
+        raise ModerationError("player_uuid is required")
+    if not text:
+        raise ModerationError("reason is required")
+
+    created_at = _iso_now()
+    staff_id = (staff_uuid or "").strip() or None
+    staff = (staff_name or "").strip() or None
+    discord_id = (discord_user_id or "").strip() or None
+    mc_name = (minecraft_name or "").strip() or None
+
+    with connect() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO player_warnings (
+                player_uuid, staff_uuid, staff_name, reason, created_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (uuid, staff_id, staff, text, created_at),
+        )
+        warning_id = int(cur.lastrowid)
+        mirrored = False
+        notice_id = None
+        if discord_id:
+            notice_id = _enqueue(
+                "warn",
+                discord_id,
+                uuid,
+                {
+                    "warning_id": warning_id,
+                    "minecraft_name": mc_name,
+                    "reason": text,
+                    "staff_name": staff,
+                    "staff_uuid": staff_id,
+                },
+                conn=conn,
+            )
+            mirrored = True
+        conn.commit()
+
+    return {
+        "ok": True,
+        "warning_id": warning_id,
+        "mirrored": mirrored,
+        "notification_id": notice_id,
+        "created_at": created_at,
+    }
+
+
+def enqueue_ban_event(
+    event: str,
+    *,
+    player_uuid: str | None = None,
+    discord_user_id: str | None = None,
+    minecraft_name: str | None = None,
+    reason: str | None = None,
+    duration: str | None = None,
+    staff_name: str | None = None,
+) -> dict:
+    """Enqueue ban or unban Discord side-effect. No outbox if unlinked."""
+    etype = (event or "").strip().lower()
+    if etype not in ("ban", "unban"):
+        raise ModerationError("event must be 'ban' or 'unban'")
+
+    discord_id = (discord_user_id or "").strip() or None
+    if not discord_id:
+        return {"ok": True, "mirrored": False, "notification_id": None}
+
+    uuid = (player_uuid or "").strip() or None
+    payload = {
+        "minecraft_name": (minecraft_name or "").strip() or None,
+        "reason": (reason or "").strip() or None,
+        "duration": (duration or "").strip() or None,
+        "staff_name": (staff_name or "").strip() or None,
+    }
+    notice_id = _enqueue(etype, discord_id, uuid, payload)
+    return {"ok": True, "mirrored": True, "notification_id": notice_id}
+
+
+def list_undelivered_moderation() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM moderation_notifications
+            WHERE delivered_at IS NULL
+            ORDER BY created_at ASC, id ASC
+            """
+        ).fetchall()
+
+    result = []
+    for row in rows:
+        try:
+            payload = json.loads(row["payload"])
+        except (json.JSONDecodeError, TypeError):
+            payload = {}
+        result.append(
+            {
+                "id": row["id"],
+                "type": row["type"],
+                "discord_user_id": row["discord_user_id"],
+                "player_uuid": row["player_uuid"],
+                "payload": payload,
+                "created_at": row["created_at"],
+            }
+        )
+    return result
+
+
+def ack_moderation(ids: list[int]) -> dict:
+    raw_ids = [int(i) for i in (ids or []) if i is not None]
+    if not raw_ids:
+        return {"acked": [], "delivered_at": None}
+
+    now = _iso_now()
+    acked: list[int] = []
+    with connect() as conn:
+        for notice_id in raw_ids:
+            row = conn.execute(
+                "SELECT id, delivered_at FROM moderation_notifications WHERE id = ?",
+                (notice_id,),
+            ).fetchone()
+            if row is None:
+                continue
+            if row["delivered_at"] is None:
+                conn.execute(
+                    "UPDATE moderation_notifications SET delivered_at = ? WHERE id = ?",
+                    (now, notice_id),
+                )
+            acked.append(notice_id)
+        conn.commit()
+
+    return {"acked": acked, "delivered_at": now if acked else None}
+
+
+def _self_test() -> None:
+    from .db import migrate
+
+    migrate()
+    uuid = "00000000-0000-4000-8000-000000000107"
+    discord_id = "999888777666555444"
+
+    with connect() as conn:
+        conn.execute("DELETE FROM player_warnings WHERE player_uuid = ?", (uuid,))
+        conn.execute(
+            "DELETE FROM moderation_notifications WHERE player_uuid = ?", (uuid,)
+        )
+        conn.commit()
+
+    unlinked = record_warning(uuid, "test unlinked", staff_name="Tester")
+    assert unlinked["ok"] and not unlinked["mirrored"]
+
+    linked = record_warning(
+        uuid,
+        "test linked",
+        staff_name="Tester",
+        discord_user_id=discord_id,
+        minecraft_name="WarnTest",
+    )
+    assert linked["mirrored"] and linked["notification_id"]
+
+    skipped = enqueue_ban_event("ban", player_uuid=uuid, reason="x")
+    assert not skipped["mirrored"]
+
+    banned = enqueue_ban_event(
+        "ban",
+        player_uuid=uuid,
+        discord_user_id=discord_id,
+        minecraft_name="WarnTest",
+        reason="grief",
+        duration="8h",
+        staff_name="Mod",
+    )
+    assert banned["mirrored"]
+
+    notices = list_undelivered_moderation()
+    ours = [n for n in notices if n.get("player_uuid") == uuid]
+    assert len(ours) >= 2
+    ack = ack_moderation([n["id"] for n in ours])
+    assert len(ack["acked"]) >= 2
+    left = [n for n in list_undelivered_moderation() if n.get("player_uuid") == uuid]
+    assert not left
+    print("moderation self-test OK")
+
+
+if __name__ == "__main__":
+    _self_test()

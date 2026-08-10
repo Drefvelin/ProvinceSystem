@@ -86,7 +86,10 @@ BASE_SETS: dict[str, frozenset[str]] = {
 }
 MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
 GUN_FIELDS = ("texture",) + GUN_MODEL_FIELDS
-GRIP_PRESETS = frozenset({"bottom", "middle", "top"})
+GRIP_Y_MIN = 0.0
+GRIP_Y_MAX = 16.0
+# Legacy preset ids still accepted and mapped to Y.
+_GRIP_PRESET_Y = {"bottom": 2.5, "middle": 4.0, "top": 5.5}
 MAX_DISPLAY_NAME = 80
 
 
@@ -97,6 +100,28 @@ class SubmissionError(ValueError):
 class SlugConflictError(SubmissionError):
     """Skin id already used by an active submission."""
 
+
+def parse_grip_y(raw: str | None) -> float | None:
+    """Parse grip_preset form value as thirdperson Y (2.5–5.5), or None if empty."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    legacy = _GRIP_PRESET_Y.get(text.lower())
+    if legacy is not None:
+        return legacy
+    try:
+        value = float(text)
+    except ValueError as exc:
+        raise SubmissionError(
+            f"grip_preset must be a number between {GRIP_Y_MIN} and {GRIP_Y_MAX}"
+        ) from exc
+    if not (GRIP_Y_MIN <= value <= GRIP_Y_MAX):
+        raise SubmissionError(
+            f"grip_preset must be between {GRIP_Y_MIN} and {GRIP_Y_MAX}"
+        )
+    return round(value, 2)
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -445,14 +470,17 @@ def create_submission(
     if len(display) > MAX_DISPLAY_NAME:
         raise SubmissionError(f"Item name max length is {MAX_DISPLAY_NAME}")
 
-    grip = (grip_preset or "").strip() or None
+    grip_y = parse_grip_y(grip_preset)
     if kind == "large_handheld":
-        if grip not in GRIP_PRESETS:
+        if grip_y is None:
             raise SubmissionError(
-                "large_handheld requires grip_preset: bottom, middle, or top"
+                f"large_handheld requires grip_preset between {GRIP_Y_MIN} and {GRIP_Y_MAX}"
             )
-    elif grip is not None:
+        grip = f"{grip_y:.1f}"
+    elif grip_y is not None:
         raise SubmissionError("grip_preset is only allowed for large_handheld")
+    else:
+        grip = None
 
     want_add_name = bool(add_name)
     colours = _validate_name_colours(name_colours)
@@ -700,6 +728,9 @@ def _get_row(submission_id: str) -> sqlite3.Row | None:
 
 def _list_asset_files(submission_id: str) -> list[str]:
     """PNG + model JSON for plugin download (excludes meta.json)."""
+    from .pack_models.regen import ensure_pack_models
+
+    ensure_pack_models(submission_id)
     out_dir = SKINS_DIR / submission_id
     if not out_dir.is_dir():
         return []
@@ -966,6 +997,10 @@ def resolve_submission_file(submission_id: str, filename: str) -> Path | None:
         return None
     if ".." in name:
         return None
+
+    from .pack_models.regen import ensure_pack_models
+
+    ensure_pack_models(submission_id)
 
     base = (SKINS_DIR / submission_id).resolve()
     if not base.is_dir():

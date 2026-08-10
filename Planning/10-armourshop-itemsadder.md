@@ -10,7 +10,8 @@ Naming: [07-naming-conventions.md](./07-naming-conventions.md).
 | Actor | Does |
 |-------|------|
 | ProvinceSystem | Codes, uploads, Discord review state, file store |
-| **ArmourShop** | `/linkdiscord`; `/armourshop token create`; pull approved; write IA + shop YAML; LP; deferred reload |
+| **TFMCWeb** | `/linkdiscord`, `/unlinkdiscord`, `/token create skin\|character`, notice poller, Survival Discord gate |
+| **ArmourShop** | Pull approved; write IA + shop YAML; LP; deferred reload; admin `listtokens` / `token delete` |
 | ItemsAdder | Loads `tfmc_submissions` after files exist / pack rebuild |
 | SimpleFactions | Nothing here |
 
@@ -32,14 +33,15 @@ ArmourShop is the **only** writer into live `contents/tfmc_submissions/` for pla
 
 ```mermaid
 sequenceDiagram
+  participant TW as TFMCWeb
   participant AS as ArmourShop
   participant API as ProvinceSystem
   participant IA as tfmc_submissions
   participant LP as LuckPerms
   participant Player
 
-  Player->>AS: /linkdiscord then /armourshop token create
-  AS->>API: POST link/start then POST /skins/codes
+  Player->>TW: /linkdiscord then /token create skin
+  TW->>API: POST link/start then POST /skins/codes
   Note over Player,API: Discord /linkdiscord CODE completes bind; token is click-to-copy
   AS->>API: GET /skins/plugin/approved
   API-->>AS: metadata plus files
@@ -109,15 +111,16 @@ Never add new skins via manual `custom_model_data` lists in `tfmc_pack`.
 
 ## Discord link (before skins upload)
 
-Players must bind Minecraft ↔ Discord before a website upload is accepted.
+Players must bind Minecraft ↔ Discord before a website upload is accepted. **TFMCWeb** owns this after [step-17.06](./batches/step-17/06-armourshop-cutover.md).
 
 | Command | Where | API |
 |---------|-------|-----|
-| `/linkdiscord` | In game (player online) | `POST /skins/discord/link/start`; click-to-copy code |
+| `/linkdiscord` | In game (TFMCWeb) | `POST /skins/discord/link/start`; click-to-copy code |
 | `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
-| `/armourshop token create` | In game | `POST /skins/codes`; click-to-copy; perm `armourshop.token.create` |
+| `/token create skin` | In game (TFMCWeb) | `POST /skins/codes` scope=skin; perm `tfmcweb.token.create` |
+| `/armourshop listtokens` / `token delete` | In game (ArmourShop admin) | List/revoke unused codes |
 
-Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
+Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-17](./batches/step-17/00-index.md) (TFMCWeb ownership), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
 
 ## Display ownership
 
@@ -187,8 +190,9 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 
 ## Checklist
 
-- [x] `/linkdiscord` → `link/start` ([step-5/04](./batches/step-5/04-armourshop-linkdiscord.md))  
-- [x] `/armourshop token create` → `POST /skins/codes` + click-to-copy ([step-6](./batches/step-6/00-index.md))  
+- [x] `/linkdiscord` → `link/start` (historically [step-5/04](./batches/step-5/04-armourshop-linkdiscord.md); now **TFMCWeb** [17.04](./batches/step-17/04-tfmcweb-scaffold.md))  
+- [x] `/token create skin` → `POST /skins/codes` ([17.05](./batches/step-17/05-token-scopes.md); was `/armourshop token create` [step-6](./batches/step-6/00-index.md))  
+- [x] ArmourShop cutover: no AS link/notice/player mint ([17.06](./batches/step-17/06-armourshop-cutover.md))  
 - [x] Scaffold empty `tfmc_submissions` + `pack-apply` paths ([step-7/01](./batches/step-7/01-scaffold.md))  
 - [x] Pack writer + harness ([step-7](./batches/step-7/00-index.md) 02–05)  
 - [x] `base_set` API/UI + pull + shop + LP + reload + applied ([step-8](./batches/step-8/00-index.md) 01–06; live STAGING E2E boxes in [STAGING.md](../STAGING.md))  

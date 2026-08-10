@@ -1,4 +1,4 @@
-"""Minecraft UUID ↔ Discord user id linking via one-time codes."""
+"""Minecraft UUID ↔ Discord user id linking via one-time codes + guild grace."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from .codes import generate_plaintext_code, hash_secret
 from .db import connect
-from .plugin_notices import enqueue_link_success
+from .plugin_notices import enqueue_link_success, enqueue_plugin_notice
 
 
 class LinkError(ValueError):
@@ -32,6 +32,67 @@ def _link_ttl_minutes() -> int:
         return max(1, int(raw))
     except ValueError:
         return 15
+
+
+def _guild_grace_minutes() -> int:
+    raw = os.environ.get("IDENTITY_GUILD_GRACE_MINUTES", "60").strip()
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 60
+
+
+def _row_to_link(row) -> dict:
+    grace = row["grace_until"] if "grace_until" in row.keys() else None
+    left = row["left_guild_at"] if "left_guild_at" in row.keys() else None
+    return {
+        "player_uuid": str(row["player_uuid"]),
+        "discord_user_id": str(row["discord_user_id"]),
+        "minecraft_name": row["minecraft_name"],
+        "discord_username": row["discord_username"],
+        "linked_at": row["linked_at"],
+        "left_guild_at": left,
+        "grace_until": grace,
+    }
+
+
+def _status_from_row(row, *, now: datetime | None = None) -> dict:
+    link = _row_to_link(row)
+    now = now or _utcnow()
+    grace_until = link.get("grace_until")
+    in_grace = False
+    if grace_until:
+        try:
+            in_grace = _parse_iso(str(grace_until)) > now
+        except (TypeError, ValueError):
+            in_grace = False
+    return {
+        "linked": True,
+        "eligible": True,
+        "in_grace": in_grace,
+        "player_uuid": link["player_uuid"],
+        "discord_user_id": link["discord_user_id"],
+        "discord_username": link["discord_username"],
+        "minecraft_name": link["minecraft_name"],
+        "linked_at": link["linked_at"],
+        "left_guild_at": link.get("left_guild_at"),
+        "grace_until": grace_until,
+    }
+
+
+def _unlinked_status(player_uuid: str) -> dict:
+    return {
+        "linked": False,
+        "eligible": False,
+        "in_grace": False,
+        "player_uuid": player_uuid,
+        "discord_user_id": None,
+        "discord_username": None,
+        "minecraft_name": None,
+        "linked_at": None,
+        "left_guild_at": None,
+        "grace_until": None,
+    }
 
 
 def start_link(
@@ -127,8 +188,8 @@ def complete_link(
             """
             INSERT INTO discord_links (
                 player_uuid, discord_user_id, minecraft_name,
-                discord_username, linked_at
-            ) VALUES (?, ?, ?, ?, ?)
+                discord_username, linked_at, left_guild_at, grace_until
+            ) VALUES (?, ?, ?, ?, ?, NULL, NULL)
             """,
             (player_uuid, discord_id, minecraft_name, username, linked_at),
         )
@@ -167,7 +228,7 @@ def get_discord_id_for_uuid(player_uuid: str) -> str | None:
 
 
 def get_link_for_uuid(player_uuid: str) -> dict | None:
-    """Active Discord link row for UUID."""
+    """Active Discord link row for UUID (includes grace fields)."""
     uuid = (player_uuid or "").strip()
     if not uuid:
         return None
@@ -175,7 +236,7 @@ def get_link_for_uuid(player_uuid: str) -> dict | None:
         row = conn.execute(
             """
             SELECT player_uuid, discord_user_id, minecraft_name,
-                   discord_username, linked_at
+                   discord_username, linked_at, left_guild_at, grace_until
             FROM discord_links
             WHERE player_uuid = ?
             """,
@@ -183,13 +244,153 @@ def get_link_for_uuid(player_uuid: str) -> dict | None:
         ).fetchone()
     if row is None:
         return None
-    return {
-        "player_uuid": str(row["player_uuid"]),
-        "discord_user_id": str(row["discord_user_id"]),
-        "minecraft_name": row["minecraft_name"],
-        "discord_username": row["discord_username"],
-        "linked_at": row["linked_at"],
-    }
+    return _row_to_link(row)
+
+
+def record_guild_left(discord_user_id: str) -> dict:
+    """Start 1h grace; keep link row. Idempotent if already in grace."""
+    discord_id = (discord_user_id or "").strip()
+    if not discord_id:
+        raise LinkError("discord_user_id is required")
+
+    now = _utcnow()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+        if row is None:
+            raise LinkError("No Minecraft link for this Discord account")
+
+        existing_grace = row["grace_until"] if "grace_until" in row.keys() else None
+        if existing_grace:
+            try:
+                if _parse_iso(str(existing_grace)) > now:
+                    return _status_from_row(row, now=now)
+            except (TypeError, ValueError):
+                pass
+
+        left_at = _iso(now)
+        grace_until = _iso(now + timedelta(minutes=_guild_grace_minutes()))
+        conn.execute(
+            """
+            UPDATE discord_links
+            SET left_guild_at = ?, grace_until = ?
+            WHERE discord_user_id = ?
+            """,
+            (left_at, grace_until, discord_id),
+        )
+        enqueue_plugin_notice(
+            "guild_left_grace",
+            str(row["player_uuid"]),
+            {
+                "discord_user_id": discord_id,
+                "grace_until": grace_until,
+                "left_guild_at": left_at,
+            },
+            conn=conn,
+        )
+        conn.commit()
+        refreshed = conn.execute(
+            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+    return _status_from_row(refreshed, now=now)
+
+
+def record_guild_joined(discord_user_id: str) -> dict:
+    """Clear grace if present; stay linked."""
+    discord_id = (discord_user_id or "").strip()
+    if not discord_id:
+        raise LinkError("discord_user_id is required")
+
+    now = _utcnow()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+        if row is None:
+            raise LinkError("No Minecraft link for this Discord account")
+
+        was_in_grace = False
+        grace = row["grace_until"] if "grace_until" in row.keys() else None
+        if grace:
+            was_in_grace = True
+
+        conn.execute(
+            """
+            UPDATE discord_links
+            SET left_guild_at = NULL, grace_until = NULL
+            WHERE discord_user_id = ?
+            """,
+            (discord_id,),
+        )
+        if was_in_grace:
+            enqueue_plugin_notice(
+                "guild_rejoined",
+                str(row["player_uuid"]),
+                {"discord_user_id": discord_id},
+                conn=conn,
+            )
+        conn.commit()
+        refreshed = conn.execute(
+            "SELECT * FROM discord_links WHERE discord_user_id = ?",
+            (discord_id,),
+        ).fetchone()
+    return _status_from_row(refreshed, now=now)
+
+
+def expire_due_graces() -> int:
+    """Delete links whose grace_until has passed; enqueue grace_expired. Returns count."""
+    now = _utcnow()
+    now_iso = _iso(now)
+    expired = 0
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT player_uuid, discord_user_id, grace_until
+            FROM discord_links
+            WHERE grace_until IS NOT NULL AND grace_until <= ?
+            """,
+            (now_iso,),
+        ).fetchall()
+        for row in rows:
+            uuid = str(row["player_uuid"])
+            discord_id = str(row["discord_user_id"])
+            conn.execute(
+                "DELETE FROM discord_links WHERE player_uuid = ?",
+                (uuid,),
+            )
+            enqueue_plugin_notice(
+                "grace_expired",
+                uuid,
+                {
+                    "discord_user_id": discord_id,
+                    "grace_until": row["grace_until"],
+                },
+                conn=conn,
+            )
+            expired += 1
+        if expired:
+            conn.commit()
+    return expired
+
+
+def get_identity_status(player_uuid: str) -> dict:
+    """Plugin-facing status; expires due graces first."""
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise LinkError("player_uuid is required")
+    expire_due_graces()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM discord_links WHERE player_uuid = ?",
+            (uuid,),
+        ).fetchone()
+    if row is None:
+        return _unlinked_status(uuid)
+    return _status_from_row(row)
 
 
 def unlink_by_uuid(player_uuid: str) -> dict:
@@ -285,9 +486,41 @@ if __name__ == "__main__":
     assert again.get("already_linked") is True
     assert again.get("discord_username") == "DiscordOne"
 
-    unlink_by_uuid(u1)
+    # Guild leave grace
+    left = record_guild_left(d1)
+    assert left["linked"] and left["in_grace"] and left["grace_until"]
+    assert get_link_for_uuid(u1) is not None
+    left_again = record_guild_left(d1)
+    assert left_again["in_grace"]  # idempotent
+
+    joined = record_guild_joined(d1)
+    assert joined["linked"] and not joined["in_grace"]
+    assert joined["grace_until"] is None
+
+    # Force expiry
+    record_guild_left(d1)
+    past = _iso(_utcnow() - timedelta(minutes=5))
+    with connect() as conn:
+        conn.execute(
+            "UPDATE discord_links SET grace_until = ? WHERE player_uuid = ?",
+            (past, u1),
+        )
+        conn.commit()
+    n = expire_due_graces()
+    assert n >= 1
+    assert get_link_for_uuid(u1) is None
+    status = get_identity_status(u1)
+    assert not status["linked"] and not status["eligible"]
+
+    expired_notices = [
+        n
+        for n in list_undelivered_plugin_notices()
+        if n["player_uuid"] == u1 and n["type"] == "grace_expired"
+    ]
+    assert len(expired_notices) >= 1
+
+    # Relink for alt check
     started2 = start_link(u1, "TestPlayer")
-    assert "code" in started2
     complete_link(started2["code"], d2, discord_username="DiscordTwo")
     assert get_discord_id_for_uuid(u1) == d2
 

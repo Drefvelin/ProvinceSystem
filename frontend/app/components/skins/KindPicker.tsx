@@ -18,7 +18,7 @@ const OPTIONS: {
   {
     value: "large_handheld",
     label: "Large handheld",
-    detail: "32×32 + grip",
+    detail: "32×32 + grip slider",
   },
   { value: "bow", label: "Bow", detail: "16×16 · 4 frames" },
   { value: "large_bow", label: "Large bow", detail: "32×32 · 4 frames" },

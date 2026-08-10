@@ -8,7 +8,7 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 ## Sprint 0 — Docs
 
-- [x] Platform Planning playbook (README + 01–12)
+- [x] Platform Planning playbook (README + 01–13; TFMCWeb in [13](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md))
 
 ---
 
@@ -61,12 +61,12 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 ### S3.5 — Discord link + player DMs
 
-**Repos:** ProvinceSystem + `tfmc_bot` + ArmourShop `/linkdiscord` — [batches/step-5](./batches/step-5/00-index.md)
+**Repos:** ProvinceSystem + `tfmc_bot` + TFMCWeb `/linkdiscord` (historically ArmourShop) — [batches/step-5](./batches/step-5/00-index.md) · [step-17](./batches/step-17/00-index.md)
 
 - [x] Link API: start (plugin) + complete (staff) + `discord_links`
 - [x] Submit requires link; stamp `discord_user_id`; submitted notification outbox
 - [x] Cog: `/linkdiscord`; DMs for submitted / approved / denied
-- [x] ArmourShop: `/linkdiscord` → `link/start`
+- [x] `/linkdiscord` → `link/start` (now TFMCWeb; was ArmourShop)
 - [x] Smoke green (`skins_e2e_smoke.py` — link + notify + review)
 - [ ] Live Discord DM path on staging/AMP — operator checklist in [STAGING.md](../STAGING.md)
 
@@ -77,7 +77,7 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 **Repo:** `Workspace/armourshop` — [batches/step-6](./batches/step-6/00-index.md)
 
 - [x] Click-to-copy chat helper; `POST /skins/codes` client; `/linkdiscord` uses copy
-- [x] `/armourshop token create` + tab complete; perm `armourshop.token.create`
+- [x] `/token create skin` (TFMCWeb; perm `tfmcweb.token.create`); AS mint redirects
 - [ ] Staging: mint → redeem on site → upload
 
 **Done when:** Donator (LP) mints in game, clicks to copy, redeems on `/skins` without curl.
@@ -116,7 +116,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] `item_3d` / `shield` / `helmet_3d` API/UI + display autofill + ArmourShop apply (shield blocking auto; armor per-tier 3D helmet)
 - [x] Guns carry/reload/aim ([step-14](./batches/step-14/00-index.md))
 - [x] GaG resolve IA ids instead of CMD ([step-15](./batches/step-15/00-index.md))
-- [ ] Multi-view review bake for Discord; shared view-only site renderer (**later**)
+- [ ] Upload 3D model preview on `/skins` ([step-16](./batches/step-16/00-index.md)) — start with [16.02 json render](./batches/step-16/02-json-model-render.md)
+- [ ] Multi-view review bake for Discord (**later**, after site viewer)
 - [ ] Quotas, retention, reserved slugs, tier size caps (**later**)
 
 ---
@@ -167,7 +168,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 5. ArmourShop apply (S4)  
 6. Map hover card fix (M1 quick win) — parallel anytime  
 7. Ban role (bot moderation) — parallel with S3+  
-8. Cropped overlays / item_3d / SF config hygiene as capacity allows  
+8. **TFMCWeb / Step 17** — done (docs + staging checklist); tick [08-docs-verify](./batches/step-17/08-docs-verify.md) on live staging ([13](./13-tfmcweb.md))  
+9. Cropped overlays / character creator (after Step 17 staging green) as capacity allows  
 
 ---
 
@@ -177,8 +179,9 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 |------|----------|
 | Map | Live SF → API → web works; realm card shows size; usable on phone |
 | Skins | armor_set + item/handheld/large_handheld; exact sizes; naming; Discord PNG review; ArmourShop pack + LP |
-| Bot | Skins review with sheets; ban DM/log + banned role add/clear |
+| Bot | Skins review with sheets; ban DM/log + banned role add/clear; guild leave/join grace |
+| TFMCWeb | Survival Discord gate; `/token create skin`; ArmourShop no longer owns link |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP later: multi-view 3D review bake, full map overlay crop, brewery module, SF secret cleanup if not done.  
-Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs.
+Post-MVP later: character creator UI, Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
+Step 13 (`item_3d` / `shield` / `helmet_3d`), Step 14 (`gun`), and Step 15 (GaG IA gun ids) implemented — staging smoke in batch docs. Step 16 (upload model preview) planned. Step 17 (TFMCWeb) **17.01–17.08 done**; character creator UI still out of scope.

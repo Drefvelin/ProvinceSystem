@@ -9,12 +9,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .db import SKINS_DIR
-from .display import DisplayError, model_to_bytes, parse_and_merge_model
+from .display import DisplayError, parse_and_merge_model
 from .naming import (
-    ARMOR_ICON_FIELDS,
     ARMOR_LAYER_FIELDS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
+)
+from .pack_models.gun import build_gun_models
+from .pack_models.large_bow import bow_file_suffix, build_large_bow_models
+from .pack_models.large_handheld import (
+    build_large_handheld_model,
+    parse_grip_preset,
+)
+from .pack_models.shield import build_shield_models
+from .pack_models.textures import (
+    model_to_bytes as pack_model_to_bytes,
+    normalize_textures,
 )
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -29,12 +39,7 @@ BOW_SIZE = (16, 16)
 LARGE_BOW_SIZE = (32, 32)
 CROSSBOW_SIZE = (16, 16)
 
-SINGLE_TEXTURE_KINDS = frozenset({"handheld", "large_handheld"})
-BOW_KINDS = frozenset({"bow", "large_bow"})
 CROSSBOW_KINDS = frozenset({"crossbow"})
-ITEM_KINDS = frozenset(
-    {"handheld", "large_handheld", "bow", "large_bow", "crossbow"}
-)
 MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
 GUN_KIND = "gun"
 GUN_MODEL_FIELDS = ("carry_model", "reload_model", "aim_model")
@@ -131,7 +136,15 @@ def _write_model_3d(
     except DisplayError as e:
         raise StorageError(str(e)) from e
     (out_dir / f"{slug}.png").write_bytes(files["texture"])
-    (out_dir / f"{slug}.json").write_bytes(model_to_bytes(model))
+    if kind == "shield":
+        idle, blocking = build_shield_models(model, slug)
+        (out_dir / f"{slug}.json").write_bytes(pack_model_to_bytes(idle))
+        (out_dir / f"{slug}_blocking.json").write_bytes(
+            pack_model_to_bytes(blocking)
+        )
+    else:
+        normalized = normalize_textures(model, slug)
+        (out_dir / f"{slug}.json").write_bytes(pack_model_to_bytes(normalized))
 
 
 def _write_gun(out_dir: Path, slug: str, files: dict[str, bytes]) -> None:
@@ -139,15 +152,40 @@ def _write_gun(out_dir: Path, slug: str, files: dict[str, bytes]) -> None:
         raise StorageError("Missing file field: texture")
     validate_png(files["texture"])
     (out_dir / f"{slug}.png").write_bytes(files["texture"])
+    merged: dict[str, dict] = {}
     for field, stem in zip(GUN_MODEL_FIELDS, GUN_MODEL_STEMS, strict=True):
         if field not in files:
             raise StorageError(f"Missing file field: {field}")
         validate_model_json_size(files[field])
         try:
-            model = parse_and_merge_model(files[field], "gun")
+            merged[stem] = parse_and_merge_model(files[field], "gun")
         except DisplayError as e:
             raise StorageError(f"{field}: {e}") from e
-        (out_dir / f"{slug}_{stem}.json").write_bytes(model_to_bytes(model))
+    built = build_gun_models(merged, slug)
+    for stem, model in built.items():
+        (out_dir / f"{slug}_{stem}.json").write_bytes(pack_model_to_bytes(model))
+
+
+def _write_large_handheld(
+    out_dir: Path, slug: str, files: dict[str, bytes], grip_preset: str | None
+) -> None:
+    if "texture" not in files:
+        raise StorageError("Missing file field: texture")
+    validate_png(files["texture"], LARGE_HANDHELD_SIZE)
+    try:
+        grip = parse_grip_preset(grip_preset)
+    except ValueError as e:
+        raise StorageError(str(e)) from e
+    (out_dir / f"{slug}.png").write_bytes(files["texture"])
+    (out_dir / f"{slug}.json").write_bytes(
+        pack_model_to_bytes(build_large_handheld_model(slug, grip))
+    )
+
+
+def _write_large_bow_models(out_dir: Path, slug: str) -> None:
+    for stem, model in build_large_bow_models(slug).items():
+        name = f"{slug}{bow_file_suffix(stem)}.json"
+        (out_dir / name).write_bytes(pack_model_to_bytes(model))
 
 
 def _write_armor(
@@ -190,8 +228,11 @@ def _write_armor(
             (out_dir / f"{tier}_helmet_texture.png").write_bytes(
                 files[tex_key]
             )
+            # Pack slug at apply is {submission_id}_{tier}; texture id matches.
+            texture_id = f"{out_dir.name}_{tier}_helmet"
+            normalized = normalize_textures(model, texture_id)
             (out_dir / f"{tier}_helmet_model.json").write_bytes(
-                model_to_bytes(model)
+                pack_model_to_bytes(normalized)
             )
         else:
             key = f"{tier}_helmet"
@@ -231,17 +272,17 @@ def write_submission_files(
             if not tier_list:
                 raise StorageError("armor_set requires at least one tier")
             _write_armor(out_dir, files, tier_list, h3d)
-        elif kind in SINGLE_TEXTURE_KINDS:
+        elif kind == "large_handheld":
+            _write_large_handheld(out_dir, slug, files, grip_preset)
+        elif kind == "handheld":
             if "texture" not in files:
                 raise StorageError("Missing file field: texture")
-            size = (
-                LARGE_HANDHELD_SIZE
-                if kind == "large_handheld"
-                else ITEM_SIZE
-            )
-            validate_png(files["texture"], size)
+            validate_png(files["texture"], ITEM_SIZE)
             (out_dir / f"{slug}.png").write_bytes(files["texture"])
-        elif kind in BOW_KINDS:
+        elif kind == "large_bow":
+            _write_bow_frames(out_dir, slug, kind, files, BOW_FRAME_FIELDS)
+            _write_large_bow_models(out_dir, slug)
+        elif kind == "bow":
             _write_bow_frames(out_dir, slug, kind, files, BOW_FRAME_FIELDS)
         elif kind in CROSSBOW_KINDS:
             _write_bow_frames(

@@ -54,14 +54,14 @@ flowchart TB
 
 ## Flow 2 — Skin submission to usable cosmetic
 
-**Actors:** Donator, ArmourShop, website, Discord staff, ItemsAdder, LuckPerms.
+**Actors:** Donator, TFMCWeb, ArmourShop, website, Discord staff, ItemsAdder, LuckPerms.
 
 | Step | Who | What |
 |------|-----|------|
-| 0a | Donator | In-game `/linkdiscord` → one-time code |
+| 0a | Donator | In-game TFMCWeb `/linkdiscord` → one-time code |
 | 0b | Donator | Discord `/linkdiscord <code>` → UUID ↔ Discord id linked |
-| 1 | Donator | In-game: `/armourshop token create` (perm `armourshop.token.create` / admin; LP for donators later) |
-| 2 | ArmourShop | `POST /skins/codes` with UUID; shows plaintext once (**click-to-copy**) |
+| 1 | Donator | In-game: `/token create skin` (perm `tfmcweb.token.create` / admin) |
+| 2 | TFMCWeb | `POST /skins/codes` scope=skin; shows plaintext once (**click-to-copy**) |
 | 3 | Donator | Website `/skins`: redeem code |
 | 4 | Donator | Chooses kind (no `item`); picks **`base_set`** filtered by kind (armor tier or type); grip for large; enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) |
 | 5 | API | Requires Discord link; validates naming, **exact pixel sizes**, and `base_set`↔kind pairing; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
@@ -82,18 +82,19 @@ flowchart TB
 
 ## Flow 3 — Staff Discord ban notify + role mute
 
-**Actors:** Staff, tfmc_bot, Discord user. Minecraft ban is **separate** (in-game command).
+**Actors:** Staff, TFMCWeb, Essentials (or CE), tfmc_bot, Discord user.
 
 | Step | Who | What |
 |------|-----|------|
-| 1 | Staff | Ban player **in-game** (server plugin) |
-| 2 | Staff | Discord `/minecraftban` with Discord user, MC name, reason, duration |
-| 3 | Bot | Ephemeral preview → DM user → log channel |
-| 4 | Bot | Add **Banned** role (planned) |
-| 5 | Discord | Role denies speak in configured channels |
-| 6 | Staff | Later `/minecraftunban` (or clear): remove role; optional unban in-game separately |
+| 1 | Staff | Ban in-game: Essentials `/tempban` / `/ban` (or CE `/tfmc ban`) |
+| 2 | TFMCWeb | Listens → enqueues moderation outbox (linked Discord id) |
+| 3 | Bot | Polls outbox → DM user → staff log → add **Banned** role (`BANNED_ROLE_ID`) |
+| 4 | Discord | Role denies speak in configured channels |
+| 5 | Staff | In-game `/unban` → TFMCWeb → bot clears Banned role (no player DM) |
 
-**Warn:** `/minecraftwarn` — DM + log; no banned role.
+**Manual fallback:** Discord `/minecraftban` / `/minecraftunban` / `/minecraftwarn` still work without the MC mirror.
+
+**Warn:** TFMCWeb `/warning` → in-game chat (if online) + store + bot DM + log. Unlinked: store only.
 
 **Non-goal:** bot does not execute MC bans.
 

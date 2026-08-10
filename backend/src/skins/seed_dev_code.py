@@ -39,20 +39,24 @@ def main() -> None:
             conn.execute(
                 """
                 UPDATE codes
-                SET player_uuid = ?, created_at = ?, expires_at = ?,
+                SET player_uuid = ?, scope = 'skin', code_plaintext = ?,
+                    created_at = ?, expires_at = ?,
                     redeemed_at = NULL, revoked = 0
                 WHERE id = ?
                 """,
-                (DEV_UUID, created_at, expires_at, existing["id"]),
+                (DEV_UUID, DEV_CODE, created_at, expires_at, existing["id"]),
             )
             action = "updated"
         else:
             conn.execute(
                 """
-                INSERT INTO codes (code_hash, player_uuid, created_at, expires_at, redeemed_at, revoked)
-                VALUES (?, ?, ?, ?, NULL, 0)
+                INSERT INTO codes (
+                    code_hash, code_plaintext, player_uuid, scope,
+                    created_at, expires_at, redeemed_at, revoked
+                )
+                VALUES (?, ?, ?, 'skin', ?, ?, NULL, 0)
                 """,
-                (code_hash, DEV_UUID, created_at, expires_at),
+                (code_hash, DEV_CODE, DEV_UUID, created_at, expires_at),
             )
             action = "inserted"
         conn.commit()

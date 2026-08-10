@@ -33,9 +33,44 @@ import {
 } from "../../../lib/skins/namePreview";
 import FancyCheckbox from "./FancyCheckbox";
 import KindPicker from "./KindPicker";
+import ModelPreview from "./ModelPreview";
+import ArmorPreview from "./ArmorPreview";
+import {
+  GRIP_Y_DEFAULT,
+  GRIP_Y_MAX,
+  GRIP_Y_MIN,
+} from "../../../lib/skins/flatItemDisplay";
 
-const GRIPS = ["bottom", "middle", "top"] as const;
 const MAX_TIERS = ARMOR_TIERS.length;
+
+function isFlatPreviewKind(kind: SkinKind): boolean {
+  return (
+    kind === "handheld" ||
+    kind === "large_handheld" ||
+    kind === "bow" ||
+    kind === "large_bow" ||
+    kind === "crossbow"
+  );
+}
+
+function resolveModelPreviewFiles(
+  kind: SkinKind,
+  files: Record<string, File | null>
+): { model: File | null; texture: File | null } {
+  if (isModel3dKind(kind)) {
+    return {
+      model: files.model ?? null,
+      texture: files.texture ?? null,
+    };
+  }
+  if (isGunKind(kind) || isFlatPreviewKind(kind)) {
+    return {
+      model: null,
+      texture: files.texture ?? null,
+    };
+  }
+  return { model: null, texture: null };
+}
 
 type Props = {
   sessionToken: string;
@@ -111,32 +146,195 @@ function acceptForField(field: string): string {
 
 export default function UploadForm({ sessionToken }: Props) {
   const router = useRouter();
-  const [kind, setKind] = useState<SkinKind>("armor_set");
-  const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
+  // TEMP demo default — remove after hand-preview tuning
+  const [kind, setKind] = useState<SkinKind>("crossbow");
+  const [baseSet, setBaseSet] = useState(defaultBaseSet("crossbow"));
   const [tiers, setTiers] = useState<TierEntry[]>([]);
   const [tierToAdd, setTierToAdd] = useState<string>("");
-  const [itemName, setItemName] = useState("");
+  /** Which added tier the armor mannequin preview shows. */
+  const [previewArmorTier, setPreviewArmorTier] = useState<string>("");
+  const [itemName, setItemName] = useState("Demo Crossbow");
   const [applyName, setApplyName] = useState(true);
   const [colours, setColours] = useState<string[]>(["#ffffff"]);
   const [styles, setStyles] = useState<NameStyle[]>([]);
   const [hexDraft, setHexDraft] = useState("#55ff55");
-  const [grip, setGrip] = useState<(typeof GRIPS)[number]>("bottom");
+  const [gripY, setGripY] = useState(GRIP_Y_DEFAULT);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
 
+  // TEMP: auto-load demo assets so we can iterate without re-picking files
   useEffect(() => {
-    setFiles({});
     setTiers([]);
     setTierToAdd("");
     setError(null);
     setBaseSet(defaultBaseSet(kind));
+
+    let cancelled = false;
+
+    if (kind === "item_3d") {
+      setItemName("Test Block");
+      (async () => {
+        try {
+          const [modelRes, texRes] = await Promise.all([
+            fetch("/demo/text_block.json"),
+            fetch("/demo/test_block.png"),
+          ]);
+          if (!modelRes.ok || !texRes.ok || cancelled) return;
+          const modelBlob = await modelRes.blob();
+          const texBlob = await texRes.blob();
+          if (cancelled) return;
+          setFiles({
+            model: new File([modelBlob], "text_block.json", {
+              type: "application/json",
+            }),
+            texture: new File([texBlob], "test_block.png", {
+              type: "image/png",
+            }),
+          });
+        } catch {
+          if (!cancelled) setFiles({});
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (kind === "helmet_3d") {
+      setItemName("Adventurer Hat");
+      (async () => {
+        try {
+          const [modelRes, texRes] = await Promise.all([
+            fetch("/demo/adventurer_hat.json"),
+            fetch("/demo/adventurer_hat.png"),
+          ]);
+          if (!modelRes.ok || !texRes.ok || cancelled) return;
+          const modelBlob = await modelRes.blob();
+          const texBlob = await texRes.blob();
+          if (cancelled) return;
+          setFiles({
+            model: new File([modelBlob], "adventurer_hat.json", {
+              type: "application/json",
+            }),
+            texture: new File([texBlob], "adventurer_hat.png", {
+              type: "image/png",
+            }),
+          });
+        } catch {
+          if (!cancelled) setFiles({});
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (kind === "gun") {
+      setItemName("Matchlock Rifle");
+      (async () => {
+        try {
+          const [carryRes, reloadRes, aimRes, texRes] = await Promise.all([
+            fetch("/demo/rifle_matchlock_carry.json"),
+            fetch("/demo/rifle_matchlock_reload.json"),
+            fetch("/demo/rifle_matchlock_aim.json"),
+            fetch("/demo/rifle_matchlock.png"),
+          ]);
+          if (
+            !carryRes.ok ||
+            !reloadRes.ok ||
+            !aimRes.ok ||
+            !texRes.ok ||
+            cancelled
+          ) {
+            return;
+          }
+          const [carryBlob, reloadBlob, aimBlob, texBlob] = await Promise.all([
+            carryRes.blob(),
+            reloadRes.blob(),
+            aimRes.blob(),
+            texRes.blob(),
+          ]);
+          if (cancelled) return;
+          setFiles({
+            carry_model: new File([carryBlob], "rifle_matchlock_carry.json", {
+              type: "application/json",
+            }),
+            reload_model: new File(
+              [reloadBlob],
+              "rifle_matchlock_reload.json",
+              { type: "application/json" }
+            ),
+            aim_model: new File([aimBlob], "rifle_matchlock_aim.json", {
+              type: "application/json",
+            }),
+            texture: new File([texBlob], "rifle_matchlock.png", {
+              type: "image/png",
+            }),
+          });
+        } catch {
+          if (!cancelled) setFiles({});
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (kind === "crossbow") {
+      setItemName("Demo Crossbow");
+      (async () => {
+        try {
+          const names = [
+            "crossbow_standby",
+            "crossbow_pull_0",
+            "crossbow_pull_1",
+            "crossbow_pull_2",
+            "crossbow_charged",
+          ] as const;
+          const responses = await Promise.all(
+            names.map((n) => fetch(`/demo/${n}.png`))
+          );
+          if (responses.some((r) => !r.ok) || cancelled) return;
+          const blobs = await Promise.all(responses.map((r) => r.blob()));
+          if (cancelled) return;
+          setFiles({
+            texture: new File([blobs[0]!], "crossbow_standby.png", {
+              type: "image/png",
+            }),
+            pull_0: new File([blobs[1]!], "crossbow_pull_0.png", {
+              type: "image/png",
+            }),
+            pull_1: new File([blobs[2]!], "crossbow_pull_1.png", {
+              type: "image/png",
+            }),
+            pull_2: new File([blobs[3]!], "crossbow_pull_2.png", {
+              type: "image/png",
+            }),
+            charged: new File([blobs[4]!], "crossbow_charged.png", {
+              type: "image/png",
+            }),
+          });
+        } catch {
+          if (!cancelled) setFiles({});
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setFiles({});
+    return () => {
+      cancelled = true;
+    };
   }, [kind]);
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
   const isArmor = kind === "armor_set";
+  const previewFiles = resolveModelPreviewFiles(kind, files);
 
   const remainingTiers: string[] = ARMOR_TIERS.filter(
     (t) => !tiers.some((entry) => entry.tier === t)
@@ -144,6 +342,23 @@ export default function UploadForm({ sessionToken }: Props) {
   const effectiveTierToAdd = remainingTiers.includes(tierToAdd)
     ? tierToAdd
     : remainingTiers[0] ?? "";
+
+  const previewTierEntry =
+    tiers.find((e) => e.tier === previewArmorTier) ?? tiers[0] ?? null;
+
+  useEffect(() => {
+    if (!isArmor) {
+      setPreviewArmorTier("");
+      return;
+    }
+    if (tiers.length === 0) {
+      setPreviewArmorTier("");
+      return;
+    }
+    if (!tiers.some((e) => e.tier === previewArmorTier)) {
+      setPreviewArmorTier(tiers[0]!.tier);
+    }
+  }, [isArmor, tiers, previewArmorTier]);
 
   function setFile(field: string, file: File | null) {
     setFiles((prev) => ({ ...prev, [field]: file }));
@@ -227,9 +442,15 @@ export default function UploadForm({ sessionToken }: Props) {
       return;
     }
 
-    if (kind === "large_handheld" && !grip) {
-      setError("Choose a grip preset");
-      return;
+    if (kind === "large_handheld") {
+      if (
+        !Number.isFinite(gripY) ||
+        gripY < GRIP_Y_MIN ||
+        gripY > GRIP_Y_MAX
+      ) {
+        setError(`Grip must be between ${GRIP_Y_MIN} and ${GRIP_Y_MAX}`);
+        return;
+      }
     }
 
     const uploadFiles: Record<string, File> = {};
@@ -328,7 +549,7 @@ export default function UploadForm({ sessionToken }: Props) {
         helmet_3d_tiers: isArmor
           ? tiers.filter((e) => e.helmet3d).map((e) => e.tier)
           : undefined,
-        grip_preset: kind === "large_handheld" ? grip : null,
+        grip_preset: kind === "large_handheld" ? gripY.toFixed(1) : null,
         add_name: applyName,
         name_colours: colours.length ? colours : undefined,
         name_styles: styles.length ? styles : undefined,
@@ -610,27 +831,29 @@ export default function UploadForm({ sessionToken }: Props) {
       {kind === "large_handheld" ? (
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-medium text-[var(--tfmc-stone)]">
-            Grip preset
+            Grip height
           </legend>
-          <div className="flex flex-wrap gap-3">
-            {GRIPS.map((g) => (
-              <label
-                key={g}
-                className="flex cursor-pointer items-center gap-2 text-sm text-[var(--tfmc-cream)]"
-              >
-                <input
-                  type="radio"
-                  name="grip"
-                  value={g}
-                  checked={grip === g}
-                  disabled={loading}
-                  onChange={() => setGrip(g)}
-                  className="accent-[var(--tfmc-accent)]"
-                />
-                {g}
-              </label>
-            ))}
-          </div>
+          <p className="text-xs text-[var(--tfmc-mist)]">
+            Slide to move where the item sits in the hand (preview updates live).
+          </p>
+          <label className="flex items-center gap-3 text-sm text-[var(--tfmc-cream)]">
+            <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">Low</span>
+            <input
+              type="range"
+              min={GRIP_Y_MIN}
+              max={GRIP_Y_MAX}
+              step={0.1}
+              value={gripY}
+              disabled={loading}
+              onChange={(e) => setGripY(Number(e.target.value))}
+              className="min-w-0 flex-1 accent-[var(--tfmc-accent)]"
+              aria-label="Grip height"
+            />
+            <span className="shrink-0 text-xs text-[var(--tfmc-mist)]">High</span>
+            <span className="w-10 shrink-0 tabular-nums text-xs text-[var(--tfmc-cream)]">
+              {gripY.toFixed(1)}
+            </span>
+          </label>
         </fieldset>
       ) : null}
 
@@ -734,10 +957,49 @@ export default function UploadForm({ sessionToken }: Props) {
                         ) : null}
                       </label>
                     ))}
+                    {entry.helmet3d ? (
+                      <p className="text-xs text-[var(--tfmc-mist)]">
+                        3D helmet shows on the armor preview when this tier is
+                        selected below.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 );
               })}
+              {previewTierEntry ? (
+                <div className="flex flex-col gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] p-4">
+                  <label className="flex flex-col gap-1 text-left sm:max-w-xs">
+                    <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                      Preview tier
+                    </span>
+                    <select
+                      value={previewTierEntry.tier}
+                      disabled={loading}
+                      onChange={(e) => setPreviewArmorTier(e.target.value)}
+                      className={inputClass}
+                    >
+                      {tiers.map((e) => (
+                        <option key={e.tier} value={e.tier}>
+                          {baseSetLabel(e.tier)}
+                          {e.alias.trim() && e.alias.trim() !== baseSetLabel(e.tier)
+                            ? ` (${e.alias.trim()})`
+                            : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <ArmorPreview
+                    layer1File={previewTierEntry.files.layer_1 ?? null}
+                    layer2File={previewTierEntry.files.layer_2 ?? null}
+                    helmet3d={previewTierEntry.helmet3d}
+                    helmetModelFile={previewTierEntry.files.helmet_model ?? null}
+                    helmetTextureFile={
+                      previewTierEntry.files.helmet_texture ?? null
+                    }
+                  />
+                </div>
+              ) : null}
             </div>
           ) : (
             <p className="text-sm text-[var(--tfmc-mist)]">
@@ -797,6 +1059,37 @@ export default function UploadForm({ sessionToken }: Props) {
               ) : null}
             </label>
           ))}
+          {isModel3dKind(kind) || isGunKind(kind) || isFlatPreviewKind(kind) ? (
+            <ModelPreview
+              modelFile={previewFiles.model}
+              textureFile={previewFiles.texture}
+              gunModels={
+                isGunKind(kind)
+                  ? {
+                      carry: files.carry_model ?? null,
+                      reload: files.reload_model ?? null,
+                      aim: files.aim_model ?? null,
+                    }
+                  : undefined
+              }
+              flatTextureFile={
+                isFlatPreviewKind(kind) ? (files.texture ?? null) : null
+              }
+              flatFrames={
+                isFlatPreviewKind(kind)
+                  ? {
+                      texture: files.texture ?? null,
+                      pull_0: files.pull_0 ?? null,
+                      pull_1: files.pull_1 ?? null,
+                      pull_2: files.pull_2 ?? null,
+                      charged: files.charged ?? null,
+                    }
+                  : undefined
+              }
+              gripY={kind === "large_handheld" ? gripY : null}
+              kind={kind}
+            />
+          ) : null}
         </div>
       )}
 

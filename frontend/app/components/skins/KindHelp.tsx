@@ -39,10 +39,10 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   large_handheld: {
     title: "Large handheld",
-    summary: "A 32×32 handheld with a grip preset for how it sits in hand.",
+    summary: "A 32×32 handheld with a grip slider for how it sits in hand.",
     steps: [
       "Choose the base set.",
-      "Pick a grip: bottom, middle, or top.",
+      "Adjust the grip height slider while checking the preview.",
       "Upload one 32×32 PNG as texture.",
       "Set the item name / colours, then submit.",
     ],
@@ -86,10 +86,11 @@ const GUIDES: Record<SkinKind, KindGuide> = {
   },
   shield: {
     title: "Shield 3D",
-    summary: "3D shield model plus texture.",
+    summary: "3D shield model plus texture. Blocking pose is generated automatically.",
     steps: [
       "Choose the shield base set.",
       "Upload Blockbench JSON + texture PNG.",
+      "Preview Idle / Blocking on Right and Left hands.",
       "Set the item name / colours, then submit.",
     ],
   },

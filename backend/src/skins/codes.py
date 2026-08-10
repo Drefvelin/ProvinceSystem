@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from .db import connect
 
 SESSION_TTL_HOURS = 1
+ALLOWED_SCOPES = frozenset({"skin", "character"})
 
 
 class CodeError(ValueError):
@@ -47,20 +48,36 @@ def _code_ttl_hours() -> int:
         return 48
 
 
-def _has_discord_link(player_uuid: str) -> bool:
-    with connect() as conn:
-        row = conn.execute(
-            "SELECT 1 FROM discord_links WHERE player_uuid = ? LIMIT 1",
-            (player_uuid,),
-        ).fetchone()
-    return row is not None
+def _normalize_scope(scope: str | None) -> str:
+    raw = (scope or "skin").strip().lower()
+    if not raw:
+        raw = "skin"
+    if raw not in ALLOWED_SCOPES:
+        raise CodeError("scope must be 'skin' or 'character'")
+    return raw
 
 
-def issue_code(player_uuid: str) -> dict:
+def _row_scope(row) -> str:
+    try:
+        value = row["scope"]
+    except (KeyError, IndexError):
+        return "skin"
+    if value is None:
+        return "skin"
+    text = str(value).strip().lower()
+    return text if text else "skin"
+
+
+def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
+    from .discord_link import get_identity_status
+
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise CodeError("player_uuid is required")
-    if not _has_discord_link(uuid):
+    normalized = _normalize_scope(scope)
+
+    status = get_identity_status(uuid)
+    if not status.get("eligible"):
         raise CodeError("Link Discord in-game with /linkdiscord first")
 
     plaintext = generate_plaintext_code()
@@ -72,16 +89,23 @@ def issue_code(player_uuid: str) -> dict:
         conn.execute(
             """
             INSERT INTO codes (
-                code_hash, code_plaintext, player_uuid, created_at, expires_at,
+                code_hash, code_plaintext, player_uuid, scope, created_at, expires_at,
                 redeemed_at, revoked
             )
-            VALUES (?, ?, ?, ?, ?, NULL, 0)
+            VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
             """,
-            (hash_secret(plaintext), plaintext, uuid, _iso(now), expires_at),
+            (
+                hash_secret(plaintext),
+                plaintext,
+                uuid,
+                normalized,
+                _iso(now),
+                expires_at,
+            ),
         )
         conn.commit()
 
-    return {"code": plaintext, "expires_at": expires_at}
+    return {"code": plaintext, "expires_at": expires_at, "scope": normalized}
 
 
 def list_active_codes() -> list[dict]:
@@ -93,6 +117,7 @@ def list_active_codes() -> list[dict]:
             SELECT
                 c.code_plaintext AS code,
                 c.player_uuid AS player_uuid,
+                c.scope AS scope,
                 d.minecraft_name AS minecraft_name,
                 c.created_at AS created_at,
                 c.expires_at AS expires_at
@@ -111,6 +136,7 @@ def list_active_codes() -> list[dict]:
         {
             "code": row["code"],
             "player_uuid": row["player_uuid"],
+            "scope": _row_scope(row),
             "minecraft_name": row["minecraft_name"],
             "created_at": row["created_at"],
             "expires_at": row["expires_at"],
@@ -173,6 +199,8 @@ def redeem_code(plaintext: str) -> dict:
             raise CodeError("Code has already been redeemed")
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
+        if _row_scope(row) != "skin":
+            raise CodeError("This code is for character creation, not skins")
 
         session_token = secrets.token_urlsafe(32)
         session_expires = now + timedelta(hours=SESSION_TTL_HOURS)
@@ -223,3 +251,60 @@ def get_session(token: str) -> sqlite3.Row | None:
     if _parse_iso(row["expires_at"]) < now:
         return None
     return row
+
+
+def _self_test() -> None:
+    """Mint/redeem scope checks. Run: python -m src.skins.codes"""
+    from .db import migrate
+    from .discord_link import LinkError, complete_link, start_link, unlink_by_uuid
+
+    migrate()
+    uuid = "00000000-0000-4000-8000-000000000105"
+    discord_id = "discord-scope-selftest-105"
+    try:
+        unlink_by_uuid(uuid)
+    except LinkError:
+        pass
+
+    try:
+        issue_code(uuid, "skin")
+        raise AssertionError("expected unlinked mint to fail")
+    except CodeError as e:
+        assert "Link Discord" in str(e)
+
+    start = start_link(uuid, "ScopeTest")
+    assert "code" in start
+    complete_link(start["code"], discord_id, "ScopeTestUser")
+
+    skin = issue_code(uuid, "skin")
+    assert skin["scope"] == "skin" and skin["code"]
+    session = redeem_code(skin["code"])
+    assert session.get("session_token")
+
+    char = issue_code(uuid, "character")
+    assert char["scope"] == "character"
+    try:
+        redeem_code(char["code"])
+        raise AssertionError("expected character code skins redeem to fail")
+    except CodeError as e:
+        assert "character creation" in str(e).lower()
+
+    try:
+        issue_code(uuid, "bogus")
+        raise AssertionError("expected bad scope to fail")
+    except CodeError as e:
+        assert "scope" in str(e).lower()
+
+    # default scope (ArmourShop back-compat)
+    defaulted = issue_code(uuid)
+    assert defaulted["scope"] == "skin"
+
+    try:
+        unlink_by_uuid(uuid)
+    except LinkError:
+        pass
+    print("codes scope self-test OK")
+
+
+if __name__ == "__main__":
+    _self_test()

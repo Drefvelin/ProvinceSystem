@@ -73,13 +73,44 @@ poll_interval_seconds: 60
 Then in Discord: `-reload skinsreview` → `/skinsreview ping`.  
 Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
 
-## Step 5 — Discord link + player DMs (manual)
+## Step 17 — TFMCWeb identity + Discord gate (current)
 
-Automated API path: `python scripts/skins_e2e_smoke.py` from `backend/` (link + notify + review; Step 11: IGN-based ids, multi-tier armor, no `player_key`).
+**Playbook:** [Planning/13-tfmcweb.md](./Planning/13-tfmcweb.md) · full checklist [Planning/batches/step-17/08-docs-verify.md](./Planning/batches/step-17/08-docs-verify.md).
 
-Live Discord path (operator):
+### Deploy
 
-1. **Link** — In game `/linkdiscord` (ArmourShop `skins-api` → staging URL + plugin key), **or** curl:
+1. ProvinceSystem API on staging (identity grace + moderation outbox).
+2. `Builds/TFMCWeb/tfmcweb-*.jar` with `plugins/TFMCWeb/config.yml`:
+   - `api.base-url`: `http://127.0.0.1:18001`
+   - `api.plugin-key`: same as API `PLUGIN_API_KEY`
+3. ArmourShop cutover jar (pack apply only; `skins-api` still for approved packs).
+4. RPCharacters with Discord gate freeze API.
+5. Bot: skinsreview `guild_id` + leave/join; minecraftban `API_BASE_URL` / `STAFF_KEY` / `BANNED_ROLE_ID` (must be set for role checks).
+6. LuckPerms: `tfmcweb.token.create` (migrate from `armourshop.token.create`); staff `tfmcweb.warning`.
+
+### Link + mint (operator)
+
+1. Survival: `/linkdiscord` (TFMCWeb) → Discord `/linkdiscord code:<CODE>` → notices via TFMCWeb poller.
+2. `/token create skin` → click-copy → redeem + upload on `http://127.0.0.1:13001/skins`.
+3. Approve/Deny in `#bot-feed` → outcome DMs (skinsreview).
+4. Optional: `/token create character` (redeem stub 501 until character creator).
+5. `/armourshop token create` redirects to `/token create skin` (obsolete AS mint).
+
+If already linked, `/linkdiscord` does not mint a new code. Use `/unlinkdiscord` (in-game or Discord) to relink. One Discord ↔ one UUID.
+
+### Gate / grace / moderation smoke
+
+- Survival unlinked → frozen; message points to `/linkdiscord`. Non-Survival staff not gated.
+- Leave guild → ≤1h play; rejoin clears; after expire → freeze.
+- `/warning` + `/tempban` (or CE `/tfmc ban`) → Discord DM + Banned role; `/unban` clears role.
+
+Checkpoint: see [08-docs-verify.md](./Planning/batches/step-17/08-docs-verify.md).
+
+## Step 5 — Discord link + player DMs (historical)
+
+> **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.
+
+Automated API path: `python scripts/skins_e2e_smoke.py` from `backend/` (link + notify + review).
 
 ```bash
 curl -s -X POST http://127.0.0.1:18001/skins/discord/link/start \
@@ -88,44 +119,25 @@ curl -s -X POST http://127.0.0.1:18001/skins/discord/link/start \
   -d '{"player_uuid":"00000000-0000-0000-0000-000000000001","minecraft_name":"Test"}'
 ```
 
-2. In TFMC Discord: `/linkdiscord code:<CODE>` (ephemeral success). In game, ArmourShop polls notices (~1s) and chats link success if the player is online.
-3. Mint via `/armourshop token create` (or curl below) → redeem + upload on `http://127.0.0.1:13001/skins`.
-4. Confirm **submitted** DM; submission appears in `#bot-feed`.
-5. Approve or Deny → **outcome** DM (+ reason if denied).
-6. Confirm API/status shows `player_uuid` + linked Discord (staff embed / pending).
-
-If already linked, in-game `/linkdiscord` does **not** mint a new code — it says already linked (with Discord name when stored). Use `/unlinkdiscord` first to relink.
-
-**Unlink (wrong account / alt):**
-
-- In game on the **linked** UUID: `/unlinkdiscord`
-- Or in Discord (any MC): `/unlinkdiscord` — clears by Discord user id (fixes “Discord stuck on alt”)
-- Then `/linkdiscord` again on the correct account
-- Guards already in place: one Discord ↔ one UUID; each skins code redeems **once**
-
-Checkpoint:
-
-```text
-link → redeem + upload → submitted DM → Approve/Deny → outcome DM
-```
+Live path today: TFMCWeb `/linkdiscord` → Discord complete → `/token create skin` → site redeem (see Step 17).
 
 ## Mint a code + submit a skin
 
-**Preferred (in-game, Step 6):**
+**Preferred (in-game, TFMCWeb / Step 17):**
 
-1. Deploy `Builds/ArmourShop/armourshop-1.1.2.jar` with `skins-api.base-url` / `plugin-key` pointing at staging.
-2. Grant LP `armourshop.token.create` (or use `armourshop.admin`).
+1. Deploy `Builds/TFMCWeb/tfmcweb-*.jar` with `api.base-url` / `api.plugin-key` pointing at staging.
+2. Grant LP `tfmcweb.token.create` (or use `tfmcweb.admin`).
 3. `/linkdiscord` → Discord complete (**required before mint**).
-4. `/armourshop token create` → click the aqua code to copy (tab: `token` → `create`).
-5. Open `http://127.0.0.1:13001/skins`, redeem, upload → `#bot-feed` / DMs as Step 5.
+4. `/token create skin` → click the aqua code to copy.
+5. Open `http://127.0.0.1:13001/skins`, redeem, upload → `#bot-feed` / DMs as Step 5 (historical DM flow).
 
 Admin: `/armourshop listtokens` lists unused unexpired codes (issuer + red `[Delete]` → `/armourshop token delete <code>`).
 
 Operator checklist:
 
-- [ ] Discord linked for test UUID (Step 5)
-- [ ] LP: `armourshop.token.create` (or admin)
-- [ ] `/armourshop token create` → click-copy
+- [ ] Discord linked for test UUID (TFMCWeb / Step 17)
+- [ ] LP: `tfmcweb.token.create` (or admin)
+- [ ] `/token create skin` → click-copy
 - [ ] Redeem + upload on staging UI
 - [ ] `#bot-feed` / submitted + outcome DMs
 
@@ -159,7 +171,7 @@ Bow kinds need four/five multipart fields (`texture`, `pull_0`, `pull_1`, `pull_
    - `pack-apply.categories-path`: absolute path to ArmourShop `Categories/`
    - `pack-apply.force-reload-time`: `"06:00"` server-local daily force pull + IA refresh (blank disables)
    - `pack-apply.ia-reload-delay-seconds`: seconds between `iareload` and `iazip` (default `5`)
-2. Link Discord + mint + redeem (Step 5 / mint section above).
+2. Link Discord + mint + redeem (Step 17 / mint section above).
 3. On `http://127.0.0.1:13001/skins`: choose kind. Armor: **Add tier** (1–6 of `iron/steel/abyssalite/mythril/mage/infantry`), 6 uploads per tier; non-armor: pick filtered **`base_set`** (no `item`), grip only for `large_handheld`. Upload any PNG file — filenames don't matter, the API derives the id from your linked Minecraft name + item name. Optional **Apply name** adds colours/styles. Site blocks if you already have an active submission with that item name.
 4. Staff **Approve** in `#bot-feed` (embed shows the human submission id, Minecraft + Discord names, tiers or base set — never raw UUIDs).
 5. Pack apply happens via:

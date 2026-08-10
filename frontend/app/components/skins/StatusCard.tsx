@@ -160,7 +160,7 @@ export default function StatusCard({ row }: Props) {
         </div>
         {row.grip_preset ? (
           <div>
-            <dt className="text-[var(--tfmc-stone)]">Grip</dt>
+            <dt className="text-[var(--tfmc-stone)]">Grip height</dt>
             <dd className="text-[var(--tfmc-cream)]">{row.grip_preset}</dd>
           </div>
         ) : null}

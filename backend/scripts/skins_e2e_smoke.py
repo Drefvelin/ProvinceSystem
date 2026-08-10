@@ -556,7 +556,7 @@ def main() -> None:
         data={
             "kind": "large_handheld",
             "display_name": "Smoke Large",
-            "grip_preset": "bottom",
+            "grip_preset": "2.5",
             "base_set": "spears",
         },
         files=[("texture", ("large-texture-final.png", large_tex, "image/png"))],
@@ -571,8 +571,8 @@ def main() -> None:
         fail(f"large id expected {expected_large_id}, got {large_id}")
     if large.get("slug") != large_id:
         fail(f"large slug expected to equal id, got {large.get('slug')}")
-    if large.get("grip_preset") != "bottom":
-        fail(f"expected grip_preset=bottom, got {large.get('grip_preset')}")
+    if large.get("grip_preset") != "2.5":
+        fail(f"expected grip_preset=2.5, got {large.get('grip_preset')}")
     if large.get("base_set") != "spears":
         fail(f"large base_set expected spears, got {large.get('base_set')}")
     if large.get("discord_user_id") != DISCORD_ID:
@@ -638,10 +638,13 @@ def main() -> None:
         fail("armor add_name expected false on approved list")
     if by_id[hand_id].get("base_set") != "swords":
         fail("handheld base_set missing on approved list")
-    if by_id[large_id].get("grip_preset") != "bottom":
+    if by_id[large_id].get("grip_preset") != "2.5":
         fail("large grip_preset missing on approved list")
     if by_id[large_id].get("base_set") != "spears":
         fail("large base_set missing on approved list")
+    large_files = by_id[large_id].get("files") or []
+    if f"{large_id}.json" not in large_files:
+        fail(f"large missing pack model JSON in files: {large_files}")
     if by_id[hand_id].get("add_name") is not True:
         fail("handheld add_name missing on approved list")
     if by_id[hand_id].get("name_colours") != ["#9c001a", "\u00a7c"]:

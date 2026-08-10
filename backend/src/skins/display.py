@@ -20,15 +20,16 @@ COMMON_TABS = HAND_TABS + ("ground", "gui", "fixed")
 HEAD_TAB = "head"
 
 # Sensible Blockbench-style defaults (player values override).
+# thirdperson matches Blockbench Display Mode → Item preset.
 _DEFAULT_TAB: dict[str, Any] = {
     "thirdperson_righthand": {
-        "rotation": [0, 90, 0],
-        "translation": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "translation": [0, 3, 1],
         "scale": [0.55, 0.55, 0.55],
     },
     "thirdperson_lefthand": {
-        "rotation": [0, 90, 0],
-        "translation": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "translation": [0, 3, 1],
         "scale": [0.55, 0.55, 0.55],
     },
     "firstperson_righthand": {

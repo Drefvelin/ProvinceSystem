@@ -8,27 +8,31 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 
 | Component | Path | Role |
 |-----------|------|------|
-| **ProvinceSystem** | `ProvinceSystem/` (`dev` branch) | Website + FastAPI: interactive maps, skins redeem/upload/status, SQLite |
+| **ProvinceSystem** | `ProvinceSystem/` (`dev` branch) | Website + FastAPI: interactive maps, skins redeem/upload/status, identity, SQLite |
+| **TFMCWeb** | `Workspace/tfmcweb/` | Single MC ↔ web gate: Discord link, scoped tokens, Survival Discord freeze, warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md) |
 | **SimpleFactions** | `Workspace/simplefactions/` | Map bridge: nation JSON upload, queue, regen, province lookup |
-| **ArmourShop** | `Workspace/armourshop/` | Skins bridge: `/linkdiscord`; mint codes; pull approvals; write pack + shop YAML, LP |
+| **ArmourShop** | `Workspace/armourshop/` | Skins pack writer + apply (identity/tokens owned by TFMCWeb) |
+| **RPCharacters** | `Workspace/rpcharacters/` | Characters + freeze loop; Discord gate via new freeze reason |
 | **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player content goes in namespace **`tfmc_submissions`** |
-| **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review (`#bot-feed`); `/linkdiscord` + player DMs; ban/warn DMs; Discord banned-role mute (later) |
+| **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review; link; guild leave/join; ban/warn DMs + Banned role |
 
 ## Product lines
 
 1. **Map** — Live borders on the web; SimpleFactions keeps the API fed; ProvinceSystem generates and serves images.  
 2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`.  
-3. **Discord moderation (side)** — Notify players of MC bans/warns; optional Discord role mute. In-game bans stay in-game.
+3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
+4. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
 
-Future tools (e.g. BreweryX helpers) plug into the same website shell.
+Future tools (character creator, BreweryX helpers) plug into the same website shell + TFMCWeb.
 
 ## Locked decisions
 
 - **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
-- **No site logins** — skins use ArmourShop-issued UUID-bound codes.
-- **Discord link** — in-game `/linkdiscord` + Discord `/linkdiscord <code>` bind UUID ↔ Discord id; required before upload; player DMs for submitted / approved / denied — [batches/step-5](./batches/step-5/00-index.md).
+- **No site logins** — skins use TFMCWeb-issued UUID-bound codes (`/token create skin`).
+- **Discord link** — in-game `/linkdiscord` + Discord `/linkdiscord <code>` bind UUID ↔ Discord id; required before upload; player DMs for submitted / approved / denied — [batches/step-5](./batches/step-5/00-index.md). **Owner: TFMCWeb** ([13](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
+- **Discord gate** — Survival players must be linked + in guild; **1h grace** on leave; freeze via RPCharacters (characters untouched); no alts; staff/helpers non-Survival not gated — [13](./13-tfmcweb.md).
 - **SQLite + disk** for skins metadata/files on the API.
-- **SimpleFactions = map only**; **ArmourShop = skins pack writer**.
+- **SimpleFactions = map only**; **ArmourShop = skins pack writer**; **TFMCWeb = identity + web transport**.
 - **`tfmc_submissions`** pack; IA auto CMD (like armor/cooking), not legacy `tfmc_pack` CMD overrides.
 - **Armor set** = 4 icons (16×16) + 2 layers (64×32); optional per-tier **3D helmet**; **item** / **handheld** = 16×16 PNG; **large_handheld** = 32×32 + grip preset; **item_3d** / **shield** / **helmet_3d** — [step-13](./batches/step-13/00-index.md).
 - **Naming:** Item name for ArmourShop; id from IGN + display name — [07-naming-conventions.md](./07-naming-conventions.md).
@@ -64,13 +68,18 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 10. [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) — apply on the MC server  
 11. [11-discord-bot.md](./11-discord-bot.md) — skins cog + ban role  
 
+**Identity / TFMCWeb**
+
+12. [13-tfmcweb.md](./13-tfmcweb.md) — TFMCWeb plugin, Discord gate, tokens, warn/ban mirror  
+13. [batches/step-17](./batches/step-17/00-index.md) — build order to stand it up  
+
 **Local**
 
-12. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
+14. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
 
 **Build batches (plan + implement)**
 
-13. [batches/README.md](./batches/README.md) — Step 2–13: API, UI, Discord, pack writer, plugin apply, 3D kinds  
+15. [batches/README.md](./batches/README.md) — Step 2–17: API, UI, Discord, pack writer, plugin apply, 3D kinds, gun IA, upload model preview, TFMCWeb  
 
 ## Success criteria (full platform)
 
@@ -87,7 +96,13 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 **Bot**
 
 - Staff review skins in Discord.
-- Ban/warn notifies via DM; banned role add/clear for channel mute; MC bans remain in-game commands.
+- Ban/warn notifies via DM; banned role add/clear for channel mute; MC bans remain Essentials.
+- Guild leave/join drives 1h grace + Survival Discord gate ([13](./13-tfmcweb.md)).
+
+**TFMCWeb**
+
+- Single plugin key / HTTP client for identity + tokens; ArmourShop/Factions/characters consume it.
+- Survival unlinked (or past grace) → RPCharacters freeze; characters untouched.
 
 **Ops**
 

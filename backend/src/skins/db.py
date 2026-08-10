@@ -54,6 +54,25 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE discord_links ADD COLUMN discord_username TEXT"
             )
+        if "left_guild_at" not in _column_names(conn, "discord_links"):
+            conn.execute(
+                "ALTER TABLE discord_links ADD COLUMN left_guild_at TEXT"
+            )
+        if "grace_until" not in _column_names(conn, "discord_links"):
+            conn.execute(
+                "ALTER TABLE discord_links ADD COLUMN grace_until TEXT"
+            )
+        if "scope" not in _column_names(conn, "codes"):
+            conn.execute(
+                "ALTER TABLE codes ADD COLUMN scope TEXT NOT NULL DEFAULT 'skin'"
+            )
+        conn.execute(
+            "UPDATE codes SET scope = 'skin' WHERE scope IS NULL OR TRIM(scope) = ''"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_discord_links_grace "
+            "ON discord_links(grace_until)"
+        )
         # Legacy player_key column may exist; leave unused (SQLite DROP COLUMN optional)
         if "add_name" not in _column_names(conn, "submissions"):
             conn.execute(
@@ -77,6 +96,39 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN helmet_3d_tiers TEXT"
             )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS player_warnings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                player_uuid TEXT NOT NULL,
+                staff_uuid TEXT,
+                staff_name TEXT,
+                reason TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS moderation_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL,
+                discord_user_id TEXT NOT NULL,
+                player_uuid TEXT,
+                payload TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                delivered_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_player_warnings_uuid "
+            "ON player_warnings(player_uuid, created_at)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_moderation_notifications_undelivered "
+            "ON moderation_notifications(delivered_at, created_at)"
+        )
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")

@@ -25,6 +25,9 @@ from src.skins.codes import (
 from src.skins.discord_link import (
     LinkError,
     complete_link,
+    get_identity_status,
+    record_guild_joined,
+    record_guild_left,
     start_link,
     unlink_by_discord_id,
     unlink_by_uuid,
@@ -32,6 +35,13 @@ from src.skins.discord_link import (
 from src.skins.plugin_notices import (
     ack_plugin_notices,
     list_undelivered_plugin_notices,
+)
+from src.skins.moderation import (
+    ModerationError,
+    ack_moderation,
+    enqueue_ban_event,
+    list_undelivered_moderation,
+    record_warning,
 )
 from src.skins.naming import ARMOR_FIELDS, SlugError
 from src.skins.notifications import (
@@ -65,6 +75,7 @@ skins_router = APIRouter(prefix="/skins", tags=["skins"])
 
 class IssueCodeBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
+    scope: str | None = "skin"
 
 
 class RedeemBody(BaseModel):
@@ -106,6 +117,33 @@ class LinkUnlinkDiscordBody(BaseModel):
     discord_user_id: str = Field(..., min_length=1)
 
 
+class GuildDiscordBody(BaseModel):
+    discord_user_id: str = Field(..., min_length=1)
+
+
+class WarningBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    reason: str = Field(..., min_length=1)
+    staff_uuid: str | None = None
+    staff_name: str | None = None
+    discord_user_id: str | None = None
+    minecraft_name: str | None = None
+
+
+class BanEventBody(BaseModel):
+    event: str = Field(..., min_length=1)
+    player_uuid: str | None = None
+    discord_user_id: str | None = None
+    minecraft_name: str | None = None
+    reason: str | None = None
+    duration: str | None = None
+    staff_name: str | None = None
+
+
+class ModerationAckBody(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+
+
 def _session_from_auth(authorization: str | None):
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization Bearer token")
@@ -137,7 +175,7 @@ def post_codes(
 ):
     _require_plugin(x_plugin_key)
     try:
-        return issue_code(body.player_uuid)
+        return issue_code(body.player_uuid, body.scope)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -161,6 +199,14 @@ def plugin_codes_revoke(
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+
+@skins_router.post("/character/redeem")
+def post_character_redeem(body: RedeemBody):
+    """Stub until character creator ships."""
+    raise HTTPException(
+        status_code=501,
+        detail="Character creator redeem is not available yet",
+    )
 
 @skins_router.post("/discord/link/start")
 def post_discord_link_start(
@@ -229,6 +275,98 @@ def post_discord_link_unlink_discord(
         return unlink_by_discord_id(body.discord_user_id)
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/guild/left")
+def post_discord_guild_left(
+    body: GuildDiscordBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return record_guild_left(body.discord_user_id)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/discord/guild/joined")
+def post_discord_guild_joined(
+    body: GuildDiscordBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    try:
+        return record_guild_joined(body.discord_user_id)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/discord/status/{player_uuid}")
+def get_discord_status(
+    player_uuid: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return get_identity_status(player_uuid)
+    except LinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/moderation/warnings")
+def post_moderation_warning(
+    body: WarningBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return record_warning(
+            body.player_uuid,
+            body.reason,
+            staff_uuid=body.staff_uuid,
+            staff_name=body.staff_name,
+            discord_user_id=body.discord_user_id,
+            minecraft_name=body.minecraft_name,
+        )
+    except ModerationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/moderation/ban-events")
+def post_moderation_ban_event(
+    body: BanEventBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return enqueue_ban_event(
+            body.event,
+            player_uuid=body.player_uuid,
+            discord_user_id=body.discord_user_id,
+            minecraft_name=body.minecraft_name,
+            reason=body.reason,
+            duration=body.duration,
+            staff_name=body.staff_name,
+        )
+    except ModerationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/moderation/notifications")
+def get_moderation_notifications(
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return {"notifications": list_undelivered_moderation()}
+
+
+@skins_router.post("/moderation/notifications/ack")
+def post_moderation_notifications_ack(
+    body: ModerationAckBody,
+    x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
+):
+    _require_staff(x_staff_key)
+    return ack_moderation(body.ids)
 
 
 @skins_router.post("/redeem")

@@ -20,13 +20,15 @@ flowchart TD
     B25[B2_5_LinkAndDMs]
     B3[B3_ArmourShopApply]
     B4[B4_Item3D_Shield_Bake]
+    B45[B4_5_UploadModelPreview]
     B5[B5_Harden]
     B0 --> B1
     B1 --> B2
     B2 --> B25
     B25 --> B3
     B3 --> B4
-    B4 --> B5
+    B4 --> B45
+    B45 --> B5
   end
   A2 -.-> B0
   A3 -.-> B0
@@ -132,7 +134,7 @@ Mint codes are done ([step-6](./batches/step-6/00-index.md)). Remaining B3 split
 
 | Work | Detail |
 |------|--------|
-| Mint codes | Done — `/armourshop token create` |
+| Mint codes | Done — TFMCWeb `/token create skin` (perm `tfmcweb.token.create`) |
 | Pack writer | YAML + textures; armor/handheld/large (Step 7); bow/large_bow/crossbow in 8.07 |
 | Target select | Kind + filtered `base_set` (armor tier or type); no `item`; guns/shields/helmets deferred ([step-8](./batches/step-8/00-index.md)) |
 | Pull approved | Fetch payloads (`kind`, `grip_preset`, `base_set`, files) |
@@ -154,9 +156,47 @@ Mint codes are done ([step-6](./batches/step-6/00-index.md)). Remaining B3 split
 
 **Done when:** 3D/shield/helmet path matches 2D workflow (upload → approve → apply). Multi-view bake later.
 
+### B4.5 — Upload model preview ([step-16](./batches/step-16/00-index.md))
+
+**Repo:** `ProvinceSystem` frontend
+
+| Phase | Batch | Detail |
+|-------|-------|--------|
+| Docs | [16.01](./batches/step-16/01-planning-lock.md) | Planning lock |
+| JSON render | [16.02](./batches/step-16/02-json-model-render.md) | Reliable cubes + UVs + PNG; model only (no mannequin) |
+| Display slots | [16.03](./batches/step-16/03-display-slots.md) | Steve held view + thirdperson_righthand |
+| Kind variants | [16.04](./batches/step-16/04-kind-variants.md) | Gun / bow / armor asset switcher |
+| Upload UI | [16.05](./batches/step-16/05-upload-ui.md) | Embed on `/skins` |
+| Verify | [16.06](./batches/step-16/06-docs-verify.md) | Checklist |
+
+**Out of B4.5:** Discord multi-view review-sheet bake; poseable bow/crossbow arms; editing transforms.
+
+**Done when:** Upload form can preview a Java JSON model + texture live (including Steve in-hand); kind variant controls follow.
+
 ### B5 — Harden and expand
 
 Quotas, retention, module template, optional brewery stub.
+
+---
+
+## Track C — TFMCWeb identity + Discord gate
+
+**Status:** Implemented ([step-17](./batches/step-17/00-index.md) 17.01–17.08). Tick staging on [08-docs-verify](./batches/step-17/08-docs-verify.md).  
+**Repos:** `Workspace/tfmcweb` · ProvinceSystem · `tfmc_bot` · `Workspace/rpcharacters` · ArmourShop pack-only  
+**Playbook:** [13-tfmcweb.md](./13-tfmcweb.md)
+
+| Phase | Detail |
+|-------|--------|
+| C1 RPC freeze | Done — `FreezeReason.DISCORD_REQUIRED` + `setDiscordGate` |
+| C2 Identity + grace | Done — guild left → 1h grace; rejoin clears; expiry unlinks |
+| C3 Bot leave/join | Done — `on_member_remove` / `on_member_join` → identity API |
+| C4 TFMCWeb scaffold | Done — link cache, `/linkdiscord`, `/token`, `/web`, Survival gate |
+| C5 ArmourShop cutover | Done — pack apply only; AS mint redirects to `/token create skin` |
+| C6 Warn + ban mirror | Done — `/warning`; Essentials ban → Discord + Banned role |
+
+**Out of Track C:** Character creator UI (follow-on; token stub exists).
+
+**Done when:** Survival requires Discord link (with 1h leave grace); staff non-Survival not gated; TFMCWeb owns identity/tokens.
 
 ---
 
@@ -166,6 +206,7 @@ Quotas, retention, module template, optional brewery stub.
 2. **B2 skins cog** — staff can review with PNG sheets without curl  
 3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
 4. **A1 realm card + mobile** in parallel whenever free  
-5. **B4 / A1 cropped overlays / B5** as capacity allows  
+5. **Track C / step-17** — **done** (staging checklist for humans); then character creator  
+6. **B4 / B4.5 upload preview / A1 cropped overlays / B5** as capacity allows  
 
-Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d/shield.
+Do not block skins MVP on cropped map overlays. Do not block ArmourShop on item_3d/shield. Character creator UI remains out of scope until Track C staging is green.

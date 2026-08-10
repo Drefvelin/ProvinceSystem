@@ -7,7 +7,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 ## Goals
 
 - Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), and **guns** (`gun`; `item` disabled).
-- No website logins; codes from ArmourShop bound to player UUID.
+- No website logins; codes from TFMCWeb (`/token create skin`) bound to player UUID.
 - Staff approve/deny in Discord (deny includes reason); MVP attaches **raw submission PNGs** in `#bot-feed` (review-sheet later).
 - ArmourShop writes ItemsAdder namespace **`tfmc_submissions`**, shop YAML, LP permission; reloads when safe. ArmourShop owns IA `display` / model templates for 2D; 3D uses donor JSON after API display autofill. Guns append GaG `skins.yml` with `ia.…` ids (STONE_HOE carry/reload, CROSSBOW aim); stock GaG skins may still use material.CMD.
 
@@ -31,7 +31,8 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 **`base_set` pairing:** [step-8/00-index](./batches/step-8/00-index.md) + [step-13](./batches/step-13/00-index.md) + [step-14](./batches/step-14/00-index.md). Armor uses `tiers` + optional `helmet_3d_tiers`.  
 **Deferred:** multi-view review bake.  
 **Track B4 / Step 13:** `item_3d` + `shield` + `helmet_3d`. **Step 14:** `gun` upload/apply. **Step 15:** GaG IA ids (no CMD dual-write).  
-**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md).
+**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md).  
+**Upload preview:** [step-16](./batches/step-16/00-index.md) (planned).
 
 ### Display autofill (3D kinds)
 
@@ -54,17 +55,18 @@ Store preset id on the submission / `meta.json`. Do not put grip in filenames.
 ```mermaid
 sequenceDiagram
   participant Player
+  participant TW as TFMCWeb
   participant AS as ArmourShop
   participant API
   participant Web
   participant Discord
   participant IA as ItemsAdder
 
-  Player->>AS: /linkdiscord then /armourshop token create
-  AS->>API: POST link/start then POST /skins/codes
-  API-->>AS: link code / skins code once (click-to-copy in chat)
+  Player->>TW: /linkdiscord then /token create skin
+  TW->>API: POST link/start then POST /skins/codes
+  API-->>TW: link code / skins code once (click-to-copy in chat)
   Note over Player,Discord: Discord /linkdiscord CODE binds UUID
-  AS-->>Player: show skins code
+  TW-->>Player: show skins code
   Player->>Web: redeem code
   Web->>API: POST /skins/redeem
   Player->>Web: Item name + kind + tier(s) + any PNG files
@@ -90,20 +92,20 @@ sequenceDiagram
 | Revocation | Staff/plugin can invalidate a code row |
 | Tier limits (later) | Optional higher 3D byte caps from code / donator tier |
 
-Eligibility (donator rank) is enforced **in ArmourShop** via permission `armourshop.token.create` (assigned with LP for donator ranks later). Command: `/armourshop token create`.
+Eligibility (donator rank) is enforced **in TFMCWeb** via permission `tfmcweb.token.create` (LP for donator ranks). Command: `/token create skin`. (`/armourshop token create` redirects to that command.)
 
-Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md)).
+Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md); ownership [step-17](./batches/step-17/00-index.md)).
 
 ## Discord link (MC ↔ Discord)
 
-Durable bind so the bot can DM the player. No OAuth; no Discord fields on the website.
+Durable bind so the bot can DM the player. No OAuth; no Discord fields on the website. **Owner: TFMCWeb.**
 
 | Step | Who | What |
 |------|-----|------|
-| 1 | Player in game | `/linkdiscord` → ArmourShop `POST /skins/discord/link/start` with online UUID |
+| 1 | Player in game | `/linkdiscord` → TFMCWeb `POST /skins/discord/link/start` with online UUID |
 | 2 | Player in Discord | `/linkdiscord <code>` → bot `POST /skins/discord/link/complete` with their Discord user id |
 | 3 | API | Stores `discord_links` row (`player_uuid` ↔ `discord_user_id`) |
-| Unlink | Player | In-game `/unlinkdiscord` → `POST …/link/unlink` (plugin); or Discord `/unlinkdiscord` → `POST …/link/unlink-discord` (staff) |
+| Unlink | Player | In-game `/unlinkdiscord` → `POST …/link/unlink` (TFMCWeb); or Discord `/unlinkdiscord` → `POST …/link/unlink-discord` (staff) |
 
 Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected. Skin upload codes are **one-time** (`redeemed_at`).
 
@@ -289,9 +291,13 @@ Bot poll: pending metadata + **raw file** downloads; buttons in `#bot-feed`; not
 6. Submit → **Submitting…** spinner until create finishes (composite `review_sheet.png` written); status page shows that sheet plus id, tiers/base set, name look, apply-name  
 7. No accounts; no Discord id fields on the form  
 
+### Upload preview (planned)
+
+Live WebGL preview of Java item JSON + PNG on the upload form (Steve in-hand with thirdperson_righthand; model-only toggle; kind variants later). See [step-16](./batches/step-16/00-index.md). Held view: [16.03](./batches/step-16/03-display-slots.md).
+
 ## Discord bot
 
-Skins review + `/linkdiscord` + player DMs: **[11-discord-bot.md](./11-discord-bot.md)** · [batches/step-5](./batches/step-5/00-index.md). In-game bans stay on the MC server.
+Skins review + `/linkdiscord` + player DMs: **[11-discord-bot.md](./11-discord-bot.md)** · [batches/step-5](./batches/step-5/00-index.md). In-game link/mint: **[13-tfmcweb.md](./13-tfmcweb.md)**. In-game bans stay on the MC server.
 
 ## SimpleFactions
 

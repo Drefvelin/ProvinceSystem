@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS codes (
     code_hash TEXT NOT NULL UNIQUE,
     code_plaintext TEXT,
     player_uuid TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT 'skin',
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     redeemed_at TEXT,
@@ -49,7 +50,9 @@ CREATE TABLE IF NOT EXISTS discord_links (
     discord_user_id TEXT NOT NULL UNIQUE,
     minecraft_name TEXT,
     discord_username TEXT,
-    linked_at TEXT NOT NULL
+    linked_at TEXT NOT NULL,
+    left_guild_at TEXT,
+    grace_until TEXT
 );
 
 CREATE TABLE IF NOT EXISTS discord_link_codes (
@@ -91,3 +94,27 @@ CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
     ON skin_notifications(delivered_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_plugin_notices_undelivered
     ON plugin_notices(delivered_at, created_at);
+
+CREATE TABLE IF NOT EXISTS player_warnings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_uuid TEXT NOT NULL,
+    staff_uuid TEXT,
+    staff_name TEXT,
+    reason TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS moderation_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    discord_user_id TEXT NOT NULL,
+    player_uuid TEXT,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_player_warnings_uuid
+    ON player_warnings(player_uuid, created_at);
+CREATE INDEX IF NOT EXISTS idx_moderation_notifications_undelivered
+    ON moderation_notifications(delivered_at, created_at);

@@ -17,10 +17,22 @@ Batches: [batches/step-4/00-index.md](./batches/step-4/00-index.md) (staff revie
 | Cog | Path | What it does today |
 |-----|------|--------------------|
 | **skinsreview** | `tfmc_bot/skinsreview/` | `#bot-feed` composite review sheet; Approve/Deny; poll pending; `/linkdiscord`; player DMs (submitted / approved / denied) |
-| **minecraftban** | `tfmc_bot/minecraftban/` | Slash `/minecraftban`, `/minecraftwarn`: ephemeral preview, DM user, log embed to staff channel |
+| **minecraftban** | `tfmc_bot/minecraftban/` | Slash `/minecraftban`, `/minecraftwarn` (manual); polls moderation outbox for auto warn/ban/unban + Banned role |
 | **tfmcbotstaus** | `tfmc_bot/tfmcbotstaus/` | Rotates bot presence / activity |
 
-Ban cog is **notification + logging only**. It does not ban players on the Minecraft server. Staff ban in-game with server commands (e.g. LiteBans); Discord is for telling the user and (later) muting them in Discord.
+Ban cog is **notification + logging only**. It does not ban players on the Minecraft server. Staff ban in-game with **Essentials**; Discord DMs + **Banned** role are mirrored automatically via TFMCWeb ([13-tfmcweb.md](./13-tfmcweb.md), [step-17.07](./batches/step-17/07-warn-and-ban-mirror.md)). Env: `API_BASE_URL`, `STAFF_KEY`, `BANNED_ROLE_ID`.
+
+## Guild leave / join (Step 17) — bot half implemented
+
+Leave/join → identity grace is wired in **skinsreview** (`guild_id` / `GUILD_ID`; `on_member_remove` / `on_member_join`). See [step-17.03](./batches/step-17/03-bot-guild-events.md).
+
+| Event | Behaviour |
+|-------|-----------|
+| Member leaves TFMC guild | `POST` identity `guild/left` → **1h grace** (link kept) |
+| Member rejoins within grace | `POST` identity `guild/joined` → clear grace |
+| Grace expires | Unlink + notice → TFMCWeb freezes Survival via RPCharacters |
+
+See [13-tfmcweb.md](./13-tfmcweb.md). In-game half is **TFMCWeb** (`/linkdiscord`, notices, Survival gate).
 
 ## Planned: skins review cog (Step 4) — implemented
 
@@ -49,16 +61,16 @@ Batches: [step-5](./batches/step-5/00-index.md).
 | Approved / denied DM | After successful staff approve/deny; deny includes reason |
 | Closed DMs | Log failure; do not break review flow |
 
-In-game half: ArmourShop `/linkdiscord` → `link/start` ([10](./10-armourshop-itemsadder.md)).
+In-game half: TFMCWeb `/linkdiscord` → `link/start` ([13](./13-tfmcweb.md); pack apply still [10](./10-armourshop-itemsadder.md)).
 
-## Planned: banned role on ban / clear on unban (after Step 5)
+## Banned role on ban / clear on unban (Step 17.07)
 
 | Action | Bot behavior |
 |--------|----------------|
-| Ban notify (`/minecraftban` or paired flow) | Existing DM + log **and** add configured **Banned** role |
-| Unban / clear (`/minecraftunban` or similar) | Remove **Banned** role; optional log |
+| Ban notify (auto outbox or `/minecraftban`) | DM + log **and** add `BANNED_ROLE_ID` when set |
+| Unban (auto outbox from Essentials) | Remove **Banned** role + staff log (no player DM) |
 
-Channel mute = Discord permission overwrites on that role. Configure role id via env/config.
+Channel mute = Discord permission overwrites on that role.
 
 **Non-goals**
 

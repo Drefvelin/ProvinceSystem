@@ -49,9 +49,11 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-13/00-index](./step-13/00-index.md) | 13 | Item 3D / shield / helmet 3D | Upload → apply for 3D kinds |
 | [step-14/00-index](./step-14/00-index.md) | 14 | Gun skins | carry/reload/aim upload + apply |
 | [step-15/00-index](./step-15/00-index.md) | 15 | Gun IA ids | GaG `ia.…`; no CMD dual-write |
+| [step-16/00-index](./step-16/00-index.md) | 16 | Upload 3D model preview | JSON+PNG WebGL viewer on `/skins` |
+| [step-17/00-index](./step-17/00-index.md) | 17 | TFMCWeb identity + Discord gate | **17.01–17.08 done**; tick staging [08](./step-17/08-docs-verify.md) |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb.
 
-**Later:** Ban-role mute; multi-view 3D review bake.
+**Later:** Character creator UI (after Step 17); SimpleFactions via TFMCWeb; ban-role mute polish.
 
-Parent playbook: [../README.md](../README.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)
+Parent playbook: [../README.md](../README.md) · TFMCWeb: [../13-tfmcweb.md](../13-tfmcweb.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)

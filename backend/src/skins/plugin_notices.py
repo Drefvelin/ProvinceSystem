@@ -1,9 +1,10 @@
-"""In-game plugin notice outbox (ArmourShop polls and delivers)."""
+"""In-game plugin notice outbox (ArmourShop / TFMCWeb polls and delivers)."""
 
 from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from typing import Any
 
 from .db import connect
 
@@ -16,19 +17,22 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def enqueue_link_success(
+def enqueue_plugin_notice(
+    notice_type: str,
     player_uuid: str,
+    payload: dict[str, Any] | None = None,
     *,
-    discord_username: str | None = None,
     conn=None,
 ) -> int:
-    """Enqueue a link_success notice. Optional conn shares caller's transaction."""
+    """Enqueue a plugin notice. Optional conn shares caller's transaction."""
+    ntype = (notice_type or "").strip()
     uuid = (player_uuid or "").strip()
+    if not ntype:
+        raise PluginNoticeError("notice type is required")
     if not uuid:
         raise PluginNoticeError("player_uuid is required")
 
-    name = (discord_username or "").strip() or None
-    payload = json.dumps({"discord_username": name})
+    body = json.dumps(payload if isinstance(payload, dict) else {})
     created_at = _iso_now()
 
     def _insert(c) -> int:
@@ -36,9 +40,9 @@ def enqueue_link_success(
             """
             INSERT INTO plugin_notices (
                 type, player_uuid, payload, created_at, delivered_at
-            ) VALUES ('link_success', ?, ?, ?, NULL)
+            ) VALUES (?, ?, ?, ?, NULL)
             """,
-            (uuid, payload, created_at),
+            (ntype, uuid, body, created_at),
         )
         return int(cur.lastrowid)
 
@@ -51,7 +55,28 @@ def enqueue_link_success(
         return notice_id
 
 
+def enqueue_link_success(
+    player_uuid: str,
+    *,
+    discord_username: str | None = None,
+    conn=None,
+) -> int:
+    """Enqueue a link_success notice. Optional conn shares caller's transaction."""
+    name = (discord_username or "").strip() or None
+    return enqueue_plugin_notice(
+        "link_success",
+        player_uuid,
+        {"discord_username": name},
+        conn=conn,
+    )
+
+
 def list_undelivered_plugin_notices() -> list[dict]:
+    # Expire guild-leave graces so plugins learn via grace_expired notices.
+    from .discord_link import expire_due_graces
+
+    expire_due_graces()
+
     with connect() as conn:
         rows = conn.execute(
             """
