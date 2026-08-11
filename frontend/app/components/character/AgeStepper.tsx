@@ -34,6 +34,7 @@ export default function AgeStepper({
   const current = Number.isFinite(parsed) ? parsed : min;
   const [birthdayDraft, setBirthdayDraft] = useState(birthdayValue);
   const [birthdayError, setBirthdayError] = useState<string | null>(null);
+  const [toast, setToast] = useState<"in" | "out" | null>(null);
   const birthdayDirty =
     normalizeBirthdayText(birthdayDraft) !==
     normalizeBirthdayText(birthdayValue);
@@ -42,6 +43,18 @@ export default function AgeStepper({
     setBirthdayDraft(birthdayValue);
     setBirthdayError(null);
   }, [birthdayValue]);
+
+  useEffect(() => {
+    if (toast !== "in") return;
+    const hide = window.setTimeout(() => setToast("out"), 1400);
+    return () => window.clearTimeout(hide);
+  }, [toast]);
+
+  useEffect(() => {
+    if (toast !== "out") return;
+    const clear = window.setTimeout(() => setToast(null), 280);
+    return () => window.clearTimeout(clear);
+  }, [toast]);
 
   function setClamped(next: number) {
     const n = Math.max(min, Math.min(max, Math.trunc(next)));
@@ -57,10 +70,13 @@ export default function AgeStepper({
     if (!birthdayDirty) return;
     const err = onBirthdayApply(birthdayDraft);
     setBirthdayError(err);
+    if (!err) {
+      setToast("in");
+    }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="relative flex flex-col gap-2">
       <span className="text-sm text-[var(--tfmc-stone)]">Age</span>
       <div className="flex items-center gap-3">
         <button
@@ -137,6 +153,17 @@ export default function AgeStepper({
           </p>
         )}
       </label>
+
+      {toast ? (
+        <p
+          role="status"
+          className={`pointer-events-none absolute bottom-0 right-0 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_88%,transparent)] px-2.5 py-1.5 text-xs text-[var(--tfmc-accent)] shadow-sm ${
+            toast === "in" ? "char-toast-in" : "char-toast-out"
+          }`}
+        >
+          Applied
+        </p>
+      ) : null}
     </div>
   );
 }

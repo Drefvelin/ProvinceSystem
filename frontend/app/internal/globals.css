@@ -34,6 +34,40 @@ body {
   font-family: var(--font-source-sans), system-ui, sans-serif;
 }
 
+/* Themed scrollbars (Firefox + Chromium/WebKit) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--tfmc-mist) 45%, transparent)
+    color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--tfmc-forest) 70%, transparent);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--tfmc-mist) 40%, var(--tfmc-moss));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--tfmc-accent) 55%, var(--tfmc-mist));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @keyframes hub-rise {
   from {
     opacity: 0;
@@ -220,4 +254,34 @@ body {
 
 .char-option-shake {
   animation: char-option-shake 0.35s ease;
+}
+
+@keyframes char-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes char-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+.char-toast-in {
+  animation: char-toast-in 0.22s ease-out both;
+}
+
+.char-toast-out {
+  animation: char-toast-out 0.28s ease-in both;
 }
