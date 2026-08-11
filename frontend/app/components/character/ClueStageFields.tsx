@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { proseError } from "../../../lib/textValidation";
 
 type Props = {
   clues: string[];
@@ -25,7 +26,13 @@ export default function ClueStageFields({
   const titleId = useId();
   const trimmed = draft.trim();
   const n = trimmed.length;
-  const canAdd = n >= minLen && n <= maxLen && clues.length < maxClues;
+  const charsetErr =
+    n > 0
+      ? proseError(trimmed, { minLen, maxLen, field: "clue" })
+      : null;
+  const lengthOk = n >= minLen && n <= maxLen;
+  const canAdd =
+    lengthOk && charsetErr === null && clues.length < maxClues;
   const atMax = clues.length >= maxClues;
 
   useEffect(() => {
@@ -149,7 +156,7 @@ export default function ClueStageFields({
             />
             <p
               className={`mt-1.5 text-xs tabular-nums ${
-                n > 0 && (n < minLen || n > maxLen)
+                n > 0 && (n < minLen || n > maxLen || charsetErr)
                   ? "text-[#e8a0a0]"
                   : "text-[var(--tfmc-stone)]"
               }`}
@@ -159,7 +166,9 @@ export default function ClueStageFields({
                 ? ` · need ${minLen - n} more`
                 : n > maxLen
                   ? ` · ${n - maxLen} over max`
-                  : null}
+                  : charsetErr
+                    ? ` · ${charsetErr}`
+                    : null}
             </p>
             <div className="mt-4 flex gap-2">
               <button

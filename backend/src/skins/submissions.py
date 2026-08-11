@@ -34,6 +34,7 @@ from .storage import (
     StorageError,
     write_submission_files,
 )
+from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
 ALLOWED_STYLES = frozenset(
@@ -315,11 +316,15 @@ def _validate_tier_aliases(
             alias = str(value or "").strip()
             if not alias:
                 continue
-            if len(alias) > MAX_TIER_ALIAS_LEN:
-                raise SubmissionError(
-                    f"tier alias for '{tier}' max length is {MAX_TIER_ALIAS_LEN}"
+            try:
+                incoming[tier] = assert_display_name(
+                    alias,
+                    min_len=1,
+                    max_len=MAX_TIER_ALIAS_LEN,
+                    field=f"tier alias for '{tier}'",
                 )
-            incoming[tier] = alias
+            except TextValidationError as e:
+                raise SubmissionError(str(e)) from e
     out: dict[str, str] = {}
     for tier in tiers:
         out[tier] = incoming.get(tier) or ARMOR_TIER_LABELS.get(
@@ -518,11 +523,15 @@ def create_submission(
             "bow, large_bow, crossbow, item_3d, shield, helmet_3d, or gun"
         )
 
-    display = (display_name or "").strip()
-    if not display:
-        raise SubmissionError("Item name is required")
-    if len(display) > MAX_DISPLAY_NAME:
-        raise SubmissionError(f"Item name max length is {MAX_DISPLAY_NAME}")
+    try:
+        display = assert_display_name(
+            display_name,
+            min_len=1,
+            max_len=MAX_DISPLAY_NAME,
+            field="item name",
+        )
+    except TextValidationError as e:
+        raise SubmissionError(str(e)) from e
 
     grip_y = parse_grip_y(grip_preset)
     if kind == "large_handheld":
@@ -901,9 +910,10 @@ def approve_submission(submission_id: str) -> dict:
 
 
 def deny_submission(submission_id: str, reason: str) -> dict:
-    reason = (reason or "").strip()
-    if not reason:
-        raise SubmissionError("deny reason is required")
+    try:
+        reason = assert_prose(reason, min_len=1, max_len=200, field="deny reason")
+    except TextValidationError as e:
+        raise SubmissionError(str(e)) from e
 
     row = _get_row(submission_id)
     if row is None:

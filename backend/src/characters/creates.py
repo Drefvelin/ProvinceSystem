@@ -18,6 +18,12 @@ from src.characters.roster import (
     get_player_meta,
     set_real_age,
 )
+from src.text_validation import (
+    TextValidationError,
+    assert_display_name,
+    assert_optional_display_name,
+    assert_prose,
+)
 
 
 class CreateError(ValueError):
@@ -98,11 +104,17 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     apb = _as_dict(catalog.get("attribute_point_buy"), "attribute_point_buy")
     slot_limits = _as_dict(catalog.get("slot_limits"), "slot_limits")
 
-    name = str(body.get("name") or "").strip()
     name_min = _nested_int(validation, "name", "min_length", default=1) or 1
     name_max = _nested_int(validation, "name", "max_length", default=32) or 32
-    if len(name) < name_min or len(name) > name_max:
-        raise CreateError(f"name length must be between {name_min} and {name_max}")
+    try:
+        name = assert_display_name(
+            body.get("name"),
+            min_len=name_min,
+            max_len=name_max,
+            field="name",
+        )
+    except TextValidationError as e:
+        raise CreateError(str(e)) from e
 
     try:
         age = int(body.get("age"))
@@ -138,15 +150,25 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         # Carry prior attestation into the create payload for ingest.
         eighteen = bool(meta.get("eighteen"))
 
-    description = str(body.get("description") or "").strip()
     desc_min = _nested_int(validation, "description", "min_length", default=1) or 1
     desc_max = _nested_int(validation, "description", "max_length", default=2000) or 2000
-    if len(description) < desc_min or len(description) > desc_max:
-        raise CreateError(
-            f"description length must be between {desc_min} and {desc_max}"
+    try:
+        description = assert_prose(
+            body.get("description"),
+            min_len=desc_min,
+            max_len=desc_max,
+            field="description",
         )
+    except TextValidationError as e:
+        raise CreateError(str(e)) from e
 
-    gender = str(body.get("gender") or "").strip()
+    try:
+        gender_opt = assert_optional_display_name(
+            body.get("gender"), max_len=24, field="gender"
+        )
+    except TextValidationError as e:
+        raise CreateError(str(e)) from e
+    gender = gender_opt or ""
 
     race_id = str(body.get("race_id") or "").strip()
     class_id = str(body.get("class_id") or "").strip()
@@ -202,7 +224,6 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
             )
 
     clues_raw = _as_list(body.get("clues"), "clues")
-    clues = [str(c).strip() for c in clues_raw if str(c).strip()]
     clue_cfg = _as_dict(validation.get("clues"), "validation.clues")
     clue_min_len = int(clue_cfg.get("min_length") or 1)
     clue_max_len = int(clue_cfg.get("max_length") or 500)
@@ -216,15 +237,26 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     if has_evil:
         required = max(required, int(clue_cfg.get("evil_required") or 0))
     required = min(required, max_clues)
+    clues: list[str] = []
+    for raw_clue in clues_raw:
+        text = str(raw_clue or "").strip()
+        if not text:
+            continue
+        try:
+            clues.append(
+                assert_prose(
+                    text,
+                    min_len=clue_min_len,
+                    max_len=clue_max_len,
+                    field=f"clues[{len(clues)}]",
+                )
+            )
+        except TextValidationError as e:
+            raise CreateError(str(e)) from e
     if len(clues) > max_clues:
         raise CreateError(f"at most {max_clues} clues allowed")
     if len(clues) < required:
         raise CreateError(f"at least {required} clues required")
-    for i, clue in enumerate(clues):
-        if len(clue) < clue_min_len or len(clue) > clue_max_len:
-            raise CreateError(
-                f"clues[{i}] length must be between {clue_min_len} and {clue_max_len}"
-            )
 
     attrs_cfg = [str(a).strip().lower() for a in (apb.get("attributes") or [])]
     if not attrs_cfg:

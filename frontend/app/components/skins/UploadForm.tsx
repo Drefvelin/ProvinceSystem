@@ -38,6 +38,10 @@ import KindPicker from "./KindPicker";
 import ModelPreview from "./ModelPreview";
 import ArmorPreview from "./ArmorPreview";
 import {
+  DISPLAY_NAME_HINT,
+  displayNameError,
+} from "../../../lib/textValidation";
+import {
   GRIP_Y_DEFAULT,
   GRIP_Y_MAX,
   GRIP_Y_MIN,
@@ -321,6 +325,31 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
     if (!name) {
       setError("Item name is required (shown in ArmourShop)");
       return;
+    }
+    const nameErr = displayNameError(name, {
+      minLen: 1,
+      maxLen: 80,
+      field: "item name",
+    });
+    if (nameErr) {
+      setError(nameErr);
+      return;
+    }
+
+    if (isArmor) {
+      for (const entry of tiers) {
+        const alias = entry.alias.trim();
+        if (!alias) continue;
+        const aliasErr = displayNameError(alias, {
+          minLen: 1,
+          maxLen: 32,
+          field: `tier alias for ${baseSetLabel(entry.tier)}`,
+        });
+        if (aliasErr) {
+          setError(aliasErr);
+          return;
+        }
+      }
     }
 
     if (!isArmor && (!baseSet || !baseOptions.includes(baseSet))) {
@@ -660,7 +689,8 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
         <span className="text-xs text-[var(--tfmc-mist)]">
           {isArmor
             ? "Base name before the tier label (e.g. Norain becomes Norain Iron). Spaces and capitals are fine."
-            : "Shown in ArmourShop. Spaces and capitals are fine."}
+            : "Shown in ArmourShop. Spaces and capitals are fine."}{" "}
+          Allowed: {DISPLAY_NAME_HINT}.
         </span>
         <input
           type="text"
@@ -671,6 +701,20 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
           maxLength={80}
           placeholder="Blue Knight"
         />
+        {itemName.trim() &&
+        displayNameError(itemName, {
+          minLen: 1,
+          maxLen: 80,
+          field: "item name",
+        }) ? (
+          <span className="text-xs text-[#e8a0a0]">
+            {displayNameError(itemName, {
+              minLen: 1,
+              maxLen: 80,
+              field: "item name",
+            })}
+          </span>
+        ) : null}
       </label>
 
       <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[var(--tfmc-cream)]">
@@ -918,6 +962,20 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
                         (entry.alias.trim() || baseSetLabel(entry.tier))}{" "}
                       Chestplate
                     </span>
+                    {entry.alias.trim() &&
+                    displayNameError(entry.alias, {
+                      minLen: 1,
+                      maxLen: 32,
+                      field: "tier alias",
+                    }) ? (
+                      <span className="text-xs text-[#e8a0a0]">
+                        {displayNameError(entry.alias, {
+                          minLen: 1,
+                          maxLen: 32,
+                          field: "tier alias",
+                        })}
+                      </span>
+                    ) : null}
                   </label>
                   {staff ? (
                     <label className="flex flex-col gap-2 text-left">

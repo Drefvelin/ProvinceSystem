@@ -47,6 +47,12 @@ import {
   traitsForKey,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
+import {
+  DISPLAY_NAME_HINT,
+  displayNameError,
+  optionalDisplayNameError,
+  proseError,
+} from "../../../lib/textValidation";
 
 type Props = {
   catalog: CreationCatalog;
@@ -141,6 +147,12 @@ function StageBody({
   }
 
   if (type === "setter" && target === "name") {
+    const min = catalog.validation?.name?.min_length ?? 1;
+    const max = catalog.validation?.name?.max_length ?? 32;
+    const nameErr =
+      draft.name.trim().length > 0
+        ? displayNameError(draft.name, { minLen: min, maxLen: max, field: "name" })
+        : null;
     return (
       <label className="flex flex-col gap-2">
         <span className="text-sm text-[var(--tfmc-stone)]">Name</span>
@@ -150,6 +162,12 @@ function StageBody({
           placeholder="Character name"
           className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
         />
+        <span className="text-xs text-[var(--tfmc-mist)]">
+          Allowed: {DISPLAY_NAME_HINT}
+        </span>
+        {nameErr ? (
+          <span className="text-xs text-[#e8a0a0]">{nameErr}</span>
+        ) : null}
       </label>
     );
   }
@@ -206,6 +224,20 @@ function StageBody({
   }
 
   if (type === "setter" && target === "description") {
+    const descMin = catalog.validation?.description?.min_length ?? 1;
+    const descMax = catalog.validation?.description?.max_length ?? 2000;
+    const descErr =
+      draft.description.trim().length > 0
+        ? proseError(draft.description, {
+            minLen: descMin,
+            maxLen: descMax,
+            field: "description",
+          })
+        : null;
+    const genderErr = optionalDisplayNameError(draft.gender, {
+      maxLen: 24,
+      field: "gender",
+    });
     return (
       <div className="flex flex-col gap-4">
         {copy.bodyLines[0] ? (
@@ -221,6 +253,9 @@ function StageBody({
             }
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
           />
+          {descErr ? (
+            <span className="text-xs text-[#e8a0a0]">{descErr}</span>
+          ) : null}
         </label>
         <label className="flex flex-col gap-2">
           <span className="text-sm text-[var(--tfmc-stone)]">
@@ -232,6 +267,9 @@ function StageBody({
             placeholder="unspecified"
             className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)]"
           />
+          {genderErr ? (
+            <span className="text-xs text-[#e8a0a0]">{genderErr}</span>
+          ) : null}
         </label>
       </div>
     );

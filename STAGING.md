@@ -294,6 +294,22 @@ approve → pack pull (N tiers) → shop + LP API → iareload → iazip → app
 
 Override in `docker-compose.staging.yml` if you want stronger keys for a longer-lived staging box.
 
+## Free-text validation (display names + prose)
+
+Web create / skin upload / Discord link / moderation free-text fields share charset rules in `backend/src/text_validation.py` (frontend mirror: `frontend/lib/textValidation.ts`).
+
+| Class | Fields | Allowed |
+|-------|--------|---------|
+| Display name | character name, skin item name, tier aliases, optional gender, MC/Discord names when present | Unicode letters (accents ok), digits, space, `-` `_` `.` `'`. No emoji, commas, `<>{}[]\/`, or colour codes (`§`, `&c`, `#RRGGBB`). |
+| Prose | description, clues, deny/moderation reasons | Printable text + normal punctuation; no controls, emoji, or colour codes. Length limits from catalog / route. |
+| Technical ids | skin slugs, redeem codes | Unchanged (`naming.py` / server-issued codes). Do not widen slug alphabets for “friendly” names. |
+
+**XSS:** React text rendering only (no `dangerouslySetInnerHTML` for user strings). Invalid input is **rejected** at the API; do not add an HTML sanitizer. Any future HTML sink must escape or stay off user content.
+
+Web names may include accents; in-game chat creation `SetterStage` name gate is still ASCII letters/spaces until a separate RPC change.
+
+Smoke: `name: "A<a>"` → 400; `José O'Brien` (length ok) → accepted; skin `display_name` with `<script>` rejected before slugify.
+
 ## Port already in use?
 
 ```bash

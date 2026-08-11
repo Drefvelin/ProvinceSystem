@@ -7,10 +7,20 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .db import connect
+from src.text_validation import (
+    TextValidationError,
+    assert_optional_display_name,
+    assert_prose,
+)
 
 
 class ModerationError(ValueError):
     """Invalid moderation payload."""
+
+
+_REASON_MAX = 500
+_STAFF_NAME_MAX = 32
+_MC_NAME_MAX = 16
 
 
 def _iso_now() -> str:
@@ -67,17 +77,25 @@ def record_warning(
 ) -> dict:
     """Persist warning; enqueue Discord DM if discord_user_id present."""
     uuid = (player_uuid or "").strip()
-    text = (reason or "").strip()
     if not uuid:
         raise ModerationError("player_uuid is required")
-    if not text:
-        raise ModerationError("reason is required")
+    try:
+        text = assert_prose(reason, min_len=1, max_len=_REASON_MAX, field="reason")
+    except TextValidationError as e:
+        raise ModerationError(str(e)) from e
 
     created_at = _iso_now()
     staff_id = (staff_uuid or "").strip() or None
-    staff = (staff_name or "").strip() or None
+    try:
+        staff = assert_optional_display_name(
+            staff_name, max_len=_STAFF_NAME_MAX, field="staff name"
+        )
+        mc_name = assert_optional_display_name(
+            minecraft_name, max_len=_MC_NAME_MAX, field="minecraft name"
+        )
+    except TextValidationError as e:
+        raise ModerationError(str(e)) from e
     discord_id = (discord_user_id or "").strip() or None
-    mc_name = (minecraft_name or "").strip() or None
 
     with connect() as conn:
         cur = conn.execute(
@@ -137,12 +155,23 @@ def enqueue_ban_event(
         return {"ok": True, "mirrored": False, "notification_id": None}
 
     uuid = (player_uuid or "").strip() or None
-    payload = {
-        "minecraft_name": (minecraft_name or "").strip() or None,
-        "reason": (reason or "").strip() or None,
-        "duration": (duration or "").strip() or None,
-        "staff_name": (staff_name or "").strip() or None,
-    }
+    try:
+        payload = {
+            "minecraft_name": assert_optional_display_name(
+                minecraft_name, max_len=_MC_NAME_MAX, field="minecraft name"
+            ),
+            "reason": (
+                assert_prose(reason, min_len=1, max_len=_REASON_MAX, field="reason")
+                if (reason or "").strip()
+                else None
+            ),
+            "duration": (duration or "").strip() or None,
+            "staff_name": assert_optional_display_name(
+                staff_name, max_len=_STAFF_NAME_MAX, field="staff name"
+            ),
+        }
+    except TextValidationError as e:
+        raise ModerationError(str(e)) from e
     notice_id = _enqueue(etype, discord_id, uuid, payload)
     return {"ok": True, "mirrored": True, "notification_id": notice_id}
 

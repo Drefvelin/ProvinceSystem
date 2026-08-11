@@ -11,6 +11,12 @@ import {
   resolvedBirthdayIso,
 } from "./fantasyCalendar";
 import { emptyRanks, isExactSpend } from "./pointBuy";
+import {
+  isValidDisplayName,
+  isValidProse,
+  optionalDisplayNameError,
+  proseError,
+} from "../textValidation";
 
 export type WizardDraft = {
   client_request_id: string;
@@ -724,6 +730,12 @@ export function clueContinueBlockReason(
     if (n > maxLen) {
       return `Clue ${i + 1} is too long (${n}/${maxLen} max)`;
     }
+    const charset = proseError(clues[i], {
+      minLen,
+      maxLen,
+      field: `clue ${i + 1}`,
+    });
+    if (charset) return charset;
   }
   return null;
 }
@@ -745,8 +757,11 @@ export function stageCanContinue(
     if (target === "name") {
       const min = catalog.validation?.name?.min_length ?? 1;
       const max = catalog.validation?.name?.max_length ?? 32;
-      const n = draft.name.trim().length;
-      return n >= min && n <= max;
+      return isValidDisplayName(draft.name, {
+        minLen: min,
+        maxLen: max,
+        field: "name",
+      });
     }
     if (target === "age") {
       const age = Number(draft.age);
@@ -756,8 +771,24 @@ export function stageCanContinue(
     if (target === "description") {
       const min = catalog.validation?.description?.min_length ?? 1;
       const max = catalog.validation?.description?.max_length ?? 2000;
-      const n = draft.description.trim().length;
-      return n >= min && n <= max;
+      if (
+        !isValidProse(draft.description, {
+          minLen: min,
+          maxLen: max,
+          field: "description",
+        })
+      ) {
+        return false;
+      }
+      if (
+        optionalDisplayNameError(draft.gender, {
+          maxLen: 24,
+          field: "gender",
+        }) !== null
+      ) {
+        return false;
+      }
+      return true;
     }
     return true;
   }

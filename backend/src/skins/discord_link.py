@@ -8,10 +8,15 @@ from datetime import datetime, timedelta, timezone
 from .codes import generate_plaintext_code, hash_secret
 from .db import connect
 from .plugin_notices import enqueue_link_success, enqueue_plugin_notice
+from src.text_validation import TextValidationError, assert_optional_display_name
 
 
 class LinkError(ValueError):
     """Invalid, expired, used, or conflicting Discord link."""
+
+
+_MC_NAME_MAX = 16
+_DISCORD_USERNAME_MAX = 32
 
 
 def _utcnow() -> datetime:
@@ -119,7 +124,12 @@ def start_link(
                 "discord_username": username,
             }
 
-        name = (minecraft_name or "").strip() or None
+        try:
+            name = assert_optional_display_name(
+                minecraft_name, max_len=_MC_NAME_MAX, field="minecraft name"
+            )
+        except TextValidationError as e:
+            raise LinkError(str(e)) from e
         plaintext = generate_plaintext_code()
         now = _utcnow()
         expires_at = _iso(now + timedelta(minutes=_link_ttl_minutes()))
@@ -150,7 +160,14 @@ def complete_link(
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    username = (discord_username or "").strip() or None
+    try:
+        username = assert_optional_display_name(
+            discord_username,
+            max_len=_DISCORD_USERNAME_MAX,
+            field="discord username",
+        )
+    except TextValidationError as e:
+        raise LinkError(str(e)) from e
     code_hash = hash_secret(plaintext)
     now = _utcnow()
     linked_at = _iso(now)
