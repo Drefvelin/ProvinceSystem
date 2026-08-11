@@ -12,17 +12,24 @@ import {
   type CreationCatalog,
 } from "../../../lib/characters/api";
 import {
+  draftModifierTotals,
   interactiveProgress,
   newDraft,
+  optionAttributeDescriptionLines,
   optionDescriptionLines,
+  optionModifierPreview,
   parseStageCopy,
   playableStages,
+  resolveMutuallyExclusiveNames,
+  resolveTraitDependencyNames,
   selectedTraitsForKey,
   setTraitsForKey,
   stageCanContinue,
   stageDisplayTitle,
   toCreateBody,
   traitCost,
+  traitPlaytimeBlocked,
+  traitPlaytimeReason,
   traitPointsSpent,
   traitsForKey,
   type WizardDraft,
@@ -52,6 +59,7 @@ function StageBody({
   setDraft,
   onJump,
   skipRealAge = false,
+  accountAgeSeconds = 0,
 }: {
   stage: CatalogStage;
   draft: WizardDraft;
@@ -59,10 +67,12 @@ function StageBody({
   setDraft: (d: WizardDraft) => void;
   onJump: (stageId: string) => void;
   skipRealAge?: boolean;
+  accountAgeSeconds?: number;
 }) {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
   const copy = parseStageCopy(stage);
+  const modifierTotals = draftModifierTotals(draft, catalog);
 
   if (type === "info") {
     return (
@@ -190,7 +200,13 @@ function StageBody({
                 title={displayName(c)}
                 selected={selected}
                 descriptionLines={optionDescriptionLines(c)}
-                onSelect={() => setDraft({ ...draft, class_id: c.id })}
+                attributeDescriptionLines={optionAttributeDescriptionLines(c)}
+                onSelect={() =>
+                  setDraft({
+                    ...draft,
+                    class_id: selected ? "" : c.id,
+                  })
+                }
               />
             </li>
           );
@@ -210,7 +226,17 @@ function StageBody({
                 title={displayName(r)}
                 selected={selected}
                 descriptionLines={optionDescriptionLines(r)}
-                onSelect={() => setDraft({ ...draft, race_id: r.id })}
+                modifierLines={optionModifierPreview(
+                  modifierTotals,
+                  r,
+                  catalog
+                )}
+                onSelect={() =>
+                  setDraft({
+                    ...draft,
+                    race_id: selected ? "" : r.id,
+                  })
+                }
               />
             </li>
           );
@@ -236,6 +262,7 @@ function StageBody({
         set.delete(id);
       } else {
         const trait = options.find((t) => t.id === id);
+        if (trait && traitPlaytimeBlocked(trait, accountAgeSeconds)) return;
         const cost = trait ? traitCost(trait) : 0;
         if (max <= 1) {
           if (hasBudget && cost > budget) return;
@@ -269,21 +296,36 @@ function StageBody({
           {options.map((t) => {
             const on = selected.includes(t.id);
             const cost = traitCost(t);
+            const playtimeBlocked = traitPlaytimeBlocked(t, accountAgeSeconds);
             const wouldOverSelect = !on && max > 1 && selected.length >= max;
             const wouldOverSpend =
               !on && hasBudget && spent + cost > budget && !(max <= 1);
             const singleTooExpensive =
               !on && max <= 1 && hasBudget && cost > budget;
             const blocked =
-              wouldOverSelect || wouldOverSpend || singleTooExpensive;
+              playtimeBlocked ||
+              wouldOverSelect ||
+              wouldOverSpend ||
+              singleTooExpensive;
             return (
               <li key={t.id}>
                 <SelectableOption
                   title={displayName(t)}
                   selected={on}
                   cost={cost >= 1 ? cost : null}
+                  showCostInBody={cost >= 1}
                   descriptionLines={optionDescriptionLines(t)}
+                  dependency={resolveTraitDependencyNames(t, catalog)}
+                  mutuallyExclusive={resolveMutuallyExclusiveNames(t, catalog)}
+                  modifierLines={optionModifierPreview(
+                    modifierTotals,
+                    t,
+                    catalog
+                  )}
                   disabled={blocked}
+                  disabledReason={
+                    playtimeBlocked ? traitPlaytimeReason(t) : null
+                  }
                   onSelect={() => toggle(t.id)}
                 />
               </li>
@@ -638,6 +680,7 @@ export default function CreationWizard({
               setDraft={setDraft}
               onJump={jumpToKind}
               skipRealAge={skipRealAge}
+              accountAgeSeconds={accountAgeSeconds}
             />
           </div>
         </div>

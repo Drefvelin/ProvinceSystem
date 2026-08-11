@@ -157,11 +157,25 @@ export type AttributePointBuy = {
   trait_id_pattern?: string;
 };
 
+export type AttributeModifierDto = {
+  type: string;
+  amount: number;
+};
+
+export type ExperienceModifierDto = {
+  profession: string;
+  alias: string;
+  amount: number;
+};
+
 export type CatalogIdRow = {
   id: string;
   name?: string;
   description?: string | string[];
   age_max?: number;
+  attribute_modifiers?: AttributeModifierDto[];
+  experience_modifiers?: ExperienceModifierDto[];
+  attribute_description?: string[];
   [key: string]: unknown;
 };
 
@@ -171,6 +185,15 @@ export type CatalogTrait = {
   key?: string;
   description?: string | string[];
   cost?: number;
+  attribute_modifiers?: AttributeModifierDto[];
+  experience_modifiers?: ExperienceModifierDto[];
+  mutually_exclusive?: string[];
+  dependency?: {
+    type?: string;
+    mode?: string;
+    depends_on?: string[];
+  };
+  required_account_playtime_hours?: number;
   [key: string]: unknown;
 };
 

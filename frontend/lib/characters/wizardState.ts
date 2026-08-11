@@ -1,8 +1,10 @@
 import type {
+  AttributeModifierDto,
   CatalogStage,
   CatalogTrait,
   CreateCharacterBody,
   CreationCatalog,
+  ExperienceModifierDto,
 } from "./api";
 import { emptyRanks, isExactSpend } from "./pointBuy";
 
@@ -295,6 +297,253 @@ export function optionDescriptionLines(row: {
   }
   const s = String(raw).trim();
   return s ? [s] : [];
+}
+
+export function optionAttributeDescriptionLines(row: {
+  attribute_description?: string | string[] | unknown;
+}): string[] {
+  const raw = row.attribute_description;
+  if (raw == null) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((line) => String(line || "").trim())
+      .filter(Boolean);
+  }
+  const s = String(raw).trim();
+  return s ? [s] : [];
+}
+
+function asModifierList<T>(raw: unknown): T[] {
+  return Array.isArray(raw) ? (raw as T[]) : [];
+}
+
+function rowAttributeMods(row: {
+  attribute_modifiers?: AttributeModifierDto[] | unknown;
+}): AttributeModifierDto[] {
+  return asModifierList<AttributeModifierDto>(row.attribute_modifiers).filter(
+    (m) => m && String(m.type || "").trim() && Number(m.amount) !== 0
+  );
+}
+
+function rowExperienceMods(row: {
+  experience_modifiers?: ExperienceModifierDto[] | unknown;
+}): ExperienceModifierDto[] {
+  return asModifierList<ExperienceModifierDto>(row.experience_modifiers).filter(
+    (m) => m && String(m.profession || "").trim() && Number(m.amount) !== 0
+  );
+}
+
+export type DraftModifierTotals = {
+  attributes: Record<string, number>;
+  experience: Record<string, { alias: string; amount: number }>;
+};
+
+function capitalizeLabel(raw: string): string {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function findCatalogRow(
+  catalog: CreationCatalog,
+  id: string
+):
+  | { attribute_modifiers?: unknown; experience_modifiers?: unknown; name?: string }
+  | undefined {
+  const needle = id.trim().toLowerCase();
+  if (!needle) return undefined;
+  const race = (catalog.races || []).find(
+    (r) => String(r.id || "").toLowerCase() === needle
+  );
+  if (race) return race;
+  return (catalog.traits || []).find(
+    (t) => String(t.id || "").toLowerCase() === needle
+  );
+}
+
+/** Sum race + selected traits attr/XP mods (MC tempData merge idea). */
+export function draftModifierTotals(
+  draft: WizardDraft,
+  catalog: CreationCatalog
+): DraftModifierTotals {
+  const attributes: Record<string, number> = {};
+  const experience: Record<string, { alias: string; amount: number }> = {};
+
+  const ids = [
+    draft.race_id,
+    ...draft.traitIds,
+  ].filter(Boolean);
+
+  for (const id of ids) {
+    const row = findCatalogRow(catalog, id);
+    if (!row) continue;
+    for (const m of rowAttributeMods(row)) {
+      const type = String(m.type).trim().toLowerCase();
+      attributes[type] = (attributes[type] || 0) + Number(m.amount);
+    }
+    for (const m of rowExperienceMods(row)) {
+      const profession = String(m.profession).trim().toLowerCase();
+      const alias =
+        String(m.alias || "").trim() || capitalizeLabel(profession);
+      const prev = experience[profession];
+      experience[profession] = {
+        alias: prev?.alias || alias,
+        amount: (prev?.amount || 0) + Number(m.amount),
+      };
+    }
+  }
+
+  return { attributes, experience };
+}
+
+export type ModifierPreviewLine = {
+  label: string;
+  current: number;
+  delta: number;
+  kind: "attribute" | "experience";
+};
+
+/**
+ * Preview lines for option O: current from draft totals, delta from O's own mods.
+ * When O is selected, totals already include O; when not, they exclude O.
+ */
+export function optionModifierPreview(
+  totals: DraftModifierTotals,
+  optionMods: {
+    attribute_modifiers?: AttributeModifierDto[] | unknown;
+    experience_modifiers?: ExperienceModifierDto[] | unknown;
+  },
+  catalog?: CreationCatalog
+): ModifierPreviewLine[] {
+  const attrMods = rowAttributeMods(optionMods);
+  const xpMods = rowExperienceMods(optionMods);
+  if (!attrMods.length && !xpMods.length) return [];
+
+  const lines: ModifierPreviewLine[] = [];
+  const attrKeys = new Set<string>();
+  for (const a of catalog?.attribute_point_buy?.attributes || []) {
+    const k = String(a || "").trim().toLowerCase();
+    if (k) attrKeys.add(k);
+  }
+  for (const k of Object.keys(totals.attributes)) attrKeys.add(k);
+  for (const m of attrMods) attrKeys.add(String(m.type).trim().toLowerCase());
+
+  const deltaAttr: Record<string, number> = {};
+  for (const m of attrMods) {
+    const type = String(m.type).trim().toLowerCase();
+    deltaAttr[type] = (deltaAttr[type] || 0) + Number(m.amount);
+  }
+
+  const orderedAttrs =
+    (catalog?.attribute_point_buy?.attributes || [])
+      .map((a) => String(a || "").trim().toLowerCase())
+      .filter(Boolean);
+  const attrOrder =
+    orderedAttrs.length > 0
+      ? [
+          ...orderedAttrs,
+          ...[...attrKeys].filter((k) => !orderedAttrs.includes(k)).sort(),
+        ]
+      : [...attrKeys].sort();
+
+  for (const type of attrOrder) {
+    if (!attrKeys.has(type)) continue;
+    lines.push({
+      label: capitalizeLabel(type),
+      current: totals.attributes[type] || 0,
+      delta: deltaAttr[type] || 0,
+      kind: "attribute",
+    });
+  }
+
+  const deltaXp: Record<string, { alias: string; amount: number }> = {};
+  for (const m of xpMods) {
+    const profession = String(m.profession).trim().toLowerCase();
+    const alias =
+      String(m.alias || "").trim() || capitalizeLabel(profession);
+    const prev = deltaXp[profession];
+    deltaXp[profession] = {
+      alias: prev?.alias || alias,
+      amount: (prev?.amount || 0) + Number(m.amount),
+    };
+  }
+
+  const xpKeys = new Set([
+    ...Object.keys(totals.experience),
+    ...Object.keys(deltaXp),
+  ]);
+  for (const profession of [...xpKeys].sort()) {
+    const current = totals.experience[profession];
+    const delta = deltaXp[profession];
+    lines.push({
+      label: capitalizeLabel(
+        current?.alias || delta?.alias || profession
+      ),
+      current: current?.amount || 0,
+      delta: delta?.amount || 0,
+      kind: "experience",
+    });
+  }
+
+  return lines;
+}
+
+export function resolveTraitDependencyNames(
+  trait: CatalogTrait,
+  catalog: CreationCatalog
+): { mode: string; names: string[] } | null {
+  const dep = trait.dependency;
+  if (!dep || typeof dep !== "object") return null;
+  const ids = Array.isArray(dep.depends_on) ? dep.depends_on : [];
+  if (!ids.length) return null;
+  const mode = String(dep.mode || "").trim().toLowerCase();
+  const names = ids.map((raw) => {
+    const id = String(raw || "").trim();
+    if (!id) return "";
+    const row =
+      findCatalogRow(catalog, id) ||
+      (catalog.traits || []).find(
+        (t) => String(t.id || "").toLowerCase() === id.toLowerCase()
+      );
+    const name = row && "name" in row ? String(row.name || "").trim() : "";
+    return name || capitalizeLabel(id);
+  }).filter(Boolean);
+  if (!names.length) return null;
+  return { mode, names };
+}
+
+export function resolveMutuallyExclusiveNames(
+  trait: CatalogTrait,
+  catalog: CreationCatalog
+): string[] {
+  const raw = trait.mutually_exclusive;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  return raw
+    .map((id) => {
+      const key = String(id || "").trim();
+      if (!key) return "";
+      const row = findCatalogRow(catalog, key);
+      const name = row && "name" in row ? String(row.name || "").trim() : "";
+      return name || capitalizeLabel(key);
+    })
+    .filter(Boolean);
+}
+
+export function traitPlaytimeBlocked(
+  trait: CatalogTrait,
+  accountAgeSeconds: number
+): boolean {
+  const hours = Number(trait.required_account_playtime_hours);
+  if (!Number.isFinite(hours) || hours <= 0) return false;
+  const age = Math.max(0, Number(accountAgeSeconds) || 0);
+  return age < hours * 3600;
+}
+
+export function traitPlaytimeReason(trait: CatalogTrait): string | null {
+  const hours = Number(trait.required_account_playtime_hours);
+  if (!Number.isFinite(hours) || hours <= 0) return null;
+  const label = hours === 1 ? "1 hour" : `${hours} hours`;
+  return `Requires ${label} account age`;
 }
 
 export function traitCost(trait: CatalogTrait): number {
