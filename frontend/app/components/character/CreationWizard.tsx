@@ -53,6 +53,7 @@ import {
   optionalDisplayNameError,
   proseError,
 } from "../../../lib/textValidation";
+import NameColourPicker from "../shared/NameColourPicker";
 
 type Props = {
   catalog: CreationCatalog;
@@ -65,6 +66,8 @@ type Props = {
   /** Account age meets evil unlock threshold (from list / UI-dev). */
   evilUnlocked?: boolean;
   accountAgeSeconds?: number;
+  /** Rank perk: max name colour stops (0 = locked / donators only). */
+  nameColourStops?: number;
 };
 
 function displayName(row: { id: string; name?: string }): string {
@@ -79,6 +82,7 @@ function StageBody({
   onJump,
   skipRealAge = false,
   accountAgeSeconds = 0,
+  nameColourStops = 0,
 }: {
   stage: CatalogStage;
   draft: WizardDraft;
@@ -87,6 +91,7 @@ function StageBody({
   onJump: (stageId: string) => void;
   skipRealAge?: boolean;
   accountAgeSeconds?: number;
+  nameColourStops?: number;
 }) {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
@@ -153,22 +158,32 @@ function StageBody({
       draft.name.trim().length > 0
         ? displayNameError(draft.name, { minLen: min, maxLen: max, field: "name" })
         : null;
+    const colourCap = Math.max(0, Math.min(8, nameColourStops));
     return (
-      <label className="flex flex-col gap-2">
-        <span className="text-sm text-[var(--tfmc-stone)]">Name</span>
-        <input
-          value={draft.name}
-          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          placeholder="Character name"
-          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
+      <div className="flex flex-col gap-4">
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-[var(--tfmc-stone)]">Name</span>
+          <input
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            placeholder="Character name"
+            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
+          />
+          <span className="text-xs text-[var(--tfmc-mist)]">
+            Allowed: {DISPLAY_NAME_HINT}
+          </span>
+          {nameErr ? (
+            <span className="text-xs text-[#e8a0a0]">{nameErr}</span>
+          ) : null}
+        </label>
+        <NameColourPicker
+          colours={draft.name_colours}
+          onChange={(name_colours) => setDraft({ ...draft, name_colours })}
+          previewText={draft.name.trim() || "Preview"}
+          maxStops={colourCap}
+          lockedMessage="Only for donators"
         />
-        <span className="text-xs text-[var(--tfmc-mist)]">
-          Allowed: {DISPLAY_NAME_HINT}
-        </span>
-        {nameErr ? (
-          <span className="text-xs text-[#e8a0a0]">{nameErr}</span>
-        ) : null}
-      </label>
+      </div>
     );
   }
 
@@ -608,6 +623,7 @@ export default function CreationWizard({
   skipRealAge = false,
   evilUnlocked = false,
   accountAgeSeconds = 0,
+  nameColourStops = 0,
 }: Props) {
   const router = useRouter();
   const [draft, setDraft] = useState(() => newDraft(catalog));
@@ -630,6 +646,19 @@ export default function CreationWizard({
   useEffect(() => {
     setIndex((i) => Math.min(i, Math.max(0, stages.length - 1)));
   }, [stages]);
+
+  useEffect(() => {
+    const cap = Math.max(0, Math.min(8, nameColourStops));
+    setDraft((d) => {
+      if (cap <= 0 && d.name_colours.length) {
+        return { ...d, name_colours: [] };
+      }
+      if (cap > 0 && d.name_colours.length > cap) {
+        return { ...d, name_colours: d.name_colours.slice(0, cap) };
+      }
+      return d;
+    });
+  }, [nameColourStops]);
 
   const stage = stages[index];
   const prevStage = index > 0 ? stages[index - 1] : null;
@@ -677,11 +706,17 @@ export default function CreationWizard({
     try {
       if (uiDev) {
         // eslint-disable-next-line no-console
-        console.info("[character UI-dev] create draft", toCreateBody(draft));
+        console.info(
+          "[character UI-dev] create draft",
+          toCreateBody(draft, { nameColourStops })
+        );
         setUiDevDone(true);
         return;
       }
-      await createCharacter(sessionToken, toCreateBody(draft));
+      await createCharacter(
+        sessionToken,
+        toCreateBody(draft, { nameColourStops })
+      );
       router.replace("/character");
     } catch (err) {
       setError(
@@ -751,6 +786,7 @@ export default function CreationWizard({
               onJump={jumpToKind}
               skipRealAge={skipRealAge}
               accountAgeSeconds={accountAgeSeconds}
+              nameColourStops={nameColourStops}
             />
           </div>
         </div>

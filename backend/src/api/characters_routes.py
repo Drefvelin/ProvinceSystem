@@ -35,6 +35,7 @@ class RosterBody(BaseModel):
     eighteen: bool | None = None
     real_age_set: bool | None = None
     account_created_at_epoch: int | None = None
+    name_colour_stops: int | None = None
 
 
 def _require_plugin(x_plugin_key: str | None) -> None:
@@ -190,6 +191,7 @@ def plugin_put_roster(
             body.eighteen,
             body.real_age_set,
             body.account_created_at_epoch,
+            body.name_colour_stops,
         )
     except RosterError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

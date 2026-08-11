@@ -56,6 +56,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         "eighteen": None,
         "real_age_set": False,
         "account_created_at_epoch": None,
+        "name_colour_stops": 0,
     }
     if not uuid:
         return empty
@@ -63,7 +64,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         row = conn.execute(
             """
             SELECT max_alive_characters, eighteen, real_age_set,
-                   account_created_at_epoch
+                   account_created_at_epoch, name_colour_stops
             FROM character_player_meta
             WHERE player_uuid = ?
             """,
@@ -89,16 +90,28 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
             account_created_at_epoch = None
         if account_created_at_epoch is not None and account_created_at_epoch <= 0:
             account_created_at_epoch = None
+    name_colour_stops = 0
+    if row["name_colour_stops"] is not None:
+        try:
+            name_colour_stops = max(0, int(row["name_colour_stops"]))
+        except (TypeError, ValueError):
+            name_colour_stops = 0
     return {
         "max_alive_characters": max_alive,
         "eighteen": eighteen,
         "real_age_set": real_age_set,
         "account_created_at_epoch": account_created_at_epoch,
+        "name_colour_stops": name_colour_stops,
     }
 
 
 def get_stored_max_alive(player_uuid: str) -> int | None:
     return get_player_meta(player_uuid)["max_alive_characters"]
+
+
+def get_name_colour_stops(player_uuid: str) -> int:
+    """Resolved colour-stop entitlement (0 = no colour)."""
+    return int(get_player_meta(player_uuid).get("name_colour_stops") or 0)
 
 
 def get_max_alive(
@@ -185,6 +198,7 @@ def replace_roster(
     eighteen: bool | None = None,
     real_age_set: bool | None = None,
     account_created_at_epoch: int | None = None,
+    name_colour_stops: int | None = None,
 ) -> dict[str, Any]:
     from src.skins.db import connect
 
@@ -221,6 +235,15 @@ def replace_roster(
             ) from e
         if next_account_epoch <= 0:
             raise RosterError("account_created_at_epoch must be > 0")
+
+    next_colour_stops: int | None = None
+    if name_colour_stops is not None:
+        try:
+            next_colour_stops = int(name_colour_stops)
+        except (TypeError, ValueError) as e:
+            raise RosterError("name_colour_stops must be an integer") from e
+        if next_colour_stops < 0:
+            raise RosterError("name_colour_stops must be >= 0")
 
     now = _iso_now()
     normalized: list[tuple] = []
@@ -276,6 +299,7 @@ def replace_roster(
             or eighteen is not None
             or real_age_set is not None
             or next_account_epoch is not None
+            or next_colour_stops is not None
         ):
             existing = conn.execute(
                 "SELECT * FROM character_player_meta WHERE player_uuid = ?",
@@ -285,6 +309,7 @@ def replace_roster(
             next_eighteen = None if eighteen is None else (1 if eighteen else 0)
             next_real = None if real_age_set is None else (1 if real_age_set else 0)
             stored_epoch = next_account_epoch
+            stored_stops = next_colour_stops
             if existing is not None:
                 if next_max is None:
                     next_max = existing["max_alive_characters"]
@@ -294,6 +319,11 @@ def replace_roster(
                     next_real = int(existing["real_age_set"] or 0)
                 if stored_epoch is None:
                     stored_epoch = existing["account_created_at_epoch"]
+                if stored_stops is None:
+                    try:
+                        stored_stops = existing["name_colour_stops"]
+                    except (KeyError, IndexError):
+                        stored_stops = None
             else:
                 if next_real is None:
                     next_real = 0
@@ -301,17 +331,26 @@ def replace_roster(
                 """
                 INSERT INTO character_player_meta (
                     player_uuid, max_alive_characters, eighteen, real_age_set,
-                    account_created_at_epoch, updated_at
+                    account_created_at_epoch, name_colour_stops, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(player_uuid) DO UPDATE SET
                     max_alive_characters = excluded.max_alive_characters,
                     eighteen = excluded.eighteen,
                     real_age_set = excluded.real_age_set,
                     account_created_at_epoch = excluded.account_created_at_epoch,
+                    name_colour_stops = excluded.name_colour_stops,
                     updated_at = excluded.updated_at
                 """,
-                (uuid, next_max, next_eighteen, next_real, stored_epoch, now),
+                (
+                    uuid,
+                    next_max,
+                    next_eighteen,
+                    next_real,
+                    stored_epoch,
+                    stored_stops,
+                    now,
+                ),
             )
         conn.commit()
 
@@ -328,4 +367,6 @@ def replace_roster(
         out["real_age_set"] = real_age_set
     if next_account_epoch is not None:
         out["account_created_at_epoch"] = next_account_epoch
+    if next_colour_stops is not None:
+        out["name_colour_stops"] = next_colour_stops
     return out

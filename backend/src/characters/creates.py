@@ -15,8 +15,14 @@ from src.characters.creation_catalog import (
 from src.characters.roster import (
     count_alive,
     get_max_alive,
+    get_name_colour_stops,
     get_player_meta,
     set_real_age,
+)
+from src.name_colours import (
+    NameColourError,
+    effective_colour_cap,
+    validate_name_colours,
 )
 from src.text_validation import (
     TextValidationError,
@@ -307,7 +313,18 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     if client_request_id is not None:
         client_request_id = str(client_request_id).strip() or None
 
-    return {
+    raw_colours = body.get("name_colours")
+    name_colours: list[str] = []
+    if raw_colours is not None and raw_colours != []:
+        stops = effective_colour_cap(get_name_colour_stops(player_uuid))
+        if stops <= 0:
+            raise CreateError("name colours are only available to donators")
+        try:
+            name_colours = validate_name_colours(raw_colours, max_colours=stops)
+        except NameColourError as e:
+            raise CreateError(str(e)) from e
+
+    out: dict[str, Any] = {
         "client_request_id": client_request_id,
         "name": name,
         "age": age,
@@ -323,6 +340,9 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         "all_traits": merged_traits,
         "clues": clues,
     }
+    if name_colours:
+        out["name_colours"] = name_colours
+    return out
 
 
 def _row_to_dict(row) -> dict[str, Any]:
@@ -488,6 +508,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
         "real_age_set": bool(meta.get("real_age_set")),
         "account_age_seconds": account_age_seconds,
         "evil_unlocked": evil_unlocked,
+        "name_colour_stops": int(meta.get("name_colour_stops") or 0),
     }
     if meta.get("eighteen") is not None:
         out["eighteen"] = bool(meta.get("eighteen"))

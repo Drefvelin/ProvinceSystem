@@ -34,6 +34,8 @@ export type WizardDraft = {
   /** trait id → selected */
   traitIds: string[];
   clues: string[];
+  /** Separate from name; hex/§ tokens for persona NameColour. */
+  name_colours: string[];
 };
 
 export type StageCopy = {
@@ -64,6 +66,7 @@ export function newDraft(catalog: CreationCatalog): WizardDraft {
     attributes: emptyRanks(attrs),
     traitIds: [],
     clues: [],
+    name_colours: [],
   };
 }
 
@@ -825,7 +828,10 @@ export function stageCanContinue(
   return true;
 }
 
-export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
+export function toCreateBody(
+  draft: WizardDraft,
+  opts?: { nameColourStops?: number }
+): CreateCharacterBody {
   const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
   const gender = draft.gender.trim() || "unspecified";
   const age = Number(draft.age);
@@ -853,6 +859,10 @@ export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
   }
   if (draft.eighteen === true || draft.eighteen === false) {
     body.eighteen = draft.eighteen;
+  }
+  const cap = Math.max(0, Math.min(8, Number(opts?.nameColourStops) || 0));
+  if (cap > 0 && draft.name_colours.length > 0) {
+    body.name_colours = draft.name_colours.slice(0, cap);
   }
   return body;
 }

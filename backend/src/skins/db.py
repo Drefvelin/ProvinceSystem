@@ -204,6 +204,7 @@ def migrate() -> None:
                 eighteen INTEGER,
                 real_age_set INTEGER NOT NULL DEFAULT 0,
                 account_created_at_epoch INTEGER,
+                name_colour_stops INTEGER,
                 updated_at TEXT NOT NULL
             )
             """
@@ -222,6 +223,11 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE character_player_meta "
                 "ADD COLUMN account_created_at_epoch INTEGER"
+            )
+        if "name_colour_stops" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN name_colour_stops INTEGER"
             )
         # Legacy NOT NULL on max_alive_characters breaks age-only upserts.
         max_col = next(

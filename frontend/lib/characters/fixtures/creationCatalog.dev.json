@@ -815,7 +815,24 @@
   "slot_limits": {
     "hard_cap": 10,
     "defaults": {
-      "max_alive_characters": 3
-    }
+      "max_alive_characters": 3,
+      "name_colour_stops": 0
+    },
+    "groups": [
+      {
+        "id": "noble",
+        "tier": 1,
+        "visible": true,
+        "max_alive_characters": 3,
+        "name_colour_stops": 1
+      },
+      {
+        "id": "gilded",
+        "tier": 2,
+        "visible": true,
+        "max_alive_characters": 4,
+        "name_colour_stops": 2
+      }
+    ]
   }
 }

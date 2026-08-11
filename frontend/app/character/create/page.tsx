@@ -32,6 +32,7 @@ export default function CharacterCreatePage() {
   const [skipRealAge, setSkipRealAge] = useState(false);
   const [evilUnlocked, setEvilUnlocked] = useState(false);
   const [accountAgeSeconds, setAccountAgeSeconds] = useState(0);
+  const [nameColourStops, setNameColourStops] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -70,6 +71,12 @@ export default function CharacterCreatePage() {
         setEvilUnlocked(false);
         setAccountAgeSeconds(0);
       }
+      const colourStopsRaw = params?.get("colourStops");
+      if (colourStopsRaw != null && colourStopsRaw !== "") {
+        setNameColourStops(Math.max(0, Math.min(8, Number(colourStopsRaw) || 0)));
+      } else {
+        setNameColourStops(0);
+      }
       setReady(true);
       return;
     }
@@ -104,6 +111,9 @@ export default function CharacterCreatePage() {
           const unlockHours = Number.isFinite(hours) ? hours : 24;
           setEvilUnlocked(ageSec >= unlockHours * 3600);
         }
+        setNameColourStops(
+          Math.max(0, Math.min(8, Number(list.name_colour_stops) || 0))
+        );
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
           clearSession();
@@ -177,6 +187,7 @@ export default function CharacterCreatePage() {
           skipRealAge={skipRealAge}
           evilUnlocked={evilUnlocked}
           accountAgeSeconds={accountAgeSeconds}
+          nameColourStops={nameColourStops}
         />
       ) : null}
     </main>

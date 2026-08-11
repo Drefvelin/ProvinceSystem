@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import shutil
 import sqlite3
 from datetime import datetime, timezone
@@ -34,14 +33,13 @@ from .storage import (
     StorageError,
     write_submission_files,
 )
+from src.name_colours import NameColourError, validate_name_colours
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
 ALLOWED_STYLES = frozenset(
     {"bold", "italic", "underline", "underlined", "strikethrough", "strike"}
 )
-_HEX_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
-_LEGACY_RE = re.compile(r"^[\u00a7&]?[0-9A-Fa-fk-or]$")
 _HANDHELD_BASES = frozenset(
     {
         "swords",
@@ -179,31 +177,12 @@ def _row_add_name(row: sqlite3.Row) -> bool:
     return bool(row["add_name"])
 
 
-def _normalize_colour_token(token: str) -> str:
-    t = (token or "").strip()
-    if not t:
-        raise SubmissionError("empty colour token")
-    if _HEX_RE.match(t):
-        h = t if t.startswith("#") else f"#{t}"
-        return h.lower()
-    # normalize &c → §c for storage consistency
-    if t.startswith("&") and len(t) == 2:
-        t = "\u00a7" + t[1]
-    if _LEGACY_RE.match(t) or (len(t) == 2 and t[0] in ("\u00a7", "&")):
-        return "\u00a7" + t[-1].lower()
-    raise SubmissionError(f"invalid colour '{token}' (use #RRGGBB or §c)")
-
-
 def _validate_name_colours(raw: list[str] | None) -> list[str]:
     """Colours are independent of add_name (SkinSet display vs apply-name)."""
-    if not raw:
-        return []
-    out: list[str] = []
-    for item in raw:
-        out.append(_normalize_colour_token(str(item)))
-    if len(out) > 8:
-        raise SubmissionError("at most 8 name colours")
-    return out
+    try:
+        return validate_name_colours(raw)
+    except NameColourError as e:
+        raise SubmissionError(str(e)) from e
 
 
 def _validate_name_styles(raw: list[str] | None) -> list[str]:

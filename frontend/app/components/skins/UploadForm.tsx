@@ -26,17 +26,14 @@ import {
   type SkinKind,
 } from "../../../lib/skins/sizes";
 import {
-  LEGACY_PALETTE,
   NAME_STYLES,
-  normalizePreviewHex,
-  previewSpans,
-  previewStyleCss,
   type NameStyle,
 } from "../../../lib/skins/namePreview";
 import FancyCheckbox from "./FancyCheckbox";
 import KindPicker from "./KindPicker";
 import ModelPreview from "./ModelPreview";
 import ArmorPreview from "./ArmorPreview";
+import NameColourPicker from "../shared/NameColourPicker";
 import {
   DISPLAY_NAME_HINT,
   displayNameError,
@@ -159,12 +156,10 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
   const [applyName, setApplyName] = useState(true);
   const [colours, setColours] = useState<string[]>(["#ffffff"]);
   const [styles, setStyles] = useState<NameStyle[]>([]);
-  const [hexDraft, setHexDraft] = useState("#55ff55");
   const [gripY, setGripY] = useState(GRIP_Y_DEFAULT);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [catalog, setCatalog] = useState<SkinsCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [category, setCategory] = useState("");
@@ -530,38 +525,6 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
   const inputClass =
     "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60";
 
-  const spans = previewSpans(itemName.trim() || "Preview", colours);
-  const styleCss = previewStyleCss(styles);
-
-  function addColour(token: string) {
-    const hex = normalizePreviewHex(token);
-    if (!hex) {
-      setError("Invalid colour (use #RRGGBB)");
-      return;
-    }
-    if (colours.length >= 8) {
-      setError("At most 8 colours");
-      return;
-    }
-    setError(null);
-    setColours((prev) => [...prev, hex]);
-  }
-
-  function removeColour(index: number) {
-    setColours((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function reorderColour(from: number, to: number) {
-    if (from === to || from < 0 || to < 0) return;
-    setColours((prev) => {
-      if (from >= prev.length || to >= prev.length) return prev;
-      const next = [...prev];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    });
-  }
-
   function toggleStyle(style: NameStyle) {
     setStyles((prev) =>
       prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
@@ -735,91 +698,15 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
       <fieldset className="flex flex-col gap-4 border-0 p-0">
         <legend className="sr-only">Name colours and styles</legend>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-            Colours
-          </span>
-          <span className="text-xs text-[var(--tfmc-mist)]">
-            One colour = solid. Two or more = gradient across the name. Drag
-            chips to reorder; × removes.
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {colours.map((c, i) => (
-              <div
-                key={`${c}-${i}`}
-                draggable={!loading}
-                onDragStart={() => setDragFrom(i)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (dragFrom !== null) {
-                    reorderColour(dragFrom, i);
-                  }
-                  setDragFrom(null);
-                }}
-                onDragEnd={() => setDragFrom(null)}
-                className={`inline-flex cursor-grab items-center gap-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_30%,transparent)] px-2 py-1 text-xs text-[var(--tfmc-cream)] active:cursor-grabbing ${
-                  dragFrom === i ? "opacity-60 ring-1 ring-[var(--tfmc-accent)]" : ""
-                }`}
-                title="Drag to reorder"
-              >
-                <span
-                  className="inline-block h-3 w-3 rounded-sm border border-black/40"
-                  style={{ backgroundColor: normalizePreviewHex(c) || c }}
-                />
-                {c}
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => removeColour(i)}
-                  title="Remove colour"
-                  className="rounded-sm px-1 text-[var(--tfmc-mist)] transition hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] hover:text-[var(--tfmc-cream)]"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="color"
-              value={normalizePreviewHex(hexDraft) || "#55ff55"}
-              disabled={loading}
-              onChange={(e) => setHexDraft(e.target.value)}
-              className="h-9 w-12 cursor-pointer bg-transparent"
-            />
-            <input
-              type="text"
-              value={hexDraft}
-              disabled={loading}
-              onChange={(e) => setHexDraft(e.target.value)}
-              className={`${inputClass} max-w-[8rem]`}
-              placeholder="#55ff55"
-              maxLength={7}
-            />
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addColour(hexDraft)}
-              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)] transition hover:brightness-110 hover:border-[var(--tfmc-accent)] active:scale-[0.98] disabled:opacity-60"
-            >
-              Add colour
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {LEGACY_PALETTE.map((p) => (
-              <button
-                key={p.code}
-                type="button"
-                disabled={loading}
-                title={`${p.label} (§${p.code})`}
-                onClick={() => addColour(p.hex)}
-                className="h-5 w-5 rounded-sm border border-black/50 transition hover:scale-125 hover:ring-2 hover:ring-[var(--tfmc-accent)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] active:scale-110"
-                style={{ backgroundColor: p.hex }}
-              />
-            ))}
-          </div>
-        </div>
+        <NameColourPicker
+          colours={colours}
+          onChange={setColours}
+          previewText={itemName.trim() || "Preview"}
+          maxStops={8}
+          disabled={loading}
+          previewStyles={styles}
+          onError={setError}
+        />
 
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-[var(--tfmc-stone)]">
@@ -840,31 +727,6 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
                 {s}
               </label>
             ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-            Preview
-          </span>
-          <div
-            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[#1a1a1a] px-4 py-3"
-            aria-live="polite"
-          >
-            <p
-              className="m-0 text-xl tracking-wide"
-              style={{
-                ...styleCss,
-                fontFamily:
-                  'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
-              }}
-            >
-              {spans.map((span, i) => (
-                <span key={i} style={{ color: span.color }}>
-                  {span.char === " " ? "\u00a0" : span.char}
-                </span>
-              ))}
-            </p>
           </div>
         </div>
       </fieldset>

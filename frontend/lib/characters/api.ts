@@ -214,7 +214,10 @@ export type CatalogValidation = {
 
 export type SlotLimits = {
   hard_cap?: number;
-  defaults?: { max_alive_characters?: number };
+  defaults?: {
+    max_alive_characters?: number;
+    name_colour_stops?: number;
+  };
   groups?: unknown[];
 };
 
@@ -257,6 +260,8 @@ export type CharacterListResponse = {
   account_age_seconds?: number;
   /** True when account age meets evil_min_account_age_hours. */
   evil_unlocked?: boolean;
+  /** Rank perk: max name colour stops (0 = locked). */
+  name_colour_stops?: number;
 };
 
 export async function listCharacters(
@@ -285,6 +290,16 @@ export async function listCharacters(
     real_age_set: Boolean(body.real_age_set),
     eighteen:
       typeof body.eighteen === "boolean" ? body.eighteen : undefined,
+    account_age_seconds:
+      typeof body.account_age_seconds === "number"
+        ? body.account_age_seconds
+        : undefined,
+    evil_unlocked:
+      typeof body.evil_unlocked === "boolean" ? body.evil_unlocked : undefined,
+    name_colour_stops:
+      typeof body.name_colour_stops === "number"
+        ? Math.max(0, body.name_colour_stops)
+        : 0,
   };
 }
 
@@ -303,6 +318,8 @@ export type CreateCharacterBody = {
   attributes: Record<string, number>;
   traits: string[];
   clues: string[];
+  /** Persona name colours (separate from name string). */
+  name_colours?: string[];
 };
 
 export type CreateCharacterResult = {
