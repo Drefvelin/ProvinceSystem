@@ -46,9 +46,21 @@ CATALOG = {
     "stages": [
         {"id": "info", "type": "info", "order": 0, "messages": ["hi"]},
         {
+            "id": "age_stage",
+            "type": "info",
+            "order": 1,
+            "messages": ["Age verification"],
+        },
+        {
+            "id": "creation_age_set_stage",
+            "type": "setter",
+            "target": "real_age",
+            "order": 2,
+        },
+        {
             "id": "attributes_selection_stage",
             "type": "attributes",
-            "order": 1,
+            "order": 3,
             "points": 12,
             "max_rank": 2,
             "key": "attributes",
@@ -151,6 +163,7 @@ def valid_body(**overrides):
     body = {
         "name": "Smoke Hero",
         "age": 20,
+        "eighteen": True,
         "description": "A test character for ingest smoke.",
         "gender": "unspecified",
         "race_id": "human",
@@ -354,6 +367,84 @@ def main() -> None:
     if r.status_code != 200 or r.json().get("max_alive_characters") != 5:
         fail(f"omit max should keep 5: {r.status_code} {r.text}")
     print("OK roster without max_alive keeps last entitlement")
+
+    # Clear alive slots so create soft-check passes again
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [],
+            "real_age_set": False,
+            "eighteen": False,
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"roster clear age: {r.status_code} {r.text}")
+
+    # Require eighteen when catalog has real_age stage and not yet set
+    no_age = valid_body()
+    no_age.pop("eighteen", None)
+    r = client.post("/characters", json=no_age, headers=auth)
+    if r.status_code != 400 or "eighteen" not in r.text.lower():
+        fail(f"missing eighteen expected 400, got {r.status_code} {r.text}")
+    print("OK create without eighteen -> 400")
+
+    r = client.post("/characters", json=valid_body(eighteen=True), headers=auth)
+    if r.status_code != 200:
+        fail(f"create with eighteen: {r.status_code} {r.text}")
+    print("OK create with eighteen")
+
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200:
+        fail(f"list after age: {r.status_code} {r.text}")
+    listed = r.json()
+    if not listed.get("real_age_set"):
+        fail(f"expected real_age_set after create: {listed}")
+    if listed.get("eighteen") is not True:
+        fail(f"expected eighteen true: {listed}")
+    print("OK list returns real_age_set + eighteen")
+
+    # Subsequent create may omit eighteen once attested
+    r = client.put(
+        "/characters/plugin/roster",
+        json={"player_uuid": player, "characters": []},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"roster clear for second create: {r.status_code} {r.text}")
+    omit = valid_body(name="Smoke Two", client_request_id=str(uuid.uuid4()))
+    omit.pop("eighteen", None)
+    r = client.post("/characters", json=omit, headers=auth)
+    if r.status_code != 200:
+        fail(f"create omit eighteen after set: {r.status_code} {r.text}")
+    print("OK create omits eighteen after real_age_set")
+
+    # Roster sync from plugin can set attestation without create
+    other = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
+    other_discord = str(700000000000000000 + (uuid.uuid4().int % 99999999999999))
+    ensure_linked(client, other, other_discord)
+    other_token = redeem_scope(client, other, "character")
+    other_auth = {"Authorization": f"Bearer {other_token}"}
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": other,
+            "characters": [],
+            "real_age_set": True,
+            "eighteen": False,
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"roster age sync: {r.status_code} {r.text}")
+    r = client.get("/characters", headers=other_auth)
+    if r.status_code != 200:
+        fail(f"other list: {r.status_code} {r.text}")
+    listed = r.json()
+    if not listed.get("real_age_set") or listed.get("eighteen") is not False:
+        fail(f"roster age sync list: {listed}")
+    print("OK roster push real_age_set + eighteen=false")
 
     print("character_ingest_smoke: all checks passed")
 

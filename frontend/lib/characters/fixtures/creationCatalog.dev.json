@@ -1,0 +1,674 @@
+{
+  "updated_at": "2026-08-10T00:00:00Z",
+  "stages": [
+    {
+      "id": "welcome_stage",
+      "type": "info",
+      "order": 0,
+      "messages": [
+        "title(§aWelcome to TFMC)",
+        "subtitle(§ePlease pay attention to the screen)",
+        "subtitle(§eIf you cannot see the full text your GUI scale is too big)",
+        "subtitle(§eA summary will follow in the chat if you miss anything)",
+        "subtitle(§eTo play on the server you must first make a character)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Character Creator)",
+        "subtitle(Welcome to the TFMC Character Creator)",
+        "subtitle(Create and manage your RP character here on the website.)",
+        "subtitle(Your choices follow the same rules as in-game creation.)"
+      ]
+    },
+    {
+      "id": "age_stage",
+      "type": "info",
+      "order": 1,
+      "auto_next": true,
+      "messages": [
+        "title(§aAge Verification)",
+        "subtitle(§eIn order to engage in certain types of RP like Romance RP)",
+        "subtitle(§eYou have to be above the age of 18 in real life)",
+        "subtitle(§eIf you lie on this question you will be)",
+        "subtitle(§cPermanently banned with no chance of appeal)"
+      ],
+      "web_messages": [
+        "title(Age verification)",
+        "subtitle(To take part in certain RP such as romance RP, you must be 18 or older in real life.)",
+        "subtitle(If you lie about this, you will be permanently banned with no chance of appeal.)"
+      ]
+    },
+    {
+      "id": "creation_age_set_stage",
+      "type": "setter",
+      "order": 2,
+      "target": "real_age",
+      "message": "subtitle(§eAre you 18+ in real life? Yes/No in chat)"
+    },
+    {
+      "id": "creation_info_stage",
+      "type": "info",
+      "order": 3,
+      "messages": [
+        "title(§aCharacter Creation)",
+        "subtitle(§eYou will now make a new character)",
+        "subtitle(§eConsult the lore documents if you are confused)",
+        "subtitle(§eAny choices made can be changed later in case of mistakes)",
+        "subtitle(§eYou can also edit your traits later to fit changes in RP)",
+        "subtitle(§eThe only unchangeable choices are your race and background)",
+        "subtitle(§eYou are expected to roleplay your traits)",
+        "subtitle(§eNot following your traits is FailRP)",
+        "subtitle(§eRemember to edit your traits when it makes sense)",
+        "subtitle(§eYou can always make a new character if you are unhappy)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Character creation)",
+        "subtitle(You will now make a new character. Consult the lore documents if you are confused.)",
+        "subtitle(Most choices can be changed later if you make a mistake, and you can edit traits as your RP changes.)",
+        "subtitle(Race and background cannot be changed. You are expected to roleplay your traits, ignoring them is FailRP.)",
+        "subtitle(You can always make a new character if you are unhappy.)"
+      ]
+    },
+    {
+      "id": "creation_name_stage",
+      "type": "info",
+      "order": 4,
+      "messages": [
+        "title(§aCharacter Name)",
+        "subtitle(§eA character needs a name)",
+        "subtitle(§eIn the next stage you will type the name in chat)",
+        "subtitle(§eMake a good name - your IGN is not permitted)",
+        "subtitle(§eNo characters from other franchises/real life)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Character name)",
+        "subtitle(Every character needs a name. On the next step you will enter it.)",
+        "subtitle(Make a good name, your IGN is not allowed. No characters from other franchises or real life.)"
+      ]
+    },
+    {
+      "id": "creation_name_set_stage",
+      "type": "setter",
+      "order": 5,
+      "target": "name",
+      "message": "subtitle(§eType your character name in chat)"
+    },
+    {
+      "id": "class_info_stage",
+      "type": "info",
+      "order": 6,
+      "messages": [
+        "title(§aClass)",
+        "subtitle(§eTFMC has several classes to choose from)",
+        "subtitle(§eYour class decides which weapons and skills you can use)",
+        "subtitle(§eSelect a class on the next stage)",
+        "subtitle(§eYou will §cNOT §ebe able to change class after the creation)",
+        "subtitle(§eSet it now before you forget!)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Class)",
+        "subtitle(TFMC has several classes to choose from. Your class decides which weapons and skills you can use.)",
+        "subtitle(Pick a class on the next step. You will not be able to change it after creation, so set it now.)"
+      ]
+    },
+    {
+      "id": "class_selection_stage",
+      "type": "selection",
+      "order": 7,
+      "target": "class",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "race_selection_stage",
+      "type": "selection",
+      "order": 8,
+      "target": "race",
+      "key": "race",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "character_age_stage",
+      "type": "setter",
+      "order": 9,
+      "target": "age",
+      "message": "subtitle(§7Type your character age in chat)"
+    },
+    {
+      "id": "homeland_selection_stage",
+      "type": "selection",
+      "order": 10,
+      "target": "trait",
+      "key": "homeland",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "cataclysm_selection_stage",
+      "type": "selection",
+      "order": 11,
+      "target": "trait",
+      "key": "cataclysm",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "reclamation_selection_stage",
+      "type": "selection",
+      "order": 12,
+      "target": "trait",
+      "key": "reclamation",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "motivation_selection_stage",
+      "type": "selection",
+      "order": 13,
+      "target": "trait",
+      "key": "motivation",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "gift_selection_stage",
+      "type": "selection",
+      "order": 14,
+      "target": "trait",
+      "key": "gift",
+      "min_select": 2,
+      "max_select": 2
+    },
+    {
+      "id": "virtue_selection_stage",
+      "type": "selection",
+      "order": 15,
+      "target": "trait",
+      "key": "virtue",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "combat_selection_stage",
+      "type": "selection",
+      "order": 16,
+      "target": "trait",
+      "key": "combat",
+      "min_select": 1,
+      "max_select": 1
+    },
+    {
+      "id": "physical_selection_stage",
+      "type": "selection",
+      "order": 17,
+      "target": "trait",
+      "key": "physical",
+      "min_select": 1,
+      "max_select": 3,
+      "points": 1
+    },
+    {
+      "id": "celestial_selection_stage",
+      "type": "selection",
+      "order": 18,
+      "target": "trait",
+      "key": "celestial",
+      "min_select": 1,
+      "max_select": 1,
+      "points": 1
+    },
+    {
+      "id": "attributes_selection_stage",
+      "type": "attributes",
+      "order": 19,
+      "key": "attributes",
+      "points": 12,
+      "max_rank": 2
+    },
+    {
+      "id": "personality_selection_stage",
+      "type": "selection",
+      "order": 20,
+      "target": "trait",
+      "key": "personality",
+      "min_select": 3,
+      "max_select": 5,
+      "points": 4
+    },
+    {
+      "id": "evil_locked_info_stage",
+      "type": "info",
+      "order": 21,
+      "repeat": true,
+      "require_account_age_hours_max": 24,
+      "dependency": {
+        "type": "trait",
+        "mode": "one-or-more",
+        "depends_on": [
+          "callous",
+          "spiteful",
+          "greedy",
+          "deceitful",
+          "cynical"
+        ]
+      },
+      "messages": [
+        "title(§aEvil RP)",
+        "subtitle(§eYour character has traits compatible with Evil RP)",
+        "subtitle(§eYou cannot select Evil archetypes yet)",
+        "subtitle(§eUnlock selecting an evil character after 24 hours on the server)",
+        "subtitle(§eThis is based on your account age, not this character)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Evil RP)",
+        "subtitle(Your character has traits compatible with Evil RP, but you cannot select Evil archetypes yet.)",
+        "subtitle(Unlock selecting an evil character after 24 hours on the server. This is based on your account age, not this character.)"
+      ]
+    },
+    {
+      "id": "evil_info_stage",
+      "type": "info",
+      "order": 22,
+      "require_account_age_hours_min": 24,
+      "dependency": {
+        "type": "trait",
+        "mode": "one-or-more",
+        "depends_on": [
+          "callous",
+          "spiteful",
+          "greedy",
+          "deceitful",
+          "cynical"
+        ]
+      },
+      "messages": [
+        "title(§aEvil RP)",
+        "subtitle(§eYour character has traits compatible with Evil RP)",
+        "subtitle(§eOn the next stage you may select up to 2 Evil archetypes)",
+        "subtitle(§eYou can select nothing and click confirm to skip)",
+        "subtitle(§eMake sure you read the Evil RP rules if you are Evil)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Evil RP)",
+        "subtitle(Your character has traits compatible with Evil RP. On the next step you may pick up to two Evil archetypes, or skip.)",
+        "subtitle(Make sure you read the Evil RP rules if you go evil.)"
+      ]
+    },
+    {
+      "id": "evil_selection_stage",
+      "type": "selection",
+      "order": 23,
+      "target": "trait",
+      "key": "evil",
+      "min_select": 0,
+      "max_select": 2,
+      "require_account_age_hours_min": 24,
+      "dependency": {
+        "type": "trait",
+        "mode": "one-or-more",
+        "depends_on": [
+          "callous",
+          "spiteful",
+          "greedy",
+          "deceitful",
+          "cynical"
+        ]
+      }
+    },
+    {
+      "id": "creation_description_stage",
+      "type": "info",
+      "order": 24,
+      "messages": [
+        "title(§aCharacter Description)",
+        "subtitle(§eWrite a short description of your character)",
+        "subtitle(§eIt must be between 32 and 256 characters)",
+        "subtitle(§eDescribe how they look, sound, and come across)",
+        "subtitle(§eKeep it clear enough for others to roleplay with)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Character description)",
+        "subtitle(Write a short description of your character. It must be between 32 and 256 characters.)",
+        "subtitle(Describe how they look, sound, and come across. Keep it clear enough for others to roleplay with.)"
+      ]
+    },
+    {
+      "id": "creation_description_set_stage",
+      "type": "setter",
+      "order": 25,
+      "target": "description",
+      "message": "subtitle(§7Type your character description in chat)"
+    },
+    {
+      "id": "clue_info_stage",
+      "type": "info",
+      "order": 26,
+      "messages": [
+        "title(§aCharacter Clues)",
+        "subtitle(§eClues are how others know your character)",
+        "subtitle(§eVisual features, smells, home, habits, and so on)",
+        "subtitle(§eEvil characters need more clues)",
+        "subtitle(§eLow effort or false clues can be punished)",
+        "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
+      ],
+      "web_messages": [
+        "title(Character clues)",
+        "subtitle(Clues are how others know your character, visual features, smells, home, habits, and so on.)",
+        "subtitle(Evil characters need more clues. Low effort or false clues can be punished.)"
+      ]
+    },
+    {
+      "id": "clue_entry_stage",
+      "type": "clue",
+      "order": 27,
+      "message": "subtitle(§7Type clue {current}/{needed} in chat)"
+    },
+    {
+      "id": "creation_summary_stage",
+      "type": "summary",
+      "order": 28,
+      "entries": {
+        "name": "creation_name_set_stage",
+        "class": "class_selection_stage",
+        "race": "race_selection_stage",
+        "age": "character_age_stage",
+        "description": "creation_description_set_stage",
+        "attributes": "attributes_selection_stage",
+        "clues": "clues"
+      }
+    }
+  ],
+  "attribute_point_buy": {
+    "pool": 12,
+    "max_rank": 2,
+    "cost_for_rank": [
+      1,
+      2
+    ],
+    "attributes": [
+      "strength",
+      "dexterity",
+      "constitution",
+      "intelligence",
+      "wisdom",
+      "charisma"
+    ],
+    "abbreviations": {
+      "strength": "str",
+      "dexterity": "dex",
+      "constitution": "con",
+      "intelligence": "int",
+      "wisdom": "wis",
+      "charisma": "cha"
+    },
+    "trait_id_pattern": "{abbr}{rank}"
+  },
+  "races": [
+    {
+      "id": "human",
+      "name": "Human"
+    },
+    {
+      "id": "elf",
+      "name": "Elf"
+    },
+    {
+      "id": "dwarf",
+      "name": "Dwarf"
+    }
+  ],
+  "classes": [
+    {
+      "id": "warrior",
+      "name": "Warrior"
+    },
+    {
+      "id": "mage",
+      "name": "Mage"
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger"
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue"
+    }
+  ],
+  "traits": [
+    {
+      "id": "coastal",
+      "name": "Coastal",
+      "key": "homeland"
+    },
+    {
+      "id": "highland",
+      "name": "Highland",
+      "key": "homeland"
+    },
+    {
+      "id": "frontier",
+      "name": "Frontier",
+      "key": "homeland"
+    },
+    {
+      "id": "quake",
+      "name": "The Quake",
+      "key": "cataclysm"
+    },
+    {
+      "id": "flood",
+      "name": "The Flood",
+      "key": "cataclysm"
+    },
+    {
+      "id": "blight",
+      "name": "The Blight",
+      "key": "cataclysm"
+    },
+    {
+      "id": "rebuild",
+      "name": "Rebuild",
+      "key": "reclamation"
+    },
+    {
+      "id": "wander",
+      "name": "Wander",
+      "key": "reclamation"
+    },
+    {
+      "id": "avenge",
+      "name": "Avenge",
+      "key": "reclamation"
+    },
+    {
+      "id": "duty",
+      "name": "Duty",
+      "key": "motivation"
+    },
+    {
+      "id": "greed_mot",
+      "name": "Fortune",
+      "key": "motivation"
+    },
+    {
+      "id": "faith",
+      "name": "Faith",
+      "key": "motivation"
+    },
+    {
+      "id": "gift_sight",
+      "name": "Keen Sight",
+      "key": "gift"
+    },
+    {
+      "id": "gift_voice",
+      "name": "Silver Tongue",
+      "key": "gift"
+    },
+    {
+      "id": "gift_hands",
+      "name": "Steady Hands",
+      "key": "gift"
+    },
+    {
+      "id": "gift_memory",
+      "name": "Iron Memory",
+      "key": "gift"
+    },
+    {
+      "id": "virtue_honor",
+      "name": "Honor",
+      "key": "virtue"
+    },
+    {
+      "id": "virtue_mercy",
+      "name": "Mercy",
+      "key": "virtue"
+    },
+    {
+      "id": "virtue_courage",
+      "name": "Courage",
+      "key": "virtue"
+    },
+    {
+      "id": "combat_blade",
+      "name": "Blade",
+      "key": "combat"
+    },
+    {
+      "id": "combat_bow",
+      "name": "Bow",
+      "key": "combat"
+    },
+    {
+      "id": "combat_fist",
+      "name": "Fist",
+      "key": "combat"
+    },
+    {
+      "id": "phys_scar",
+      "name": "Scarred",
+      "key": "physical"
+    },
+    {
+      "id": "phys_tall",
+      "name": "Tall",
+      "key": "physical"
+    },
+    {
+      "id": "phys_stocky",
+      "name": "Stocky",
+      "key": "physical"
+    },
+    {
+      "id": "phys_lithe",
+      "name": "Lithe",
+      "key": "physical"
+    },
+    {
+      "id": "cel_sun",
+      "name": "Sun-marked",
+      "key": "celestial"
+    },
+    {
+      "id": "cel_moon",
+      "name": "Moon-touched",
+      "key": "celestial"
+    },
+    {
+      "id": "cel_star",
+      "name": "Star-born",
+      "key": "celestial"
+    },
+    {
+      "id": "callous",
+      "name": "Callous",
+      "key": "personality"
+    },
+    {
+      "id": "spiteful",
+      "name": "Spiteful",
+      "key": "personality"
+    },
+    {
+      "id": "greedy",
+      "name": "Greedy",
+      "key": "personality"
+    },
+    {
+      "id": "deceitful",
+      "name": "Deceitful",
+      "key": "personality"
+    },
+    {
+      "id": "cynical",
+      "name": "Cynical",
+      "key": "personality"
+    },
+    {
+      "id": "kind",
+      "name": "Kind",
+      "key": "personality"
+    },
+    {
+      "id": "stoic",
+      "name": "Stoic",
+      "key": "personality"
+    },
+    {
+      "id": "witty",
+      "name": "Witty",
+      "key": "personality"
+    },
+    {
+      "id": "evil_tyrant",
+      "name": "Tyrant",
+      "key": "evil"
+    },
+    {
+      "id": "evil_cultist",
+      "name": "Cultist",
+      "key": "evil"
+    },
+    {
+      "id": "evil_bandit",
+      "name": "Bandit",
+      "key": "evil"
+    }
+  ],
+  "validation": {
+    "name": {
+      "min_length": 2,
+      "max_length": 24
+    },
+    "age": {
+      "minimum": 16
+    },
+    "description": {
+      "min_length": 32,
+      "max_length": 256
+    },
+    "clues": {
+      "default_required": 1,
+      "evil_required": 4,
+      "evil_min_account_age_hours": 24,
+      "min_length": 3,
+      "max_length": 100,
+      "max_clues": 5
+    }
+  },
+  "slot_limits": {
+    "hard_cap": 10,
+    "defaults": {
+      "max_alive_characters": 3
+    }
+  }
+}

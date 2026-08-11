@@ -46,26 +46,59 @@ def catalog_default_max_alive(slot_limits: dict[str, Any] | None = None) -> int:
     return max(1, min(default_max, hard_cap))
 
 
-def get_stored_max_alive(player_uuid: str) -> int | None:
+def get_player_meta(player_uuid: str) -> dict[str, Any]:
+    """Return stored meta flags for a player (defaults if no row)."""
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
+    empty = {
+        "max_alive_characters": None,
+        "eighteen": None,
+        "real_age_set": False,
+        "account_created_at_epoch": None,
+    }
     if not uuid:
-        return None
+        return empty
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT max_alive_characters FROM character_player_meta
+            SELECT max_alive_characters, eighteen, real_age_set,
+                   account_created_at_epoch
+            FROM character_player_meta
             WHERE player_uuid = ?
             """,
             (uuid,),
         ).fetchone()
     if row is None:
-        return None
-    try:
-        return max(1, int(row["max_alive_characters"]))
-    except (TypeError, ValueError):
-        return None
+        return empty
+    max_alive = None
+    if row["max_alive_characters"] is not None:
+        try:
+            max_alive = max(1, int(row["max_alive_characters"]))
+        except (TypeError, ValueError):
+            max_alive = None
+    eighteen = None
+    if row["eighteen"] is not None:
+        eighteen = bool(int(row["eighteen"]))
+    real_age_set = bool(int(row["real_age_set"] or 0))
+    account_created_at_epoch = None
+    if row["account_created_at_epoch"] is not None:
+        try:
+            account_created_at_epoch = int(row["account_created_at_epoch"])
+        except (TypeError, ValueError):
+            account_created_at_epoch = None
+        if account_created_at_epoch is not None and account_created_at_epoch <= 0:
+            account_created_at_epoch = None
+    return {
+        "max_alive_characters": max_alive,
+        "eighteen": eighteen,
+        "real_age_set": real_age_set,
+        "account_created_at_epoch": account_created_at_epoch,
+    }
+
+
+def get_stored_max_alive(player_uuid: str) -> int | None:
+    return get_player_meta(player_uuid)["max_alive_characters"]
 
 
 def get_max_alive(
@@ -77,6 +110,41 @@ def get_max_alive(
     if stored is not None:
         return stored
     return catalog_default_max_alive(slot_limits)
+
+
+def is_real_age_set(player_uuid: str) -> bool:
+    return bool(get_player_meta(player_uuid)["real_age_set"])
+
+
+def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:
+    """Persist 18+ attestation (player-level, once)."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise RosterError("player_uuid is required")
+    now = _iso_now()
+    eighteen_int = 1 if eighteen else 0
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO character_player_meta (
+                player_uuid, max_alive_characters, eighteen, real_age_set, updated_at
+            )
+            VALUES (?, NULL, ?, 1, ?)
+            ON CONFLICT(player_uuid) DO UPDATE SET
+                eighteen = excluded.eighteen,
+                real_age_set = 1,
+                updated_at = excluded.updated_at
+            """,
+            (uuid, eighteen_int, now),
+        )
+        conn.commit()
+    return {
+        "player_uuid": uuid,
+        "eighteen": eighteen,
+        "real_age_set": True,
+    }
 
 
 def list_roster(player_uuid: str) -> list[dict[str, Any]]:
@@ -114,6 +182,9 @@ def replace_roster(
     player_uuid: str,
     characters: list,
     max_alive_characters: int | None = None,
+    eighteen: bool | None = None,
+    real_age_set: bool | None = None,
+    account_created_at_epoch: int | None = None,
 ) -> dict[str, Any]:
     from src.skins.db import connect
 
@@ -131,6 +202,25 @@ def replace_roster(
             raise RosterError("max_alive_characters must be an integer") from e
         if max_alive < 1:
             raise RosterError("max_alive_characters must be >= 1")
+
+    if real_age_set is not None and not isinstance(real_age_set, bool):
+        raise RosterError("real_age_set must be a boolean")
+    if eighteen is not None and not isinstance(eighteen, bool):
+        raise RosterError("eighteen must be a boolean")
+    # Answering eighteen implies attestation completed.
+    if eighteen is not None and real_age_set is None:
+        real_age_set = True
+
+    next_account_epoch: int | None = None
+    if account_created_at_epoch is not None:
+        try:
+            next_account_epoch = int(account_created_at_epoch)
+        except (TypeError, ValueError) as e:
+            raise RosterError(
+                "account_created_at_epoch must be an integer"
+            ) from e
+        if next_account_epoch <= 0:
+            raise RosterError("account_created_at_epoch must be > 0")
 
     now = _iso_now()
     normalized: list[tuple] = []
@@ -181,18 +271,47 @@ def replace_roster(
             """,
             normalized,
         )
-        if max_alive is not None:
+        if (
+            max_alive is not None
+            or eighteen is not None
+            or real_age_set is not None
+            or next_account_epoch is not None
+        ):
+            existing = conn.execute(
+                "SELECT * FROM character_player_meta WHERE player_uuid = ?",
+                (uuid,),
+            ).fetchone()
+            next_max = max_alive
+            next_eighteen = None if eighteen is None else (1 if eighteen else 0)
+            next_real = None if real_age_set is None else (1 if real_age_set else 0)
+            stored_epoch = next_account_epoch
+            if existing is not None:
+                if next_max is None:
+                    next_max = existing["max_alive_characters"]
+                if next_eighteen is None:
+                    next_eighteen = existing["eighteen"]
+                if next_real is None:
+                    next_real = int(existing["real_age_set"] or 0)
+                if stored_epoch is None:
+                    stored_epoch = existing["account_created_at_epoch"]
+            else:
+                if next_real is None:
+                    next_real = 0
             conn.execute(
                 """
                 INSERT INTO character_player_meta (
-                    player_uuid, max_alive_characters, updated_at
+                    player_uuid, max_alive_characters, eighteen, real_age_set,
+                    account_created_at_epoch, updated_at
                 )
-                VALUES (?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(player_uuid) DO UPDATE SET
                     max_alive_characters = excluded.max_alive_characters,
+                    eighteen = excluded.eighteen,
+                    real_age_set = excluded.real_age_set,
+                    account_created_at_epoch = excluded.account_created_at_epoch,
                     updated_at = excluded.updated_at
                 """,
-                (uuid, max_alive, now),
+                (uuid, next_max, next_eighteen, next_real, stored_epoch, now),
             )
         conn.commit()
 
@@ -203,4 +322,10 @@ def replace_roster(
     }
     if max_alive is not None:
         out["max_alive_characters"] = max_alive
+    if eighteen is not None:
+        out["eighteen"] = eighteen
+    if real_age_set is not None:
+        out["real_age_set"] = real_age_set
+    if next_account_epoch is not None:
+        out["account_created_at_epoch"] = next_account_epoch
     return out

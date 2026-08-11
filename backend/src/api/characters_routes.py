@@ -32,6 +32,9 @@ class RosterBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     characters: list[dict] = Field(default_factory=list)
     max_alive_characters: int | None = None
+    eighteen: bool | None = None
+    real_age_set: bool | None = None
+    account_created_at_epoch: int | None = None
 
 
 def _require_plugin(x_plugin_key: str | None) -> None:
@@ -184,6 +187,9 @@ def plugin_put_roster(
             body.player_uuid,
             body.characters,
             body.max_alive_characters,
+            body.eighteen,
+            body.real_age_set,
+            body.account_created_at_epoch,
         )
     except RosterError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

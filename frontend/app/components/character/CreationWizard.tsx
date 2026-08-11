@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AttributeSheet from "./AttributeSheet";
 import {
@@ -10,12 +10,14 @@ import {
   type CreationCatalog,
 } from "../../../lib/characters/api";
 import {
+  interactiveProgress,
   newDraft,
+  parseStageCopy,
   playableStages,
   selectedTraitsForKey,
   setTraitsForKey,
   stageCanContinue,
-  stripInfoLine,
+  stageDisplayTitle,
   toCreateBody,
   traitsForKey,
   type WizardDraft,
@@ -26,6 +28,12 @@ type Props = {
   sessionToken: string;
   onLogout: () => void;
   loggingOut?: boolean;
+  uiDev?: boolean;
+  /** Skip age_stage + creation_age_set_stage when player already attested. */
+  skipRealAge?: boolean;
+  /** Account age meets evil unlock threshold (from list / UI-dev). */
+  evilUnlocked?: boolean;
+  accountAgeSeconds?: number;
 };
 
 function displayName(row: { id: string; name?: string }): string {
@@ -38,36 +46,68 @@ function StageBody({
   catalog,
   setDraft,
   onJump,
+  skipRealAge = false,
 }: {
   stage: CatalogStage;
   draft: WizardDraft;
   catalog: CreationCatalog;
   setDraft: (d: WizardDraft) => void;
   onJump: (stageId: string) => void;
+  skipRealAge?: boolean;
 }) {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
+  const copy = parseStageCopy(stage);
 
   if (type === "info") {
-    const messages = Array.isArray(stage.messages)
-      ? stage.messages.map(stripInfoLine).filter(Boolean)
-      : stage.message
-        ? [stripInfoLine(String(stage.message))]
-        : ["Continue when ready."];
     return (
-      <div className="flex flex-col gap-3">
-        {messages.map((line, i) => (
+      <div className="flex flex-col gap-4">
+        <h2 className="font-[family-name:var(--font-fraunces)] text-3xl leading-tight text-[var(--tfmc-cream)] sm:text-4xl">
+          {copy.title || stageDisplayTitle(stage)}
+        </h2>
+        {copy.bodyLines.map((line, i) => (
           <p
-            key={`${stage.id}-${i}`}
-            className={
-              i === 0
-                ? "font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]"
-                : "text-[var(--tfmc-mist)]"
-            }
+            key={`${stage.id}-body-${i}`}
+            className="text-base leading-relaxed text-[var(--tfmc-mist)]"
           >
             {line}
           </p>
         ))}
+      </div>
+    );
+  }
+
+  if (type === "setter" && target === "real_age") {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-[var(--tfmc-mist)]">
+          Are you 18+ in real life?
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ].map((opt) => {
+            const on = draft.eighteen === opt.value;
+            return (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setDraft({ ...draft, eighteen: opt.value })}
+                className={`rounded-sm border px-3 py-3 text-center font-medium transition ${
+                  on
+                    ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)] text-[var(--tfmc-cream)]"
+                    : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] text-[var(--tfmc-cream)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-[var(--tfmc-stone)]">
+          Lying about this results in a permanent ban with no appeal.
+        </p>
       </div>
     );
   }
@@ -79,6 +119,7 @@ function StageBody({
         <input
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          placeholder="Character name"
           className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
         />
       </label>
@@ -103,6 +144,9 @@ function StageBody({
   if (type === "setter" && target === "description") {
     return (
       <div className="flex flex-col gap-4">
+        {copy.bodyLines[0] ? (
+          <p className="text-sm text-[var(--tfmc-mist)]">{copy.bodyLines[0]}</p>
+        ) : null}
         <label className="flex flex-col gap-2">
           <span className="text-sm text-[var(--tfmc-stone)]">Description</span>
           <textarea
@@ -207,9 +251,8 @@ function StageBody({
       <div className="flex flex-col gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
           Choose {min === max ? min : `${min}–${max}`}
-          {key ? ` (${key})` : ""}
         </p>
-        <ul className="grid gap-2">
+        <ul className="grid max-h-[42vh] gap-2 overflow-y-auto pr-1">
           {options.map((t) => {
             const on = selected.includes(t.id);
             return (
@@ -315,12 +358,25 @@ function StageBody({
     });
 
     return (
-      <div className="flex flex-col gap-4 text-sm text-[var(--tfmc-mist)]">
+      <div className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto pr-1 text-sm text-[var(--tfmc-mist)]">
         <SummaryLine
           label="Name"
           value={draft.name}
           onEdit={() => onJump("name")}
         />
+        {!skipRealAge ? (
+          <SummaryLine
+            label="18+"
+            value={
+              draft.eighteen === true
+                ? "Yes"
+                : draft.eighteen === false
+                  ? "No"
+                  : "—"
+            }
+            onEdit={() => onJump("real_age")}
+          />
+        ) : null}
         <SummaryLine
           label="Age"
           value={draft.age}
@@ -397,31 +453,81 @@ function SummaryLine({
   );
 }
 
+function PeekCard({
+  stage,
+  position,
+}: {
+  stage: CatalogStage;
+  position: "prev" | "next";
+}) {
+  const title = stageDisplayTitle(stage);
+  return (
+    <div
+      className={`char-deck-peek char-deck-peek-${position}`}
+      aria-hidden
+    >
+      <div className="char-deck-peek-inner">
+        <p className="truncate font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
+          {title}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function CreationWizard({
   catalog,
   sessionToken,
   onLogout,
   loggingOut = false,
+  uiDev = false,
+  skipRealAge = false,
+  evilUnlocked = false,
+  accountAgeSeconds = 0,
 }: Props) {
   const router = useRouter();
-  const stages = useMemo(() => playableStages(catalog), [catalog]);
-  const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState(() => newDraft(catalog));
+  const stages = useMemo(
+    () =>
+      playableStages(catalog, {
+        skipRealAge,
+        evilUnlocked,
+        accountAgeSeconds,
+        selectedTraitIds: draft.traitIds,
+      }),
+    [catalog, skipRealAge, evilUnlocked, accountAgeSeconds, draft.traitIds]
+  );
+  const [index, setIndex] = useState(0);
+  const [dir, setDir] = useState<"forward" | "back">("forward");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uiDevDone, setUiDevDone] = useState(false);
+
+  useEffect(() => {
+    setIndex((i) => Math.min(i, Math.max(0, stages.length - 1)));
+  }, [stages]);
 
   const stage = stages[index];
+  const prevStage = index > 0 ? stages[index - 1] : null;
+  const nextStage = index < stages.length - 1 ? stages[index + 1] : null;
   const isLast = index >= stages.length - 1;
   const canNext = stage
     ? stageCanContinue(stage, draft, catalog)
     : false;
+  const progress = interactiveProgress(stages, index);
+
+  function go(to: number) {
+    if (to === index) return;
+    setDir(to > index ? "forward" : "back");
+    setIndex(to);
+  }
 
   function jumpToKind(kind: string) {
     const k = kind.toLowerCase();
     const i = stages.findIndex((s) => {
       const t = String(s.type || "").toLowerCase();
       const target = String(s.target || "").toLowerCase();
-      if (k === "name" || k === "age" || k === "description") {
+      if (k === "name" || k === "age" || k === "description" || k === "real_age") {
         return t === "setter" && target === k;
       }
       if (k === "race" || k === "class") {
@@ -434,13 +540,19 @@ export default function CreationWizard({
       if (k === "clue") return t === "clue";
       return s.id === k;
     });
-    if (i >= 0) setIndex(i);
+    if (i >= 0) go(i);
   }
 
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
     try {
+      if (uiDev) {
+        // eslint-disable-next-line no-console
+        console.info("[character UI-dev] create draft", toCreateBody(draft));
+        setUiDevDone(true);
+        return;
+      }
       await createCharacter(sessionToken, toCreateBody(draft));
       router.replace("/character");
     } catch (err) {
@@ -459,20 +571,24 @@ export default function CreationWizard({
   if (!stage) {
     return (
       <p className="mt-8 text-[var(--tfmc-mist)]">
-        Creation catalog has no stages. Ask staff to sync RPCharacters.
+        Creation catalog has no stages.
       </p>
     );
   }
 
   const type = String(stage.type || "").toLowerCase();
   const isSummary = type === "summary";
+  const isInfo = type === "info";
   const showSubmit = isSummary || isLast;
+  const title = stageDisplayTitle(stage);
 
   return (
-    <div className="mt-6 flex flex-1 flex-col">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-xs text-[var(--tfmc-stone)]">
-          Step {index + 1} / {stages.length}
+    <div className="mt-4 flex flex-1 flex-col">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-xs tabular-nums text-[var(--tfmc-stone)]">
+          {progress
+            ? `Step ${progress.current} / ${progress.total}`
+            : "Info"}
         </p>
         <button
           type="button"
@@ -480,36 +596,57 @@ export default function CreationWizard({
           disabled={loggingOut}
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
         >
-          {loggingOut ? "Logging out…" : "Log out"}
+          {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
         </button>
       </div>
 
-      <div key={stage.id} className="char-step flex-1">
-        {!isSummary && type !== "info" ? (
-          <h2 className="mb-4 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
-            {stageTitle(stage)}
-          </h2>
-        ) : null}
-        <StageBody
-          stage={stage}
-          draft={draft}
-          catalog={catalog}
-          setDraft={setDraft}
-          onJump={jumpToKind}
-        />
+      <div className="char-deck relative flex min-h-[min(62vh,520px)] flex-1 flex-col">
+        {prevStage ? <PeekCard stage={prevStage} position="prev" /> : (
+          <div className="char-deck-peek-spacer" aria-hidden />
+        )}
+
+        <div
+          key={`${stage.id}-${dir}`}
+          className={`char-deck-active char-deck-slide-${dir}`}
+        >
+          <div className="char-deck-card">
+            {!isInfo ? (
+              <h2 className="mb-4 font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)] sm:text-3xl">
+                {title}
+              </h2>
+            ) : null}
+            <StageBody
+              stage={stage}
+              draft={draft}
+              catalog={catalog}
+              setDraft={setDraft}
+              onJump={jumpToKind}
+              skipRealAge={skipRealAge}
+            />
+          </div>
+        </div>
+
+        {nextStage ? <PeekCard stage={nextStage} position="next" /> : (
+          <div className="char-deck-peek-spacer" aria-hidden />
+        )}
       </div>
 
       {error ? (
-        <p className="mt-4 text-sm text-[#e8a0a0]" role="alert">
+        <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
           {error}
         </p>
       ) : null}
+      {uiDevDone ? (
+        <p className="mt-3 text-sm text-[var(--tfmc-accent)]" role="status">
+          Created (UI-dev) — draft logged to console.
+        </p>
+      ) : null}
 
-      <div className="sticky bottom-0 mt-8 flex gap-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] py-4 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 mt-4 flex gap-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] py-4 backdrop-blur-sm">
         <button
           type="button"
           disabled={index === 0 || submitting}
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+          onClick={() => go(Math.max(0, index - 1))}
           className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] px-4 py-2.5 text-sm font-semibold text-[var(--tfmc-cream)] disabled:opacity-40"
         >
           Back
@@ -521,15 +658,17 @@ export default function CreationWizard({
             onClick={() => void onSubmit()}
             className="flex-1 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50"
           >
-            {submitting ? "Creating…" : "Create character"}
+            {submitting
+              ? "Creating…"
+              : uiDev
+                ? "Create (UI-dev)"
+                : "Create character"}
           </button>
         ) : (
           <button
             type="button"
             disabled={!canNext || submitting}
-            onClick={() =>
-              setIndex((i) => Math.min(stages.length - 1, i + 1))
-            }
+            onClick={() => go(Math.min(stages.length - 1, index + 1))}
             className="flex-1 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] disabled:opacity-50"
           >
             Next
@@ -538,20 +677,4 @@ export default function CreationWizard({
       </div>
     </div>
   );
-}
-
-function stageTitle(stage: CatalogStage): string {
-  const type = String(stage.type || "").toLowerCase();
-  const target = String(stage.target || "").toLowerCase();
-  if (type === "setter" && target) return target.charAt(0).toUpperCase() + target.slice(1);
-  if (type === "selection" && target === "class") return "Class";
-  if (type === "selection" && target === "race") return "Race";
-  if (type === "selection" && target === "trait") {
-    const key = String(stage.key || "Traits");
-    return key.charAt(0).toUpperCase() + key.slice(1);
-  }
-  if (type === "attributes") return "Attributes";
-  if (type === "clue") return "Clues";
-  if (type === "summary") return "Summary";
-  return stage.id;
 }

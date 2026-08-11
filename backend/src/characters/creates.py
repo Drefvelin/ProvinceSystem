@@ -11,7 +11,12 @@ from src.characters.creation_catalog import (
     CreationCatalogError,
     require_synced_creation_catalog,
 )
-from src.characters.roster import count_alive, get_max_alive
+from src.characters.roster import (
+    count_alive,
+    get_max_alive,
+    get_player_meta,
+    set_real_age,
+)
 
 
 class CreateError(ValueError):
@@ -103,8 +108,27 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     except (TypeError, ValueError) as e:
         raise CreateError("age must be an integer") from e
     age_min = _nested_int(validation, "age", "minimum", default=1) or 1
-    if age < age_min:
+    if (age < age_min):
         raise CreateError(f"age must be at least {age_min}")
+
+    has_real_age_stage = any(
+        isinstance(s, dict)
+        and str(s.get("type") or "").lower() == "setter"
+        and str(s.get("target") or "").lower() == "real_age"
+        for s in (catalog.get("stages") or [])
+    )
+    meta = get_player_meta(player_uuid)
+    already_set = bool(meta.get("real_age_set"))
+    eighteen: bool | None = None
+    if "eighteen" in body and body.get("eighteen") is not None:
+        if not isinstance(body.get("eighteen"), bool):
+            raise CreateError("eighteen must be a boolean")
+        eighteen = bool(body.get("eighteen"))
+    elif has_real_age_stage and not already_set:
+        raise CreateError("eighteen (18+ attestation) is required")
+    elif already_set and meta.get("eighteen") is not None:
+        # Carry prior attestation into the create payload for ingest.
+        eighteen = bool(meta.get("eighteen"))
 
     description = str(body.get("description") or "").strip()
     desc_min = _nested_int(validation, "description", "min_length", default=1) or 1
@@ -239,6 +263,7 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         "client_request_id": client_request_id,
         "name": name,
         "age": age,
+        "eighteen": eighteen,
         "description": description,
         "gender": gender,
         "race_id": race_id,
@@ -297,6 +322,9 @@ def create_character(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
             if existing is not None:
                 return _row_to_dict(existing)
 
+        if "eighteen" in body and isinstance(body.get("eighteen"), bool):
+            set_real_age(uuid, bool(body.get("eighteen")))
+
         create_id = str(uuid_lib.uuid4())
         now = _iso_now()
         payload = json.dumps(normalized, separators=(",", ":"))
@@ -334,11 +362,17 @@ def list_pending() -> list[dict[str, Any]]:
 
 def list_for_player(player_uuid: str) -> dict[str, Any]:
     from src.characters.creation_catalog import get_catalog
-    from src.characters.roster import count_alive, get_max_alive, list_roster
+    from src.characters.roster import (
+        count_alive,
+        get_max_alive,
+        get_player_meta,
+        list_roster,
+    )
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     roster = list_roster(uuid)
+    meta = get_player_meta(uuid)
     with connect() as conn:
         pending_rows = conn.execute(
             """
@@ -372,12 +406,43 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
 
     max_alive = get_max_alive(uuid, slot_limits)
     alive_count = count_alive(uuid)
-    return {
+
+    account_age_seconds = 0
+    epoch = meta.get("account_created_at_epoch")
+    if epoch is not None:
+        try:
+            created = int(epoch)
+            if created > 0:
+                now_epoch = int(datetime.now(timezone.utc).timestamp())
+                account_age_seconds = max(0, now_epoch - created)
+        except (TypeError, ValueError):
+            account_age_seconds = 0
+
+    hours = 24
+    validation = catalog.get("validation") if isinstance(catalog, dict) else {}
+    clues = (
+        validation.get("clues")
+        if isinstance(validation, dict) and isinstance(validation.get("clues"), dict)
+        else {}
+    )
+    try:
+        hours = max(0, int(clues.get("evil_min_account_age_hours", hours)))
+    except (TypeError, ValueError):
+        hours = 24
+    evil_unlocked = account_age_seconds >= hours * 3600
+
+    out: dict[str, Any] = {
         "characters": characters,
         "player_uuid": uuid,
         "max_alive_characters": max_alive,
         "alive_count": alive_count,
+        "real_age_set": bool(meta.get("real_age_set")),
+        "account_age_seconds": account_age_seconds,
+        "evil_unlocked": evil_unlocked,
     }
+    if meta.get("eighteen") is not None:
+        out["eighteen"] = bool(meta.get("eighteen"))
+    return out
 
 
 def mark_applied_results(results: list) -> dict[str, Any]:

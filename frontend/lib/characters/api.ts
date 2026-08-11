@@ -134,8 +134,17 @@ export type CatalogStage = {
   points?: number;
   max_rank?: number;
   messages?: string[];
+  /** Website-specific info copy; preferred over messages when present. */
+  web_messages?: string[];
   message?: string;
   entries?: unknown;
+  require_account_age_hours_min?: number;
+  require_account_age_hours_max?: number;
+  dependency?: {
+    type?: string;
+    mode?: string;
+    depends_on?: string[];
+  };
   [key: string]: unknown;
 };
 
@@ -170,6 +179,8 @@ export type CatalogValidation = {
   description?: { min_length?: number; max_length?: number };
   clues?: {
     default_required?: number;
+    evil_required?: number;
+    evil_min_account_age_hours?: number;
     min_length?: number;
     max_length?: number;
     max_clues?: number;
@@ -214,6 +225,13 @@ export type CharacterListResponse = {
   player_uuid: string;
   max_alive_characters?: number;
   alive_count?: number;
+  /** Player already answered the 18+ attestation (Yes or No). */
+  real_age_set?: boolean;
+  eighteen?: boolean;
+  /** Wall-clock seconds since Minecraft account created_at. */
+  account_age_seconds?: number;
+  /** True when account age meets evil_min_account_age_hours. */
+  evil_unlocked?: boolean;
 };
 
 export async function listCharacters(
@@ -239,6 +257,9 @@ export async function listCharacters(
         : undefined,
     alive_count:
       typeof body.alive_count === "number" ? body.alive_count : undefined,
+    real_age_set: Boolean(body.real_age_set),
+    eighteen:
+      typeof body.eighteen === "boolean" ? body.eighteen : undefined,
   };
 }
 
@@ -246,6 +267,8 @@ export type CreateCharacterBody = {
   client_request_id?: string;
   name: string;
   age: number;
+  /** Real-life 18+ attestation from creation_age_set_stage. */
+  eighteen?: boolean;
   description: string;
   gender: string;
   race_id: string;

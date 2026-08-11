@@ -8,9 +8,9 @@
 
 ## Plan
 
-1. **API create** — `POST /characters` with stage answers + attribute ranks; server re-validates; soft slot check from roster mirror vs **per-player** `max_alive_characters` (from last online roster push) or catalog defaults ∩ hard_cap; plugin confirms on ingest.
-2. **API list** — roster mirror + pending creates for session UUID; includes `max_alive_characters` and `alive_count` for Create enablement.
-3. **Ingest** — RPC pulls pending on login/reload/`/rpcharacter pending sync`; writes character JSON; acks applied; pushes roster (when player online, includes LP-based `max_alive_characters`).
+1. **API create** — `POST /characters` with stage answers + attribute ranks; server re-validates; soft slot check from roster mirror vs **per-player** `max_alive_characters` (from last online roster push) or catalog defaults ∩ hard_cap; plugin confirms on ingest. 18+ (`eighteen`) is required only until the player has answered once (`real_age_set`); then it is stored on `character_player_meta` and skipped for later creates.
+2. **API list** — roster mirror + pending creates for session UUID; includes `max_alive_characters`, `alive_count`, and `real_age_set` (+ `eighteen` when set) for Create enablement / wizard skip.
+3. **Ingest** — RPC pulls pending on login/reload/`/rpcharacter pending sync`; writes character JSON; acks applied; pushes roster (when player online, includes LP-based `max_alive_characters`; always includes `real_age_set` / `eighteen` when age stages were completed in-game).
 4. **Idempotency** — `client_request_id` unique per player; create id reused as character id.
 5. **Dead** — roster includes `DEAD`/`MISSING`; create only when free alive slot (plugin wins on conflict).
 
@@ -21,13 +21,14 @@
 - [x] List shows roster + pending; applied ack + roster push surfaces ALIVE  
 - [x] Over soft slot limit → rejected  
 - [x] Roster `max_alive_characters` → list + soft-check use player entitlement  
+- [x] Player-level `real_age_set` / `eighteen` → list + create soft-check; wizard skips age stages 
 - [ ] In-game create still works with same attribute sheet *(unchanged path + roster push)*  
 
 ## Implemented
 
 - Tables `character_creates`, `character_roster`, `character_player_meta`
 - `src/characters/creates.py` + `roster.py`
-- Routes: `POST/GET /characters`, `GET /characters/plugin/pending`, `POST /characters/plugin/applied`, `PUT /characters/plugin/roster` (optional `max_alive_characters`)
+- Routes: `POST/GET /characters`, `GET /characters/plugin/pending`, `POST /characters/plugin/applied`, `PUT /characters/plugin/roster` (optional `max_alive_characters`, `eighteen`, `real_age_set`)
 - RPCharacters: `CharacterIngestService`, `RosterSyncService` (online LP max), client methods, UUID load/save, join/reload/finish/permakill triggers, `/rpcharacter pending sync`
 - Smoke: `backend/scripts/character_ingest_smoke.py`
 

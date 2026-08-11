@@ -10,6 +10,8 @@ export type WizardDraft = {
   client_request_id: string;
   name: string;
   age: string;
+  /** Player 18+ attestation (real life); null until answered. */
+  eighteen: boolean | null;
   description: string;
   gender: string;
   race_id: string;
@@ -20,12 +22,26 @@ export type WizardDraft = {
   clues: string[];
 };
 
+export type StageCopy = {
+  title: string | null;
+  bodyLines: string[];
+};
+
+const INTERACTIVE_TYPES = new Set([
+  "setter",
+  "selection",
+  "attributes",
+  "clue",
+  "summary",
+]);
+
 export function newDraft(catalog: CreationCatalog): WizardDraft {
   const attrs = catalog.attribute_point_buy?.attributes ?? [];
   return {
     client_request_id: crypto.randomUUID(),
     name: "",
     age: "",
+    eighteen: null,
     description: "",
     gender: "",
     race_id: "",
@@ -36,24 +52,224 @@ export function newDraft(catalog: CreationCatalog): WizardDraft {
   };
 }
 
-export function playableStages(catalog: CreationCatalog): CatalogStage[] {
+export function isRealAgeStage(stage: CatalogStage): boolean {
+  const id = String(stage.id || "").toLowerCase();
+  if (id === "age_stage" || id === "creation_age_set_stage") return true;
+  const type = String(stage.type || "").toLowerCase();
+  const target = String(stage.target || "").toLowerCase();
+  return type === "setter" && target === "real_age";
+}
+
+export type PlayableStageOpts = {
+  skipRealAge?: boolean;
+  /** Prefer list.evil_unlocked when known. */
+  evilUnlocked?: boolean;
+  accountAgeSeconds?: number;
+  selectedTraitIds?: string[];
+};
+
+function asHours(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Match Stage.passesAccountAgeGate (max is exclusive). */
+export function passesAccountAgeGate(
+  stage: CatalogStage,
+  opts?: Pick<PlayableStageOpts, "evilUnlocked" | "accountAgeSeconds">
+): boolean {
+  const min = asHours(stage.require_account_age_hours_min);
+  const max = asHours(stage.require_account_age_hours_max);
+  if (min === null && max === null) return true;
+
+  if (typeof opts?.evilUnlocked === "boolean") {
+    if (min !== null && !opts.evilUnlocked) return false;
+    if (max !== null && opts.evilUnlocked) return false;
+    return true;
+  }
+
+  const ageSec = Math.max(0, Number(opts?.accountAgeSeconds ?? 0) || 0);
+  if (min !== null && ageSec < min * 3600) return false;
+  if (max !== null && ageSec >= max * 3600) return false;
+  return true;
+}
+
+/** Trait dependency parity with RPCharacters Dependency.check (trait modes). */
+export function passesTraitDependency(
+  stage: CatalogStage,
+  selectedTraitIds: string[] | undefined
+): boolean {
+  const dep = stage.dependency;
+  if (!dep || typeof dep !== "object") return true;
+  const type = String(dep.type || "").toLowerCase();
+  if (type !== "trait") return true;
+  const mode = String(dep.mode || "").toLowerCase();
+  const dependsOn = Array.isArray(dep.depends_on)
+    ? dep.depends_on.map((id) => String(id || "").trim()).filter(Boolean)
+    : [];
+  if (!dependsOn.length) return true;
+  const selected = new Set(
+    (selectedTraitIds || []).map((id) => String(id || "").trim()).filter(Boolean)
+  );
+  if (mode === "all") {
+    return dependsOn.every((id) => selected.has(id));
+  }
+  if (mode === "one-or-more") {
+    return dependsOn.some((id) => selected.has(id));
+  }
+  return true;
+}
+
+export function playableStages(
+  catalog: CreationCatalog,
+  opts?: PlayableStageOpts
+): CatalogStage[] {
   const stages = [...(catalog.stages || [])];
   stages.sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
   return stages.filter((s) => {
     const t = String(s.type || "").toLowerCase();
-    return Boolean(t);
+    if (!t) return false;
+    if (opts?.skipRealAge && isRealAgeStage(s)) return false;
+    if (!passesTraitDependency(s, opts?.selectedTraitIds)) return false;
+    if (!passesAccountAgeGate(s, opts)) return false;
+    return true;
   });
+}
+
+export function isInteractiveStage(stage: CatalogStage): boolean {
+  return INTERACTIVE_TYPES.has(String(stage.type || "").toLowerCase());
+}
+
+export function interactiveStageCount(stages: CatalogStage[]): number {
+  return stages.filter(isInteractiveStage).length;
+}
+
+/** Interactive step index (1-based) for progress, or null for info cards. */
+export function interactiveProgress(
+  stages: CatalogStage[],
+  index: number
+): { current: number; total: number } | null {
+  const stage = stages[index];
+  if (!stage || !isInteractiveStage(stage)) return null;
+  const total = interactiveStageCount(stages);
+  let current = 0;
+  for (let i = 0; i <= index; i++) {
+    if (isInteractiveStage(stages[i]!)) current += 1;
+  }
+  return { current, total };
+}
+
+function stripColors(raw: string): string {
+  return raw
+    .replace(/§[0-9a-fk-or]/gi, "")
+    .replace(/#[0-9a-fA-F]{6}/g, "")
+    .trim();
+}
+
+function unwrapMinecraftLine(raw: string): { kind: "title" | "body" | "plain"; text: string } {
+  const s = String(raw || "").trim();
+  const title = s.match(/^title\((.*)\)$/i);
+  if (title) {
+    return { kind: "title", text: stripColors(title[1] || "") };
+  }
+  const subtitle = s.match(/^subtitle\((.*)\)$/i);
+  if (subtitle) {
+    return { kind: "body", text: stripColors(subtitle[1] || "") };
+  }
+  return { kind: "plain", text: stripColors(s) };
+}
+
+function isInGameOnlyLine(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t) return true;
+  // Drop any line that mentions the in-game advance command.
+  if (t.includes("/rpcharacter next") || t.includes("rpcharacter next")) {
+    return true;
+  }
+  return false;
+}
+
+/** Rewrite in-game chat prompts for the web. */
+export function webifyPrompt(text: string): string {
+  let s = String(text || "").trim();
+  if (!s) return s;
+  s = s.replace(/\bAre you 18\+ in real life\? Yes\/No in chat\b/gi, "Are you 18+ in real life?");
+  s = s.replace(/\bYes\/No in chat\b/gi, "Yes or No");
+  s = s.replace(/\bin chat next\b/gi, "next");
+  s = s.replace(/\bin chat\b/gi, "");
+  s = s.replace(/\bType the name next\.?/gi, "Enter your character name.");
+  s = s.replace(/\bType your character name\b/gi, "Enter your character name");
+  s = s.replace(/\bType your character age\b/gi, "Enter your character age");
+  s = s.replace(
+    /\bType your character description\b/gi,
+    "Write your character description"
+  );
+  s = s.replace(/\bType clue\b/gi, "Enter clue");
+  s = s.replace(/\s{2,}/g, " ").trim();
+  s = s.replace(/\s+([.!?])/g, "$1");
+  return s;
 }
 
 /** Strip Minecraft-style title()/subtitle() wrappers for web display. */
 export function stripInfoLine(raw: string): string {
-  let s = String(raw || "");
-  s = s.replace(/title\(([^)]*)\)/gi, "$1");
-  s = s.replace(/subtitle\(([^)]*)\)/gi, "$1");
-  // strip simple color codes / hex leftovers loosely
-  s = s.replace(/§[0-9a-fk-or]/gi, "");
-  s = s.replace(/#[0-9a-fA-F]{6}/g, "");
-  return s.trim();
+  const { text } = unwrapMinecraftLine(raw);
+  if (isInGameOnlyLine(text)) return "";
+  return webifyPrompt(text);
+}
+
+export function parseStageCopy(stage: CatalogStage): StageCopy {
+  const webMessages = Array.isArray(stage.web_messages)
+    ? stage.web_messages
+    : null;
+  const messages =
+    webMessages && webMessages.length > 0
+      ? webMessages
+      : Array.isArray(stage.messages)
+        ? stage.messages
+        : stage.message
+          ? [String(stage.message)]
+          : [];
+
+  let title: string | null = null;
+  const bodyLines: string[] = [];
+
+  for (const raw of messages) {
+    const { kind, text } = unwrapMinecraftLine(String(raw));
+    if (isInGameOnlyLine(text)) continue;
+    const cleaned = webifyPrompt(text);
+    if (!cleaned) continue;
+    if (kind === "title" && !title) {
+      title = cleaned;
+    } else {
+      bodyLines.push(cleaned);
+    }
+  }
+
+  return { title, bodyLines };
+}
+
+export function stageDisplayTitle(stage: CatalogStage): string {
+  const copy = parseStageCopy(stage);
+  if (copy.title) return copy.title;
+
+  const type = String(stage.type || "").toLowerCase();
+  const target = String(stage.target || "").toLowerCase();
+  if (type === "setter" && target) {
+    if (target === "real_age") return "Age verification";
+    return target.charAt(0).toUpperCase() + target.slice(1);
+  }
+  if (type === "selection" && target === "class") return "Class";
+  if (type === "selection" && target === "race") return "Race";
+  if (type === "selection" && target === "trait") {
+    const key = String(stage.key || "Traits");
+    return key.charAt(0).toUpperCase() + key.slice(1);
+  }
+  if (type === "attributes") return "Attributes";
+  if (type === "clue") return "Clues";
+  if (type === "summary") return "Summary";
+  if (type === "info") return "Continue";
+  return stage.id;
 }
 
 export function traitsForKey(
@@ -97,6 +313,9 @@ export function stageCanContinue(
   if (type === "info" || type === "summary") return true;
 
   if (type === "setter") {
+    if (target === "real_age") {
+      return draft.eighteen === true || draft.eighteen === false;
+    }
     if (target === "name") {
       const min = catalog.validation?.name?.min_length ?? 1;
       const max = catalog.validation?.name?.max_length ?? 32;
@@ -153,7 +372,7 @@ export function stageCanContinue(
 export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
   const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
   const gender = draft.gender.trim() || "unspecified";
-  return {
+  const body: CreateCharacterBody = {
     client_request_id: draft.client_request_id,
     name: draft.name.trim(),
     age: Number(draft.age),
@@ -165,4 +384,8 @@ export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
     traits: [...draft.traitIds],
     clues,
   };
+  if (draft.eighteen === true || draft.eighteen === false) {
+    body.eighteen = draft.eighteen;
+  }
+  return body;
 }

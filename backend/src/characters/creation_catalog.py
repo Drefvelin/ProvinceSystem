@@ -58,9 +58,13 @@ def _normalize_stages(raw: list) -> list[dict[str, Any]]:
             "points",
             "max_rank",
             "messages",
+            "web_messages",
+            "message",
             "dependency",
             "entries",
             "interval",
+            "require_account_age_hours_min",
+            "require_account_age_hours_max",
         ):
             if key in row and row[key] is not None:
                 entry[key] = row[key]

@@ -200,11 +200,74 @@ def migrate() -> None:
             """
             CREATE TABLE IF NOT EXISTS character_player_meta (
                 player_uuid TEXT PRIMARY KEY,
-                max_alive_characters INTEGER NOT NULL,
+                max_alive_characters INTEGER,
+                eighteen INTEGER,
+                real_age_set INTEGER NOT NULL DEFAULT 0,
+                account_created_at_epoch INTEGER,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        meta_cols = _column_names(conn, "character_player_meta")
+        if "eighteen" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta ADD COLUMN eighteen INTEGER"
+            )
+        if "real_age_set" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta ADD COLUMN real_age_set "
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+        if "account_created_at_epoch" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN account_created_at_epoch INTEGER"
+            )
+        # Legacy NOT NULL on max_alive_characters breaks age-only upserts.
+        max_col = next(
+            (
+                row
+                for row in conn.execute(
+                    "PRAGMA table_info(character_player_meta)"
+                ).fetchall()
+                if row["name"] == "max_alive_characters"
+            ),
+            None,
+        )
+        if max_col is not None and int(max_col["notnull"] or 0) == 1:
+            conn.execute(
+                """
+                CREATE TABLE character_player_meta_new (
+                    player_uuid TEXT PRIMARY KEY,
+                    max_alive_characters INTEGER,
+                    eighteen INTEGER,
+                    real_age_set INTEGER NOT NULL DEFAULT 0,
+                    account_created_at_epoch INTEGER,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO character_player_meta_new (
+                    player_uuid, max_alive_characters, eighteen,
+                    real_age_set, account_created_at_epoch, updated_at
+                )
+                SELECT
+                    player_uuid,
+                    max_alive_characters,
+                    eighteen,
+                    COALESCE(real_age_set, 0),
+                    account_created_at_epoch,
+                    updated_at
+                FROM character_player_meta
+                """
+            )
+            conn.execute("DROP TABLE character_player_meta")
+            conn.execute(
+                "ALTER TABLE character_player_meta_new "
+                "RENAME TO character_player_meta"
+            )
         if "staff" not in _column_names(conn, "submissions"):
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN staff INTEGER NOT NULL DEFAULT 0"

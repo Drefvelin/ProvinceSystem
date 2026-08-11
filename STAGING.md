@@ -151,7 +151,7 @@ catalog sync → /token create skin staff → redeem + dropdowns → auto-approv
 ### Deploy
 
 1. ProvinceSystem API on staging (characters routes + DB migrate for `creation_catalog` / `character_creates` / `character_roster` / `character_player_meta`).
-2. `Builds/RPCharacters/` jar with `plugins/RPCharacters/config.yml` `characters-api.base-url` / `plugin-key` (same plugin key as skins). Reload pushes creation catalog; join or `/rpcharacter pending sync` applies web creates; roster push keeps the site list current and (when the player is online) syncs LP-based `max_alive_characters` for Create enablement.
+2. `Builds/RPCharacters/` jar with `plugins/RPCharacters/config.yml` `characters-api.base-url` / `plugin-key` (same plugin key as skins). Reload pushes creation catalog; join or `/rpcharacter pending sync` applies web creates; roster push keeps the site list current and (when the player is online) syncs LP-based `max_alive_characters` for Create enablement, plus `real_age_set` / `eighteen` once age stages were completed in-game.
 3. Frontend with `/character` (+ `/character/create`); `NEXT_PUBLIC_API_URL` → staging API (`http://127.0.0.1:18001`).
 4. `Builds/TFMCWeb/tfmcweb-*.jar` — `/token create character` mint message points at site redeem. LP: `tfmcweb.token.create` (character scope).
 

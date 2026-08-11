@@ -17,9 +17,23 @@ import {
   isSessionValid,
   type CharacterSession,
 } from "../../lib/characters/session";
+import {
+  isCharacterUiDev,
+  UI_DEV_SESSION_TOKEN,
+} from "../../lib/characters/uiDev";
 import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
 
+function uiDevSession(): CharacterSession {
+  return {
+    session_token: UI_DEV_SESSION_TOKEN,
+    player_uuid: "00000000-0000-4000-8000-ui0000000001",
+    expires_at: new Date(Date.now() + 86400000).toISOString(),
+    scope: "character",
+  };
+}
+
 export default function CharacterPage() {
+  const uiDev = isCharacterUiDev();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<CharacterSession | null>(null);
   const [characters, setCharacters] = useState<CharacterListItem[]>([]);
@@ -28,38 +42,56 @@ export default function CharacterPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
 
-  const loadList = useCallback(async (token: string) => {
-    setLoadingList(true);
-    setListError(null);
-    try {
-      const list = await listCharacters(token);
-      setCharacters(list.characters);
-      if (typeof list.max_alive_characters === "number") {
-        setMaxSlots(list.max_alive_characters);
-      } else {
-        try {
-          const catalog = await getCreationCatalog(token);
-          setMaxSlots(maxAliveSlots(catalog.slot_limits));
-        } catch {
-          setMaxSlots(3);
-        }
-      }
-    } catch (err) {
-      if (err instanceof CharactersApiError && err.status === 401) {
-        clearSession();
-        setSessionState(null);
+  const loadList = useCallback(
+    async (token: string) => {
+      if (uiDev) {
         setCharacters([]);
+        setMaxSlots(5);
+        setListError(null);
+        setLoadingList(false);
         return;
       }
-      setListError(
-        err instanceof Error ? err.message : "Could not load characters"
-      );
-    } finally {
-      setLoadingList(false);
-    }
-  }, []);
+      setLoadingList(true);
+      setListError(null);
+      try {
+        const list = await listCharacters(token);
+        setCharacters(list.characters);
+        if (typeof list.max_alive_characters === "number") {
+          setMaxSlots(list.max_alive_characters);
+        } else {
+          try {
+            const catalog = await getCreationCatalog(token);
+            setMaxSlots(maxAliveSlots(catalog.slot_limits));
+          } catch {
+            setMaxSlots(3);
+          }
+        }
+      } catch (err) {
+        if (err instanceof CharactersApiError && err.status === 401) {
+          clearSession();
+          setSessionState(null);
+          setCharacters([]);
+          return;
+        }
+        setListError(
+          err instanceof Error ? err.message : "Could not load characters"
+        );
+      } finally {
+        setLoadingList(false);
+      }
+    },
+    [uiDev]
+  );
 
   useEffect(() => {
+    if (uiDev) {
+      const next = uiDevSession();
+      setSessionState(next);
+      void loadList(next.session_token);
+      setReady(true);
+      return;
+    }
+
     const existing = getSession();
     if (isSessionValid(existing)) {
       setSessionState(existing);
@@ -68,7 +100,7 @@ export default function CharacterPage() {
       clearSession();
     }
     setReady(true);
-  }, [loadList]);
+  }, [loadList, uiDev]);
 
   function onRedeemed(next: CharacterSession) {
     setSessionState(next);
@@ -76,6 +108,11 @@ export default function CharacterPage() {
   }
 
   async function onLogout() {
+    if (uiDev) {
+      setSessionState(null);
+      setCharacters([]);
+      return;
+    }
     if (!session) return;
     setLoggingOut(true);
     try {
@@ -114,15 +151,23 @@ export default function CharacterPage() {
           `,
         }}
       />
-      <h1 className="char-rise font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Character
-      </h1>
+      <div className="flex items-baseline gap-3">
+        <h1 className="char-rise font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
+          Character
+        </h1>
+        {uiDev ? (
+          <span className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-accent)_50%,transparent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--tfmc-accent)]">
+            UI-dev
+          </span>
+        ) : null}
+      </div>
 
       {valid ? (
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
-            Session expires {formatExpiresIn(session.expires_at)} (
-            {formatLocal(session.expires_at)})
+            {uiDev
+              ? "UI-dev session — no redeem required."
+              : `Session expires ${formatExpiresIn(session.expires_at)} (${formatLocal(session.expires_at)})`}
           </p>
           {loadingList ? (
             <p className="mt-8 text-[var(--tfmc-mist)]">Loading characters…</p>
