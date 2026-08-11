@@ -27,6 +27,7 @@ import {
 } from "../../../lib/skins/sizes";
 import {
   NAME_STYLES,
+  normalizePreviewHex,
   type NameStyle,
 } from "../../../lib/skins/namePreview";
 import FancyCheckbox from "./FancyCheckbox";
