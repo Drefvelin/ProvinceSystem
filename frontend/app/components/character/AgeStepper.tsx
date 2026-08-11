@@ -14,6 +14,13 @@ type Props = {
   birthdayHint?: string;
 };
 
+function normalizeBirthdayText(raw: string): string {
+  return String(raw || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 export default function AgeStepper({
   value,
   min,
@@ -27,6 +34,9 @@ export default function AgeStepper({
   const current = Number.isFinite(parsed) ? parsed : min;
   const [birthdayDraft, setBirthdayDraft] = useState(birthdayValue);
   const [birthdayError, setBirthdayError] = useState<string | null>(null);
+  const birthdayDirty =
+    normalizeBirthdayText(birthdayDraft) !==
+    normalizeBirthdayText(birthdayValue);
 
   useEffect(() => {
     setBirthdayDraft(birthdayValue);
@@ -44,11 +54,9 @@ export default function AgeStepper({
   }
 
   function commitBirthday() {
+    if (!birthdayDirty) return;
     const err = onBirthdayApply(birthdayDraft);
     setBirthdayError(err);
-    if (!err) {
-      // parent updates birthdayValue; effect syncs draft
-    }
   }
 
   return (
@@ -103,7 +111,6 @@ export default function AgeStepper({
               setBirthdayDraft(e.target.value);
               setBirthdayError(null);
             }}
-            onBlur={commitBirthday}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -115,8 +122,9 @@ export default function AgeStepper({
           />
           <button
             type="button"
+            disabled={!birthdayDirty}
             onClick={commitBirthday}
-            className="shrink-0 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)]"
+            className="shrink-0 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)] disabled:opacity-40 disabled:hover:border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)]"
           >
             Apply
           </button>

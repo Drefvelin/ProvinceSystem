@@ -337,15 +337,23 @@ function StageBody({
       setDraft(setTraitsForKey(draft, catalog, key, [...set]));
     }
 
+    const countLabel =
+      min === max
+        ? `Selected ${selected.length}/${max}`
+        : [
+            `Selected ${selected.length}`,
+            `(${[
+              min > 1 ? `Min ${min}` : null,
+              `Max ${max}`,
+            ]
+              .filter(Boolean)
+              .join(", ")})`,
+          ].join(" ");
+
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
-          Selected {selected.length}/{max}
-          {min > 0 ? (
-            <span className="ml-1.5 text-xs text-[color-mix(in_srgb,var(--tfmc-stone)_75%,transparent)]">
-              (Min {min})
-            </span>
-          ) : null}
+          {countLabel}
           {hasBudget ? ` · Points remaining ${remaining}` : null}
         </p>
         <ul className="grid max-h-[42vh] gap-2 overflow-y-auto pr-1">
