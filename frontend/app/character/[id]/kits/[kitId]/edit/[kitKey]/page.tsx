@@ -209,7 +209,7 @@ export default function CharacterKitEditPage() {
           <LoreItemEditor
             key={editorKey}
             item={item}
-            disabled={submitting}
+            submitting={submitting}
             onSubmit={onSubmit}
           />
         </>
