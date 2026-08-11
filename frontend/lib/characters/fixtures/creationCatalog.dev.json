@@ -413,33 +413,52 @@
   "races": [
     {
       "id": "human",
-      "name": "Human"
+      "name": "Human",
+      "age_max": 100,
+      "description": [
+        "Adaptable and numerous across the provinces.",
+        "No inherent magical gift, but fewer limits."
+      ]
     },
     {
       "id": "elf",
-      "name": "Elf"
+      "name": "Elf",
+      "age_max": 400,
+      "description": [
+        "Long-lived and closely tied to old woods and stars.",
+        "Often skilled with bow or subtle magic."
+      ]
     },
     {
       "id": "dwarf",
-      "name": "Dwarf"
+      "name": "Dwarf",
+      "age_max": 250,
+      "description": [
+        "Sturdy folk of stone halls and deep craft.",
+        "Strong constitution and stubborn wills."
+      ]
     }
   ],
   "classes": [
     {
       "id": "warrior",
-      "name": "Warrior"
+      "name": "Warrior",
+      "description": ["Front-line combatant. Strong melee and armor focus."]
     },
     {
       "id": "mage",
-      "name": "Mage"
+      "name": "Mage",
+      "description": ["Arcane caster. Fragile up close, powerful at range."]
     },
     {
       "id": "ranger",
-      "name": "Ranger"
+      "name": "Ranger",
+      "description": ["Scout and hunter. Bow, tracking, and wilderness craft."]
     },
     {
       "id": "rogue",
-      "name": "Rogue"
+      "name": "Rogue",
+      "description": ["Stealth and precision. Soft targets and locked doors."]
     }
   ],
   "traits": [
@@ -556,92 +575,128 @@
     {
       "id": "phys_scar",
       "name": "Scarred",
-      "key": "physical"
+      "key": "physical",
+      "cost": 1,
+      "description": ["Visible old wounds. Intimidating, hard to forget."]
     },
     {
       "id": "phys_tall",
       "name": "Tall",
-      "key": "physical"
+      "key": "physical",
+      "cost": 1,
+      "description": ["Head and shoulders above the crowd."]
     },
     {
       "id": "phys_stocky",
       "name": "Stocky",
-      "key": "physical"
+      "key": "physical",
+      "cost": 1,
+      "description": ["Broad and solid. Hard to shove aside."]
     },
     {
       "id": "phys_lithe",
       "name": "Lithe",
-      "key": "physical"
+      "key": "physical",
+      "cost": 1,
+      "description": ["Lean and quick. Moves like a shadow."]
     },
     {
       "id": "cel_sun",
       "name": "Sun-marked",
-      "key": "celestial"
+      "key": "celestial",
+      "cost": 1,
+      "description": ["Born under a bright sun omen."]
     },
     {
       "id": "cel_moon",
       "name": "Moon-touched",
-      "key": "celestial"
+      "key": "celestial",
+      "cost": 1,
+      "description": ["Pale light follows you at night."]
     },
     {
       "id": "cel_star",
       "name": "Star-born",
-      "key": "celestial"
+      "key": "celestial",
+      "cost": 1,
+      "description": ["A rare star charted your birth."]
     },
     {
       "id": "callous",
       "name": "Callous",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Hardened to others' pain. Cold choices come easy."]
     },
     {
       "id": "spiteful",
       "name": "Spiteful",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Remembers slights. Pays them back."]
     },
     {
       "id": "greedy",
       "name": "Greedy",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Always wants more. Sharing hurts."]
     },
     {
       "id": "deceitful",
       "name": "Deceitful",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Lies come naturally. Truth is a tool."]
     },
     {
       "id": "cynical",
       "name": "Cynical",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Expects the worst. Rarely surprised."]
     },
     {
       "id": "kind",
       "name": "Kind",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Quick to help. Soft spot for the hurting."]
     },
     {
       "id": "stoic",
       "name": "Stoic",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Keeps feelings buried. Steady under pressure."]
     },
     {
       "id": "witty",
       "name": "Witty",
-      "key": "personality"
+      "key": "personality",
+      "cost": 1,
+      "description": ["Quick tongue. Turns tension into jokes."]
     },
     {
       "id": "evil_tyrant",
       "name": "Tyrant",
-      "key": "evil"
+      "key": "evil",
+      "cost": 1,
+      "description": ["Rules through fear. Power is the point."]
     },
     {
       "id": "evil_cultist",
       "name": "Cultist",
-      "key": "evil"
+      "key": "evil",
+      "cost": 1,
+      "description": ["Serves forbidden powers. Faith before self."]
     },
     {
       "id": "evil_bandit",
       "name": "Bandit",
-      "key": "evil"
+      "key": "evil",
+      "cost": 1,
+      "description": ["Takes what others won't give. Roads are hunting grounds."]
     }
   ],
   "validation": {

@@ -282,6 +282,39 @@ export function traitsForKey(
   );
 }
 
+/** Normalize catalog description fields to display lines. */
+export function optionDescriptionLines(row: {
+  description?: string | string[] | unknown;
+}): string[] {
+  const raw = row.description;
+  if (raw == null) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((line) => String(line || "").trim())
+      .filter(Boolean);
+  }
+  const s = String(raw).trim();
+  return s ? [s] : [];
+}
+
+export function traitCost(trait: CatalogTrait): number {
+  const n = Number(trait.cost);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+export function traitPointsSpent(
+  draft: WizardDraft,
+  catalog: CreationCatalog,
+  key: string
+): number {
+  const selected = new Set(selectedTraitsForKey(draft, catalog, key));
+  let spent = 0;
+  for (const t of traitsForKey(catalog, key)) {
+    if (selected.has(t.id)) spent += traitCost(t);
+  }
+  return spent;
+}
+
 export function selectedTraitsForKey(
   draft: WizardDraft,
   catalog: CreationCatalog,
@@ -345,7 +378,13 @@ export function stageCanContinue(
       const min = Number(stage.min_select ?? 0);
       const max = Number(stage.max_select ?? 99);
       const count = selectedTraitsForKey(draft, catalog, key).length;
-      return count >= min && count <= max;
+      if (count < min || count > max) return false;
+      const budget = Number(stage.points ?? 0);
+      if (budget > 0) {
+        const spent = traitPointsSpent(draft, catalog, key);
+        if (spent > budget) return false;
+      }
+      return true;
     }
   }
 

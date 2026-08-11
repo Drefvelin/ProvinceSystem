@@ -161,6 +161,7 @@ export type CatalogIdRow = {
   id: string;
   name?: string;
   description?: string | string[];
+  age_max?: number;
   [key: string]: unknown;
 };
 

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import AgeStepper from "./AgeStepper";
 import AttributeSheet from "./AttributeSheet";
+import SelectableOption from "./SelectableOption";
 import {
   CharactersApiError,
   createCharacter,
@@ -12,6 +14,7 @@ import {
 import {
   interactiveProgress,
   newDraft,
+  optionDescriptionLines,
   parseStageCopy,
   playableStages,
   selectedTraitsForKey,
@@ -19,6 +22,8 @@ import {
   stageCanContinue,
   stageDisplayTitle,
   toCreateBody,
+  traitCost,
+  traitPointsSpent,
   traitsForKey,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
@@ -127,17 +132,18 @@ function StageBody({
   }
 
   if (type === "setter" && target === "age") {
+    const min = Number(catalog.validation?.age?.minimum ?? 1) || 1;
+    const race = (catalog.races || []).find((r) => r.id === draft.race_id);
+    const raceMax = Number(race?.age_max);
+    const max =
+      Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
     return (
-      <label className="flex flex-col gap-2">
-        <span className="text-sm text-[var(--tfmc-stone)]">Age</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          value={draft.age}
-          onChange={(e) => setDraft({ ...draft, age: e.target.value })}
-          className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
-        />
-      </label>
+      <AgeStepper
+        value={draft.age}
+        min={min}
+        max={max}
+        onChange={(age) => setDraft({ ...draft, age })}
+      />
     );
   }
 
@@ -180,19 +186,12 @@ function StageBody({
           const selected = draft.class_id === c.id;
           return (
             <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => setDraft({ ...draft, class_id: c.id })}
-                className={`w-full rounded-sm border px-3 py-3 text-left transition ${
-                  selected
-                    ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)]"
-                    : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
-                }`}
-              >
-                <span className="font-medium text-[var(--tfmc-cream)]">
-                  {displayName(c)}
-                </span>
-              </button>
+              <SelectableOption
+                title={displayName(c)}
+                selected={selected}
+                descriptionLines={optionDescriptionLines(c)}
+                onSelect={() => setDraft({ ...draft, class_id: c.id })}
+              />
             </li>
           );
         })}
@@ -207,19 +206,12 @@ function StageBody({
           const selected = draft.race_id === r.id;
           return (
             <li key={r.id}>
-              <button
-                type="button"
-                onClick={() => setDraft({ ...draft, race_id: r.id })}
-                className={`w-full rounded-sm border px-3 py-3 text-left transition ${
-                  selected
-                    ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)]"
-                    : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
-                }`}
-              >
-                <span className="font-medium text-[var(--tfmc-cream)]">
-                  {displayName(r)}
-                </span>
-              </button>
+              <SelectableOption
+                title={displayName(r)}
+                selected={selected}
+                descriptionLines={optionDescriptionLines(r)}
+                onSelect={() => setDraft({ ...draft, race_id: r.id })}
+              />
             </li>
           );
         })}
@@ -233,43 +225,67 @@ function StageBody({
     const selected = selectedTraitsForKey(draft, catalog, key);
     const max = Number(stage.max_select ?? 1);
     const min = Number(stage.min_select ?? 0);
+    const budget = Number(stage.points ?? 0);
+    const hasBudget = budget > 0;
+    const spent = traitPointsSpent(draft, catalog, key);
+    const remaining = hasBudget ? Math.max(0, budget - spent) : 0;
 
     function toggle(id: string) {
       const set = new Set(selected);
       if (set.has(id)) {
         set.delete(id);
-      } else if (max <= 1) {
-        set.clear();
-        set.add(id);
-      } else if (set.size < max) {
-        set.add(id);
+      } else {
+        const trait = options.find((t) => t.id === id);
+        const cost = trait ? traitCost(trait) : 0;
+        if (max <= 1) {
+          if (hasBudget && cost > budget) return;
+          set.clear();
+          set.add(id);
+        } else {
+          if (set.size >= max) return;
+          if (hasBudget && spent + cost > budget) return;
+          set.add(id);
+        }
       }
       setDraft(setTraitsForKey(draft, catalog, key, [...set]));
+    }
+
+    const chooseLabel =
+      min === max ? `choose ${min}` : `choose ${min}–${max}`;
+    const statusParts = [
+      `Selected ${selected.length}`,
+      chooseLabel,
+    ];
+    if (hasBudget) {
+      statusParts.push(`Points remaining ${remaining} / ${budget}`);
     }
 
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
-          Choose {min === max ? min : `${min}–${max}`}
+          {statusParts.join(" · ")}
         </p>
         <ul className="grid max-h-[42vh] gap-2 overflow-y-auto pr-1">
           {options.map((t) => {
             const on = selected.includes(t.id);
+            const cost = traitCost(t);
+            const wouldOverSelect = !on && max > 1 && selected.length >= max;
+            const wouldOverSpend =
+              !on && hasBudget && spent + cost > budget && !(max <= 1);
+            const singleTooExpensive =
+              !on && max <= 1 && hasBudget && cost > budget;
+            const blocked =
+              wouldOverSelect || wouldOverSpend || singleTooExpensive;
             return (
               <li key={t.id}>
-                <button
-                  type="button"
-                  onClick={() => toggle(t.id)}
-                  className={`w-full rounded-sm border px-3 py-3 text-left transition ${
-                    on
-                      ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)]"
-                      : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
-                  }`}
-                >
-                  <span className="font-medium text-[var(--tfmc-cream)]">
-                    {displayName(t)}
-                  </span>
-                </button>
+                <SelectableOption
+                  title={displayName(t)}
+                  selected={on}
+                  cost={cost >= 1 ? cost : null}
+                  descriptionLines={optionDescriptionLines(t)}
+                  disabled={blocked}
+                  onSelect={() => toggle(t.id)}
+                />
               </li>
             );
           })}
