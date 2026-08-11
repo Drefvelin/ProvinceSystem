@@ -11,8 +11,17 @@ type Props = {
   loggingOut?: boolean;
 };
 
+function capitalizeFirst(raw: string | null | undefined): string {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function Row({ item }: { item: CharacterListItem }) {
   const status = String(item.status || "").toUpperCase();
+  const meta = [capitalizeFirst(item.race), item.class]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <li className="char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
       <div>
@@ -20,7 +29,7 @@ function Row({ item }: { item: CharacterListItem }) {
           {item.name || "Unnamed"}
         </p>
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          {[item.race, item.class].filter(Boolean).join(" · ") || "—"}
+          {meta || "—"}
         </p>
       </div>
       <span className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
