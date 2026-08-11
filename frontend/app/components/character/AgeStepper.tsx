@@ -1,12 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 type Props = {
   value: string;
   min: number;
   max: number;
   onChange: (value: string) => void;
-  /** Fantasy birthday line shown under the control when age is valid. */
-  birthdayLabel?: string | null;
+  /** Current fantasy birthday text shown in the editable field. */
+  birthdayValue: string;
+  /** Commit edited birthday text; return error message or null. */
+  onBirthdayApply: (raw: string) => string | null;
+  birthdayHint?: string;
 };
 
 export default function AgeStepper({
@@ -14,10 +19,19 @@ export default function AgeStepper({
   min,
   max,
   onChange,
-  birthdayLabel = null,
+  birthdayValue,
+  onBirthdayApply,
+  birthdayHint = "DD/MM/YYYY AE",
 }: Props) {
   const parsed = Number(value);
   const current = Number.isFinite(parsed) ? parsed : min;
+  const [birthdayDraft, setBirthdayDraft] = useState(birthdayValue);
+  const [birthdayError, setBirthdayError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBirthdayDraft(birthdayValue);
+    setBirthdayError(null);
+  }, [birthdayValue]);
 
   function setClamped(next: number) {
     const n = Math.max(min, Math.min(max, Math.trunc(next)));
@@ -27,6 +41,14 @@ export default function AgeStepper({
   function bump(delta: 1 | -1) {
     const base = Number.isFinite(parsed) ? parsed : min;
     setClamped(base + delta);
+  }
+
+  function commitBirthday() {
+    const err = onBirthdayApply(birthdayDraft);
+    setBirthdayError(err);
+    if (!err) {
+      // parent updates birthdayValue; effect syncs draft
+    }
   }
 
   return (
@@ -70,12 +92,43 @@ export default function AgeStepper({
           +
         </button>
       </div>
-      {birthdayLabel ? (
-        <p className="text-sm text-[var(--tfmc-mist)]" aria-live="polite">
-          Birthday{" "}
-          <span className="text-[var(--tfmc-cream)]">{birthdayLabel}</span>
-        </p>
-      ) : null}
+
+      <label className="mt-1 flex flex-col gap-1.5">
+        <span className="text-sm text-[var(--tfmc-stone)]">Birthday</span>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={birthdayDraft}
+            onChange={(e) => {
+              setBirthdayDraft(e.target.value);
+              setBirthdayError(null);
+            }}
+            onBlur={commitBirthday}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitBirthday();
+              }
+            }}
+            placeholder={birthdayHint}
+            className="w-full rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
+          />
+          <button
+            type="button"
+            onClick={commitBirthday}
+            className="shrink-0 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_30%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] hover:border-[var(--tfmc-accent)]"
+          >
+            Apply
+          </button>
+        </div>
+        {birthdayError ? (
+          <p className="text-xs text-[#e8a0a0]">{birthdayError}</p>
+        ) : (
+          <p className="text-xs text-[var(--tfmc-stone)]">
+            Format {birthdayHint}. Applying updates age.
+          </p>
+        )}
+      </label>
     </div>
   );
 }

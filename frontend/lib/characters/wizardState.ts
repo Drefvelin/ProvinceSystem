@@ -6,13 +6,18 @@ import type {
   CreationCatalog,
   ExperienceModifierDto,
 } from "./api";
-import { birthdayFromAge } from "./fantasyCalendar";
+import {
+  birthdayFromAge,
+  resolvedBirthdayIso,
+} from "./fantasyCalendar";
 import { emptyRanks, isExactSpend } from "./pointBuy";
 
 export type WizardDraft = {
   client_request_id: string;
   name: string;
   age: string;
+  /** Fantasy ISO birthday override; null means derive from age + salt. */
+  birthday: string | null;
   /** Player 18+ attestation (real life); null until answered. */
   eighteen: boolean | null;
   description: string;
@@ -44,6 +49,7 @@ export function newDraft(catalog: CreationCatalog): WizardDraft {
     client_request_id: crypto.randomUUID(),
     name: "",
     age: "",
+    birthday: null,
     eighteen: null,
     description: "",
     gender: "",
@@ -804,10 +810,13 @@ export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
     traits: [...draft.traitIds],
     clues,
   };
-  const birthday = birthdayFromAge(
-    age,
-    draft.client_request_id || "default"
-  );
+  const birthday =
+    resolvedBirthdayIso(
+      String(age),
+      draft.client_request_id || "default",
+      draft.birthday,
+      undefined
+    ) || birthdayFromAge(age, draft.client_request_id || "default");
   if (birthday) {
     body.birthday = birthday;
   }

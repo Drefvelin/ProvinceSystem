@@ -12,7 +12,12 @@ import {
   type CatalogStage,
   type CreationCatalog,
 } from "../../../lib/characters/api";
-import { fictionalBirthdayLabel } from "../../../lib/characters/fantasyCalendar";
+import {
+  ageFromBirthday,
+  fictionalBirthdayLabel,
+  parseBirthdayInput,
+  resolveCalendarConfig,
+} from "../../../lib/characters/fantasyCalendar";
 import {
   clueContinueBlockReason,
   clueLengthBounds,
@@ -155,20 +160,47 @@ function StageBody({
     const raceMax = Number(race?.age_max);
     const max =
       Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
+    const cal = catalog.validation?.calendar;
     const ageForBirthday =
       String(draft.age || "").trim() || String(min);
-    const birthdayLabel = fictionalBirthdayLabel(
-      ageForBirthday,
-      draft.client_request_id,
-      catalog.validation?.calendar
-    );
+    const birthdayLabel =
+      fictionalBirthdayLabel(
+        ageForBirthday,
+        draft.client_request_id,
+        cal,
+        draft.birthday
+      ) || "";
+    const { eraSuffix } = resolveCalendarConfig(cal);
+
     return (
       <AgeStepper
         value={draft.age}
         min={min}
         max={max}
-        birthdayLabel={birthdayLabel}
-        onChange={(age) => setDraft({ ...draft, age })}
+        birthdayValue={birthdayLabel}
+        birthdayHint={`DD/MM/YYYY${eraSuffix ? ` ${eraSuffix}` : ""}`}
+        onChange={(age) =>
+          setDraft({ ...draft, age, birthday: null })
+        }
+        onBirthdayApply={(raw) => {
+          const iso = parseBirthdayInput(raw, cal);
+          if (!iso) {
+            return `Use ${eraSuffix ? `DD/MM/YYYY ${eraSuffix}` : "DD/MM/YYYY"}`;
+          }
+          const years = ageFromBirthday(iso, cal);
+          if (years === null) {
+            return "Invalid birthday";
+          }
+          if (years < min || years > max) {
+            return `Age must be between ${min} and ${max} for your race`;
+          }
+          setDraft({
+            ...draft,
+            birthday: iso,
+            age: String(years),
+          });
+          return null;
+        }}
       />
     );
   }

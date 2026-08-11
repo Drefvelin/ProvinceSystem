@@ -27,7 +27,8 @@ function pad2(n: number): string {
 }
 
 function daysBetweenUtc(a: Date, b: Date): number {
-  const ms = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate()) -
+  const ms =
+    Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate()) -
     Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
   return Math.floor(ms / 86_400_000);
 }
@@ -45,8 +46,7 @@ export function resolveCalendarConfig(
 ): { yearOffset: number; eraSuffix: string } {
   const yearOffset = Number(raw?.year_offset);
   return {
-    yearOffset:
-      Number.isFinite(yearOffset) ? yearOffset : DEFAULT_YEAR_OFFSET,
+    yearOffset: Number.isFinite(yearOffset) ? yearOffset : DEFAULT_YEAR_OFFSET,
     eraSuffix:
       raw?.era_suffix != null && String(raw.era_suffix).trim()
         ? String(raw.era_suffix).trim()
@@ -67,6 +67,35 @@ export function currentFantasyDate(
       now.getDate()
     )
   );
+}
+
+export function fromIsoFantasy(iso: string | null | undefined): Date | null {
+  if (!iso) return null;
+  const m = /^(\d{1,6})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return d;
 }
 
 /**
@@ -104,10 +133,26 @@ export function birthdayFromAge(
     return toIsoFantasy(latest);
   }
   const offset =
-    daySpan === 0
-      ? 0
-      : hashSaltU32(`${salt}:${age}`) % (daySpan + 1);
+    daySpan === 0 ? 0 : hashSaltU32(`${salt}:${age}`) % (daySpan + 1);
   return toIsoFantasy(addDaysUtc(earliest, offset));
+}
+
+/** Full years between birthday and now (AgeCalculator.computeAgeYears). */
+export function ageFromBirthday(
+  iso: string,
+  cfg?: FantasyCalendarConfig | null,
+  nowFantasy?: Date
+): number | null {
+  const birthday = fromIsoFantasy(iso);
+  if (!birthday) return null;
+  const now = nowFantasy ?? currentFantasyDate(cfg);
+  let years = now.getUTCFullYear() - birthday.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - birthday.getUTCMonth();
+  const dayDiff = now.getUTCDate() - birthday.getUTCDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    years -= 1;
+  }
+  return Math.max(0, years);
 }
 
 export function toIsoFantasy(d: Date): string {
@@ -118,29 +163,72 @@ export function formatFantasyBirthday(
   iso: string | null | undefined,
   cfg?: FantasyCalendarConfig | null
 ): string | null {
-  if (!iso) return null;
-  // Fantasy years are often 3 digits (IRL year − offset), so allow 1–6.
-  const m = /^(\d{1,6})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
-  if (!m) return null;
-  const year = Number(m[1]);
-  const month = Number(m[2]);
-  const day = Number(m[3]);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+  const d = fromIsoFantasy(iso);
+  if (!d) return null;
+  const { eraSuffix } = resolveCalendarConfig(cfg);
+  const yearLabel = eraSuffix
+    ? `${d.getUTCFullYear()} ${eraSuffix}`
+    : String(d.getUTCFullYear());
+  return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}/${yearLabel}`;
+}
+
+/**
+ * Parse fantasy display dates such as 30.10.351, 30/10/351, or 30/10/351 AE.
+ * Also accepts ISO YYYY-MM-DD.
+ */
+export function parseBirthdayInput(
+  input: string,
+  cfg?: FantasyCalendarConfig | null
+): string | null {
+  if (!input || !String(input).trim()) return null;
+  let raw = String(input).trim().replace(/,/g, ".");
+  const { eraSuffix } = resolveCalendarConfig(cfg);
+  if (eraSuffix) {
+    const escaped = eraSuffix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    raw = raw.replace(new RegExp(`\\s*${escaped}\\s*$`, "i"), "").trim();
+  }
+
+  const asIso = fromIsoFantasy(raw);
+  if (asIso) return toIsoFantasy(asIso);
+
+  const parts = raw.split(/[./\s]+/).filter(Boolean);
+  if (parts.length !== 3) return null;
+  const day = Number(parts[0]);
+  const month = Number(parts[1]);
+  const year = Number(parts[2]);
+  if (
+    !Number.isFinite(day) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(year)
+  ) {
     return null;
   }
-  const { eraSuffix } = resolveCalendarConfig(cfg);
-  const yearLabel = eraSuffix ? `${year} ${eraSuffix}` : String(year);
-  return `${pad2(day)}/${pad2(month)}/${yearLabel}`;
+  const iso = `${year}-${pad2(month)}-${pad2(day)}`;
+  return fromIsoFantasy(iso) ? iso : null;
+}
+
+/** Resolved birthday ISO: explicit override, else salted from age. */
+export function resolvedBirthdayIso(
+  ageRaw: string,
+  salt: string,
+  birthdayOverride: string | null | undefined,
+  cfg?: FantasyCalendarConfig | null
+): string | null {
+  if (birthdayOverride && fromIsoFantasy(birthdayOverride)) {
+    return birthdayOverride;
+  }
+  const age = Number(ageRaw);
+  if (!Number.isFinite(age) || age < 0 || !String(ageRaw).trim()) return null;
+  return birthdayFromAge(age, salt || "default", cfg);
 }
 
 /** Display line for the age stepper when age is a valid number. */
 export function fictionalBirthdayLabel(
   ageRaw: string,
   salt: string,
-  cfg?: FantasyCalendarConfig | null
+  cfg?: FantasyCalendarConfig | null,
+  birthdayOverride?: string | null
 ): string | null {
-  const age = Number(ageRaw);
-  if (!Number.isFinite(age) || age < 0 || !String(ageRaw).trim()) return null;
-  const iso = birthdayFromAge(age, salt || "default", cfg);
+  const iso = resolvedBirthdayIso(ageRaw, salt, birthdayOverride, cfg);
   return formatFantasyBirthday(iso, cfg);
 }
