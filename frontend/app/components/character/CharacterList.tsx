@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { CharacterListItem } from "../../../lib/characters/api";
+import { displayClass, displayRace } from "../../../lib/characters/displayNames";
 
 type Props = {
   characters: CharacterListItem[];
@@ -13,15 +14,9 @@ type Props = {
   refreshing?: boolean;
 };
 
-function capitalizeFirst(raw: string | null | undefined): string {
-  const s = String(raw || "").trim();
-  if (!s) return "";
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function Row({ item, linkable }: { item: CharacterListItem; linkable?: boolean }) {
   const status = String(item.status || "").toUpperCase();
-  const meta = [capitalizeFirst(item.race), item.class]
+  const meta = [displayRace(item), displayClass(item)]
     .filter(Boolean)
     .join(" · ");
   const err = String(item.error || "").trim();

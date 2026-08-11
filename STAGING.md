@@ -258,6 +258,37 @@ kits.yml → character kits UI → Discord if needed → /rpcharacter kit <id>
   → kit with skin+lore (block while pending_skin)
 ```
 
+## Step 22 — Web character sheet (read-only parity)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-22/00-index.md](./Planning/batches/step-22/00-index.md).
+
+**Code:** 22.01–22.03 done (roster sheet sync + FE sheet UI + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. RPCharacters jar that pushes sheet fields on roster sync.
+2. ProvinceSystem API + FE character detail sheet + shared nested-route margins.
+
+### Locked
+
+- Read-only identity sheet (no switch/kill)
+- Display names for race/class
+- Fields: age, birthday, gender, description, attributes, traits, clues
+- Shared `px-6` / max-width shell on character nested pages
+
+### Operator checklist
+
+- [ ] Detail shows display race/class (not raw ids)
+- [ ] Sheet shows age, birthday, gender, description, attributes, traits, clues when present
+- [ ] Kits routes have side margins like the list page
+- [ ] No switch/kill on website
+
+Checkpoint:
+
+```text
+roster sheet fields → /character/[id] identity sheet → Kits with padded layout
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

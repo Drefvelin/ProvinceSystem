@@ -49,4 +49,4 @@ kits.yml → sync all kits → web character → kits → edit editable item
 
 ## Status
 
-**21.01–21.09 + 21.05 done** (21.07 superseded). Next: operator [STAGING](../../../STAGING.md) Step 20–21 / Phase 4 as capacity.
+**21.01–21.09 + 21.05 done** (21.07 superseded). Next product work: [step-22](../step-22/00-index.md) web character sheet; operator [STAGING](../../../STAGING.md) Step 20–21 when ready.

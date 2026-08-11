@@ -195,6 +195,69 @@ def set_real_age(player_uuid: str, eighteen: bool) -> dict[str, Any]:
     }
 
 
+def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
+    """Pull optional identity-sheet fields from a roster character object."""
+    sheet: dict[str, Any] = {}
+    for key in (
+        "race_name",
+        "class_name",
+        "age",
+        "birthday",
+        "gender",
+        "description",
+    ):
+        if key not in raw:
+            continue
+        val = raw.get(key)
+        if val is None:
+            continue
+        text = str(val).strip()
+        if text:
+            sheet[key] = text
+    attrs = raw.get("attributes")
+    if isinstance(attrs, dict) and attrs:
+        cleaned_attrs: dict[str, int] = {}
+        for k, v in attrs.items():
+            if k is None:
+                continue
+            ak = str(k).strip().lower()
+            if not ak:
+                continue
+            try:
+                cleaned_attrs[ak] = int(v)
+            except (TypeError, ValueError):
+                continue
+        if cleaned_attrs:
+            sheet["attributes"] = cleaned_attrs
+    traits = raw.get("traits")
+    if isinstance(traits, list) and traits:
+        cleaned_traits: list[dict[str, Any]] = []
+        for t in traits:
+            if not isinstance(t, dict):
+                continue
+            tid = str(t.get("id") or "").strip()
+            if not tid:
+                continue
+            entry: dict[str, Any] = {
+                "id": tid,
+                "name": str(t.get("name") or tid).strip() or tid,
+            }
+            tkey = str(t.get("key") or "").strip().lower()
+            if tkey:
+                entry["key"] = tkey
+            cleaned_traits.append(entry)
+        if cleaned_traits:
+            sheet["traits"] = cleaned_traits
+    clues = raw.get("clues")
+    if isinstance(clues, list) and clues:
+        cleaned_clues = [
+            str(c).strip() for c in clues if c is not None and str(c).strip()
+        ]
+        if cleaned_clues:
+            sheet["clues"] = cleaned_clues
+    return sheet if sheet else None
+
+
 def list_roster(player_uuid: str) -> list[dict[str, Any]]:
     from src.skins.db import connect
 
@@ -205,7 +268,7 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
-                   kit_status, kit_statuses_json
+                   kit_status, kit_statuses_json, sheet_json
             FROM character_roster
             WHERE player_uuid = ?
             ORDER BY created_at ASC, character_id ASC
@@ -240,6 +303,19 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
                         for k, v in parsed.items()
                         if k is not None and str(k).strip()
                     }
+            except (TypeError, json.JSONDecodeError):
+                pass
+        try:
+            raw_sheet = row["sheet_json"]
+        except (KeyError, IndexError):
+            raw_sheet = None
+        if raw_sheet:
+            try:
+                parsed_sheet = json.loads(raw_sheet)
+                if isinstance(parsed_sheet, dict) and parsed_sheet:
+                    for k, v in parsed_sheet.items():
+                        if k and v is not None and k not in item:
+                            item[str(k)] = v
             except (TypeError, json.JSONDecodeError):
                 pass
         out.append(item)
@@ -366,6 +442,10 @@ def replace_roster(
                 kit_statuses_json = json.dumps(cleaned, separators=(",", ":"))
                 if kit_status is None and "starter" in cleaned:
                     kit_status = cleaned["starter"]
+        sheet = _sheet_from_character(raw)
+        sheet_json = (
+            json.dumps(sheet, separators=(",", ":")) if sheet is not None else None
+        )
         normalized.append(
             (
                 uuid,
@@ -377,6 +457,7 @@ def replace_roster(
                 str(created_at).strip() if created_at is not None else None,
                 kit_status,
                 kit_statuses_json,
+                sheet_json,
                 now,
             )
         )
@@ -390,9 +471,9 @@ def replace_roster(
             """
             INSERT INTO character_roster (
                 player_uuid, character_id, name, status, race, class,
-                created_at, kit_status, kit_statuses_json, updated_at
+                created_at, kit_status, kit_statuses_json, sheet_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             normalized,
         )

@@ -446,6 +446,55 @@ def main() -> None:
         fail(f"roster age sync list: {listed}")
     print("OK roster push real_age_set + eighteen=false")
 
+    # 22.01 — sheet fields on roster → GET /characters flatten
+    sheet_char = {
+        "id": "sheet-smoke-1",
+        "name": "Sheet Hero",
+        "status": "ALIVE",
+        "race": "human",
+        "class": "warrior",
+        "created_at": "200",
+        "race_name": "Human",
+        "class_name": "Warrior",
+        "age": "24",
+        "birthday": "1203-04-15",
+        "gender": "female",
+        "description": "A quiet scout from the borderlands.",
+        "attributes": {"str": 2, "dex": 3, "con": 1},
+        "traits": [
+            {"id": "keen_eye", "name": "Keen Eye", "key": "positive"},
+            {"id": "scar", "name": "Old Scar", "key": "neutral"},
+        ],
+        "clues": ["Saw a red banner at dusk", "Heard wolves near the mill"],
+    }
+    r = client.put(
+        "/characters/plugin/roster",
+        json={"player_uuid": player, "characters": [sheet_char]},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"sheet roster put: {r.status_code} {r.text}")
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200:
+        fail(f"sheet list: {r.status_code} {r.text}")
+    sheet_row = next(
+        (c for c in (r.json().get("characters") or []) if c.get("id") == "sheet-smoke-1"),
+        None,
+    )
+    if not sheet_row:
+        fail(f"sheet list missing character: {r.json()}")
+    if sheet_row.get("race_name") != "Human":
+        fail(f"race_name: {sheet_row.get('race_name')}")
+    if sheet_row.get("description") != sheet_char["description"]:
+        fail(f"description: {sheet_row.get('description')}")
+    if sheet_row.get("attributes") != sheet_char["attributes"]:
+        fail(f"attributes: {sheet_row.get('attributes')}")
+    if not isinstance(sheet_row.get("traits"), list) or len(sheet_row["traits"]) != 2:
+        fail(f"traits: {sheet_row.get('traits')}")
+    if sheet_row.get("clues") != sheet_char["clues"]:
+        fail(f"clues: {sheet_row.get('clues')}")
+    print("OK roster sheet fields flatten onto GET /characters")
+
     print("character_ingest_smoke: all checks passed")
 
 

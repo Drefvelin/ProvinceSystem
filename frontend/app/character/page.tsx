@@ -22,6 +22,7 @@ import {
   UI_DEV_SESSION_TOKEN,
 } from "../../lib/characters/uiDev";
 import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
+import { uiDevSheetCharacter } from "../../lib/characters/sheetDev";
 import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
 
 const PENDING_POLL_MS = 10_000;
@@ -52,18 +53,7 @@ export default function CharacterPage() {
   const loadList = useCallback(
     async (token: string, opts?: { quiet?: boolean }) => {
       if (uiDev) {
-        setCharacters([
-          {
-            id: UI_DEV_LORE_CHARACTER_ID,
-            name: "UI Dev Character",
-            status: "ALIVE",
-            race: "human",
-            class: "Warrior",
-            kit_status: "eligible",
-            kit_statuses: { starter: "eligible" },
-            source: "roster",
-          },
-        ]);
+        setCharacters([uiDevSheetCharacter(UI_DEV_LORE_CHARACTER_ID)]);
         setMaxSlots(5);
         setListError(null);
         setLoadingList(false);

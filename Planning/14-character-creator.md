@@ -1,10 +1,10 @@
 # 14 — Character creator (web + RPCharacters)
 
-**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)); docs [21.05](./batches/step-21/05-docs-verify.md) **done**. Phase 4 deferred.  
+**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Phase 4 wardrobe deferred.  
 **Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend` · (Phase 3) `Workspace/armourshop/`  
 **Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 
-Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore customise).
+Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet).
 
 ---
 
@@ -21,9 +21,10 @@ Donators (and later all players) create and manage RP characters on the website 
 | **1** | Web character creator | Attribute point-buy in RPC; creation catalog sync; character redeem + Remember me; create + list alive/dead; `/character` UI — **done** |
 | **2** | Kits in RPCharacters | `kits.yml`; `KitService`; `/rpcharacter kit <id>`; per-kit cooldown + once-per-character — **done** ([step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)) |
 | **3** | Kit item customise | Character detail → Kits → Edit editable items; player skins → `ps_items`; RPC lore; NBT preview; hold claim while `pending_skin` — **done** ([step-21](./batches/step-21/00-index.md) / [21.09](./batches/step-21/09-kits-web-character-ui.md)) |
+| **3b** | Web character sheet | Read-only identity sheet matching in-game summary (no switch/kill); display names; shared page margins — **done** ([step-22](./batches/step-22/00-index.md)) |
 | **4** | Character skin wardrobe | Optional Mojang/player skins (incl. masked texture); separate from item `/skins` and RP identity masks |
 
-Phase 3 **requires** Phase 2 kit claim in RPC. Phase 4 is independent of kit/lore.
+Phase 3 **requires** Phase 2 kit claim in RPC. Step 22 is FE/roster polish on top of Phase 1–3. Phase 4 is independent of kit/lore.
 
 ---
 
@@ -210,7 +211,8 @@ flowchart LR
 - Website passwords / OAuth
 
 Phase 2 kit plumbing + claim: [step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md); multi-kit **21.08** — **implemented**.  
-Phase 3: character kits UI **21.09**; docs **21.05** — **implemented**.
+Phase 3: character kits UI **21.09**; docs **21.05** — **implemented**.  
+Web sheet parity: [step-22](./batches/step-22/00-index.md) — **next**.
 
 ---
 

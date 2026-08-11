@@ -256,6 +256,11 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE character_roster ADD COLUMN kit_statuses_json TEXT"
             )
+        roster_cols = _column_names(conn, "character_roster")
+        if "sheet_json" not in roster_cols:
+            conn.execute(
+                "ALTER TABLE character_roster ADD COLUMN sheet_json TEXT"
+            )
         # Legacy NOT NULL on max_alive_characters breaks age-only upserts.
         max_col = next(
             (

@@ -270,6 +270,12 @@ export async function getCreationCatalog(
   return data as CreationCatalog;
 }
 
+export type CharacterSheetTrait = {
+  id: string;
+  name: string;
+  key?: string;
+};
+
 export type CharacterListItem = {
   id: string;
   name: string;
@@ -285,6 +291,16 @@ export type CharacterListItem = {
   kit_status?: string | null;
   /** Per-kit status map from roster sync. */
   kit_statuses?: Record<string, string> | null;
+  /** Display name from roster sheet sync (prefer over race id). */
+  race_name?: string | null;
+  class_name?: string | null;
+  age?: string | null;
+  birthday?: string | null;
+  gender?: string | null;
+  description?: string | null;
+  attributes?: Record<string, number> | null;
+  traits?: CharacterSheetTrait[] | null;
+  clues?: string[] | null;
 };
 
 export type CharacterListResponse = {

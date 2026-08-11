@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import CharacterSheet from "../../components/character/CharacterSheet";
 import {
   CharactersApiError,
+  getCreationCatalog,
   listCharacters,
   logoutCharacter,
   type CharacterListItem,
+  type CreationCatalog,
 } from "../../../lib/characters/api";
 import {
   clearSession,
@@ -19,7 +22,8 @@ import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
 } from "../../../lib/characters/uiDev";
-import { UI_DEV_LORE_CHARACTER_ID } from "../../../lib/characters/loreItemsDev";
+import { uiDevSheetCharacter } from "../../../lib/characters/sheetDev";
+import creationCatalogDev from "../../../lib/characters/fixtures/creationCatalog.dev.json";
 
 function uiDevSession(): CharacterSession {
   return {
@@ -39,6 +43,7 @@ export default function CharacterDetailPage() {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [character, setCharacter] = useState<CharacterListItem | null>(null);
+  const [catalog, setCatalog] = useState<CreationCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -46,19 +51,15 @@ export default function CharacterDetailPage() {
     async (token: string) => {
       setError(null);
       if (uiDev) {
-        setCharacter({
-          id: UI_DEV_LORE_CHARACTER_ID,
-          name: "UI Dev Character",
-          status: "ALIVE",
-          race: "human",
-          class: "Warrior",
-          kit_status: "eligible",
-          kit_statuses: { starter: "eligible" },
-          source: "roster",
-        });
+        setCharacter(uiDevSheetCharacter(characterId));
+        setCatalog(creationCatalogDev as CreationCatalog);
         return;
       }
-      const list = await listCharacters(token);
+      const [list, cat] = await Promise.all([
+        listCharacters(token),
+        getCreationCatalog(token).catch(() => null),
+      ]);
+      setCatalog(cat);
       const found =
         list.characters.find((c) => c.id === characterId) || null;
       setCharacter(found);
@@ -88,7 +89,15 @@ export default function CharacterDetailPage() {
       return;
     }
     setSession(s);
-    void load(s.session_token).finally(() => setReady(true));
+    void load(s.session_token)
+      .catch((e) => {
+        const msg =
+          e instanceof CharactersApiError
+            ? e.message
+            : "Could not load character.";
+        setError(msg);
+      })
+      .finally(() => setReady(true));
   }, [characterId, load, router, uiDev]);
 
   async function onLogout() {
@@ -112,12 +121,8 @@ export default function CharacterDetailPage() {
     );
   }
 
-  const status = String(character?.status || "").toUpperCase();
-  const isAlive = status === "ALIVE";
-  const meta = [character?.race, character?.class].filter(Boolean).join(" · ");
-
   return (
-    <div className="char-rise mt-6">
+    <div className="char-rise">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/character"
@@ -138,29 +143,7 @@ export default function CharacterDetailPage() {
       {error ? (
         <p className="text-sm text-[#e8a0a0]">{error}</p>
       ) : character ? (
-        <>
-          <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-            {character.name || "Unnamed"}
-          </h1>
-          <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-            {meta || "—"} · {status}
-          </p>
-
-          <nav className="mt-10 flex flex-col gap-3">
-            {isAlive ? (
-              <Link
-                href={`/character/${encodeURIComponent(character.id)}/kits`}
-                className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-              >
-                Kits
-              </Link>
-            ) : (
-              <p className="text-sm text-[var(--tfmc-mist)]">
-                Kits are available for alive characters.
-              </p>
-            )}
-          </nav>
-        </>
+        <CharacterSheet character={character} catalog={catalog} />
       ) : null}
     </div>
   );

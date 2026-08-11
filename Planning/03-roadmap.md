@@ -219,7 +219,7 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Track E — Web character creator
 
-**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** kit plumbing **done**; claim in **21.06**; multi-kit **21.08 done**. **E3 / Step 21** kits UI + docs **21.09 + 21.05 done** (21.07 create-wizard superseded); operator staging remaining. E4 wardrobe deferred.  
+**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). E4 wardrobe deferred.  
 **Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend · (E3) ArmourShop
 
 | Phase | Detail |
@@ -227,6 +227,7 @@ Quotas, retention, module template, optional brewery stub.
 | E1 / Step 19 | Attribute point-buy; creation catalog sync; redeem + Remember me; create/list; `/character` UI — **done** |
 | E2 / Step 20 | Kits in RPC — plumbing done; grant = `/rpcharacter kit <id>`; per-kit cooldown + once-per-character ([21.08](./batches/step-21/08-kits-yml-and-kit-service.md)) |
 | E3 / Step 21 | Character → Kits → Edit editable items; hold claim while `pending_skin`; NBT preview — **done** ([21.09](./batches/step-21/09-kits-web-character-ui.md) / [21.05](./batches/step-21/05-docs-verify.md)) |
+| E3b / Step 22 | Read-only web character sheet + shared margins — **done** ([step-22](./batches/step-22/00-index.md) / [22.03](./batches/step-22/03-docs-verify.md)) |
 | E4 | Character skin wardrobe (optional Mojang/masked) |
 
 **Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  
@@ -247,6 +248,6 @@ Quotas, retention, module template, optional brewery stub.
 6. **Step 18 / Track D** — **code done**; human staging verify on live  
 7. **Track E / step-19 Phase 1** — **done** (staging verified)  
 8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
-9. **Track E / step-21** — code+docs closed; run [STAGING](../STAGING.md) Step 20–21; then E4 / overlays as capacity allows  
+9. **Track E / step-22** — web character sheet parity **done**; E4 / overlays as capacity allows; run [STAGING](../STAGING.md) Step 20–22 when ready  
 
 Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.
