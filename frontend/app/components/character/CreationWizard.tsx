@@ -155,8 +155,10 @@ function StageBody({
     const raceMax = Number(race?.age_max);
     const max =
       Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
+    const ageForBirthday =
+      String(draft.age || "").trim() || String(min);
     const birthdayLabel = fictionalBirthdayLabel(
-      draft.age,
+      ageForBirthday,
       draft.client_request_id,
       catalog.validation?.calendar
     );

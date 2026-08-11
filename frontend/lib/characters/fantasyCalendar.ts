@@ -119,7 +119,8 @@ export function formatFantasyBirthday(
   cfg?: FantasyCalendarConfig | null
 ): string | null {
   if (!iso) return null;
-  const m = /^(\d{4,})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
+  // Fantasy years are often 3 digits (IRL year − offset), so allow 1–6.
+  const m = /^(\d{1,6})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
   if (!m) return null;
   const year = Number(m[1]);
   const month = Number(m[2]);

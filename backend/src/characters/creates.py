@@ -116,7 +116,7 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     if body.get("birthday") is not None:
         birthday = str(body.get("birthday") or "").strip() or None
         if birthday is not None:
-            if not re.fullmatch(r"\d{4,}-\d{2}-\d{2}", birthday):
+            if not re.fullmatch(r"\d{1,6}-\d{2}-\d{2}", birthday):
                 raise CreateError("birthday must be YYYY-MM-DD")
 
     has_real_age_stage = any(
