@@ -915,6 +915,12 @@ def deny_submission(submission_id: str, reason: str) -> dict:
             "SELECT * FROM submissions WHERE id = ?",
             (submission_id,),
         ).fetchone()
+    try:
+        from src.characters.lore_items import clear_pending_submission
+
+        clear_pending_submission(submission_id)
+    except Exception:
+        pass
     return _public_row(row)
 
 
@@ -1153,6 +1159,14 @@ def mark_applied(submission_ids: list[str]) -> list[str]:
             if cur.rowcount:
                 applied.append(sid)
         conn.commit()
+    if applied:
+        try:
+            from src.characters.lore_items import promote_ready_for_submissions
+
+            promote_ready_for_submissions(applied)
+        except Exception:
+            # Fail-soft: pack apply must not die on lore customise glue.
+            pass
     return applied
 
 

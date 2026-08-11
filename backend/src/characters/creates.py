@@ -451,6 +451,17 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
             """,
             (uuid,),
         ).fetchall()
+        # Recent rejects (slot full, etc.) so the website can show why a create failed.
+        rejected_rows = conn.execute(
+            """
+            SELECT * FROM character_creates
+            WHERE player_uuid = ?
+              AND status = 'rejected'
+            ORDER BY COALESCE(applied_at, created_at) DESC
+            LIMIT 20
+            """,
+            (uuid,),
+        ).fetchall()
 
     characters: list[dict[str, Any]] = list(roster)
     for row in pending_rows:
@@ -466,6 +477,23 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
                 "created_at": data["created_at"],
                 "source": "create",
                 "create_id": data["id"],
+            }
+        )
+    for row in rejected_rows:
+        data = _row_to_dict(row)
+        payload = data.get("payload") or {}
+        err = data.get("error")
+        characters.append(
+            {
+                "id": data["id"],
+                "name": payload.get("name") or "(rejected)",
+                "status": "rejected",
+                "race": payload.get("race_id"),
+                "class": payload.get("class_id"),
+                "created_at": data.get("applied_at") or data.get("created_at"),
+                "source": "create",
+                "create_id": data["id"],
+                "error": err if err else "rejected",
             }
         )
 
@@ -509,7 +537,15 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
         "account_age_seconds": account_age_seconds,
         "evil_unlocked": evil_unlocked,
         "name_colour_stops": int(meta.get("name_colour_stops") or 0),
+        "kit_cooldown_seconds_remaining": int(
+            meta.get("kit_cooldown_seconds_remaining") or 0
+        ),
     }
+    if meta.get("kit_cooldown_hours") is not None:
+        out["kit_cooldown_hours"] = int(meta.get("kit_cooldown_hours") or 0)
+    kit_cooldowns = meta.get("kit_cooldowns")
+    if isinstance(kit_cooldowns, dict) and kit_cooldowns:
+        out["kit_cooldowns"] = kit_cooldowns
     if meta.get("eighteen") is not None:
         out["eighteen"] = bool(meta.get("eighteen"))
     return out
@@ -517,6 +553,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
 
 def mark_applied_results(results: list) -> dict[str, Any]:
     from src.skins.db import connect
+    from src.characters.lore_items import remount_character_id
 
     if not isinstance(results, list):
         raise CreateError("results must be a list")
@@ -524,6 +561,7 @@ def mark_applied_results(results: list) -> dict[str, Any]:
     now = _iso_now()
     applied: list[str] = []
     rejected: list[str] = []
+    remounts: list[tuple[str, str, str]] = []
 
     with connect() as conn:
         for i, raw in enumerate(results):
@@ -535,6 +573,13 @@ def mark_applied_results(results: list) -> dict[str, Any]:
             ok = bool(raw.get("ok"))
             if ok:
                 character_id = str(raw.get("character_id") or cid).strip()
+                owner = conn.execute(
+                    """
+                    SELECT player_uuid FROM character_creates
+                    WHERE id = ? AND status = 'pending'
+                    """,
+                    (cid,),
+                ).fetchone()
                 cur = conn.execute(
                     """
                     UPDATE character_creates
@@ -548,6 +593,14 @@ def mark_applied_results(results: list) -> dict[str, Any]:
                 )
                 if cur.rowcount:
                     applied.append(cid)
+                    if owner is not None:
+                        remounts.append(
+                            (
+                                str(owner["player_uuid"] or "").strip(),
+                                cid,
+                                character_id,
+                            )
+                        )
             else:
                 error = str(raw.get("error") or "rejected").strip()
                 cur = conn.execute(
@@ -563,5 +616,8 @@ def mark_applied_results(results: list) -> dict[str, Any]:
                 if cur.rowcount:
                     rejected.append(cid)
         conn.commit()
+
+    for player_uuid, create_id, character_id in remounts:
+        remount_character_id(player_uuid, create_id, character_id)
 
     return {"ok": True, "applied": applied, "rejected": rejected}

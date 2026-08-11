@@ -834,5 +834,23 @@
         "name_colour_stops": 2
       }
     ]
-  }
+  },
+  "editable_kit": [
+    {
+      "kit_key": "iron_hunting_knife",
+      "path": "m.tools.IRON_HUNTING_KNIFE",
+      "amount": 1,
+      "skin_png": "knife_skin",
+      "base_set": "knives",
+      "preview": {
+        "display_name": "Iron Hunting Knife",
+        "lore": [
+          "A sturdy blade for trail work.",
+          "Custom skins and lore come later."
+        ],
+        "material": "IRON_SWORD",
+        "custom_model_data": 1001
+      }
+    }
+  ]
 }

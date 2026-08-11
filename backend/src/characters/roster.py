@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -57,6 +58,9 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         "real_age_set": False,
         "account_created_at_epoch": None,
         "name_colour_stops": 0,
+        "kit_cooldown_seconds_remaining": 0,
+        "kit_cooldown_hours": None,
+        "kit_cooldowns": {},
     }
     if not uuid:
         return empty
@@ -64,7 +68,9 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         row = conn.execute(
             """
             SELECT max_alive_characters, eighteen, real_age_set,
-                   account_created_at_epoch, name_colour_stops
+                   account_created_at_epoch, name_colour_stops,
+                   kit_cooldown_seconds_remaining, kit_cooldown_hours,
+                   kit_cooldowns_json
             FROM character_player_meta
             WHERE player_uuid = ?
             """,
@@ -96,12 +102,41 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
             name_colour_stops = max(0, int(row["name_colour_stops"]))
         except (TypeError, ValueError):
             name_colour_stops = 0
+    kit_cooldown_seconds_remaining = 0
+    if row["kit_cooldown_seconds_remaining"] is not None:
+        try:
+            kit_cooldown_seconds_remaining = max(
+                0, int(row["kit_cooldown_seconds_remaining"])
+            )
+        except (TypeError, ValueError):
+            kit_cooldown_seconds_remaining = 0
+    kit_cooldown_hours = None
+    if row["kit_cooldown_hours"] is not None:
+        try:
+            kit_cooldown_hours = max(0, int(row["kit_cooldown_hours"]))
+        except (TypeError, ValueError):
+            kit_cooldown_hours = None
+    kit_cooldowns: dict[str, Any] = {}
+    try:
+        raw_cd = row["kit_cooldowns_json"]
+    except (KeyError, IndexError):
+        raw_cd = None
+    if raw_cd:
+        try:
+            parsed = json.loads(raw_cd)
+            if isinstance(parsed, dict):
+                kit_cooldowns = parsed
+        except (TypeError, json.JSONDecodeError):
+            kit_cooldowns = {}
     return {
         "max_alive_characters": max_alive,
         "eighteen": eighteen,
         "real_age_set": real_age_set,
         "account_created_at_epoch": account_created_at_epoch,
         "name_colour_stops": name_colour_stops,
+        "kit_cooldown_seconds_remaining": kit_cooldown_seconds_remaining,
+        "kit_cooldown_hours": kit_cooldown_hours,
+        "kit_cooldowns": kit_cooldowns,
     }
 
 
@@ -169,15 +204,17 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
     with connect() as conn:
         rows = conn.execute(
             """
-            SELECT character_id, name, status, race, class, created_at, updated_at
+            SELECT character_id, name, status, race, class, created_at, updated_at,
+                   kit_status, kit_statuses_json
             FROM character_roster
             WHERE player_uuid = ?
             ORDER BY created_at ASC, character_id ASC
             """,
             (uuid,),
         ).fetchall()
-    return [
-        {
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        item: dict[str, Any] = {
             "id": row["character_id"],
             "name": row["name"],
             "status": row["status"],
@@ -187,8 +224,26 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
             "updated_at": row["updated_at"],
             "source": "roster",
         }
-        for row in rows
-    ]
+        kit_status = row["kit_status"]
+        if kit_status is not None and str(kit_status).strip():
+            item["kit_status"] = str(kit_status).strip().lower()
+        try:
+            raw_statuses = row["kit_statuses_json"]
+        except (KeyError, IndexError):
+            raw_statuses = None
+        if raw_statuses:
+            try:
+                parsed = json.loads(raw_statuses)
+                if isinstance(parsed, dict) and parsed:
+                    item["kit_statuses"] = {
+                        str(k).strip().lower(): str(v).strip().lower()
+                        for k, v in parsed.items()
+                        if k is not None and str(k).strip()
+                    }
+            except (TypeError, json.JSONDecodeError):
+                pass
+        out.append(item)
+    return out
 
 
 def replace_roster(
@@ -199,6 +254,9 @@ def replace_roster(
     real_age_set: bool | None = None,
     account_created_at_epoch: int | None = None,
     name_colour_stops: int | None = None,
+    kit_cooldown_seconds_remaining: int | None = None,
+    kit_cooldown_hours: int | None = None,
+    kit_cooldowns: dict | None = None,
 ) -> dict[str, Any]:
     from src.skins.db import connect
 
@@ -245,6 +303,32 @@ def replace_roster(
         if next_colour_stops < 0:
             raise RosterError("name_colour_stops must be >= 0")
 
+    next_kit_seconds: int | None = None
+    if kit_cooldown_seconds_remaining is not None:
+        try:
+            next_kit_seconds = int(kit_cooldown_seconds_remaining)
+        except (TypeError, ValueError) as e:
+            raise RosterError(
+                "kit_cooldown_seconds_remaining must be an integer"
+            ) from e
+        if next_kit_seconds < 0:
+            raise RosterError("kit_cooldown_seconds_remaining must be >= 0")
+
+    next_kit_hours: int | None = None
+    if kit_cooldown_hours is not None:
+        try:
+            next_kit_hours = int(kit_cooldown_hours)
+        except (TypeError, ValueError) as e:
+            raise RosterError("kit_cooldown_hours must be an integer") from e
+        if next_kit_hours < 0:
+            raise RosterError("kit_cooldown_hours must be >= 0")
+
+    next_kit_cooldowns_json: str | None = None
+    if kit_cooldowns is not None:
+        if not isinstance(kit_cooldowns, dict):
+            raise RosterError("kit_cooldowns must be an object")
+        next_kit_cooldowns_json = json.dumps(kit_cooldowns, separators=(",", ":"))
+
     now = _iso_now()
     normalized: list[tuple] = []
     seen: set[str] = set()
@@ -266,6 +350,22 @@ def replace_roster(
         race = raw.get("race")
         klass = raw.get("class")
         created_at = raw.get("created_at")
+        kit_raw = raw.get("kit_status")
+        kit_status = None
+        if kit_raw is not None and str(kit_raw).strip():
+            kit_status = str(kit_raw).strip().lower()
+        kit_statuses_json = None
+        statuses_raw = raw.get("kit_statuses")
+        if isinstance(statuses_raw, dict) and statuses_raw:
+            cleaned = {
+                str(k).strip().lower(): str(v).strip().lower()
+                for k, v in statuses_raw.items()
+                if k is not None and str(k).strip() and v is not None
+            }
+            if cleaned:
+                kit_statuses_json = json.dumps(cleaned, separators=(",", ":"))
+                if kit_status is None and "starter" in cleaned:
+                    kit_status = cleaned["starter"]
         normalized.append(
             (
                 uuid,
@@ -275,6 +375,8 @@ def replace_roster(
                 str(race).strip() if race is not None else None,
                 str(klass).strip() if klass is not None else None,
                 str(created_at).strip() if created_at is not None else None,
+                kit_status,
+                kit_statuses_json,
                 now,
             )
         )
@@ -288,9 +390,9 @@ def replace_roster(
             """
             INSERT INTO character_roster (
                 player_uuid, character_id, name, status, race, class,
-                created_at, updated_at
+                created_at, kit_status, kit_statuses_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             normalized,
         )
@@ -300,6 +402,9 @@ def replace_roster(
             or real_age_set is not None
             or next_account_epoch is not None
             or next_colour_stops is not None
+            or next_kit_seconds is not None
+            or next_kit_hours is not None
+            or next_kit_cooldowns_json is not None
         ):
             existing = conn.execute(
                 "SELECT * FROM character_player_meta WHERE player_uuid = ?",
@@ -310,6 +415,9 @@ def replace_roster(
             next_real = None if real_age_set is None else (1 if real_age_set else 0)
             stored_epoch = next_account_epoch
             stored_stops = next_colour_stops
+            stored_kit_seconds = next_kit_seconds
+            stored_kit_hours = next_kit_hours
+            stored_kit_cooldowns = next_kit_cooldowns_json
             if existing is not None:
                 if next_max is None:
                     next_max = existing["max_alive_characters"]
@@ -324,6 +432,23 @@ def replace_roster(
                         stored_stops = existing["name_colour_stops"]
                     except (KeyError, IndexError):
                         stored_stops = None
+                if stored_kit_seconds is None:
+                    try:
+                        stored_kit_seconds = existing[
+                            "kit_cooldown_seconds_remaining"
+                        ]
+                    except (KeyError, IndexError):
+                        stored_kit_seconds = None
+                if stored_kit_hours is None:
+                    try:
+                        stored_kit_hours = existing["kit_cooldown_hours"]
+                    except (KeyError, IndexError):
+                        stored_kit_hours = None
+                if stored_kit_cooldowns is None:
+                    try:
+                        stored_kit_cooldowns = existing["kit_cooldowns_json"]
+                    except (KeyError, IndexError):
+                        stored_kit_cooldowns = None
             else:
                 if next_real is None:
                     next_real = 0
@@ -331,15 +456,21 @@ def replace_roster(
                 """
                 INSERT INTO character_player_meta (
                     player_uuid, max_alive_characters, eighteen, real_age_set,
-                    account_created_at_epoch, name_colour_stops, updated_at
+                    account_created_at_epoch, name_colour_stops,
+                    kit_cooldown_seconds_remaining, kit_cooldown_hours,
+                    kit_cooldowns_json, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(player_uuid) DO UPDATE SET
                     max_alive_characters = excluded.max_alive_characters,
                     eighteen = excluded.eighteen,
                     real_age_set = excluded.real_age_set,
                     account_created_at_epoch = excluded.account_created_at_epoch,
                     name_colour_stops = excluded.name_colour_stops,
+                    kit_cooldown_seconds_remaining =
+                        excluded.kit_cooldown_seconds_remaining,
+                    kit_cooldown_hours = excluded.kit_cooldown_hours,
+                    kit_cooldowns_json = excluded.kit_cooldowns_json,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -349,6 +480,9 @@ def replace_roster(
                     next_real,
                     stored_epoch,
                     stored_stops,
+                    stored_kit_seconds,
+                    stored_kit_hours,
+                    stored_kit_cooldowns,
                     now,
                 ),
             )
@@ -369,4 +503,10 @@ def replace_roster(
         out["account_created_at_epoch"] = next_account_epoch
     if next_colour_stops is not None:
         out["name_colour_stops"] = next_colour_stops
+    if next_kit_seconds is not None:
+        out["kit_cooldown_seconds_remaining"] = next_kit_seconds
+    if next_kit_hours is not None:
+        out["kit_cooldown_hours"] = next_kit_hours
+    if kit_cooldowns is not None:
+        out["kit_cooldowns"] = kit_cooldowns
     return out

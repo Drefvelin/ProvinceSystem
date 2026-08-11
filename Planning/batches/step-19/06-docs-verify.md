@@ -17,15 +17,15 @@
 
 ## Staging checklist (humans tick)
 
-- [ ] `/token create character` → redeem on `/character` (1h default)  
-- [ ] Remember me → still logged in after browser restart (within 30d)  
-- [ ] Log out → must mint a new token  
-- [ ] In-game attribute sheet: exactly 12 points, max +2/stat, costs 1 then 2  
-- [ ] Catalog sync after RPC reload updates web options  
-- [ ] Web create → character exists in RPCharacters + listed on site  
-- [ ] Dead characters visible on site  
-- [ ] Slot limit enforced  
-- [ ] No knife / player-skin UI required  
+- [x] `/token create character` → redeem on `/character` (1h default)  
+- [x] Remember me → still logged in after browser restart (within 30d)  
+- [x] Log out → must mint a new token  
+- [x] In-game attribute sheet: spend exact pool per catalog; costs match shipped formula  
+- [x] Catalog sync after RPC reload updates web options  
+- [x] Web create → character exists in RPCharacters + listed on site  
+- [x] Dead characters visible on site  
+- [x] Slot limit enforced  
+- [x] No knife / player-skin UI required  
 
 Also mirrored under [STAGING.md](../../../STAGING.md) Step 19.
 

@@ -128,3 +128,19 @@ CREATE TABLE IF NOT EXISTS armourshop_catalog (
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS lore_item_customisations (
+    player_uuid TEXT NOT NULL,
+    character_id TEXT NOT NULL,
+    kit_key TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    lore_json TEXT NOT NULL DEFAULT '[]',
+    existing_skin_id TEXT,
+    submission_id TEXT,
+    state TEXT NOT NULL DEFAULT 'draft',
+    skin_slug TEXT,
+    ready_at TEXT,
+    applied_at TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (player_uuid, character_id, kit_key)
+);

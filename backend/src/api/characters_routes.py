@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -16,6 +18,15 @@ from src.characters.creates import (
     list_for_player,
     list_pending,
     mark_applied_results,
+)
+from src.characters.lore_items import (
+    LoreItemError,
+    claim_status,
+    customise_lore_item,
+    list_character_kits,
+    list_lore_items,
+    list_pending_for_plugin,
+    mark_lore_items_applied,
 )
 from src.characters.roster import RosterError, replace_roster
 from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
@@ -36,6 +47,9 @@ class RosterBody(BaseModel):
     real_age_set: bool | None = None
     account_created_at_epoch: int | None = None
     name_colour_stops: int | None = None
+    kit_cooldown_seconds_remaining: int | None = None
+    kit_cooldown_hours: int | None = None
+    kit_cooldowns: dict | None = None
 
 
 def _require_plugin(x_plugin_key: str | None) -> None:
@@ -74,6 +88,10 @@ def _character_session_from_auth(authorization: str | None) -> dict:
     return row
 
 
+def _lore_http(exc: LoreItemError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail=str(exc))
+
+
 @characters_router.put("/plugin/creation-catalog")
 async def plugin_put_creation_catalog(
     request: Request,
@@ -108,6 +126,121 @@ def get_creation_catalog(
     """Session-gated creation catalog for the website wizard."""
     _character_session_from_auth(authorization)
     return get_catalog()
+
+
+@characters_router.get("/kits")
+def get_character_kits(
+    character_id: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """All kits + items + claimability for a roster character."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return list_character_kits(session["player_uuid"], character_id)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+
+
+@characters_router.get("/lore-items")
+def get_lore_items(
+    character_id: str | None = None,
+    kit_id: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Editable kit parts + customise drafts for a claimable kit."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return list_lore_items(session["player_uuid"], character_id, kit_id)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+
+
+@characters_router.post("/lore-items/{kit_key}/customise")
+async def post_lore_item_customise(
+    kit_key: str,
+    request: Request,
+    character_id: str | None = None,
+    kit_id: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Store name/lore draft; optional existing skin or new handheld PNG upload."""
+    session = _character_session_from_auth(authorization)
+    content_type = (request.headers.get("content-type") or "").lower()
+
+    display_name: str | None = None
+    lore: list[str] | None = None
+    existing_skin_id = None
+    existing_provided = False
+    texture_bytes: bytes | None = None
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        display_name = str(form.get("display_name") or "")
+        lore_raw = form.get("lore")
+        if lore_raw is not None and str(lore_raw).strip() != "":
+            try:
+                parsed = json.loads(str(lore_raw))
+                if not isinstance(parsed, list):
+                    raise ValueError("not a list")
+                lore = [str(x) for x in parsed]
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, detail="lore must be a JSON array"
+                ) from e
+        else:
+            lore = []
+        if "existing_skin_id" in form:
+            existing_provided = True
+            raw_skin = form.get("existing_skin_id")
+            if raw_skin is None or str(raw_skin).strip() == "":
+                existing_skin_id = None
+            else:
+                existing_skin_id = str(raw_skin).strip()
+        texture = form.get("texture")
+        if texture is not None and hasattr(texture, "read"):
+            texture_bytes = await texture.read()
+    else:
+        try:
+            body = await request.json()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="body must be JSON") from e
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="body must be a JSON object")
+        display_name = str(body.get("display_name") or "")
+        lore_raw = body.get("lore")
+        if lore_raw is None:
+            lore = []
+        elif isinstance(lore_raw, list):
+            lore = [str(x) for x in lore_raw]
+        else:
+            raise HTTPException(status_code=400, detail="lore must be a list")
+        if "existing_skin_id" in body:
+            existing_provided = True
+            existing_skin_id = body.get("existing_skin_id")
+
+    try:
+        if existing_provided:
+            return customise_lore_item(
+                session,
+                character_id,
+                kit_key,
+                display_name=display_name,
+                lore=lore,
+                existing_skin_id=existing_skin_id,
+                texture_bytes=texture_bytes,
+                kit_id=kit_id,
+            )
+        return customise_lore_item(
+            session,
+            character_id,
+            kit_key,
+            display_name=display_name,
+            lore=lore,
+            texture_bytes=texture_bytes,
+            kit_id=kit_id,
+        )
+    except LoreItemError as e:
+        raise _lore_http(e) from e
 
 
 @characters_router.post("/logout")
@@ -165,6 +298,48 @@ def plugin_pending_creates(
     return {"creates": list_pending()}
 
 
+@characters_router.get("/plugin/lore-items/pending")
+def plugin_pending_lore_items(
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    return {"items": list_pending_for_plugin()}
+
+
+@characters_router.get("/plugin/lore-items/claim-status")
+def plugin_lore_item_claim_status(
+    player_uuid: str | None = None,
+    character_id: str | None = None,
+    kit_id: str | None = None,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Whether kit claim should wait on pending_skin for this character/kit."""
+    _require_plugin(x_plugin_key)
+    uuid = (player_uuid or "").strip()
+    cid = (character_id or "").strip()
+    if not uuid or not cid:
+        raise HTTPException(
+            status_code=400, detail="player_uuid and character_id are required"
+        )
+    return claim_status(uuid, cid, kit_id)
+
+
+class LoreItemsAppliedBody(BaseModel):
+    results: list[dict] = Field(default_factory=list)
+
+
+@characters_router.post("/plugin/lore-items/applied")
+def plugin_applied_lore_items(
+    body: LoreItemsAppliedBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return mark_lore_items_applied(body.results)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+
+
 @characters_router.post("/plugin/applied")
 def plugin_applied_creates(
     body: AppliedResultsBody,
@@ -192,6 +367,9 @@ def plugin_put_roster(
             body.real_age_set,
             body.account_created_at_epoch,
             body.name_colour_stops,
+            body.kit_cooldown_seconds_remaining,
+            body.kit_cooldown_hours,
+            body.kit_cooldowns,
         )
     except RosterError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

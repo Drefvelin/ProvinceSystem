@@ -229,6 +229,33 @@ def migrate() -> None:
                 "ALTER TABLE character_player_meta "
                 "ADD COLUMN name_colour_stops INTEGER"
             )
+        meta_cols = _column_names(conn, "character_player_meta")
+        if "kit_cooldown_seconds_remaining" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN kit_cooldown_seconds_remaining INTEGER"
+            )
+        if "kit_cooldown_hours" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN kit_cooldown_hours INTEGER"
+            )
+        meta_cols = _column_names(conn, "character_player_meta")
+        if "kit_cooldowns_json" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN kit_cooldowns_json TEXT"
+            )
+        roster_cols = _column_names(conn, "character_roster")
+        if "kit_status" not in roster_cols:
+            conn.execute(
+                "ALTER TABLE character_roster ADD COLUMN kit_status TEXT"
+            )
+        roster_cols = _column_names(conn, "character_roster")
+        if "kit_statuses_json" not in roster_cols:
+            conn.execute(
+                "ALTER TABLE character_roster ADD COLUMN kit_statuses_json TEXT"
+            )
         # Legacy NOT NULL on max_alive_characters breaks age-only upserts.
         max_col = next(
             (
@@ -284,6 +311,48 @@ def migrate() -> None:
             conn.execute("ALTER TABLE submissions ADD COLUMN scroll TEXT")
         if "tier_scrolls" not in _column_names(conn, "submissions"):
             conn.execute("ALTER TABLE submissions ADD COLUMN tier_scrolls TEXT")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS lore_item_customisations (
+                player_uuid TEXT NOT NULL,
+                character_id TEXT NOT NULL,
+                kit_key TEXT NOT NULL,
+                display_name TEXT NOT NULL DEFAULT '',
+                lore_json TEXT NOT NULL DEFAULT '[]',
+                existing_skin_id TEXT,
+                submission_id TEXT,
+                state TEXT NOT NULL DEFAULT 'draft',
+                skin_slug TEXT,
+                ready_at TEXT,
+                applied_at TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (player_uuid, character_id, kit_key)
+            )
+            """
+        )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "state" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations "
+                "ADD COLUMN state TEXT NOT NULL DEFAULT 'draft'"
+            )
+        if "skin_slug" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN skin_slug TEXT"
+            )
+        if "ready_at" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN ready_at TEXT"
+            )
+        if "applied_at" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN applied_at TEXT"
+            )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "kit_id" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN kit_id TEXT"
+            )
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")

@@ -23,7 +23,6 @@ from src.skins.db import migrate
 
 PLUGIN = "dev-plugin-key"
 STAFF = "dev-staff-key"
-DISCORD_ID = "777777777777777777"
 IGN = "CatalogSmoke"
 
 FIXTURE = {
@@ -64,6 +63,21 @@ FIXTURE = {
     "classes": [{"id": "warrior", "name": "Warrior", "display_order": 1}],
     "validation": {"name_max": 24, "age_min": 16},
     "slot_limits": {"hard_cap": 10, "default": 1},
+    "editable_kit": [
+        {
+            "kit_key": "iron_hunting_knife",
+            "path": "m.tools.IRON_HUNTING_KNIFE",
+            "amount": 1,
+            "skin_png": "knife_skin",
+            "base_set": "knives",
+            "preview": {
+                "display_name": "Iron Hunting Knife",
+                "lore": ["A starter blade."],
+                "material": "IRON_SWORD",
+                "custom_model_data": 1001,
+            },
+        }
+    ],
 }
 
 
@@ -72,7 +86,7 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def ensure_linked(client: TestClient, player: str) -> None:
+def ensure_linked(client: TestClient, player: str, discord_id: str) -> None:
     r = client.post(
         "/skins/discord/link/start",
         json={"player_uuid": player, "minecraft_name": IGN},
@@ -87,7 +101,7 @@ def ensure_linked(client: TestClient, player: str) -> None:
         "/skins/discord/link/complete",
         json={
             "code": body["code"],
-            "discord_user_id": DISCORD_ID,
+            "discord_user_id": discord_id,
             "discord_username": "CatalogSmokeDiscord",
         },
         headers={"X-Staff-Key": STAFF},
@@ -148,7 +162,7 @@ def main() -> None:
         fail(f"GET bad bearer expected 401, got {r.status_code} {r.text}")
     print("OK GET bad bearer -> 401")
 
-    ensure_linked(client, player)
+    ensure_linked(client, player, discord_id=f"9{uuid.uuid4().int % 10**17:017d}")
     token = redeem_character_session(client, player)
     r = client.get(
         "/characters/creation-catalog",
@@ -166,9 +180,23 @@ def main() -> None:
         fail(f"stages empty: {catalog}")
     if catalog.get("updated_at") is None:
         fail("updated_at is null after sync")
+    editable = catalog.get("editable_kit") or []
+    if not isinstance(editable, list) or len(editable) != 1:
+        fail(f"editable_kit expected 1 row, got: {editable}")
+    knife = editable[0]
+    if knife.get("kit_key") != "iron_hunting_knife":
+        fail(f"kit_key mismatch: {knife}")
+    if knife.get("base_set") != "knives" or knife.get("skin_png") != "knife_skin":
+        fail(f"base_set/skin_png mismatch: {knife}")
+    if "category" in knife:
+        fail(f"editable_kit must not include category: {knife}")
+    preview = knife.get("preview") or {}
+    if preview.get("display_name") != "Iron Hunting Knife":
+        fail(f"preview.display_name mismatch: {preview}")
     print(
         "OK GET with character session -> 200 "
-        f"(stages={len(catalog['stages'])} pool={apb['pool']} formula={[1, 2]})"
+        f"(stages={len(catalog['stages'])} pool={apb['pool']} formula={[1, 2]} "
+        f"editable_kit={len(editable)})"
     )
     print("creation_catalog_smoke: all checks passed")
 

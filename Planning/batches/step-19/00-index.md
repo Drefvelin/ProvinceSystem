@@ -30,19 +30,19 @@ See [14-character-creator.md](../../14-character-creator.md). Summary:
 5. **[05-web-character-ui](./05-web-character-ui.md)** — Nav tab, redeem + Remember me + logout, wizard, my characters.
 6. **[06-docs-verify](./06-docs-verify.md)** — Docs hubs + STAGING checklist.
 
-**Immediate next action:** tick human staging on live ([STAGING.md](../../../STAGING.md) Step 19 / [06-docs-verify](./06-docs-verify.md)). Phases 2–4 deferred.
+**Immediate next action:** Phase 1 staging verified. Next build: [step-20](../step-20/00-index.md) starter kits.
 
 ## Later phases (not Step 19 builds)
 
 | Phase | Doc anchor | When |
 |-------|------------|------|
-| 2 | Starter kit in RPC | After Phase 1 live |
-| 3 | Ascended lore knife | After kit owner is RPC |
+| 2 | Starter kit in RPC | [step-20](../step-20/00-index.md) |
+| 3 | Lore-item editor | After kit owner is RPC |
 | 4 | Character skin wardrobe | Separate systems work |
 
 ## Out of this step
 
-- ConditionalEvents kit migration details beyond noting Phase 2  
+- ConditionalEvents kit migration (owned by [step-20](../step-20/00-index.md))  
 - Item `/skins` changes  
 - Identity path rename to `/v1/identity/…`  
 - Removing in-game `/rpcharacter create`
@@ -58,4 +58,4 @@ attribute sheet in-game → catalog sync → redeem + Remember me
 
 ## Status
 
-**19.01–19.06 done** (Phase 1 code + docs). Tick operator checklist on [STAGING.md](../../../STAGING.md). Next: Phase 2+ later (kit / lore knife / character skins) — not Step 19 builds.
+**19.01–19.06 done** (Phase 1 code + docs). Staging verified. Next: [step-20](../step-20/00-index.md) kits (Phase 2).

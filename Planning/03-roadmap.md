@@ -219,19 +219,21 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Track E — Web character creator
 
-**Status:** **E1 / Step 19 Phase 1 implemented** ([14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging in [STAGING.md](../STAGING.md).  
-**Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend
+**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** kit plumbing **done**; claim in **21.06**; multi-kit **21.08 done**. **E3 / Step 21** kits UI + docs **21.09 + 21.05 done** (21.07 create-wizard superseded); operator staging remaining. E4 wardrobe deferred.  
+**Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend · (E3) ArmourShop
 
 | Phase | Detail |
 |-------|--------|
 | E1 / Step 19 | Attribute point-buy; creation catalog sync; redeem + Remember me; create/list; `/character` UI — **done** |
-| E2 | Starter kit in RPC (48h cooldown) |
-| E3 | Ascended lore knife (approve/deny) |
+| E2 / Step 20 | Kits in RPC — plumbing done; grant = `/rpcharacter kit <id>`; per-kit cooldown + once-per-character ([21.08](./batches/step-21/08-kits-yml-and-kit-service.md)) |
+| E3 / Step 21 | Character → Kits → Edit editable items; hold claim while `pending_skin`; NBT preview — **done** ([21.09](./batches/step-21/09-kits-web-character-ui.md) / [21.05](./batches/step-21/05-docs-verify.md)) |
 | E4 | Character skin wardrobe (optional Mojang/masked) |
 
-**Locked:** Attribute pool 12, max +2/stat, cost *n* for *n*-th rank; session 1h / Remember me 30d.
+**Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  
+**Locked (Phase 2–3):** See [14-character-creator.md](./14-character-creator.md) (generic kits; character kits UI; Discord owns player messaging).
 
-**Out of Track E Phase 1:** Kit, lore knife, player skins.
+**Out of Track E Phase 1:** Kit, lore editor, player skins.  
+**Out of Step 20:** Lore-item / multi-kit UI (E3).
 
 ---
 
@@ -243,6 +245,8 @@ Quotas, retention, module template, optional brewery stub.
 4. **A1 realm card + mobile** in parallel whenever free  
 5. **Track C / step-17** — **done** (staging checklist for humans)  
 6. **Step 18 / Track D** — **code done**; human staging verify on live  
-7. **Track E / step-19 Phase 1** — **code done**; human staging verify; then E2–E4 / overlays as capacity allows  
+7. **Track E / step-19 Phase 1** — **done** (staging verified)  
+8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
+9. **Track E / step-21** — code+docs closed; run [STAGING](../STAGING.md) Step 20–21; then E4 / overlays as capacity allows  
 
 Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.

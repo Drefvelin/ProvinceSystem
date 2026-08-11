@@ -706,10 +706,9 @@ export default function CreationWizard({
     try {
       if (uiDev) {
         // eslint-disable-next-line no-console
-        console.info(
-          "[character UI-dev] create draft",
-          toCreateBody(draft, { nameColourStops })
-        );
+        console.info("[character UI-dev] create draft", {
+          body: toCreateBody(draft, { nameColourStops }),
+        });
         setUiDevDone(true);
         return;
       }

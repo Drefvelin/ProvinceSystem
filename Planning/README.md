@@ -21,7 +21,7 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 1. **Map** — Live borders on the web; SimpleFactions keeps the API fed; ProvinceSystem generates and serves images.  
 2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`. Staff curated: staff token → auto-approve → `tfmc_armorshop` + category/scroll ([step-18](./batches/step-18/00-index.md)).  
 3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
-4. **Characters** — Web creator Phase 1 **shipped**: sync stages from RPCharacters, token redeem + Remember me, attribute point-buy, `/character` UI — [14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md); tick staging in [STAGING.md](../STAGING.md).  
+4. **Characters** — Web creator Phase 1 **shipped + staging verified**: [14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md). Kits Phase 2–3 **code+docs done**: [step-20](./batches/step-20/00-index.md) / [step-21](./batches/step-21/00-index.md) (next **operator staging** / Phase 4).  
 5. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
 
 Future tools (BreweryX helpers, character Phases 2–4) plug into the same website shell + TFMCWeb.
@@ -76,8 +76,10 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Characters**
 
-14. [14-character-creator.md](./14-character-creator.md) — web creator Phase 1 + deferred phases  
+14. [14-character-creator.md](./14-character-creator.md) — web creator Phase 1 + kit / lore phases  
 15. [batches/step-19](./batches/step-19/00-index.md) — Phase 1 batches  
+15b. [batches/step-20](./batches/step-20/00-index.md) — Phase 2 starter kits  
+15c. [batches/step-21](./batches/step-21/00-index.md) — Phase 3 kits + lore customise  
 
 **Local**
 
@@ -85,7 +87,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 **Build batches (plan + implement)**
 
-17. [batches/README.md](./batches/README.md) — Step 2–19: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff skins, character creator Phase 1
+17. [batches/README.md](./batches/README.md) — Step 2–21: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff skins, character creator, starter kits, lore-item editor
 
 ## Success criteria (full platform)
 

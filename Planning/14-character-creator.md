@@ -1,16 +1,16 @@
 # 14 — Character creator (web + RPCharacters)
 
-**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md) 19.01–19.06). Phases 2–4 deferred. Tick staging in [STAGING.md](../STAGING.md) / [06-docs-verify](./batches/step-19/06-docs-verify.md).  
-**Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend`  
-**Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)); prefer Step 17 staging green before pre-launch donator access.
+**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)); docs [21.05](./batches/step-21/05-docs-verify.md) **done**. Phase 4 deferred.  
+**Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend` · (Phase 3) `Workspace/armourshop/`  
+**Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 
-Companion batches: [step-19](./batches/step-19/00-index.md).
+Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore customise).
 
 ---
 
 ## Why
 
-Donators (and later all players) create and manage RP characters on the website with the **same rules as in-game** `/rpcharacter create` / menu. Creation stages sync from the server so YAML edits update the site after reload. Auth stays **in-game tokens** (no website accounts). Extra cosmetics (lore knife, player skins) are optional later layers — not required for Phase 1.
+Donators (and later all players) create and manage RP characters on the website with the **same rules as in-game** `/rpcharacter create` / menu. Creation stages sync from the server so YAML edits update the site after reload. Auth stays **in-game tokens** (no website accounts). Configurable kits and editable kit items layer on top of Phase 1.
 
 ---
 
@@ -18,12 +18,12 @@ Donators (and later all players) create and manage RP characters on the website 
 
 | Phase | Name | In scope |
 |-------|------|----------|
-| **1** | Web character creator | Attribute point-buy in RPC; creation catalog sync; character redeem + Remember me; create + list alive/dead; `/character` UI (skins-quality) |
-| **2** | Starter kit in RPCharacters | Per-character kit (incl. hunting knife) + 48h cooldown; migrate off ConditionalEvents-only starter when ready |
-| **3** | Ascended lore knife | Approve/deny custom name/lore/skin for kit knife; catalog or upload |
+| **1** | Web character creator | Attribute point-buy in RPC; creation catalog sync; character redeem + Remember me; create + list alive/dead; `/character` UI — **done** |
+| **2** | Kits in RPCharacters | `kits.yml`; `KitService`; `/rpcharacter kit <id>`; per-kit cooldown + once-per-character — **done** ([step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)) |
+| **3** | Kit item customise | Character detail → Kits → Edit editable items; player skins → `ps_items`; RPC lore; NBT preview; hold claim while `pending_skin` — **done** ([step-21](./batches/step-21/00-index.md) / [21.09](./batches/step-21/09-kits-web-character-ui.md)) |
 | **4** | Character skin wardrobe | Optional Mojang/player skins (incl. masked texture); separate from item `/skins` and RP identity masks |
 
-Phases 2–4 **must not** block Phase 1. Knife and player skins remain fully optional even after those systems exist.
+Phase 3 **requires** Phase 2 kit claim in RPC. Phase 4 is independent of kit/lore.
 
 ---
 
@@ -93,7 +93,92 @@ Mirror ArmourShop catalog sync ([step-18/01](./batches/step-18/01-catalog-sync.m
 
 ---
 
-## Architecture (Phase 1)
+## Locked decisions (Phase 2 — kits)
+
+Replace ConditionalEvents `/tfmc starter` (see `Workspace/plugins/ConditionalEvents/events/a_boosters.yml` `tfmc_starter`) with RPCharacters-owned **configurable kits**.
+
+### Source kit (current CE baseline → kit id `starter`)
+
+| Give | Id / command |
+|------|----------------|
+| Hunting knife | `mi give TOOLS IRON_HUNTING_KNIFE …` |
+| Food | `mi give FOODS CHURRO …` (256) |
+| Gold | `mi give CURRENCY GOLD_COIN …` (32) |
+| Vanilla | oak boat, writable book, bundle, white bed |
+
+`starter` ships the **full CE list** in `kits.yml`. CE `one_time: true` is replaced by per-kit rules below.
+
+### Grant rules (product truth)
+
+| Rule | Choice |
+|------|--------|
+| Config | `plugins/RPCharacters/kits.yml` — named kits; items; optional `editable` per item |
+| Service | `KitService` — **no** starter-hardcoded type/name in code |
+| Claim command | `/rpcharacter kit <kitId>` with that character **active**. No auto-grant on join, reload, or create |
+| Cooldown | **Per kit** (player UUID × kit id), hours from that kit’s `cooldown-hours` |
+| Once per character | Per kit `once-per-character: true|false`. `true` (starter): at most one successful claim per character. `false`: claim again after that kit’s cooldown expires |
+| Claim blocked | That kit’s cooldown active; once-per-character already `granted`; **or** (Phase 3) customise for that kit is `pending_skin` — hold **whole kit** until `ready` |
+| Create during cooldown | Always allowed; claim when that kit’s cooldown is clear |
+| Player messaging | Discord (and ops). **Do not** add tip/nudge copy in FE/RPC |
+| Sync | All kit defs + per-character per-kit status + per-kit cooldown remaining → ProvinceSystem |
+| Truth | Claim + flags live in **RPCharacters**; website displays synced state |
+
+**Code note:** 20.01–20.03 auto-grant era; 21.06 claim for starter-shaped `kit.yml`. Multi-kit cutover: [21.08](./batches/step-21/08-kits-yml-and-kit-service.md).
+
+### `kits.yml` shape (illustrative)
+
+```yaml
+kits:
+  starter:
+    display-name: Starter
+    cooldown-hours: 48
+    once-per-character: true
+    items:
+      - path: m.tools.IRON_HUNTING_KNIFE
+        amount: 1
+        editable:
+          skin-png: knife_skin
+          base-set: knives
+      - path: m.currency.GOLD_COIN
+        amount: 32
+      # … churro, boat, book, bundle, bed
+```
+
+Default knife texture: `plugins/RPCharacters/assets/knife_skin.png` (do **not** scrape `tfmc_pack`). Custom skins are **player submissions** (Discord → `tfmc_submissions` / `ps_items`).
+
+### Checkpoint (Phase 2)
+
+```text
+kits.yml → /rpcharacter kit <id> → per-kit cooldown + once-per-character from config
+```
+
+Batches: [step-20](./batches/step-20/00-index.md) plumbing; claim + multi-kit: [21.06](./batches/step-21/06-kit-claim-command.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md).
+
+---
+
+## Locked decisions (Phase 3 — kit item customise)
+
+Customise **editable** kit lines (starter knife = same `IRON_HUNTING_KNIFE`). Not a different MI id. Batches: [step-21](./batches/step-21/00-index.md).
+
+| Concern | Owner |
+|---------|--------|
+| Texture + display name | Player skins pipeline → `ps_items` via Discord |
+| Custom lore | RPCharacters |
+| Which parts editable | `kits.yml` `editable` (`base-set` / `skin-png` locked; no staff `category`) |
+| When / where | **Website character screen:** ALIVE character → Kits → kit → Edit editable item. **Not** create wizard; in-game create has no kit editor |
+| Eligibility | Customise while that kit is still **claimable** for the character. Once-per-character + already claimed → no customise |
+| Claim gate | `pending_skin` for that kit+character blocks `/rpcharacter kit <id>` until `ready`; claim applies skin+lore |
+| Web UI | Character detail (menu-like) + kits browser + item editor (NBT preview); show all items, Edit only on editable |
+| Sync | **All** kits from RPC → API → site |
+| Extensibility | More kits / editable lines via YAML the same way |
+
+**Out of Phase 3:** Ascended gate; tip/nudge copy (Discord owns messaging).
+
+**Code note:** 21.07 added create-wizard customise — **superseded** by [21.09](./batches/step-21/09-kits-web-character-ui.md). Multi-kit RPC: [21.08](./batches/step-21/08-kits-yml-and-kit-service.md).
+
+---
+
+## Architecture (Phase 1 + kits + web customise)
 
 ```mermaid
 flowchart LR
@@ -101,12 +186,15 @@ flowchart LR
     TW[TFMCWeb]
     RPC[RPCharacters]
     TW -->|mint character code| API
-    RPC -->|PUT creation catalog| API
+    RPC -->|PUT catalog + kits| API
     RPC -->|pull / apply creates| API
+    RPC -->|roster + per-kit meta| API
+    Player -->|"/rpcharacter kit id"| RPC
   end
   subgraph web [ProvinceSystem]
-    API[Characters + catalog + sessions]
-    FE["/character UI"]
+    API[Characters + kits + sessions]
+    FE["/character detail + kits"]
+    FE -->|customise editable item| API
     FE -->|Bearer session| API
   end
   Player -->|/token create character| TW
@@ -117,11 +205,12 @@ flowchart LR
 
 ## Out of Phase 1
 
-- Starter kit / hunting knife grant and cooldown (Phase 2)
-- Lore knife customiser (Phase 3)
-- Player/Mojang skin wardrobe and masked textures (Phase 4)
+- Player/Mojang skin wardrobe (Phase 4)
 - Rewriting non-attribute selection stages into sheets
 - Website passwords / OAuth
+
+Phase 2 kit plumbing + claim: [step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md); multi-kit **21.08** — **implemented**.  
+Phase 3: character kits UI **21.09**; docs **21.05** — **implemented**.
 
 ---
 
@@ -132,4 +221,4 @@ RPC attribute sheet → catalog sync → character redeem (+ Remember me / logou
   → create via web → ingest into RPC → list alive/dead on /character
 ```
 
-**Done when:** Linked player mints character token → redeem (optional Remember me) → completes wizard with 12-point attribute sheet → character appears in RPCharacters and on the site (including dead list when applicable); in-game create still works with the same attribute rules.
+**Done when:** Linked player mints character token → redeem (optional Remember me) → completes wizard with attribute sheet → character appears in RPCharacters and on the site (including dead list when applicable); in-game create still works with the same attribute rules. **Phase 1 staging verified.**

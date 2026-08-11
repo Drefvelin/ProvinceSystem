@@ -136,6 +136,127 @@ def _normalize_id_rows(raw: list, field: str) -> list[dict[str, Any]]:
     return out
 
 
+def _normalize_editable_kit(raw: list) -> list[dict[str, Any]]:
+    """Allow-list editable kit rows from RPCharacters kit.yml + ItemStack preview."""
+    out: list[dict[str, Any]] = []
+    for i, row in enumerate(raw):
+        if not isinstance(row, dict):
+            raise CreationCatalogError(f"editable_kit[{i}] must be an object")
+        kit_key = str(row.get("kit_key") or "").strip()
+        path = str(row.get("path") or "").strip()
+        if not kit_key:
+            raise CreationCatalogError(f"editable_kit[{i}].kit_key is required")
+        if not path:
+            raise CreationCatalogError(f"editable_kit[{i}].path is required")
+        try:
+            amount = int(row.get("amount", 1))
+        except (TypeError, ValueError) as e:
+            raise CreationCatalogError(
+                f"editable_kit[{i}].amount must be an integer"
+            ) from e
+        entry: dict[str, Any] = {
+            "kit_key": kit_key,
+            "path": path,
+            "amount": max(1, amount),
+            "skin_png": str(row.get("skin_png") or "").strip(),
+            "base_set": str(row.get("base_set") or "").strip(),
+        }
+        kit_id = str(row.get("kit_id") or "").strip().lower()
+        if kit_id:
+            entry["kit_id"] = kit_id
+        preview_raw = row.get("preview")
+        if preview_raw is not None:
+            if not isinstance(preview_raw, dict):
+                raise CreationCatalogError(
+                    f"editable_kit[{i}].preview must be an object"
+                )
+            lore_raw = preview_raw.get("lore")
+            lore: list[str] = []
+            if lore_raw is None:
+                lore = []
+            elif isinstance(lore_raw, list):
+                lore = [str(line) for line in lore_raw if line is not None]
+            else:
+                raise CreationCatalogError(
+                    f"editable_kit[{i}].preview.lore must be a list"
+                )
+            preview: dict[str, Any] = {
+                "display_name": str(preview_raw.get("display_name") or "").strip(),
+                "lore": lore,
+                "material": str(preview_raw.get("material") or "").strip(),
+            }
+            cmd = preview_raw.get("custom_model_data")
+            if cmd is not None:
+                try:
+                    preview["custom_model_data"] = int(cmd)
+                except (TypeError, ValueError) as e:
+                    raise CreationCatalogError(
+                        f"editable_kit[{i}].preview.custom_model_data must be an integer"
+                    ) from e
+            entry["preview"] = preview
+        out.append(entry)
+    return out
+
+
+def _normalize_kits(raw: list) -> list[dict[str, Any]]:
+    """Allow-list kits[] from RPCharacters kits.yml sync."""
+    out: list[dict[str, Any]] = []
+    for i, row in enumerate(raw):
+        if not isinstance(row, dict):
+            raise CreationCatalogError(f"kits[{i}] must be an object")
+        kid = str(row.get("id") or "").strip().lower()
+        if not kid:
+            raise CreationCatalogError(f"kits[{i}].id is required")
+        try:
+            cooldown_hours = int(row.get("cooldown_hours", 48))
+        except (TypeError, ValueError) as e:
+            raise CreationCatalogError(
+                f"kits[{i}].cooldown_hours must be an integer"
+            ) from e
+        once = row.get("once_per_character", True)
+        if not isinstance(once, bool):
+            raise CreationCatalogError(
+                f"kits[{i}].once_per_character must be a boolean"
+            )
+        items_raw = row.get("items")
+        if items_raw is None:
+            items_raw = []
+        if not isinstance(items_raw, list):
+            raise CreationCatalogError(f"kits[{i}].items must be a list")
+        items: list[dict[str, Any]] = []
+        for j, item in enumerate(items_raw):
+            if not isinstance(item, dict):
+                raise CreationCatalogError(f"kits[{i}].items[{j}] must be an object")
+            path = str(item.get("path") or "").strip()
+            if not path:
+                raise CreationCatalogError(
+                    f"kits[{i}].items[{j}].path is required"
+                )
+            try:
+                amount = int(item.get("amount", 1))
+            except (TypeError, ValueError) as e:
+                raise CreationCatalogError(
+                    f"kits[{i}].items[{j}].amount must be an integer"
+                ) from e
+            entry: dict[str, Any] = {
+                "path": path,
+                "amount": max(1, amount),
+            }
+            if item.get("editable"):
+                entry["editable"] = True
+            items.append(entry)
+        out.append(
+            {
+                "id": kid,
+                "display_name": str(row.get("display_name") or kid).strip() or kid,
+                "cooldown_hours": max(0, cooldown_hours),
+                "once_per_character": once,
+                "items": items,
+            }
+        )
+    return out
+
+
 def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise CreationCatalogError("body must be a JSON object")
@@ -147,6 +268,10 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
     classes = _normalize_id_rows(_as_list(raw.get("classes"), "classes"), "classes")
     validation = _as_dict(raw.get("validation"), "validation")
     slot_limits = _as_dict(raw.get("slot_limits"), "slot_limits")
+    editable_kit = _normalize_editable_kit(
+        _as_list(raw.get("editable_kit"), "editable_kit")
+    )
+    kits = _normalize_kits(_as_list(raw.get("kits"), "kits")) if "kits" in raw else []
 
     return {
         "stages": stages,
@@ -156,6 +281,8 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
         "classes": classes,
         "validation": validation,
         "slot_limits": slot_limits,
+        "editable_kit": editable_kit,
+        "kits": kits,
     }
 
 
@@ -199,6 +326,8 @@ def _empty_catalog() -> dict[str, Any]:
         "classes": [],
         "validation": {},
         "slot_limits": {},
+        "editable_kit": [],
+        "kits": [],
         "updated_at": None,
     }
 
@@ -232,9 +361,15 @@ def get_catalog() -> dict[str, Any]:
         "validation",
         "slot_limits",
         "attribute_point_buy",
+        "editable_kit",
+        "kits",
     ):
         if key in data:
             out[key] = data[key]
+    if not isinstance(out.get("editable_kit"), list):
+        out["editable_kit"] = []
+    if not isinstance(out.get("kits"), list):
+        out["kits"] = []
     return out
 
 

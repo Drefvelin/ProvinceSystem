@@ -228,7 +228,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 
 Completed in step-17: TFMCWeb owns link, notices, and `/token create`; ArmourShop keeps pack apply + admin token list/delete. Staging LP: migrate `armourshop.token.create` → `tfmcweb.token.create`.
 
-Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 is shipped ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); Phases 2–4 remain deferred.
+Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 + Phase 2 kit plumbing shipped ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md) / [step-20](./batches/step-20/00-index.md)); Phase 3 claim cutover + lore-item in [step-21](./batches/step-21/00-index.md); Phase 4 later.
 
 ---
 
@@ -262,4 +262,4 @@ Staging verify script: [08-docs-verify.md](./batches/step-17/08-docs-verify.md).
 
 ## Next step
 
-Character creator Phase 1 is **done** — tick staging in [STAGING.md](../STAGING.md) / [06-docs-verify](./batches/step-19/06-docs-verify.md). Phases 2–4 (kit / lore knife / Mojang skins) stay deferred. Prefer Step 17 staging green before pre-launch donator create.
+Character creator Phase 1 is **done** (staging verified). Phase 2 kit plumbing **done** ([step-20](./batches/step-20/00-index.md) 20.01–20.03); claim + lore-item cutover in [step-21](./batches/step-21/00-index.md) (**21.06 → 21.07 → 21.05**). Phase 4 wardrobe stays later.

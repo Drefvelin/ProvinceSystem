@@ -9,6 +9,8 @@ type Props = {
   maxSlots: number;
   onLogout: () => void;
   loggingOut?: boolean;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
 function capitalizeFirst(raw: string | null | undefined): string {
@@ -17,13 +19,14 @@ function capitalizeFirst(raw: string | null | undefined): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function Row({ item }: { item: CharacterListItem }) {
+function Row({ item, linkable }: { item: CharacterListItem; linkable?: boolean }) {
   const status = String(item.status || "").toUpperCase();
   const meta = [capitalizeFirst(item.race), item.class]
     .filter(Boolean)
     .join(" · ");
-  return (
-    <li className="char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+  const err = String(item.error || "").trim();
+  const body = (
+    <>
       <div>
         <p className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">
           {item.name || "Unnamed"}
@@ -31,10 +34,36 @@ function Row({ item }: { item: CharacterListItem }) {
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
           {meta || "—"}
         </p>
+        {status === "REJECTED" && err ? (
+          <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p>
+        ) : null}
       </div>
-      <span className="text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+      <span
+        className={`text-xs font-medium uppercase tracking-wide ${
+          status === "REJECTED"
+            ? "text-[#e8a0a0]"
+            : "text-[var(--tfmc-stone)]"
+        }`}
+      >
         {status}
       </span>
+    </>
+  );
+  if (linkable && item.id) {
+    return (
+      <li className="char-row border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] last:border-b-0">
+        <Link
+          href={`/character/${encodeURIComponent(item.id)}`}
+          className="flex flex-col gap-1 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_4%,transparent)] sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+        >
+          {body}
+        </Link>
+      </li>
+    );
+  }
+  return (
+    <li className="char-row flex flex-col gap-1 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-4 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      {body}
     </li>
   );
 }
@@ -43,10 +72,14 @@ function Section({
   title,
   items,
   empty,
+  hint,
+  linkAlive,
 }: {
   title: string;
   items: CharacterListItem[];
   empty?: string;
+  hint?: string;
+  linkAlive?: boolean;
 }) {
   if (items.length === 0 && !empty) return null;
   return (
@@ -54,10 +87,23 @@ function Section({
       <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         {title}
       </h2>
+      {hint ? (
+        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">{hint}</p>
+      ) : null}
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{empty}</p>
       ) : (
-        <ul className="mt-2">{items.map((c) => <Row key={c.id} item={c} />)}</ul>
+        <ul className="mt-2">
+          {items.map((c) => (
+            <Row
+              key={c.id}
+              item={c}
+              linkable={
+                linkAlive && String(c.status || "").toUpperCase() === "ALIVE"
+              }
+            />
+          ))}
+        </ul>
       )}
     </section>
   );
@@ -69,12 +115,17 @@ export default function CharacterList({
   maxSlots,
   onLogout,
   loggingOut = false,
+  onRefresh,
+  refreshing = false,
 }: Props) {
   const alive = characters.filter(
     (c) => String(c.status).toUpperCase() === "ALIVE"
   );
   const pending = characters.filter(
     (c) => String(c.status).toLowerCase() === "pending"
+  );
+  const rejected = characters.filter(
+    (c) => String(c.status).toLowerCase() === "rejected"
   );
   const dead = characters.filter((c) => {
     const s = String(c.status).toUpperCase();
@@ -91,6 +142,16 @@ export default function CharacterList({
           Alive slots {aliveCount} / {maxSlots}
         </p>
         <div className="flex flex-wrap items-center gap-3">
+          {onRefresh ? (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing || loggingOut}
+              className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+            >
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          ) : null}
           {atLimit ? (
             <span className="text-sm text-[var(--tfmc-mist)]">
               No free slot
@@ -128,8 +189,22 @@ export default function CharacterList({
         </div>
       ) : (
         <>
-          <Section title="Alive" items={alive} empty="No alive characters." />
-          <Section title="Pending" items={pending} />
+          <Section
+            title="Alive"
+            items={alive}
+            empty="No alive characters."
+            linkAlive
+          />
+          <Section
+            title="Pending"
+            items={pending}
+            hint={
+              pending.length > 0
+                ? "Applying on the game server can take up to a minute. Use Refresh if it stays pending."
+                : undefined
+            }
+          />
+          <Section title="Rejected" items={rejected} />
           <Section title="Dead" items={dead} />
         </>
       )}

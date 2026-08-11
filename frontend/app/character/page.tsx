@@ -21,7 +21,10 @@ import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
 } from "../../lib/characters/uiDev";
+import { UI_DEV_LORE_CHARACTER_ID } from "../../lib/characters/loreItemsDev";
 import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
+
+const PENDING_POLL_MS = 10_000;
 
 function uiDevSession(): CharacterSession {
   return {
@@ -30,6 +33,10 @@ function uiDevSession(): CharacterSession {
     expires_at: new Date(Date.now() + 86400000).toISOString(),
     scope: "character",
   };
+}
+
+function hasPending(characters: CharacterListItem[]): boolean {
+  return characters.some((c) => String(c.status).toLowerCase() === "pending");
 }
 
 export default function CharacterPage() {
@@ -43,15 +50,28 @@ export default function CharacterPage() {
   const [loadingList, setLoadingList] = useState(false);
 
   const loadList = useCallback(
-    async (token: string) => {
+    async (token: string, opts?: { quiet?: boolean }) => {
       if (uiDev) {
-        setCharacters([]);
+        setCharacters([
+          {
+            id: UI_DEV_LORE_CHARACTER_ID,
+            name: "UI Dev Character",
+            status: "ALIVE",
+            race: "human",
+            class: "Warrior",
+            kit_status: "eligible",
+            kit_statuses: { starter: "eligible" },
+            source: "roster",
+          },
+        ]);
         setMaxSlots(5);
         setListError(null);
         setLoadingList(false);
         return;
       }
-      setLoadingList(true);
+      if (!opts?.quiet) {
+        setLoadingList(true);
+      }
       setListError(null);
       try {
         const list = await listCharacters(token);
@@ -102,9 +122,38 @@ export default function CharacterPage() {
     setReady(true);
   }, [loadList, uiDev]);
 
+  // Poll while any create is pending.
+  useEffect(() => {
+    if (uiDev || !session || !isSessionValid(session)) return;
+    if (!hasPending(characters)) return;
+    const token = session.session_token;
+    const id = window.setInterval(() => {
+      void loadList(token, { quiet: true });
+    }, PENDING_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [characters, loadList, session, uiDev]);
+
+  // Refresh when the tab becomes visible again.
+  useEffect(() => {
+    if (uiDev || !session || !isSessionValid(session)) return;
+    const token = session.session_token;
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        void loadList(token, { quiet: true });
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadList, session, uiDev]);
+
   function onRedeemed(next: CharacterSession) {
     setSessionState(next);
     void loadList(next.session_token);
+  }
+
+  function onRefresh() {
+    if (!session) return;
+    void loadList(session.session_token);
   }
 
   async function onLogout() {
@@ -169,7 +218,7 @@ export default function CharacterPage() {
               ? "UI-dev session — no redeem required."
               : `Session expires ${formatExpiresIn(session.expires_at)} (${formatLocal(session.expires_at)})`}
           </p>
-          {loadingList ? (
+          {loadingList && characters.length === 0 ? (
             <p className="mt-8 text-[var(--tfmc-mist)]">Loading characters…</p>
           ) : listError ? (
             <p className="mt-8 text-sm text-[#e8a0a0]" role="alert">
@@ -182,6 +231,8 @@ export default function CharacterPage() {
               maxSlots={maxSlots}
               onLogout={onLogout}
               loggingOut={loggingOut}
+              onRefresh={uiDev ? undefined : onRefresh}
+              refreshing={loadingList}
             />
           )}
         </div>

@@ -146,7 +146,7 @@ catalog sync → /token create skin staff → redeem + dropdowns → auto-approv
 
 **Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-19/00-index.md](./Planning/batches/step-19/00-index.md) · checklist [06-docs-verify](./Planning/batches/step-19/06-docs-verify.md).
 
-**Code:** 19.01–19.06 done (attribute point-buy, catalog sync, redeem + Remember me, create/list + RPC ingest, `/character` UI, docs). Prefer Step 17 staging green before pre-launch donator create. Phases 2–4 (kit, lore knife, character skins) are out of this checklist.
+**Code:** 19.01–19.06 done. **Staging verified** (operator). Kits Phase 2–3: [step-20](./Planning/batches/step-20/00-index.md) / [step-21](./Planning/batches/step-21/00-index.md) **code+docs done**; operator ticks under Step 20–21.
 
 ### Deploy
 
@@ -160,26 +160,102 @@ catalog sync → /token create skin staff → redeem + dropdowns → auto-approv
 ### Locked (do not reinvent on staging)
 
 - Token single-use → session; default **1h**; Remember me **30d**; Log out revokes  
-- Attribute sheet: pool **12**, max **+2**/stat, cost of *n*-th rank = **n**  
+- Attribute sheet: pool / max-rank / costs from synced catalog (`stages.yml`)  
 - No knife / Mojang skin UI required for Phase 1  
 
 ### Operator checklist
 
-- [ ] `/token create character` → redeem on `/character` (1h default)
-- [ ] Remember me → still logged in after browser restart (within 30d)
-- [ ] Log out → must mint a new token
-- [ ] In-game attribute sheet: exactly 12 points, max +2/stat, costs 1 then 2
-- [ ] Catalog sync after RPC reload updates web options
-- [ ] Web create → character in RPCharacters + listed on site
-- [ ] Dead characters visible on site
-- [ ] Slot limit enforced
-- [ ] No knife / player-skin UI required
+- [x] `/token create character` → redeem on `/character` (1h default)
+- [x] Remember me → still logged in after browser restart (within 30d)
+- [x] Log out → must mint a new token
+- [x] In-game attribute sheet: spend exact pool per catalog; costs match shipped formula
+- [x] Catalog sync after RPC reload updates web options
+- [x] Web create → character in RPCharacters + listed on site
+- [x] Dead characters visible on site
+- [x] Slot limit enforced
+- [x] No knife / player-skin UI required
 
 Checkpoint:
 
 ```text
 attribute sheet → catalog sync → redeem + Remember me
   → web wizard → RPC ingest → /character list alive/dead
+```
+
+## Step 20 — Starter kits (Phase 2)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) Phase 2 · batches [Planning/batches/step-20/00-index.md](./Planning/batches/step-20/00-index.md) · claim cutover [21.06](./Planning/batches/step-21/06-kit-claim-command.md).
+
+**Code:** 20.01–20.03 done; claim cutover [21.06](./Planning/batches/step-21/06-kit-claim-command.md); multi-kit generalised in [21.08](./Planning/batches/step-21/08-kits-yml-and-kit-service.md) (`kits.yml` + `KitService`). Operator ticks below still for live verify.
+
+### Deploy
+
+1. Latest RPCharacters jar with `kit.yml` + **claim command** (no join/reload auto-grant) + roster kit meta.
+2. ConditionalEvents: `tfmc_starter` is `enabled: false` in repo (`events/a_boosters.yml`); reload/restart CE so `/tfmc starter` stays off (no double kit).
+3. ProvinceSystem API + frontend with kit cooldown / status on roster (no create “lose kit forever” warning).
+4. Rebuild/redeploy website containers after API+FE land.
+
+### Locked (target)
+
+- Per character: kit once via `/rpcharacter kit starter`
+- Per player: **48h** between successful claims
+- Create during cooldown → character stays **eligible** (claim later)
+- Discord owns player messaging (no website/in-game tip nudges)
+- Full kit: hunting knife, 32 gold, 256 churro, oak boat, writable book, bundle, white bed
+
+### Operator checklist (after 21.06)
+
+- [ ] `kit.yml` loaded; CE `/tfmc starter` disabled
+- [ ] `/rpcharacter kit starter` grants once; join/reload does **not** auto-grant
+- [ ] New character during 48h cooldown can be created; claim blocked until cooldown clears
+- [ ] Second claim same character rejected
+- [ ] After cooldown, new character can claim
+- [ ] No create warning that creating now permanently loses the kit
+
+Checkpoint:
+
+```text
+kit.yml → /rpcharacter kit starter → 48h between claims
+  → create anytime; claim when cooldown clear
+```
+
+## Step 21 — Kits + lore customise (Phase 3)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) Phase 2–3 · batches [Planning/batches/step-21/00-index.md](./Planning/batches/step-21/00-index.md).
+
+**Code:** 21.01–21.09 + 21.05 docs **done** (21.07 create-wizard path **superseded**). Operator checklist below still unchecked.
+
+### Deploy
+
+1. RPCharacters jar with `kits.yml` + `KitService` + `/rpcharacter kit <id>` + lore apply + `assets/knife_skin.png`.
+2. ProvinceSystem API + FE character detail → Kits (no create-wizard knife step).
+3. ArmourShop / skins path unchanged for player `handheld` + `knives` → `ps_items`.
+
+### Locked
+
+- Configurable kits in `kits.yml`; per-kit cooldown; once-per-character flag
+- Claim `/rpcharacter kit <id>`; no auto-grant
+- Customise via ALIVE character → Kits → Edit editable items (not create wizard)
+- Once-per-character claimed → no customise
+- `pending_skin` blocks that kit’s claim until `ready`
+- `editable`: `skin-png` + `base-set` only; NBT preview
+- No tip/nudge copy (Discord owns messaging)
+
+### Operator checklist
+
+- [ ] `kits.yml` + `/rpcharacter kit starter` (and other kit ids when present)
+- [ ] Per-kit cooldown from config; once-per-character for starter
+- [ ] Web: character → Kits → Edit knife; create wizard has no knife step
+- [ ] Non-editable items listed without Edit
+- [ ] Claimed once-per-character kit cannot be customised
+- [ ] `pending_skin` blocks claim; approve → claim delivers skin + lore
+- [ ] No `tfmc_armorshop` / staff category path
+
+Checkpoint:
+
+```text
+kits.yml → character kits UI → Discord if needed → /rpcharacter kit <id>
+  → kit with skin+lore (block while pending_skin)
 ```
 
 ## Step 5 — Discord link + player DMs (historical)

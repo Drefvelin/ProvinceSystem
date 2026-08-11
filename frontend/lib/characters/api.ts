@@ -112,6 +112,37 @@ export async function logoutCharacter(sessionToken: string): Promise<void> {
   }
 }
 
+export type EditableKitPreview = {
+  display_name: string;
+  lore: string[];
+  material: string;
+  custom_model_data?: number;
+};
+
+export type EditableKitRow = {
+  kit_key: string;
+  path: string;
+  amount: number;
+  skin_png: string;
+  base_set: string;
+  kit_id?: string;
+  preview?: EditableKitPreview;
+};
+
+export type CatalogKitItem = {
+  path: string;
+  amount: number;
+  editable?: boolean;
+};
+
+export type CatalogKit = {
+  id: string;
+  display_name: string;
+  cooldown_hours: number;
+  once_per_character: boolean;
+  items: CatalogKitItem[];
+};
+
 export type CreationCatalog = {
   stages: CatalogStage[];
   attribute_point_buy: AttributePointBuy | null;
@@ -120,6 +151,8 @@ export type CreationCatalog = {
   classes: CatalogIdRow[];
   validation: CatalogValidation;
   slot_limits: SlotLimits;
+  editable_kit?: EditableKitRow[];
+  kits?: CatalogKit[];
   updated_at: string | null;
 };
 
@@ -246,6 +279,12 @@ export type CharacterListItem = {
   created_at?: string | null;
   source?: string;
   create_id?: string;
+  /** Present when status is rejected (e.g. no free character slot). */
+  error?: string | null;
+  /** eligible | granted | ineligible when synced from RPC (legacy starter). */
+  kit_status?: string | null;
+  /** Per-kit status map from roster sync. */
+  kit_statuses?: Record<string, string> | null;
 };
 
 export type CharacterListResponse = {
@@ -262,6 +301,14 @@ export type CharacterListResponse = {
   evil_unlocked?: boolean;
   /** Rank perk: max name colour stops (0 = locked). */
   name_colour_stops?: number;
+  /** Snapshot seconds remaining until next kit grant is allowed. */
+  kit_cooldown_seconds_remaining?: number;
+  /** Config echo of kit cooldown length in hours. */
+  kit_cooldown_hours?: number;
+  kit_cooldowns?: Record<
+    string,
+    { seconds_remaining?: number; hours?: number }
+  > | null;
 };
 
 export async function listCharacters(
@@ -300,6 +347,14 @@ export async function listCharacters(
       typeof body.name_colour_stops === "number"
         ? Math.max(0, body.name_colour_stops)
         : 0,
+    kit_cooldown_seconds_remaining:
+      typeof body.kit_cooldown_seconds_remaining === "number"
+        ? Math.max(0, body.kit_cooldown_seconds_remaining)
+        : 0,
+    kit_cooldown_hours:
+      typeof body.kit_cooldown_hours === "number"
+        ? Math.max(0, body.kit_cooldown_hours)
+        : undefined,
   };
 }
 
@@ -356,4 +411,179 @@ export function maxAliveSlots(slotLimits: SlotLimits | undefined): number {
   const hard = Number(slotLimits?.hard_cap ?? 10) || 10;
   const soft = Number(slotLimits?.defaults?.max_alive_characters ?? 3) || 3;
   return Math.min(soft, hard);
+}
+
+export type LoreItemPreview = {
+  display_name: string;
+  lore: string[];
+  material: string;
+  custom_model_data?: number;
+};
+
+export type LoreItemDraft = {
+  display_name: string;
+  lore: string[];
+  existing_skin_id: string | null;
+  submission_id: string | null;
+  submission_status: string | null;
+};
+
+export type LoreItemPickableSkin = {
+  id: string;
+  display_name: string;
+  kind: string;
+};
+
+export type LoreItemRow = {
+  kit_key: string;
+  path: string;
+  skin_png: string;
+  base_set: string;
+  eligible: boolean;
+  base_preview: LoreItemPreview;
+  preview: LoreItemPreview;
+  draft: LoreItemDraft;
+  pickable_skins: LoreItemPickableSkin[];
+};
+
+export type LoreItemsResponse = {
+  character_id: string;
+  items: LoreItemRow[];
+};
+
+export type CharacterKitItem = {
+  path: string;
+  amount: number;
+  editable: boolean;
+  kit_key?: string;
+  preview?: EditableKitPreview;
+  skin_png?: string;
+  base_set?: string;
+  customise?: LoreItemDraft;
+};
+
+export type CharacterKit = {
+  id: string;
+  display_name: string;
+  cooldown_hours: number;
+  once_per_character: boolean;
+  status: string;
+  claimable: boolean;
+  cooldown?: { seconds_remaining: number; hours: number } | null;
+  items: CharacterKitItem[];
+};
+
+export type CharacterKitsResponse = {
+  character_id: string;
+  kits: CharacterKit[];
+};
+
+export async function listCharacterKits(
+  sessionToken: string,
+  characterId: string
+): Promise<CharacterKitsResponse> {
+  const cid = encodeURIComponent(characterId.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/kits?character_id=${cid}`,
+    { headers: authHeaders(sessionToken) }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Kits failed (${res.status})`),
+      res.status
+    );
+  }
+  const body = data as CharacterKitsResponse;
+  return {
+    character_id: String(body.character_id || characterId),
+    kits: Array.isArray(body.kits) ? body.kits : [],
+  };
+}
+
+export type CustomiseLoreItemInput = {
+  displayName: string;
+  lore: string[];
+  existingSkinId?: string | null;
+  /** When set, sends multipart; do not also set existingSkinId. */
+  textureFile?: File | null;
+};
+
+export type CustomiseLoreItemResult = LoreItemRow & { ok: boolean };
+
+export async function listLoreItems(
+  sessionToken: string,
+  characterId: string,
+  kitId = "starter"
+): Promise<LoreItemsResponse> {
+  const cid = encodeURIComponent(characterId.trim());
+  const kid = encodeURIComponent(kitId.trim() || "starter");
+  const res = await apiFetch(
+    `${getApiBase()}/characters/lore-items?character_id=${cid}&kit_id=${kid}`,
+    { headers: authHeaders(sessionToken) }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Lore items failed (${res.status})`),
+      res.status
+    );
+  }
+  const body = data as LoreItemsResponse;
+  return {
+    character_id: String(body.character_id || characterId),
+    items: Array.isArray(body.items) ? body.items : [],
+  };
+}
+
+export async function customiseLoreItem(
+  sessionToken: string,
+  characterId: string,
+  kitKey: string,
+  input: CustomiseLoreItemInput,
+  kitId = "starter"
+): Promise<CustomiseLoreItemResult> {
+  const cid = encodeURIComponent(characterId.trim());
+  const key = encodeURIComponent(kitKey.trim());
+  const kid = encodeURIComponent(kitId.trim() || "starter");
+  const url = `${getApiBase()}/characters/lore-items/${key}/customise?character_id=${cid}&kit_id=${kid}`;
+  const hasTexture = Boolean(input.textureFile);
+
+  let res: Response;
+  if (hasTexture && input.textureFile) {
+    const form = new FormData();
+    form.append("display_name", input.displayName);
+    form.append("lore", JSON.stringify(input.lore));
+    form.append("texture", input.textureFile);
+    res = await apiFetch(url, {
+      method: "POST",
+      headers: authHeaders(sessionToken),
+      body: form,
+    });
+  } else {
+    const body: Record<string, unknown> = {
+      display_name: input.displayName,
+      lore: input.lore,
+    };
+    if (input.existingSkinId !== undefined) {
+      body.existing_skin_id = input.existingSkinId;
+    }
+    res = await apiFetch(url, {
+      method: "POST",
+      headers: {
+        ...authHeaders(sessionToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Customise failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as CustomiseLoreItemResult;
 }

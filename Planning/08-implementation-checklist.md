@@ -170,8 +170,10 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 7. Ban role (bot moderation) — parallel with S3+  
 8. **TFMCWeb / Step 17** — done (docs + staging checklist); tick [08-docs-verify](./batches/step-17/08-docs-verify.md) on live staging ([13](./13-tfmcweb.md))  
 9. **Staff curated skins / Step 18** — **done** (18.01–18.07); tick staging [06-docs-verify](./batches/step-18/06-docs-verify.md) / [STAGING.md](../STAGING.md)  
-10. **Character creator / Step 19 Phase 1** — **done** (19.01–19.06); tick staging [06-docs-verify](./batches/step-19/06-docs-verify.md) / [STAGING.md](../STAGING.md)  
-11. Cropped overlays / Phases 2–4 (kit, lore knife, character skins) as capacity allows  
+10. **Character creator / Step 19 Phase 1** — **done** (19.01–19.06); staging verified  
+11. **Starter kits / Step 20** — plumbing **done** (20.01–20.03); claim [21.06](./batches/step-21/06-kit-claim-command.md); multi-kit [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)  
+12. **Kits + lore customise / Step 21** — **done** ([step-21](./batches/step-21/00-index.md); 21.07 superseded); next operator staging / Phase 4  
+13. Cropped overlays / Phase 4 (character skins) as capacity allows  
 
 ---
 
@@ -186,4 +188,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
-Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging. Phases 2–4 (kit, lore knife, character skins) after Phase 1 staging green.
+Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** (staging verified). Step 20 kit plumbing **done**. Step 21 kits + lore customise **done** (21.01–21.09 + 05; 07 superseded); next [STAGING](../STAGING.md) operator ticks / Phase 4.
