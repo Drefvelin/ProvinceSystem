@@ -5,9 +5,17 @@ type Props = {
   min: number;
   max: number;
   onChange: (value: string) => void;
+  /** Fantasy birthday line shown under the control when age is valid. */
+  birthdayLabel?: string | null;
 };
 
-export default function AgeStepper({ value, min, max, onChange }: Props) {
+export default function AgeStepper({
+  value,
+  min,
+  max,
+  onChange,
+  birthdayLabel = null,
+}: Props) {
   const parsed = Number(value);
   const current = Number.isFinite(parsed) ? parsed : min;
 
@@ -62,6 +70,12 @@ export default function AgeStepper({ value, min, max, onChange }: Props) {
           +
         </button>
       </div>
+      {birthdayLabel ? (
+        <p className="text-sm text-[var(--tfmc-mist)]" aria-live="polite">
+          Birthday{" "}
+          <span className="text-[var(--tfmc-cream)]">{birthdayLabel}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

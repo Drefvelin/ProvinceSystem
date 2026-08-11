@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import uuid as uuid_lib
 from datetime import datetime, timezone
 from typing import Any
@@ -111,6 +112,13 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     if (age < age_min):
         raise CreateError(f"age must be at least {age_min}")
 
+    birthday = None
+    if body.get("birthday") is not None:
+        birthday = str(body.get("birthday") or "").strip() or None
+        if birthday is not None:
+            if not re.fullmatch(r"\d{4,}-\d{2}-\d{2}", birthday):
+                raise CreateError("birthday must be YYYY-MM-DD")
+
     has_real_age_stage = any(
         isinstance(s, dict)
         and str(s.get("type") or "").lower() == "setter"
@@ -200,6 +208,14 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     clue_max_len = int(clue_cfg.get("max_length") or 500)
     max_clues = int(clue_cfg.get("max_clues") or 20)
     required = int(clue_cfg.get("default_required") or 0)
+    has_evil = any(
+        str(traits_by_id[tid].get("key") or "").strip().lower() == "evil"
+        for tid in selected_traits
+        if tid in traits_by_id
+    )
+    if has_evil:
+        required = max(required, int(clue_cfg.get("evil_required") or 0))
+    required = min(required, max_clues)
     if len(clues) > max_clues:
         raise CreateError(f"at most {max_clues} clues allowed")
     if len(clues) < required:
@@ -263,6 +279,7 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         "client_request_id": client_request_id,
         "name": name,
         "age": age,
+        "birthday": birthday,
         "eighteen": eighteen,
         "description": description,
         "gender": gender,

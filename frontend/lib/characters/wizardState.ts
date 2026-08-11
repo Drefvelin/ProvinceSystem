@@ -6,6 +6,7 @@ import type {
   CreationCatalog,
   ExperienceModifierDto,
 } from "./api";
+import { birthdayFromAge } from "./fantasyCalendar";
 import { emptyRanks, isExactSpend } from "./pointBuy";
 
 export type WizardDraft = {
@@ -50,7 +51,7 @@ export function newDraft(catalog: CreationCatalog): WizardDraft {
     class_id: "",
     attributes: emptyRanks(attrs),
     traitIds: [],
-    clues: [""],
+    clues: [],
   };
 }
 
@@ -529,6 +530,51 @@ export function resolveMutuallyExclusiveNames(
     .filter(Boolean);
 }
 
+function exclusiveIdList(trait: CatalogTrait): string[] {
+  const raw = trait.mutually_exclusive;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((id) => String(id || "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** Bidirectional exclusivity (A lists B or B lists A). */
+export function traitsAreExclusive(
+  a: CatalogTrait,
+  b: CatalogTrait
+): boolean {
+  const aId = String(a.id || "").trim().toLowerCase();
+  const bId = String(b.id || "").trim().toLowerCase();
+  if (!aId || !bId || aId === bId) return false;
+  return (
+    exclusiveIdList(a).includes(bId) || exclusiveIdList(b).includes(aId)
+  );
+}
+
+/**
+ * True when selecting `trait` would conflict with any id in `selectedIds`
+ * (typically other selected traits; exclude `trait.id` yourself).
+ */
+export function traitExclusiveBlocked(
+  trait: CatalogTrait,
+  selectedIds: string[],
+  catalog: CreationCatalog
+): boolean {
+  const byId = new Map(
+    (catalog.traits || []).map((t) => [
+      String(t.id || "").trim().toLowerCase(),
+      t,
+    ])
+  );
+  for (const raw of selectedIds) {
+    const id = String(raw || "").trim().toLowerCase();
+    if (!id || id === String(trait.id || "").trim().toLowerCase()) continue;
+    const other = byId.get(id);
+    if (other && traitsAreExclusive(trait, other)) return true;
+  }
+  return false;
+}
+
 export function traitPlaytimeBlocked(
   trait: CatalogTrait,
   accountAgeSeconds: number
@@ -548,9 +594,10 @@ export function traitPlaytimeReason(trait: CatalogTrait): string | null {
 
 export function traitCost(trait: CatalogTrait): number {
   const n = Number(trait.cost);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  return Number.isFinite(n) ? n : 0;
 }
 
+/** Net points spent for selected traits in a key (negative costs refund). */
 export function traitPointsSpent(
   draft: WizardDraft,
   catalog: CreationCatalog,
@@ -562,6 +609,16 @@ export function traitPointsSpent(
     if (selected.has(t.id)) spent += traitCost(t);
   }
   return spent;
+}
+
+/** Remaining pool after current selections (can exceed stage budget via negative costs). */
+export function traitPointsRemaining(
+  draft: WizardDraft,
+  catalog: CreationCatalog,
+  key: string,
+  budget: number
+): number {
+  return budget - traitPointsSpent(draft, catalog, key);
 }
 
 export function selectedTraitsForKey(
@@ -582,6 +639,87 @@ export function setTraitsForKey(
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
   return { ...draft, traitIds: [...kept, ...selected] };
+}
+
+export function draftHasEvilTrait(
+  draft: WizardDraft,
+  catalog: CreationCatalog
+): boolean {
+  for (const id of draft.traitIds) {
+    const trait = (catalog.traits || []).find(
+      (t) => String(t.id || "").toLowerCase() === String(id || "").toLowerCase()
+    );
+    if (trait && String(trait.key || "").trim().toLowerCase() === "evil") {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Match RPCharacter.getCluesNeeded (default vs evil, capped by max). */
+export function cluesRequired(
+  draft: WizardDraft,
+  catalog: CreationCatalog
+): number {
+  const cfg = catalog.validation?.clues || {};
+  let needed = Number(cfg.default_required ?? 0);
+  if (!Number.isFinite(needed) || needed < 0) needed = 0;
+  if (draftHasEvilTrait(draft, catalog)) {
+    const evil = Number(cfg.evil_required ?? 0);
+    if (Number.isFinite(evil) && evil > needed) needed = evil;
+  }
+  const maxClues = Number(cfg.max_clues ?? 20);
+  const cap = Number.isFinite(maxClues) && maxClues > 0 ? maxClues : 20;
+  return Math.min(needed, cap);
+}
+
+export function filledClues(draft: WizardDraft): string[] {
+  return draft.clues.map((c) => c.trim()).filter(Boolean);
+}
+
+function asBoundInt(raw: unknown, fallback: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.trunc(n);
+}
+
+export function clueLengthBounds(catalog: CreationCatalog): {
+  minLen: number;
+  maxLen: number;
+  maxClues: number;
+} {
+  const cfg = catalog.validation?.clues || {};
+  return {
+    minLen: asBoundInt(cfg.min_length, 1),
+    maxLen: asBoundInt(cfg.max_length, 48),
+    maxClues: asBoundInt(cfg.max_clues, 20),
+  };
+}
+
+/** Human-readable reason Next is blocked on the clue stage, or null if ok. */
+export function clueContinueBlockReason(
+  draft: WizardDraft,
+  catalog: CreationCatalog
+): string | null {
+  const required = cluesRequired(draft, catalog);
+  const { minLen, maxLen, maxClues } = clueLengthBounds(catalog);
+  const clues = filledClues(draft);
+  if (clues.length < required) {
+    return `Enter at least ${required} clue${required === 1 ? "" : "s"} (${clues.length}/${required})`;
+  }
+  if (clues.length > maxClues) {
+    return `At most ${maxClues} clues allowed`;
+  }
+  for (let i = 0; i < clues.length; i++) {
+    const n = clues[i]!.length;
+    if (n < minLen) {
+      return `Clue ${i + 1} is too short (${n}/${minLen} min)`;
+    }
+    if (n > maxLen) {
+      return `Clue ${i + 1} is too long (${n}/${maxLen} max)`;
+    }
+  }
+  return null;
 }
 
 export function stageCanContinue(
@@ -644,14 +782,7 @@ export function stageCanContinue(
   }
 
   if (type === "clue") {
-    const cfg = catalog.validation?.clues || {};
-    const required = Number(cfg.default_required ?? 0);
-    const minLen = Number(cfg.min_length ?? 1);
-    const maxLen = Number(cfg.max_length ?? 500);
-    const maxClues = Number(cfg.max_clues ?? 20);
-    const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
-    if (clues.length < required || clues.length > maxClues) return false;
-    return clues.every((c) => c.length >= minLen && c.length <= maxLen);
+    return clueContinueBlockReason(draft, catalog) === null;
   }
 
   return true;
@@ -660,10 +791,11 @@ export function stageCanContinue(
 export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
   const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
   const gender = draft.gender.trim() || "unspecified";
+  const age = Number(draft.age);
   const body: CreateCharacterBody = {
     client_request_id: draft.client_request_id,
     name: draft.name.trim(),
-    age: Number(draft.age),
+    age,
     description: draft.description.trim(),
     gender,
     race_id: draft.race_id,
@@ -672,6 +804,13 @@ export function toCreateBody(draft: WizardDraft): CreateCharacterBody {
     traits: [...draft.traitIds],
     clues,
   };
+  const birthday = birthdayFromAge(
+    age,
+    draft.client_request_id || "default"
+  );
+  if (birthday) {
+    body.birthday = birthday;
+  }
   if (draft.eighteen === true || draft.eighteen === false) {
     body.eighteen = draft.eighteen;
   }

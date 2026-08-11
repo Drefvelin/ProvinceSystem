@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AgeStepper from "./AgeStepper";
 import AttributeSheet from "./AttributeSheet";
+import ClueStageFields from "./ClueStageFields";
 import SelectableOption from "./SelectableOption";
 import {
   CharactersApiError,
@@ -11,8 +12,13 @@ import {
   type CatalogStage,
   type CreationCatalog,
 } from "../../../lib/characters/api";
+import { fictionalBirthdayLabel } from "../../../lib/characters/fantasyCalendar";
 import {
+  clueContinueBlockReason,
+  clueLengthBounds,
+  cluesRequired,
   draftModifierTotals,
+  filledClues,
   interactiveProgress,
   newDraft,
   optionAttributeDescriptionLines,
@@ -28,8 +34,10 @@ import {
   stageDisplayTitle,
   toCreateBody,
   traitCost,
+  traitExclusiveBlocked,
   traitPlaytimeBlocked,
   traitPlaytimeReason,
+  traitPointsRemaining,
   traitPointsSpent,
   traitsForKey,
   type WizardDraft,
@@ -147,11 +155,17 @@ function StageBody({
     const raceMax = Number(race?.age_max);
     const max =
       Number.isFinite(raceMax) && raceMax > 0 ? raceMax : 200;
+    const birthdayLabel = fictionalBirthdayLabel(
+      draft.age,
+      draft.client_request_id,
+      catalog.validation?.calendar
+    );
     return (
       <AgeStepper
         value={draft.age}
         min={min}
         max={max}
+        birthdayLabel={birthdayLabel}
         onChange={(age) => setDraft({ ...draft, age })}
       />
     );
@@ -254,7 +268,9 @@ function StageBody({
     const budget = Number(stage.points ?? 0);
     const hasBudget = budget > 0;
     const spent = traitPointsSpent(draft, catalog, key);
-    const remaining = hasBudget ? Math.max(0, budget - spent) : 0;
+    const remaining = hasBudget
+      ? traitPointsRemaining(draft, catalog, key, budget)
+      : 0;
 
     function toggle(id: string) {
       const set = new Set(selected);
@@ -262,35 +278,41 @@ function StageBody({
         set.delete(id);
       } else {
         const trait = options.find((t) => t.id === id);
-        if (trait && traitPlaytimeBlocked(trait, accountAgeSeconds)) return;
-        const cost = trait ? traitCost(trait) : 0;
+        if (!trait) return;
+        if (traitPlaytimeBlocked(trait, accountAgeSeconds)) return;
+        const cost = traitCost(trait);
+        const outsideKey = draft.traitIds.filter(
+          (tid) => !options.some((o) => o.id === tid)
+        );
+        let nextInKey: string[];
         if (max <= 1) {
+          nextInKey = [id];
+          const nextRemaining = budget - cost;
           if (hasBudget && cost > budget) return;
-          set.clear();
-          set.add(id);
+          if (hasBudget && nextRemaining < 0) return;
         } else {
           if (set.size >= max) return;
-          if (hasBudget && spent + cost > budget) return;
-          set.add(id);
+          if (hasBudget && cost > remaining) return;
+          nextInKey = [...selected, id];
         }
+        const others = [...outsideKey, ...nextInKey.filter((x) => x !== id)];
+        if (traitExclusiveBlocked(trait, others, catalog)) return;
+        set.clear();
+        for (const x of nextInKey) set.add(x);
       }
       setDraft(setTraitsForKey(draft, catalog, key, [...set]));
-    }
-
-    const chooseLabel =
-      min === max ? `choose ${min}` : `choose ${min}–${max}`;
-    const statusParts = [
-      `Selected ${selected.length}`,
-      chooseLabel,
-    ];
-    if (hasBudget) {
-      statusParts.push(`Points remaining ${remaining} / ${budget}`);
     }
 
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm text-[var(--tfmc-stone)]">
-          {statusParts.join(" · ")}
+          Selected {selected.length}/{max}
+          {min > 0 ? (
+            <span className="ml-1.5 text-xs text-[color-mix(in_srgb,var(--tfmc-stone)_75%,transparent)]">
+              (Min {min})
+            </span>
+          ) : null}
+          {hasBudget ? ` · Points remaining ${remaining}` : null}
         </p>
         <ul className="grid max-h-[42vh] gap-2 overflow-y-auto pr-1">
           {options.map((t) => {
@@ -299,9 +321,18 @@ function StageBody({
             const playtimeBlocked = traitPlaytimeBlocked(t, accountAgeSeconds);
             const wouldOverSelect = !on && max > 1 && selected.length >= max;
             const wouldOverSpend =
-              !on && hasBudget && spent + cost > budget && !(max <= 1);
+              !on && hasBudget && cost > remaining && !(max <= 1);
             const singleTooExpensive =
               !on && max <= 1 && hasBudget && cost > budget;
+            const outsideKey = draft.traitIds.filter(
+              (tid) => !options.some((o) => o.id === tid)
+            );
+            const exclusivePeers =
+              max <= 1
+                ? outsideKey
+                : [...outsideKey, ...selected.filter((id) => id !== t.id)];
+            const exclusiveConflict =
+              !on && traitExclusiveBlocked(t, exclusivePeers, catalog);
             const blocked =
               playtimeBlocked ||
               wouldOverSelect ||
@@ -312,8 +343,8 @@ function StageBody({
                 <SelectableOption
                   title={displayName(t)}
                   selected={on}
-                  cost={cost >= 1 ? cost : null}
-                  showCostInBody={cost >= 1}
+                  cost={cost !== 0 ? cost : null}
+                  showCostInBody={cost !== 0}
                   descriptionLines={optionDescriptionLines(t)}
                   dependency={resolveTraitDependencyNames(t, catalog)}
                   mutuallyExclusive={resolveMutuallyExclusiveNames(t, catalog)}
@@ -323,6 +354,7 @@ function StageBody({
                     catalog
                   )}
                   disabled={blocked}
+                  exclusiveConflict={exclusiveConflict}
                   disabledReason={
                     playtimeBlocked ? traitPlaytimeReason(t) : null
                   }
@@ -347,63 +379,17 @@ function StageBody({
   }
 
   if (type === "clue") {
-    const cfg = catalog.validation?.clues || {};
-    const required = Number(cfg.default_required ?? 1);
-    const maxClues = Number(cfg.max_clues ?? 5);
-
-    function updateClue(i: number, value: string) {
-      const next = [...draft.clues];
-      next[i] = value;
-      setDraft({ ...draft, clues: next });
-    }
-
-    function addClue() {
-      if (draft.clues.length >= maxClues) return;
-      setDraft({ ...draft, clues: [...draft.clues, ""] });
-    }
-
-    function removeClue(i: number) {
-      if (draft.clues.length <= 1) return;
-      setDraft({
-        ...draft,
-        clues: draft.clues.filter((_, idx) => idx !== i),
-      });
-    }
-
+    const required = cluesRequired(draft, catalog);
+    const { minLen, maxLen, maxClues } = clueLengthBounds(catalog);
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-[var(--tfmc-stone)]">
-          At least {required} clue{required === 1 ? "" : "s"} (max {maxClues})
-        </p>
-        {draft.clues.map((clue, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              value={clue}
-              onChange={(e) => updateClue(i, e.target.value)}
-              placeholder={`Clue ${i + 1}`}
-              className="flex-1 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none focus:border-[var(--tfmc-accent)]"
-            />
-            {draft.clues.length > 1 ? (
-              <button
-                type="button"
-                onClick={() => removeClue(i)}
-                className="px-2 text-sm text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-        ))}
-        {draft.clues.length < maxClues ? (
-          <button
-            type="button"
-            onClick={addClue}
-            className="self-start text-sm text-[var(--tfmc-accent)] hover:underline"
-          >
-            Add clue
-          </button>
-        ) : null}
-      </div>
+      <ClueStageFields
+        clues={filledClues(draft)}
+        required={required}
+        minLen={minLen}
+        maxLen={maxLen}
+        maxClues={maxClues}
+        onChange={(clues) => setDraft({ ...draft, clues })}
+      />
     );
   }
 
@@ -572,6 +558,10 @@ export default function CreationWizard({
   const canNext = stage
     ? stageCanContinue(stage, draft, catalog)
     : false;
+  const clueBlockReason =
+    stage && String(stage.type || "").toLowerCase() === "clue"
+      ? clueContinueBlockReason(draft, catalog)
+      : null;
   const progress = interactiveProgress(stages, index);
 
   function go(to: number) {
@@ -693,6 +683,11 @@ export default function CreationWizard({
       {error ? (
         <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
           {error}
+        </p>
+      ) : null}
+      {clueBlockReason && !canNext ? (
+        <p className="mt-3 text-sm text-[#e8a0a0]" role="status">
+          {clueBlockReason}
         </p>
       ) : null}
       {uiDevDone ? (

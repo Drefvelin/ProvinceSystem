@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { ModifierPreviewLine } from "../../../lib/characters/wizardState";
 
 type Props = {
@@ -11,12 +12,14 @@ type Props = {
   dependency?: { mode: string; names: string[] } | null;
   mutuallyExclusive?: string[];
   modifierLines?: ModifierPreviewLine[];
-  /** Shown when cost >= 1 (e.g. trait point cost). */
+  /** Trait point cost (may be negative to refund points). */
   cost?: number | null;
   /** Expand-body cost line (MC lore parity); header badge still uses cost. */
   showCostInBody?: boolean;
   disabled?: boolean;
   disabledReason?: string | null;
+  /** Incompatible with a current selection; click rejects with shake. */
+  exclusiveConflict?: boolean;
 };
 
 function dependencyHeading(mode: string): string {
@@ -73,8 +76,10 @@ export default function SelectableOption({
   showCostInBody = false,
   disabled = false,
   disabledReason = null,
+  exclusiveConflict = false,
 }: Props) {
-  const showCost = cost != null && Number(cost) >= 1;
+  const [shaking, setShaking] = useState(false);
+  const showCost = cost != null && Number(cost) !== 0;
   const lines = descriptionLines.filter((l) => String(l || "").trim());
   const attrDesc = attributeDescriptionLines.filter((l) =>
     String(l || "").trim()
@@ -82,6 +87,7 @@ export default function SelectableOption({
   const exclusive = mutuallyExclusive.filter((l) => String(l || "").trim());
   const attrs = modifierLines.filter((l) => l.kind === "attribute");
   const xp = modifierLines.filter((l) => l.kind === "experience");
+  const showConflict = exclusiveConflict && !selected;
 
   const hasExpand =
     lines.length > 0 ||
@@ -92,28 +98,58 @@ export default function SelectableOption({
     xp.length > 0 ||
     (showCostInBody && showCost);
 
+  useEffect(() => {
+    if (!shaking) return;
+    const t = window.setTimeout(() => setShaking(false), 380);
+    return () => window.clearTimeout(t);
+  }, [shaking]);
+
+  function handleClick() {
+    if (disabled && !selected) return;
+    if (showConflict) {
+      setShaking(true);
+      return;
+    }
+    onSelect();
+  }
+
+  const borderClass = selected
+    ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)]"
+    : showConflict || shaking
+      ? "border-[#e8a0a0] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)]"
+      : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]";
+
   return (
     <button
       type="button"
       disabled={disabled && !selected}
-      onClick={onSelect}
+      onClick={handleClick}
       aria-pressed={selected}
-      className={`w-full rounded-sm border px-3 py-3 text-left transition-[border-color,background-color,opacity] duration-200 ${
-        selected
-          ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_15%,transparent)]"
-          : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] hover:border-[color-mix(in_srgb,var(--tfmc-cream)_40%,transparent)]"
-      } ${disabled && !selected ? "opacity-40" : ""}`}
+      aria-disabled={showConflict || (disabled && !selected)}
+      className={`w-full rounded-sm border px-3 py-3 text-left transition-[border-color,background-color,opacity] duration-200 ${borderClass} ${
+        disabled && !selected && !showConflict ? "opacity-40" : ""
+      } ${shaking ? "char-option-shake" : ""}`}
     >
       <span className="flex items-baseline justify-between gap-3">
         <span className="font-medium text-[var(--tfmc-cream)]">{title}</span>
         {showCost ? (
-          <span className="shrink-0 text-xs text-[var(--tfmc-stone)]">
-            {Number(cost)} pt{Number(cost) === 1 ? "" : "s"}
+          <span
+            className={`shrink-0 text-xs ${
+              Number(cost) < 0
+                ? "text-[var(--tfmc-accent)]"
+                : "text-[var(--tfmc-stone)]"
+            }`}
+          >
+            {Number(cost) > 0 ? "+" : ""}
+            {Number(cost)} pt{Math.abs(Number(cost)) === 1 ? "" : "s"}
           </span>
         ) : null}
       </span>
       {disabledReason && !selected ? (
         <p className="mt-1 text-xs text-[#e8a0a0]">{disabledReason}</p>
+      ) : null}
+      {showConflict && !disabledReason ? (
+        <p className="mt-1 text-xs text-[#e8a0a0]">Incompatible with selection</p>
       ) : null}
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${

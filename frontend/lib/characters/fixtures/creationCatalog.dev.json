@@ -227,7 +227,7 @@
       "order": 19,
       "key": "attributes",
       "points": 12,
-      "max_rank": 2
+      "max_rank": 4
     },
     {
       "id": "personality_selection_stage",
@@ -387,10 +387,12 @@
   ],
   "attribute_point_buy": {
     "pool": 12,
-    "max_rank": 2,
+    "max_rank": 4,
     "cost_for_rank": [
       1,
-      2
+      2,
+      4,
+      8
     ],
     "attributes": [
       "strength",
@@ -620,6 +622,24 @@
       "description": ["Visible old wounds. Intimidating, hard to forget."]
     },
     {
+      "id": "phys_strong",
+      "name": "Strong",
+      "key": "physical",
+      "cost": 1,
+      "description": ["This character has a strong physique."],
+      "mutually_exclusive": ["phys_weak"],
+      "attribute_modifiers": [{ "type": "strength", "amount": 2 }]
+    },
+    {
+      "id": "phys_weak",
+      "name": "Weak",
+      "key": "physical",
+      "cost": -1,
+      "description": ["This character lacks physical prowess."],
+      "mutually_exclusive": ["phys_strong"],
+      "attribute_modifiers": [{ "type": "strength", "amount": -2 }]
+    },
+    {
       "id": "phys_tall",
       "name": "Tall",
       "key": "physical",
@@ -775,17 +795,21 @@
     "age": {
       "minimum": 16
     },
+    "calendar": {
+      "year_offset": 1647,
+      "era_suffix": "AE"
+    },
     "description": {
       "min_length": 32,
       "max_length": 256
     },
     "clues": {
-      "default_required": 1,
+      "default_required": 2,
       "evil_required": 4,
       "evil_min_account_age_hours": 24,
-      "min_length": 3,
-      "max_length": 100,
-      "max_clues": 5
+      "min_length": 12,
+      "max_length": 48,
+      "max_clues": 10
     }
   },
   "slot_limits": {

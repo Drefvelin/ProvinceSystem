@@ -200,6 +200,7 @@ export type CatalogTrait = {
 export type CatalogValidation = {
   name?: { min_length?: number; max_length?: number };
   age?: { minimum?: number };
+  calendar?: { year_offset?: number; era_suffix?: string };
   description?: { min_length?: number; max_length?: number };
   clues?: {
     default_required?: number;
@@ -291,6 +292,8 @@ export type CreateCharacterBody = {
   client_request_id?: string;
   name: string;
   age: number;
+  /** Fantasy ISO birthday (YYYY-MM-DD); salted from client_request_id + age. */
+  birthday?: string;
   /** Real-life 18+ attestation from creation_age_set_stage. */
   eighteen?: boolean;
   description: string;
