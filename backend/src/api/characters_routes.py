@@ -27,6 +27,7 @@ from src.characters.lore_items import (
     list_lore_items,
     list_pending_for_plugin,
     mark_lore_items_applied,
+    resolve_pickable_texture,
 )
 from src.characters.roster import RosterError, replace_roster
 from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
@@ -155,6 +156,29 @@ def get_lore_items(
         raise _lore_http(e) from e
 
 
+@characters_router.get("/lore-items/skins/{submission_id}/texture")
+def get_lore_item_skin_texture(
+    submission_id: str,
+    base_set: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """PNG preview for a pickable skin (own applied or staff i_tools)."""
+    from fastapi.responses import FileResponse
+
+    session = _character_session_from_auth(authorization)
+    try:
+        path = resolve_pickable_texture(
+            session["player_uuid"], submission_id, base_set
+        )
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+    return FileResponse(
+        path,
+        media_type="image/png",
+        filename=f"{submission_id}.png",
+    )
+
+
 @characters_router.post("/lore-items/{kit_key}/customise")
 async def post_lore_item_customise(
     kit_key: str,
@@ -172,6 +196,9 @@ async def post_lore_item_customise(
     existing_skin_id = None
     existing_provided = False
     texture_bytes: bytes | None = None
+    model_bytes: bytes | None = None
+    use_3d = False
+    name_colours: list[str] | None = None
 
     if "multipart/form-data" in content_type:
         form = await request.form()
@@ -199,6 +226,25 @@ async def post_lore_item_customise(
         texture = form.get("texture")
         if texture is not None and hasattr(texture, "read"):
             texture_bytes = await texture.read()
+        model = form.get("model")
+        if model is not None and hasattr(model, "read"):
+            model_bytes = await model.read()
+        use_3d = str(form.get("use_3d") or "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        colours_raw = form.get("name_colours")
+        if colours_raw is not None and str(colours_raw).strip() != "":
+            try:
+                parsed_c = json.loads(str(colours_raw))
+                if not isinstance(parsed_c, list):
+                    raise ValueError("not a list")
+                name_colours = [str(x) for x in parsed_c]
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, detail="name_colours must be a JSON array"
+                ) from e
     else:
         try:
             body = await request.json()
@@ -217,27 +263,34 @@ async def post_lore_item_customise(
         if "existing_skin_id" in body:
             existing_provided = True
             existing_skin_id = body.get("existing_skin_id")
+        use_3d = bool(body.get("use_3d"))
+        colours_body = body.get("name_colours")
+        if isinstance(colours_body, list):
+            name_colours = [str(x) for x in colours_body]
 
     try:
+        kwargs = dict(
+            display_name=display_name,
+            lore=lore,
+            texture_bytes=texture_bytes,
+            model_bytes=model_bytes,
+            use_3d=use_3d,
+            name_colours=name_colours,
+            kit_id=kit_id,
+        )
         if existing_provided:
             return customise_lore_item(
                 session,
                 character_id,
                 kit_key,
-                display_name=display_name,
-                lore=lore,
                 existing_skin_id=existing_skin_id,
-                texture_bytes=texture_bytes,
-                kit_id=kit_id,
+                **kwargs,
             )
         return customise_lore_item(
             session,
             character_id,
             kit_key,
-            display_name=display_name,
-            lore=lore,
-            texture_bytes=texture_bytes,
-            kit_id=kit_id,
+            **kwargs,
         )
     except LoreItemError as e:
         raise _lore_http(e) from e

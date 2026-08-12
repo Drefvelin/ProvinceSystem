@@ -106,8 +106,9 @@ def assert_prose(
     max_len: int,
     field: str = "text",
     allow_newlines: bool = False,
+    allow_colour_codes: bool = False,
 ) -> str:
-    """Validate longer free text; reject controls, colour codes, and emoji."""
+    """Validate longer free text; reject controls, colour codes (unless allowed), and emoji."""
     s = normalize_user_text(value, collapse_ws=False)
     label = _label(field).capitalize()
     if not s:
@@ -122,7 +123,7 @@ def assert_prose(
     else:
         if _CONTROL_RE.search(s) or "\n" in s or "\r" in s:
             raise TextValidationError(f"{label} contains invalid control characters")
-    if _COLOUR_CODE_RE.search(s):
+    if not allow_colour_codes and _COLOUR_CODE_RE.search(s):
         raise TextValidationError(f"{label} cannot contain colour codes")
     if len(s) < min_len:
         raise TextValidationError(
@@ -134,16 +135,32 @@ def assert_prose(
             f"{label} must be at most {max_len} characters"
         )
     # Reject emoji / symbols outside letters, numbers, punctuation, separators.
-    for ch in s:
+    # When colour codes are allowed, skip characters that are part of §/&/# tokens.
+    i = 0
+    while i < len(s):
+        ch = s[i]
         if ch == "\n" and allow_newlines:
+            i += 1
             continue
+        if allow_colour_codes:
+            if ch in ("§", "&") and i + 1 < len(s):
+                i += 2
+                continue
+            if ch == "#" and i + 6 < len(s) and all(
+                c in "0123456789abcdefABCDEF" for c in s[i + 1 : i + 7]
+            ):
+                i += 7
+                continue
         cat = unicodedata.category(ch)
         if cat.startswith("L") or cat.startswith("N"):
+            i += 1
             continue
         if cat.startswith("P") or cat.startswith("Z"):
+            i += 1
             continue
         # Allow a few common marks combining with letters (accents as separate codepoints).
         if cat in ("Mn", "Mc"):
+            i += 1
             continue
         raise TextValidationError(
             f"{label} contains characters that are not allowed"

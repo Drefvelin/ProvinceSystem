@@ -289,6 +289,37 @@ Checkpoint:
 roster sheet fields → /character/[id] identity sheet → Kits with padded layout
 ```
 
+## Step 23 — Kit lore editor polish
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-23/00-index.md](./Planning/batches/step-23/00-index.md).
+
+**Code:** 23.01–23.04 done (pickable/preview/namespace + customise colours/lore/hash/3D + FE + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. ProvinceSystem API (pickable filter, texture GET, name_colours, lore normalize, texture_hash, item_3d bridge).
+2. RPCharacters jar with namespace-aware kit customise merge.
+3. FE lore item editor polish.
+
+### Locked
+
+- Pick: own applied + staff i_tools (same base_set); omit missing PNGs
+- Preview from website disk; staff `tfmc_armorshop` / player `tfmc_submissions`
+- Name colours; inline lore + §7 default; duplicate PNG guard; optional 3D
+
+### Operator checklist
+
+- [ ] Pick list shows own + staff i_tools knives with thumbs; no missing-file rows
+- [ ] Staff pick applies with armorshop namespace; player with submissions
+- [ ] Name colours + inline lore + gray default on claim
+- [ ] Duplicate PNG upload rejected; 3D optional upload works
+
+Checkpoint:
+
+```text
+pick thumbs → coloured name + inline lore → claim with correct IA namespace
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

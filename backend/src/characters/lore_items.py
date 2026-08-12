@@ -340,6 +340,29 @@ def _parse_lore_json(raw: str | None) -> list[str]:
     return [str(line) for line in data if line is not None]
 
 
+def _lore_line_has_leading_colour(line: str) -> bool:
+    s = (line or "").lstrip()
+    if not s:
+        return False
+    if s[0] in ("§", "&") and len(s) >= 2:
+        return True
+    if s[0] == "#" and len(s) >= 7 and all(
+        c in "0123456789abcdefABCDEF" for c in s[1:7]
+    ):
+        return True
+    return False
+
+
+def _normalize_lore_line(line: str) -> str:
+    """Prepend §7 when the line has no leading colour token."""
+    s = (line or "").strip()
+    if not s:
+        return s
+    if _lore_line_has_leading_colour(s):
+        return s
+    return "§7" + s
+
+
 def _validate_lore(lore: list[str] | None) -> list[str]:
     if lore is None:
         return []
@@ -350,17 +373,28 @@ def _validate_lore(lore: list[str] | None) -> list[str]:
     out: list[str] = []
     for i, line in enumerate(lore):
         try:
-            out.append(
-                assert_prose(
-                    line,
-                    min_len=1,
-                    max_len=LORE_LINE_MAX_LEN,
-                    field=f"lore[{i}]",
-                )
+            validated = assert_prose(
+                line,
+                min_len=1,
+                max_len=LORE_LINE_MAX_LEN,
+                field=f"lore[{i}]",
+                allow_colour_codes=True,
             )
         except TextValidationError as e:
             raise LoreItemError(str(e)) from e
+        out.append(_normalize_lore_line(validated))
     return out
+
+
+def _validate_name_colours(raw: list | None) -> list[str]:
+    from src.name_colours import NameColourError, validate_name_colours
+
+    if not raw:
+        return []
+    try:
+        return validate_name_colours(raw)
+    except NameColourError as e:
+        raise LoreItemError(str(e)) from e
 
 
 def _validate_display_name(raw: str | None) -> str:
@@ -467,7 +501,24 @@ def _load_row(
         "skin_slug": row["skin_slug"] if "skin_slug" in keys else None,
         "ready_at": row["ready_at"] if "ready_at" in keys else None,
         "applied_at": row["applied_at"] if "applied_at" in keys else None,
+        "name_colours": _parse_name_colours(
+            row["name_colours"] if "name_colours" in keys else None
+        ),
     }
+
+
+def _parse_name_colours(raw: Any) -> list[str]:
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return [str(x) for x in raw if x is not None and str(x).strip()]
+    try:
+        data = json.loads(str(raw))
+    except (TypeError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(x) for x in data if x is not None and str(x).strip()]
 
 
 def _load_draft(
@@ -485,48 +536,110 @@ def _load_draft(
             "skin_slug": None,
             "ready_at": None,
             "applied_at": None,
+            "ia_namespace": None,
+            "name_colours": [],
         }
+    slug = row.get("skin_slug") or row.get("existing_skin_id") or row.get("submission_id")
+    row["ia_namespace"] = _namespace_for_skin_id(str(slug) if slug else None)
     return row
 
 
-def _list_pickable_skins(base_set: str) -> list[dict[str, Any]]:
+def _submission_texture_path(submission_id: str):
+    """Return Path to primary texture PNG if present on website disk."""
+    from src.skins.db import SKINS_DIR
+
+    sid = (submission_id or "").strip()
+    if not sid or "/" in sid or "\\" in sid or ".." in sid:
+        return None
+    path = SKINS_DIR / sid / f"{sid}.png"
+    if path.is_file():
+        return path
+    return None
+
+
+def _namespace_for_staff(staff: bool) -> str:
+    from src.skins.catalog import IA_NAMESPACE_ARMOURSHOP
+
+    return IA_NAMESPACE_ARMOURSHOP if staff else "tfmc_submissions"
+
+
+def _namespace_for_skin_id(skin_id: str | None) -> str | None:
+    from src.skins.db import connect
+
+    sid = (skin_id or "").strip()
+    if not sid:
+        return None
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT staff FROM submissions WHERE id = ?",
+            (sid,),
+        ).fetchone()
+    if row is None:
+        return "tfmc_submissions"
+    staff = bool(row["staff"]) if "staff" in row.keys() else False
+    return _namespace_for_staff(staff)
+
+
+def _list_pickable_skins(
+    player_uuid: str, base_set: str
+) -> list[dict[str, Any]]:
     from src.skins.db import connect
 
     base = (base_set or "").strip().lower()
-    if not base:
+    uuid = (player_uuid or "").strip()
+    if not base or not uuid:
         return []
     with connect() as conn:
         rows = conn.execute(
             """
-            SELECT id, display_name, kind
+            SELECT id, display_name, kind, staff, category, player_uuid
             FROM submissions
             WHERE LOWER(COALESCE(base_set, '')) = ?
               AND LOWER(status) = 'applied'
+              AND (
+                (COALESCE(staff, 0) = 0 AND LOWER(player_uuid) = LOWER(?))
+                OR (
+                  COALESCE(staff, 0) = 1
+                  AND LOWER(COALESCE(category, '')) = 'i_tools'
+                )
+              )
             ORDER BY display_name COLLATE NOCASE ASC, id ASC
             """,
-            (base,),
+            (base, uuid),
         ).fetchall()
-    return [
-        {
-            "id": row["id"],
-            "display_name": row["display_name"],
-            "kind": row["kind"],
-        }
-        for row in rows
-    ]
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        sid = str(row["id"] or "").strip()
+        if not sid or _submission_texture_path(sid) is None:
+            continue
+        staff = bool(row["staff"]) if "staff" in row.keys() else False
+        out.append(
+            {
+                "id": sid,
+                "display_name": row["display_name"],
+                "kind": row["kind"],
+                "ia_namespace": _namespace_for_staff(staff),
+                "staff": staff,
+            }
+        )
+    return out
 
 
-def _validate_existing_skin(skin_id: str, base_set: str) -> str:
+def _validate_existing_skin(
+    skin_id: str, base_set: str, player_uuid: str
+) -> tuple[str, str]:
+    """Return (skin_id, ia_namespace) if pickable for this player."""
     from src.skins.db import connect
 
     sid = (skin_id or "").strip()
     if not sid:
         raise LoreItemError("existing_skin_id is required when provided")
     base = (base_set or "").strip().lower()
+    uuid = (player_uuid or "").strip()
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT id, base_set, status
+            SELECT id, base_set, status, staff, category, player_uuid
             FROM submissions
             WHERE id = ?
             """,
@@ -545,14 +658,76 @@ def _validate_existing_skin(skin_id: str, base_set: str) -> str:
             f"existing_skin_id base_set must be '{base}'",
             status_code=400,
         )
-    return sid
+    staff = bool(row["staff"]) if "staff" in row.keys() else False
+    cat = str(row["category"] or "").strip().lower()
+    owner = str(row["player_uuid"] or "").strip()
+    if staff:
+        if cat != "i_tools":
+            raise LoreItemError(
+                "staff existing_skin_id must be category i_tools",
+                status_code=400,
+            )
+    else:
+        if owner.lower() != uuid.lower():
+            raise LoreItemError(
+                "existing_skin_id must belong to this player",
+                status_code=400,
+            )
+    if _submission_texture_path(sid) is None:
+        raise LoreItemError(
+            "existing_skin_id texture file is missing",
+            status_code=400,
+        )
+    return sid, _namespace_for_staff(staff)
 
 
-def _ia_path(skin_slug: str | None) -> str | None:
+def _ia_path(skin_slug: str | None, ia_namespace: str | None = None) -> str | None:
     slug = (skin_slug or "").strip()
     if not slug:
         return None
-    return f"ia.tfmc_submissions:{slug}"
+    ns = (ia_namespace or "").strip() or "tfmc_submissions"
+    return f"ia.{ns}:{slug}"
+
+
+def resolve_pickable_texture(
+    player_uuid: str, submission_id: str, base_set: str | None = None
+):
+    """ACL + path for character-session texture preview. Raises LoreItemError."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    sid = (submission_id or "").strip()
+    if not uuid or not sid:
+        raise LoreItemError("not found", status_code=404)
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id, base_set, status, staff, category, player_uuid
+            FROM submissions
+            WHERE id = ?
+            """,
+            (sid,),
+        ).fetchone()
+    if row is None:
+        raise LoreItemError("not found", status_code=404)
+    if str(row["status"] or "").strip().lower() != "applied":
+        raise LoreItemError("not found", status_code=404)
+    staff = bool(row["staff"]) if "staff" in row.keys() else False
+    cat = str(row["category"] or "").strip().lower()
+    owner = str(row["player_uuid"] or "").strip()
+    if staff:
+        if cat != "i_tools":
+            raise LoreItemError("not found", status_code=404)
+    elif owner.lower() != uuid.lower():
+        raise LoreItemError("not found", status_code=404)
+    if base_set:
+        row_base = str(row["base_set"] or "").strip().lower()
+        if row_base != base_set.strip().lower():
+            raise LoreItemError("not found", status_code=404)
+    path = _submission_texture_path(sid)
+    if path is None:
+        raise LoreItemError("not found", status_code=404)
+    return path
 
 
 def _build_item(
@@ -578,7 +753,7 @@ def _build_item(
         "draft": draft,
         "state": draft.get("state") or STATE_DRAFT,
         "skin_slug": draft.get("skin_slug"),
-        "pickable_skins": _list_pickable_skins(base_set),
+        "pickable_skins": _list_pickable_skins(player_uuid, base_set),
     }
 
 
@@ -743,6 +918,9 @@ def customise_lore_item(
     lore: list[str] | None,
     existing_skin_id: Any = _UNSET,
     texture_bytes: bytes | None = None,
+    model_bytes: bytes | None = None,
+    use_3d: bool = False,
+    name_colours: list[str] | None = None,
     kit_id: str | None = None,
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
@@ -781,6 +959,8 @@ def customise_lore_item(
 
     name = _validate_display_name(display_name)
     lore_lines = _validate_lore(lore)
+    colours = _validate_name_colours(name_colours)
+    colours_json = json.dumps(colours, separators=(",", ":")) if colours else None
 
     prev = _load_draft(player_uuid, cid, kit_key_norm)
     next_existing = prev.get("existing_skin_id")
@@ -794,14 +974,23 @@ def customise_lore_item(
     if texture_bytes is not None:
         if not texture_bytes:
             raise LoreItemError("texture file is empty")
+        want_3d = bool(use_3d) or bool(model_bytes)
+        if want_3d and not model_bytes:
+            raise LoreItemError("3D upload requires a model JSON file")
+        files: dict[str, bytes] = {"texture": texture_bytes}
+        kind = "handheld"
+        if want_3d:
+            kind = "item_3d"
+            files["model"] = model_bytes  # type: ignore[assignment]
         try:
             created = create_submission(
                 session_row,
-                kind="handheld",
+                kind=kind,
                 display_name=name,
-                files_bytes={"texture": texture_bytes},
+                files_bytes=files,
                 base_set=base_set or None,
                 add_name=True,
+                name_colours=colours or None,
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e
@@ -813,11 +1002,16 @@ def customise_lore_item(
     elif existing_skin_id is not _UNSET and existing_skin_id is not None:
         sid = str(existing_skin_id).strip()
         if sid:
-            next_existing = _validate_existing_skin(sid, base_set)
+            next_existing, _ns = _validate_existing_skin(
+                sid, base_set, str(session_row.get("player_uuid") or "")
+            )
             next_submission = None
             next_slug = next_existing
             next_state = STATE_READY
             next_ready_at = now
+        else:
+            next_existing = None
+            next_slug = None
     else:
         if next_submission and (prev.get("state") or "") == STATE_PENDING_SKIN:
             next_state = STATE_PENDING_SKIN
@@ -835,42 +1029,83 @@ def customise_lore_item(
             ).fetchall()
         }
         if "kit_id" in cols:
-            conn.execute(
-                """
-                INSERT INTO lore_item_customisations (
-                    player_uuid, character_id, kit_key,
-                    display_name, lore_json,
-                    existing_skin_id, submission_id,
-                    state, skin_slug, ready_at, applied_at, kit_id, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
-                    display_name = excluded.display_name,
-                    lore_json = excluded.lore_json,
-                    existing_skin_id = excluded.existing_skin_id,
-                    submission_id = excluded.submission_id,
-                    state = excluded.state,
-                    skin_slug = excluded.skin_slug,
-                    ready_at = excluded.ready_at,
-                    applied_at = excluded.applied_at,
-                    kit_id = excluded.kit_id,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    player_uuid,
-                    cid,
-                    kit_key_norm,
-                    name,
-                    lore_json,
-                    next_existing,
-                    next_submission,
-                    next_state,
-                    next_slug,
-                    next_ready_at,
-                    next_applied_at,
-                    kit,
-                    now,
-                ),
-            )
+            if "name_colours" in cols:
+                conn.execute(
+                    """
+                    INSERT INTO lore_item_customisations (
+                        player_uuid, character_id, kit_key,
+                        display_name, lore_json,
+                        existing_skin_id, submission_id,
+                        state, skin_slug, ready_at, applied_at, kit_id,
+                        name_colours, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
+                        display_name = excluded.display_name,
+                        lore_json = excluded.lore_json,
+                        existing_skin_id = excluded.existing_skin_id,
+                        submission_id = excluded.submission_id,
+                        state = excluded.state,
+                        skin_slug = excluded.skin_slug,
+                        ready_at = excluded.ready_at,
+                        applied_at = excluded.applied_at,
+                        kit_id = excluded.kit_id,
+                        name_colours = excluded.name_colours,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        player_uuid,
+                        cid,
+                        kit_key_norm,
+                        name,
+                        lore_json,
+                        next_existing,
+                        next_submission,
+                        next_state,
+                        next_slug,
+                        next_ready_at,
+                        next_applied_at,
+                        kit,
+                        colours_json,
+                        now,
+                    ),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO lore_item_customisations (
+                        player_uuid, character_id, kit_key,
+                        display_name, lore_json,
+                        existing_skin_id, submission_id,
+                        state, skin_slug, ready_at, applied_at, kit_id, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
+                        display_name = excluded.display_name,
+                        lore_json = excluded.lore_json,
+                        existing_skin_id = excluded.existing_skin_id,
+                        submission_id = excluded.submission_id,
+                        state = excluded.state,
+                        skin_slug = excluded.skin_slug,
+                        ready_at = excluded.ready_at,
+                        applied_at = excluded.applied_at,
+                        kit_id = excluded.kit_id,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        player_uuid,
+                        cid,
+                        kit_key_norm,
+                        name,
+                        lore_json,
+                        next_existing,
+                        next_submission,
+                        next_state,
+                        next_slug,
+                        next_ready_at,
+                        next_applied_at,
+                        kit,
+                        now,
+                    ),
+                )
         else:
             conn.execute(
                 """
@@ -997,8 +1232,7 @@ def list_pending_for_plugin() -> list[dict[str, Any]]:
     with connect() as conn:
         rows = conn.execute(
             """
-            SELECT player_uuid, character_id, kit_key, display_name, lore_json,
-                   skin_slug, ready_at, updated_at
+            SELECT *
             FROM lore_item_customisations
             WHERE LOWER(COALESCE(state, '')) = ?
             ORDER BY ready_at ASC, updated_at ASC
@@ -1009,20 +1243,27 @@ def list_pending_for_plugin() -> list[dict[str, Any]]:
     for row in rows:
         kit_key = str(row["kit_key"] or "").strip()
         slug = row["skin_slug"]
-        out.append(
-            {
-                "player_uuid": row["player_uuid"],
-                "character_id": row["character_id"],
-                "kit_key": kit_key,
-                "path": _path_for_kit_key(kit_key),
-                "display_name": str(row["display_name"] or ""),
-                "lore": _parse_lore_json(row["lore_json"]),
-                "skin_slug": slug,
-                "ia_path": _ia_path(slug),
-                "ready_at": row["ready_at"],
-                "updated_at": row["updated_at"],
-            }
+        ns = _namespace_for_skin_id(str(slug) if slug else None)
+        keys = _row_keys(row)
+        colours = _parse_name_colours(
+            row["name_colours"] if "name_colours" in keys else None
         )
+        entry: dict[str, Any] = {
+            "player_uuid": row["player_uuid"],
+            "character_id": row["character_id"],
+            "kit_key": kit_key,
+            "path": _path_for_kit_key(kit_key),
+            "display_name": str(row["display_name"] or ""),
+            "lore": _parse_lore_json(row["lore_json"]),
+            "skin_slug": slug,
+            "ia_namespace": ns or "tfmc_submissions",
+            "ia_path": _ia_path(slug, ns),
+            "ready_at": row["ready_at"],
+            "updated_at": row["updated_at"],
+        }
+        if colours:
+            entry["name_colours"] = colours
+        out.append(entry)
     return out
 
 

@@ -354,6 +354,60 @@ def _reject_duplicate_textures(files_bytes: dict[str, bytes]) -> None:
         seen[dig] = field
 
 
+def texture_sha256(files_bytes: dict[str, bytes]) -> str | None:
+    data = files_bytes.get("texture")
+    if not data:
+        return None
+    return hashlib.sha256(data).hexdigest()
+
+
+def find_duplicate_texture(
+    player_uuid: str,
+    base_set: str | None,
+    digest: str,
+) -> str | None:
+    """Return existing submission id if this player already uploaded the PNG."""
+    uuid = (player_uuid or "").strip()
+    dig = (digest or "").strip().lower()
+    base = (base_set or "").strip().lower()
+    if not uuid or not dig:
+        return None
+    with connect() as conn:
+        cols = {
+            r[1] for r in conn.execute("PRAGMA table_info(submissions)").fetchall()
+        }
+        if "texture_hash" not in cols:
+            return None
+        if base:
+            row = conn.execute(
+                """
+                SELECT id FROM submissions
+                WHERE LOWER(player_uuid) = LOWER(?)
+                  AND LOWER(COALESCE(texture_hash, '')) = ?
+                  AND LOWER(COALESCE(base_set, '')) = ?
+                  AND status IN (?, ?, ?)
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (uuid, dig, base, *ACTIVE_STATUSES),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """
+                SELECT id FROM submissions
+                WHERE LOWER(player_uuid) = LOWER(?)
+                  AND LOWER(COALESCE(texture_hash, '')) = ?
+                  AND status IN (?, ?, ?)
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (uuid, dig, *ACTIVE_STATUSES),
+            ).fetchone()
+    if row is None:
+        return None
+    return str(row["id"] or "") or None
+
+
 def slug_taken(slug: str) -> bool:
     with connect() as conn:
         row = conn.execute(
@@ -690,6 +744,14 @@ def create_submission(
     tiers_json = json.dumps(tier_list) if tier_list else None
     aliases_json = json.dumps(aliases) if aliases else None
     h3d_json = json.dumps(h3d_list) if h3d_list else None
+    tex_hash = texture_sha256(files_bytes)
+    if not is_staff and tex_hash:
+        dup_id = find_duplicate_texture(player_uuid, base, tex_hash)
+        if dup_id:
+            raise SubmissionError(
+                f"This texture already exists as skin '{dup_id}'. "
+                "Pick the existing skin instead of uploading again."
+            )
     dir_path = f"skins/{submission_id}"
     created_at = _iso_now()
     code_id = session_row["code_id"]
@@ -699,46 +761,93 @@ def create_submission(
 
     with connect() as conn:
         try:
-            conn.execute(
-                """
-                INSERT INTO submissions (
-                    id, player_uuid, code_id, kind, slug, display_name,
-                    grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
-                    add_name, name_colours, name_styles,
-                    status, deny_reason, dir_path,
-                    created_at, reviewed_at, applied_at, discord_message_id,
-                    discord_user_id, staff, category, scroll, tier_scrolls
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
-                    ?, NULL, NULL, ?, ?, ?, ?, ?
+            cols = {
+                r[1] for r in conn.execute("PRAGMA table_info(submissions)").fetchall()
+            }
+            if "texture_hash" in cols:
+                conn.execute(
+                    """
+                    INSERT INTO submissions (
+                        id, player_uuid, code_id, kind, slug, display_name,
+                        grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
+                        add_name, name_colours, name_styles,
+                        status, deny_reason, dir_path,
+                        created_at, reviewed_at, applied_at, discord_message_id,
+                        discord_user_id, staff, category, scroll, tier_scrolls,
+                        texture_hash
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
+                        ?, NULL, NULL, ?, ?, ?, ?, ?, ?
+                    )
+                    """,
+                    (
+                        submission_id,
+                        player_uuid,
+                        code_id,
+                        kind,
+                        slug,
+                        display,
+                        grip,
+                        base,
+                        tiers_json,
+                        h3d_json,
+                        aliases_json,
+                        1 if want_add_name else 0,
+                        colours_json,
+                        styles_json,
+                        status,
+                        dir_path,
+                        created_at,
+                        reviewed_at,
+                        discord_id,
+                        1 if is_staff else 0,
+                        staff_category,
+                        staff_scroll,
+                        staff_tier_scrolls_json,
+                        tex_hash,
+                    ),
                 )
-                """,
-                (
-                    submission_id,
-                    player_uuid,
-                    code_id,
-                    kind,
-                    slug,
-                    display,
-                    grip,
-                    base,
-                    tiers_json,
-                    h3d_json,
-                    aliases_json,
-                    1 if want_add_name else 0,
-                    colours_json,
-                    styles_json,
-                    status,
-                    dir_path,
-                    created_at,
-                    reviewed_at,
-                    discord_id,
-                    1 if is_staff else 0,
-                    staff_category,
-                    staff_scroll,
-                    staff_tier_scrolls_json,
-                ),
-            )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO submissions (
+                        id, player_uuid, code_id, kind, slug, display_name,
+                        grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
+                        add_name, name_colours, name_styles,
+                        status, deny_reason, dir_path,
+                        created_at, reviewed_at, applied_at, discord_message_id,
+                        discord_user_id, staff, category, scroll, tier_scrolls
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
+                        ?, NULL, NULL, ?, ?, ?, ?, ?
+                    )
+                    """,
+                    (
+                        submission_id,
+                        player_uuid,
+                        code_id,
+                        kind,
+                        slug,
+                        display,
+                        grip,
+                        base,
+                        tiers_json,
+                        h3d_json,
+                        aliases_json,
+                        1 if want_add_name else 0,
+                        colours_json,
+                        styles_json,
+                        status,
+                        dir_path,
+                        created_at,
+                        reviewed_at,
+                        discord_id,
+                        1 if is_staff else 0,
+                        staff_category,
+                        staff_scroll,
+                        staff_tier_scrolls_json,
+                    ),
+                )
             conn.commit()
         except sqlite3.IntegrityError as e:
             if is_staff:

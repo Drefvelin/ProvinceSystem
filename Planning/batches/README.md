@@ -56,8 +56,9 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-20/00-index](./step-20/00-index.md) | 20 | Starter kits in RPCharacters (Phase 2) | **20.01–20.03 done**; claim cutover [21.06](./step-21/06-kit-claim-command.md) |
 | [step-21/00-index](./step-21/00-index.md) | 21 | Kits + lore customise (Phase 3) | **done** (21.01–04 + 06–09 + 05; 07 superseded) |
 | [step-22/00-index](./step-22/00-index.md) | 22 | Web character sheet (read-only parity) | **done** |
+| [step-23/00-index](./step-23/00-index.md) | 23 | Kit lore editor polish | **done** |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish.
 
 **Later:** Phase 4 character skins; SimpleFactions via TFMCWeb; migrate legacy `tfmc_armor` if desired.
 

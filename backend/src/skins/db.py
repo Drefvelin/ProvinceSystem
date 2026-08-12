@@ -96,6 +96,16 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE submissions ADD COLUMN helmet_3d_tiers TEXT"
             )
+        if "texture_hash" not in _column_names(conn, "submissions"):
+            conn.execute(
+                "ALTER TABLE submissions ADD COLUMN texture_hash TEXT"
+            )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_submissions_texture_hash
+            ON submissions(player_uuid, texture_hash)
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS player_warnings (
@@ -357,6 +367,11 @@ def migrate() -> None:
         if "kit_id" not in lore_cols:
             conn.execute(
                 "ALTER TABLE lore_item_customisations ADD COLUMN kit_id TEXT"
+            )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "name_colours" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN name_colours TEXT"
             )
         # Discard player_keys system
         if "player_keys" in _tables(conn):

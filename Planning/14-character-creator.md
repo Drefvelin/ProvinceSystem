@@ -1,10 +1,10 @@
 # 14 — Character creator (web + RPCharacters)
 
-**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Phase 4 wardrobe deferred.  
+**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Kit lore editor polish **implemented** ([step-23](./batches/step-23/00-index.md)). Phase 4 wardrobe deferred.  
 **Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend` · (Phase 3) `Workspace/armourshop/`  
 **Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 
-Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet).
+Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet) · [step-23](./batches/step-23/00-index.md) (kit editor polish).
 
 ---
 

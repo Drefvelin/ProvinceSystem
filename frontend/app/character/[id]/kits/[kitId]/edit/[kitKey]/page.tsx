@@ -129,6 +129,9 @@ export default function CharacterKitEditPage() {
     lore: string[];
     existingSkinId?: string | null;
     textureFile?: File | null;
+    modelFile?: File | null;
+    use3d?: boolean;
+    nameColours?: string[];
   }) {
     if (!session || !item) return;
     setSubmitting(true);
@@ -209,6 +212,8 @@ export default function CharacterKitEditPage() {
           <LoreItemEditor
             key={editorKey}
             item={item}
+            sessionToken={session?.session_token || UI_DEV_SESSION_TOKEN}
+            nameColourStops={uiDev ? 4 : 4}
             submitting={submitting}
             onSubmit={onSubmit}
           />

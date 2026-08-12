@@ -51,7 +51,7 @@ async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   }
 }
 
-function authHeaders(token: string): HeadersInit {
+export function authHeaders(token: string): HeadersInit {
   return {
     Authorization: `Bearer ${token}`,
     Accept: "application/json",
@@ -442,12 +442,18 @@ export type LoreItemDraft = {
   existing_skin_id: string | null;
   submission_id: string | null;
   submission_status: string | null;
+  state?: string;
+  skin_slug?: string | null;
+  name_colours?: string[] | null;
+  ia_namespace?: string | null;
 };
 
 export type LoreItemPickableSkin = {
   id: string;
   display_name: string;
   kind: string;
+  ia_namespace?: string;
+  staff?: boolean;
 };
 
 export type LoreItemRow = {
@@ -523,9 +529,23 @@ export type CustomiseLoreItemInput = {
   existingSkinId?: string | null;
   /** When set, sends multipart; do not also set existingSkinId. */
   textureFile?: File | null;
+  modelFile?: File | null;
+  use3d?: boolean;
+  nameColours?: string[];
 };
 
 export type CustomiseLoreItemResult = LoreItemRow & { ok: boolean };
+
+export function loreItemSkinTextureUrl(
+  submissionId: string,
+  baseSet?: string
+): string {
+  const id = encodeURIComponent(submissionId.trim());
+  const qs = baseSet
+    ? `?base_set=${encodeURIComponent(baseSet.trim())}`
+    : "";
+  return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs}`;
+}
 
 export async function listLoreItems(
   sessionToken: string,
@@ -563,14 +583,28 @@ export async function customiseLoreItem(
   const key = encodeURIComponent(kitKey.trim());
   const kid = encodeURIComponent(kitId.trim() || "starter");
   const url = `${getApiBase()}/characters/lore-items/${key}/customise?character_id=${cid}&kit_id=${kid}`;
-  const hasTexture = Boolean(input.textureFile);
+  const needsMultipart = Boolean(input.textureFile || input.modelFile);
 
   let res: Response;
-  if (hasTexture && input.textureFile) {
+  if (needsMultipart) {
     const form = new FormData();
     form.append("display_name", input.displayName);
     form.append("lore", JSON.stringify(input.lore));
-    form.append("texture", input.textureFile);
+    if (input.nameColours?.length) {
+      form.append("name_colours", JSON.stringify(input.nameColours));
+    }
+    if (input.use3d) {
+      form.append("use_3d", "true");
+    }
+    if (input.textureFile) {
+      form.append("texture", input.textureFile);
+    }
+    if (input.modelFile) {
+      form.append("model", input.modelFile);
+    }
+    if (input.existingSkinId) {
+      form.append("existing_skin_id", input.existingSkinId);
+    }
     res = await apiFetch(url, {
       method: "POST",
       headers: authHeaders(sessionToken),
@@ -583,6 +617,9 @@ export async function customiseLoreItem(
     };
     if (input.existingSkinId !== undefined) {
       body.existing_skin_id = input.existingSkinId;
+    }
+    if (input.nameColours?.length) {
+      body.name_colours = input.nameColours;
     }
     res = await apiFetch(url, {
       method: "POST",

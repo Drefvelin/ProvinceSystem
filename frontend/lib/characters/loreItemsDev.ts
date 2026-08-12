@@ -44,17 +44,27 @@ function buildFixtureItem(): LoreItemRow {
     base_preview: basePreview,
     preview: { ...basePreview, lore: [...basePreview.lore] },
     draft: {
-      display_name: "",
-      lore: [],
+      display_name: "Trail Knife",
+      lore: ["§7Forged for §cMira§7 in the border wars."],
       existing_skin_id: null,
       submission_id: null,
       submission_status: null,
+      name_colours: ["#55ff55"],
     },
     pickable_skins: [
       {
         id: "ui_dev_sample_knife",
         display_name: "Sample Trail Knife",
         kind: "handheld",
+        ia_namespace: "tfmc_submissions",
+        staff: false,
+      },
+      {
+        id: "smithing_knife_staff",
+        display_name: "Smithing Knife",
+        kind: "handheld",
+        ia_namespace: "tfmc_armorshop",
+        staff: true,
       },
     ],
   };
@@ -76,6 +86,9 @@ export function uiDevApplyCustomise(
     lore: string[];
     existingSkinId?: string | null;
     textureFile?: File | null;
+    modelFile?: File | null;
+    use3d?: boolean;
+    nameColours?: string[];
   }
 ): LoreItemRow & { ok: boolean } {
   const base = prev.base_preview;
@@ -110,6 +123,7 @@ export function uiDevApplyCustomise(
       existing_skin_id: existing,
       submission_id: submissionId,
       submission_status: submissionStatus,
+      name_colours: input.nameColours || [],
     },
   };
   uiDevCached = next;

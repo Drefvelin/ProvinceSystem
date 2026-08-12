@@ -31,12 +31,44 @@ function hasDisallowedDisplayChar(s: string): boolean {
   return false;
 }
 
-function hasDisallowedProseChar(s: string, allowNewlines: boolean): boolean {
-  for (const ch of s) {
-    if (allowNewlines && ch === "\n") continue;
-    if (/^\p{L}$/u.test(ch) || /^\p{N}$/u.test(ch)) continue;
-    if (/^\p{P}$/u.test(ch) || /^\p{Z}$/u.test(ch)) continue;
-    if (/^\p{M}$/u.test(ch)) continue;
+function hasDisallowedProseChar(
+  s: string,
+  allowNewlines: boolean,
+  allowColourCodes = false
+): boolean {
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i]!;
+    if (allowNewlines && ch === "\n") {
+      i += 1;
+      continue;
+    }
+    if (allowColourCodes) {
+      if ((ch === "§" || ch === "&") && i + 1 < s.length) {
+        i += 2;
+        continue;
+      }
+      if (
+        ch === "#" &&
+        i + 6 < s.length &&
+        /^[0-9A-Fa-f]{6}$/.test(s.slice(i + 1, i + 7))
+      ) {
+        i += 7;
+        continue;
+      }
+    }
+    if (/^\p{L}$/u.test(ch) || /^\p{N}$/u.test(ch)) {
+      i += 1;
+      continue;
+    }
+    if (/^\p{P}$/u.test(ch) || /^\p{Z}$/u.test(ch)) {
+      i += 1;
+      continue;
+    }
+    if (/^\p{M}$/u.test(ch)) {
+      i += 1;
+      continue;
+    }
     return true;
   }
   return false;
@@ -97,11 +129,13 @@ export function proseError(
     maxLen: number;
     field?: string;
     allowNewlines?: boolean;
+    allowColourCodes?: boolean;
   }
 ): string | null {
   let s = normalizeUserText(String(value ?? ""), false);
   const label = labelize(opts.field || "text");
   const allowNewlines = Boolean(opts.allowNewlines);
+  const allowColourCodes = Boolean(opts.allowColourCodes);
   if (!s) return `${label} is required`;
   if (!allowNewlines && (s.includes("\n") || s.includes("\r"))) {
     return `${label} cannot contain line breaks`;
@@ -114,7 +148,9 @@ export function proseError(
   } else if (CONTROL_RE.test(s) || s.includes("\n") || s.includes("\r")) {
     return `${label} contains invalid control characters`;
   }
-  if (COLOUR_CODE_RE.test(s)) return `${label} cannot contain colour codes`;
+  if (!allowColourCodes && COLOUR_CODE_RE.test(s)) {
+    return `${label} cannot contain colour codes`;
+  }
   if (s.length < opts.minLen) {
     return `${label} must be at least ${opts.minLen} character${
       opts.minLen === 1 ? "" : "s"
@@ -123,7 +159,7 @@ export function proseError(
   if (s.length > opts.maxLen) {
     return `${label} must be at most ${opts.maxLen} characters`;
   }
-  if (hasDisallowedProseChar(s, allowNewlines)) {
+  if (hasDisallowedProseChar(s, allowNewlines, allowColourCodes)) {
     return `${label} contains characters that are not allowed`;
   }
   return null;
