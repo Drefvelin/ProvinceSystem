@@ -33,12 +33,14 @@ export default function SkinMannequinPreview({
   onModelRef.current = onModelDetected;
 
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host || !source) {
+    const hostEl = hostRef.current;
+    const skinSource = source;
+    if (!hostEl || !skinSource) {
       setError(null);
-      if (host) host.replaceChildren();
+      if (hostEl) hostEl.replaceChildren();
       return;
     }
+    const mount: HTMLDivElement = hostEl;
 
     let cancelled = false;
     let renderer: THREE.WebGLRenderer | null = null;
@@ -50,13 +52,15 @@ export default function SkinMannequinPreview({
       setError(null);
       try {
         let file: File;
-        if (typeof source === "string") {
-          const res = await fetch(source);
+        if (typeof skinSource === "string") {
+          const res = await fetch(skinSource);
           if (!res.ok) throw new Error("Could not load skin texture");
           const blob = await res.blob();
           file = new File([blob], "skin.png", { type: "image/png" });
+        } else if (skinSource instanceof File) {
+          file = skinSource;
         } else {
-          file = source;
+          return;
         }
         if (cancelled) return;
 
@@ -78,15 +82,15 @@ export default function SkinMannequinPreview({
           return;
         }
 
-        const widthPx = host.clientWidth || 160;
-        const heightPx = host.clientHeight || 240;
+        const widthPx = mount.clientWidth || 160;
+        const heightPx = mount.clientHeight || 240;
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(widthPx, heightPx, false);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.setClearColor(0x000000, 0);
-        host.replaceChildren(renderer.domElement);
+        mount.replaceChildren(renderer.domElement);
         renderer.domElement.className = "h-full w-full touch-none";
         renderer.domElement.style.display = "block";
 
@@ -116,7 +120,7 @@ export default function SkinMannequinPreview({
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Preview failed");
-          host.replaceChildren();
+          mount.replaceChildren();
         }
       }
     }
@@ -135,7 +139,7 @@ export default function SkinMannequinPreview({
         steveRoot = null;
       }
       steveTexture?.dispose();
-      host.replaceChildren();
+      mount.replaceChildren();
     };
   }, [source]);
 
