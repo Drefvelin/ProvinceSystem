@@ -19,6 +19,7 @@ import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
 } from "../../../../lib/characters/uiDev";
+import { PERMISSION_GROUP_DISPLAY_NAMES } from "../../../../lib/characters/fixtures/permissionGroupDisplayNames.dev";
 import WardrobeEditor from "../../../components/character/WardrobeEditor";
 
 function uiDevSession(): CharacterSession {
@@ -27,6 +28,41 @@ function uiDevSession(): CharacterSession {
     player_uuid: "00000000-0000-4000-8000-ui0000000001",
     expires_at: new Date(Date.now() + 86400000).toISOString(),
     scope: "character",
+  };
+}
+
+/** UI-dev: unlocked swappable count from URL (always 3 frames shown). */
+function parseUiDevUnlocked(): number {
+  if (typeof window === "undefined") return 1;
+  const search = new URLSearchParams(window.location.search);
+  const raw =
+    search.get("wardrobeSlots") ??
+    search.get("skinslots") ??
+    search.get("skinSlots");
+  if (raw == null || raw === "") return 1;
+  return Math.max(1, Math.min(3, Number(raw) || 1));
+}
+
+/** Mock rank ladder for lock-label preview only (UI-dev). */
+function uiDevSlotLimits(): SlotLimits {
+  return {
+    defaults: { wardrobe_skin_slots: 1 },
+    groups: [
+      {
+        id: "gilded",
+        tier: 2,
+        visible: true,
+        wardrobe_skin_slots: 2,
+        display_name: PERMISSION_GROUP_DISPLAY_NAMES.gilded,
+      },
+      {
+        id: "ascended",
+        tier: 3,
+        visible: true,
+        wardrobe_skin_slots: 3,
+        display_name: PERMISSION_GROUP_DISPLAY_NAMES.ascended,
+      },
+    ],
   };
 }
 
@@ -39,30 +75,13 @@ export default function CharacterWardrobePage() {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [slotLimits, setSlotLimits] = useState<SlotLimits | undefined>();
+  const [uiDevUnlocked, setUiDevUnlocked] = useState(1);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const loadCatalog = useCallback(
     async (token: string) => {
       if (uiDev) {
-        setSlotLimits({
-          defaults: { wardrobe_skin_slots: 1 },
-          groups: [
-            {
-              id: "gilded",
-              tier: 2,
-              visible: true,
-              wardrobe_skin_slots: 2,
-              display_name: "Gilded",
-            },
-            {
-              id: "ascended",
-              tier: 3,
-              visible: true,
-              wardrobe_skin_slots: 3,
-              display_name: "Ascended",
-            },
-          ],
-        });
+        setSlotLimits(uiDevSlotLimits());
         return;
       }
       const catalog = await getCreationCatalog(token).catch(
@@ -79,6 +98,7 @@ export default function CharacterWardrobePage() {
       return;
     }
     if (uiDev) {
+      setUiDevUnlocked(parseUiDevUnlocked());
       const s = uiDevSession();
       setSession(s);
       void loadCatalog(s.session_token).finally(() => setReady(true));
@@ -136,6 +156,15 @@ export default function CharacterWardrobePage() {
             Optional skins for this character. Masked applies automatically when
             wearing a mask.
           </p>
+          {uiDev ? (
+            <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
+              UI-dev: 3 swappable frames ·{" "}
+              <span className="text-[var(--tfmc-cream)]">
+                {uiDevUnlocked} unlocked
+              </span>{" "}
+              (?wardrobeSlots=1|2|3)
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -143,7 +172,7 @@ export default function CharacterWardrobePage() {
           onClick={() => void onLogout()}
           className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:underline disabled:opacity-50"
         >
-          {loggingOut ? "…" : "Log out"}
+          {loggingOut ? "…" : uiDev ? "Exit" : "Log out"}
         </button>
       </div>
 
@@ -153,6 +182,7 @@ export default function CharacterWardrobePage() {
         sessionToken={session.session_token}
         slotLimits={slotLimits}
         uiDev={uiDev}
+        uiDevSwappableSlots={uiDev ? uiDevUnlocked : undefined}
       />
     </div>
   );

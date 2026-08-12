@@ -745,6 +745,9 @@ export type WardrobeSlot = {
   unlocked: boolean;
   filled: boolean;
   model?: string | null;
+  display_name?: string | null;
+  custom_name?: boolean;
+  apply_pending?: boolean;
   has_signature?: boolean;
   signed?: boolean;
   texture_url?: string | null;
@@ -758,6 +761,22 @@ export type WardrobeResponse = {
   uploaded_slot?: string;
   signed?: boolean;
 };
+
+export const WARDROBE_DEFAULT_LABELS: Record<string, string> = {
+  base: "Base",
+  extra_1: "Skin 2",
+  extra_2: "Skin 3",
+  masked: "Masked",
+};
+
+export function wardrobeSlotLabel(
+  slot: string,
+  displayName?: string | null
+): string {
+  const custom = String(displayName || "").trim();
+  if (custom) return custom;
+  return WARDROBE_DEFAULT_LABELS[slot] || slot;
+}
 
 export async function getWardrobe(
   sessionToken: string,
@@ -787,12 +806,16 @@ export async function uploadWardrobeSlot(
   sessionToken: string,
   characterId: string,
   slot: string,
-  file: File
+  file: File,
+  displayName?: string | null
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
   const form = new FormData();
   form.append("texture", file, file.name || "skin.png");
+  if (displayName !== undefined) {
+    form.append("display_name", displayName == null ? "" : String(displayName));
+  }
   const res = await apiFetch(
     `${getApiBase()}/characters/${id}/wardrobe/${s}`,
     {
@@ -805,6 +828,35 @@ export async function uploadWardrobeSlot(
   if (!res.ok) {
     throw new CharactersApiError(
       detailMessage(data, `Upload failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as WardrobeResponse;
+}
+
+export async function renameWardrobeSlot(
+  sessionToken: string,
+  characterId: string,
+  slot: string,
+  displayName: string | null
+): Promise<WardrobeResponse> {
+  const id = encodeURIComponent(characterId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/${id}/wardrobe/${s}/name`,
+    {
+      method: "PATCH",
+      headers: {
+        ...authHeaders(sessionToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ display_name: displayName }),
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Rename failed (${res.status})`),
       res.status
     );
   }
@@ -866,12 +918,16 @@ export async function uploadPendingCreateWardrobe(
   sessionToken: string,
   createId: string,
   slot: string,
-  file: File
+  file: File,
+  displayName?: string | null
 ): Promise<{ ok: boolean; create_id: string; slot: string; signed?: boolean }> {
   const cid = encodeURIComponent(createId.trim());
   const s = encodeURIComponent(slot.trim());
   const form = new FormData();
   form.append("texture", file, file.name || "skin.png");
+  if (displayName !== undefined) {
+    form.append("display_name", displayName == null ? "" : String(displayName));
+  }
   const res = await apiFetch(
     `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
     {

@@ -95,13 +95,13 @@ export default function SkinMannequinPreview({
         renderer.domElement.style.display = "block";
 
         const camera = new THREE.PerspectiveCamera(
-          32,
+          34,
           widthPx / Math.max(heightPx, 1),
           0.1,
           500
         );
-        const focus = new THREE.Vector3(0, 14, 0);
-        camera.position.set(focus.x + 8, focus.y + 6, focus.z + 38);
+        const focus = new THREE.Vector3(0, 12, 0);
+        camera.position.set(focus.x + 6, focus.y + 4, focus.z + 54);
         camera.lookAt(focus);
 
         const scene = new THREE.Scene();

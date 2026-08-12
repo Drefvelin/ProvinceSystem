@@ -6,8 +6,11 @@ import {
   clearWardrobeSlot,
   fetchWardrobeTextureBlob,
   getWardrobe,
+  renameWardrobeSlot,
   setWardrobeActive,
   uploadWardrobeSlot,
+  wardrobeSlotLabel,
+  WARDROBE_DEFAULT_LABELS,
   type SlotLimits,
   type WardrobeResponse,
   type WardrobeSlot,
@@ -18,15 +21,12 @@ import WardrobeSlotModal from "./WardrobeSlotModal";
 
 const SLOT_ORDER = ["base", "extra_1", "extra_2", "masked"] as const;
 
-const SLOT_LABELS: Record<string, string> = {
-  base: "Base",
-  extra_1: "Skin 2",
-  extra_2: "Skin 3",
-  masked: "Masked",
-};
-
 export type WardrobeDraftFiles = Partial<
   Record<(typeof SLOT_ORDER)[number], File | null>
+>;
+
+export type WardrobeDraftNames = Partial<
+  Record<(typeof SLOT_ORDER)[number], string>
 >;
 
 type LiveProps = {
@@ -36,6 +36,8 @@ type LiveProps = {
   slotLimits?: SlotLimits;
   /** When true, skip API and show empty slots. */
   uiDev?: boolean;
+  /** UI-dev: how many swappable slots are unlocked (1–3). Always shows 3 frames. */
+  uiDevSwappableSlots?: number;
 };
 
 type DraftProps = {
@@ -44,7 +46,9 @@ type DraftProps = {
   /** Player swappable slot count (1–3). */
   swappableSlots?: number;
   draftFiles: WardrobeDraftFiles;
+  draftNames: WardrobeDraftNames;
   onDraftFilesChange: (next: WardrobeDraftFiles) => void;
+  onDraftNamesChange: (next: WardrobeDraftNames) => void;
 };
 
 export type WardrobeEditorProps = LiveProps | DraftProps;
@@ -61,7 +65,16 @@ function emptySlots(swappable: number): WardrobeSlot[] {
     slot,
     unlocked: slotUnlocked(slot, swappable),
     filled: false,
+    display_name: WARDROBE_DEFAULT_LABELS[slot],
+    apply_pending: false,
   }));
+}
+
+function hasPendingSlots(data: WardrobeResponse | null): boolean {
+  if (!data) return false;
+  return data.slots.some(
+    (s) => s.filled && s.unlocked && Boolean(s.apply_pending)
+  );
 }
 
 export default function WardrobeEditor(props: WardrobeEditorProps) {
@@ -119,6 +132,10 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
   useEffect(() => {
     if (isDraft) return;
     const { characterId, sessionToken, uiDev } = props;
+    const uiDevUnlocked = Math.max(
+      1,
+      Math.min(3, Number(props.uiDevSwappableSlots) || 1)
+    );
     let cancelled = false;
     setError(null);
     void (async () => {
@@ -128,8 +145,8 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
             setWardrobe({
               character_id: characterId,
               active_slot: null,
-              swappable_slots: 1,
-              slots: emptySlots(1),
+              swappable_slots: uiDevUnlocked,
+              slots: emptySlots(uiDevUnlocked),
             });
           }
           return;
@@ -153,7 +170,45 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDraft, isDraft ? null : props.characterId, isDraft ? null : props.sessionToken]);
+  }, [
+    isDraft,
+    isDraft ? null : props.characterId,
+    isDraft ? null : props.sessionToken,
+    isDraft ? null : props.uiDev,
+    isDraft ? null : props.uiDevSwappableSlots,
+  ]);
+
+  // Poll while any slot is apply-pending
+  useEffect(() => {
+    if (isDraft || props.mode !== "live" || props.uiDev) return;
+    if (!hasPendingSlots(wardrobe)) return;
+    const { characterId, sessionToken } = props;
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const w = await getWardrobe(sessionToken, characterId);
+          if (cancelled) return;
+          setWardrobe(w);
+          if (!hasPendingSlots(w)) {
+            await loadTextures(sessionToken, characterId, w);
+          }
+        } catch {
+          /* keep last good state */
+        }
+      })();
+    }, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isDraft,
+    wardrobe,
+    isDraft ? null : props.mode === "live" ? props.characterId : null,
+    isDraft ? null : props.mode === "live" ? props.sessionToken : null,
+  ]);
 
   // Draft texture blobs from files
   useEffect(() => {
@@ -185,10 +240,14 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     if (isDraft) {
       for (const id of SLOT_ORDER) {
         const file = props.draftFiles[id];
+        const name = props.draftNames[id];
         map.set(id, {
           slot: id,
           unlocked: slotUnlocked(id, swappable),
           filled: Boolean(file),
+          display_name: wardrobeSlotLabel(id, name),
+          custom_name: Boolean(String(name || "").trim()),
+          apply_pending: false,
         });
       }
       return map;
@@ -202,24 +261,46 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           slot: id,
           unlocked: slotUnlocked(id, liveSwappable),
           filled: false,
+          display_name: WARDROBE_DEFAULT_LABELS[id],
+          apply_pending: false,
         });
       }
     }
     return map;
-  }, [isDraft, isDraft ? props.draftFiles : null, wardrobe, swappable, liveSwappable]);
+  }, [
+    isDraft,
+    isDraft ? props.draftFiles : null,
+    isDraft ? props.draftNames : null,
+    wardrobe,
+    swappable,
+    liveSwappable,
+  ]);
 
   const activeSlot =
     !isDraft && wardrobe?.active_slot ? String(wardrobe.active_slot) : null;
   const modalData = modalSlot ? slotsById.get(modalSlot) : null;
   const swappableIds = SLOT_ORDER.filter((s) => s !== "masked");
 
-  async function handleSave(file: File, equip: boolean) {
+  async function handleSave(input: {
+    file: File | null;
+    equip: boolean;
+    displayName: string | null;
+  }) {
     if (!modalSlot) return;
     if (isDraft) {
-      props.onDraftFilesChange({
-        ...props.draftFiles,
-        [modalSlot]: file,
-      });
+      if (input.file) {
+        props.onDraftFilesChange({
+          ...props.draftFiles,
+          [modalSlot]: input.file,
+        });
+      }
+      const nextNames = { ...props.draftNames };
+      if (input.displayName) {
+        nextNames[modalSlot as keyof WardrobeDraftNames] = input.displayName;
+      } else {
+        delete nextNames[modalSlot as keyof WardrobeDraftNames];
+      }
+      props.onDraftNamesChange(nextNames);
       setModalSlot(null);
       setModalError(null);
       return;
@@ -232,17 +313,30 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     setSaving(true);
     setModalError(null);
     try {
-      let w = await uploadWardrobeSlot(
-        sessionToken,
-        characterId,
-        modalSlot,
-        file
-      );
-      if (equip && modalSlot !== "masked") {
-        w = await setWardrobeActive(sessionToken, characterId, modalSlot);
+      let w: WardrobeResponse;
+      if (input.file) {
+        w = await uploadWardrobeSlot(
+          sessionToken,
+          characterId,
+          modalSlot,
+          input.file,
+          input.displayName
+        );
+        if (input.equip && modalSlot !== "masked") {
+          w = await setWardrobeActive(sessionToken, characterId, modalSlot);
+        }
+      } else {
+        w = await renameWardrobeSlot(
+          sessionToken,
+          characterId,
+          modalSlot,
+          input.displayName
+        );
       }
       setWardrobe(w);
-      await loadTextures(sessionToken, characterId, w);
+      if (input.file) {
+        await loadTextures(sessionToken, characterId, w);
+      }
       setModalSlot(null);
     } catch (err) {
       setModalError(
@@ -264,6 +358,9 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         ...props.draftFiles,
         [modalSlot]: null,
       });
+      const nextNames = { ...props.draftNames };
+      delete nextNames[modalSlot as keyof WardrobeDraftNames];
+      props.onDraftNamesChange(nextNames);
       setModalSlot(null);
       return;
     }
@@ -291,6 +388,8 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
 
   async function handleEquip(slot: string) {
     if (isDraft || slot === "masked") return;
+    const data = slotsById.get(slot);
+    if (data?.apply_pending) return;
     const { characterId, sessionToken, uiDev } = props;
     if (uiDev) return;
     setEquipping(slot);
@@ -309,6 +408,10 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     } finally {
       setEquipping(null);
     }
+  }
+
+  function labelFor(id: string, slot: WardrobeSlot): string {
+    return wardrobeSlotLabel(id, slot.display_name);
   }
 
   return (
@@ -335,7 +438,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
               <WardrobeSlotFrame
                 key={id}
                 slot={slot}
-                label={SLOT_LABELS[id] || id}
+                label={labelFor(id, slot)}
                 active={!isDraft && activeSlot === id}
                 textureSrc={textures[id] || null}
                 lockRuns={lock?.runs}
@@ -345,7 +448,10 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                   setModalSlot(id);
                 }}
                 onEquip={
-                  !isDraft && slot.filled && slot.unlocked
+                  !isDraft &&
+                  slot.filled &&
+                  slot.unlocked &&
+                  !slot.apply_pending
                     ? () => void handleEquip(id)
                     : undefined
                 }
@@ -362,14 +468,14 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         </h2>
         <p className="mb-3 text-sm text-[var(--tfmc-mist)]">
           Used while wearing an RP mask. Not selectable in{" "}
-          <span className="text-[var(--tfmc-cream)]">/rpcharacterwardrobe</span>.
+          <span className="text-[var(--tfmc-cream)]">/rpcharacter wardrobe</span>.
         </p>
         {(() => {
           const slot = slotsById.get("masked")!;
           return (
             <WardrobeSlotFrame
               slot={slot}
-              label={SLOT_LABELS.masked}
+              label={labelFor("masked", slot)}
               active={false}
               textureSrc={textures.masked || null}
               onOpen={() => {
@@ -384,7 +490,11 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       <WardrobeSlotModal
         open={Boolean(modalSlot && modalData)}
         slotId={modalSlot || ""}
-        slotLabel={modalSlot ? SLOT_LABELS[modalSlot] || modalSlot : "Skin"}
+        slotLabel={
+          modalSlot && modalData
+            ? labelFor(modalSlot, modalData)
+            : "Skin"
+        }
         filled={Boolean(modalData?.filled)}
         canEquip={!isDraft && modalSlot !== "masked"}
         defaultEquipOnSave={
@@ -393,6 +503,18 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           (!activeSlot || activeSlot === modalSlot)
         }
         existingTextureSrc={modalSlot ? textures[modalSlot] || null : null}
+        initialDisplayName={
+          modalSlot && modalData?.custom_name
+            ? String(modalData.display_name || "")
+            : isDraft && modalSlot
+              ? String(props.draftNames[modalSlot as keyof WardrobeDraftNames] || "")
+              : ""
+        }
+        namePlaceholder={
+          modalSlot
+            ? WARDROBE_DEFAULT_LABELS[modalSlot] || "Skin"
+            : "Skin"
+        }
         saving={saving}
         error={modalError}
         onClose={() => {
@@ -401,7 +523,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
             setModalError(null);
           }
         }}
-        onSave={(file, equip) => void handleSave(file, equip)}
+        onSave={(input) => void handleSave(input)}
         onClear={modalData?.filled ? () => void handleClear() : undefined}
       />
     </div>

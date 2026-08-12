@@ -2,6 +2,7 @@
 
 import type { LoreRun } from "../../../lib/characters/lorePreview";
 import type { WardrobeSlot } from "../../../lib/characters/api";
+import FormattedMcRuns from "../shared/FormattedMcRuns";
 import SkinMannequinPreview from "./SkinMannequinPreview";
 
 type Props = {
@@ -16,31 +17,6 @@ type Props = {
   equipping?: boolean;
 };
 
-function FormattedRuns({ runs }: { runs: LoreRun[] }) {
-  return (
-    <>
-      {runs.map((r, i) => (
-        <span
-          key={`${i}-${r.text.slice(0, 8)}`}
-          style={{
-            color: r.color,
-            fontWeight: r.bold ? 700 : undefined,
-            fontStyle: r.italic ? "italic" : undefined,
-            textDecoration: [
-              r.underline ? "underline" : "",
-              r.strike ? "line-through" : "",
-            ]
-              .filter(Boolean)
-              .join(" ") || undefined,
-          }}
-        >
-          {r.text}
-        </span>
-      ))}
-    </>
-  );
-}
-
 export default function WardrobeSlotFrame({
   slot,
   label,
@@ -53,13 +29,15 @@ export default function WardrobeSlotFrame({
   equipping,
 }: Props) {
   const locked = !slot.unlocked;
+  const pending = Boolean(slot.apply_pending) && slot.filled && !locked;
   const canOpen = slot.unlocked;
   const showEquip =
     Boolean(onEquip) &&
     slot.unlocked &&
     slot.filled &&
     slot.slot !== "masked" &&
-    !active;
+    !active &&
+    !pending;
 
   return (
     <div className="flex w-[7.5rem] flex-col gap-2 sm:w-36">
@@ -71,46 +49,66 @@ export default function WardrobeSlotFrame({
         }}
         className={`relative aspect-[3/5] w-full overflow-hidden rounded-sm border transition-colors ${
           locked
-            ? "cursor-not-allowed border-red-900/60"
-            : active
-              ? "border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-              : "border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+            ? "cursor-not-allowed border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_78%,transparent)]"
+            : pending
+              ? "cursor-wait border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)]"
+              : active
+                ? "border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+                : "border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
         }`}
         aria-label={
           locked
             ? `${label} locked`
-            : `${label}${slot.filled ? "" : " empty"} — edit`
+            : pending
+              ? `${label} pending server`
+              : `${label}${slot.filled ? "" : " empty"} — edit`
         }
       >
-        {slot.filled && textureSrc ? (
-          <SkinMannequinPreview
-            source={textureSrc}
-            className="absolute inset-0 h-full w-full"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]">
-            <span className="text-xs text-[var(--tfmc-mist)]">Empty</span>
-          </div>
-        )}
-
         {locked ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-end bg-[color-mix(in_srgb,#7f1d1d_45%,transparent)] px-1.5 pb-2 pt-8">
-            <p className="text-center text-[10px] leading-snug text-[var(--tfmc-cream)]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-2">
+            <span className="inline-flex items-center rounded-sm border border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_72%,transparent)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#e8a0a0] pointer-events-none select-none">
+              Locked
+            </span>
+            <p className="text-center text-[10px] leading-snug text-[#e8a0a0]">
               You need{" "}
               {lockRuns && lockRuns.length > 0 ? (
-                <FormattedRuns runs={lockRuns} />
+                <FormattedMcRuns runs={lockRuns} />
               ) : (
                 lockPlain || "a higher rank+"
               )}
             </p>
           </div>
-        ) : null}
+        ) : (
+          <>
+            {slot.filled && textureSrc ? (
+              <SkinMannequinPreview
+                source={textureSrc}
+                className="absolute inset-0 h-full w-full"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]">
+                <span className="text-xs text-[var(--tfmc-mist)]">Empty</span>
+              </div>
+            )}
 
-        {active ? (
-          <span className="absolute left-1 top-1 rounded-sm bg-[var(--tfmc-accent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--tfmc-ink)]">
-            Active
-          </span>
-        ) : null}
+            {pending ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[color-mix(in_srgb,#0c1218_72%,transparent)] px-2">
+                <span className="inline-flex items-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-[color-mix(in_srgb,#0c1218_80%,transparent)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--tfmc-mist)] pointer-events-none select-none">
+                  Pending
+                </span>
+                <p className="text-center text-[10px] leading-snug text-[var(--tfmc-stone)]">
+                  Waiting for server
+                </p>
+              </div>
+            ) : null}
+
+            {active && !pending ? (
+              <span className="absolute left-1 top-1 rounded-sm bg-[var(--tfmc-accent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--tfmc-ink)]">
+                Active
+              </span>
+            ) : null}
+          </>
+        )}
       </button>
 
       <div className="flex flex-col gap-1">

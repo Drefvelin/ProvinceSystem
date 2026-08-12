@@ -154,6 +154,8 @@ CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
     texture_value TEXT,
     texture_signature TEXT,
     model TEXT,
+    display_name TEXT,
+    apply_pending INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (player_uuid, character_id, slot)
 );
@@ -165,6 +167,7 @@ CREATE TABLE IF NOT EXISTS character_create_wardrobe (
     texture_value TEXT,
     texture_signature TEXT,
     model TEXT,
+    display_name TEXT,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (create_id, slot)
 );

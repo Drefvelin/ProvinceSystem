@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { LoreRun } from "../characters/lorePreview";
 
 /** Approximate TLibs / Minecraft name colour preview for the upload form. */
 
@@ -90,7 +91,7 @@ export function previewSpans(
     return [...plain].map((char) => ({ char, color: "#ffffff" }));
   }
   if (hexes.length === 1) {
-    return [...plain].map((char) => ({ char, color: hexes[0] }));
+    return [...plain].map((char) => ({ char, color: hexes[0]! }));
   }
   const stops = hexes.length;
   const length = plain.length;
@@ -102,12 +103,36 @@ export function previewSpans(
     return {
       char,
       color: lerp(
-        parseRgb(hexes[segment]),
-        parseRgb(hexes[segment + 1]),
+        parseRgb(hexes[segment]!),
+        parseRgb(hexes[segment + 1]!),
         localT
       ),
     };
   });
+}
+
+/**
+ * Colour-stop gradient preview as LoreRun[] for FormattedMcRuns.
+ * Optional styles apply to every character (picker / kit name styles).
+ */
+export function previewColourStopRuns(
+  text: string,
+  colourTokens: string[],
+  styles: string[] = []
+): LoreRun[] {
+  const set = new Set(styles.map((s) => s.toLowerCase()));
+  const bold = set.has("bold");
+  const italic = set.has("italic");
+  const underline = set.has("underline") || set.has("underlined");
+  const strike = set.has("strikethrough") || set.has("strike");
+  return previewSpans(text, colourTokens).map((span) => ({
+    text: span.char,
+    color: span.color,
+    bold: bold || undefined,
+    italic: italic || undefined,
+    underline: underline || undefined,
+    strike: strike || undefined,
+  }));
 }
 
 export function previewStyleCss(styles: string[]): CSSProperties {

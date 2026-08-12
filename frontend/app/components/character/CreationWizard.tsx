@@ -15,6 +15,7 @@ import {
 } from "../../../lib/characters/api";
 import WardrobeEditor, {
   type WardrobeDraftFiles,
+  type WardrobeDraftNames,
 } from "./WardrobeEditor";
 import {
   ageFromBirthday,
@@ -91,6 +92,8 @@ function StageBody({
   nameColourStops = 0,
   wardrobeDraft,
   onWardrobeDraftChange,
+  wardrobeDraftNames,
+  onWardrobeDraftNamesChange,
   wardrobeSkinSlots = 1,
 }: {
   stage: CatalogStage;
@@ -103,6 +106,8 @@ function StageBody({
   nameColourStops?: number;
   wardrobeDraft: WardrobeDraftFiles;
   onWardrobeDraftChange: (next: WardrobeDraftFiles) => void;
+  wardrobeDraftNames: WardrobeDraftNames;
+  onWardrobeDraftNamesChange: (next: WardrobeDraftNames) => void;
   wardrobeSkinSlots?: number;
 }) {
   const type = String(stage.type || "").toLowerCase();
@@ -126,7 +131,9 @@ function StageBody({
           slotLimits={catalog.slot_limits}
           swappableSlots={wardrobeSkinSlots}
           draftFiles={wardrobeDraft}
+          draftNames={wardrobeDraftNames}
           onDraftFilesChange={onWardrobeDraftChange}
+          onDraftNamesChange={onWardrobeDraftNamesChange}
         />
       </div>
     );
@@ -663,6 +670,8 @@ export default function CreationWizard({
   const router = useRouter();
   const [draft, setDraft] = useState(() => newDraft(catalog));
   const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraftFiles>({});
+  const [wardrobeDraftNames, setWardrobeDraftNames] =
+    useState<WardrobeDraftNames>({});
   const [pendingCreateId, setPendingCreateId] = useState<string | null>(null);
   const stages = useMemo(
     () =>
@@ -772,7 +781,8 @@ export default function CreationWizard({
           sessionToken,
           createId,
           slot,
-          file
+          file,
+          wardrobeDraftNames[slot as keyof WardrobeDraftNames] ?? null
         );
       }
       setError(null);
@@ -848,6 +858,8 @@ export default function CreationWizard({
               nameColourStops={nameColourStops}
               wardrobeDraft={wardrobeDraft}
               onWardrobeDraftChange={setWardrobeDraft}
+              wardrobeDraftNames={wardrobeDraftNames}
+              onWardrobeDraftNamesChange={setWardrobeDraftNames}
               wardrobeSkinSlots={wardrobeSkinSlots}
             />
           </div>

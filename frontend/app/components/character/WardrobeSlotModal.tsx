@@ -12,14 +12,23 @@ type Props = {
   canEquip: boolean;
   defaultEquipOnSave: boolean;
   existingTextureSrc: string | null;
+  /** Current custom/default name shown in the field */
+  initialDisplayName: string;
+  /** Placeholder when field empty (defaults to slot default label) */
+  namePlaceholder: string;
   saving: boolean;
   error: string | null;
   onClose: () => void;
-  onSave: (file: File, equip: boolean) => void;
+  onSave: (input: {
+    file: File | null;
+    equip: boolean;
+    displayName: string | null;
+  }) => void;
   onClear?: () => void;
 };
 
 const SIZE_ERR = "Skin must be exactly 64×64 pixels.";
+const NAME_MAX = 24;
 
 function validatePng64(file: File): Promise<string | null> {
   return new Promise((resolve) => {
@@ -53,6 +62,8 @@ export default function WardrobeSlotModal({
   canEquip,
   defaultEquipOnSave,
   existingTextureSrc,
+  initialDisplayName,
+  namePlaceholder,
   saving,
   error,
   onClose,
@@ -66,6 +77,7 @@ export default function WardrobeSlotModal({
   const [model, setModel] = useState<ArmModel | null>(null);
   const [equipOnSave, setEquipOnSave] = useState(defaultEquipOnSave);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState(initialDisplayName);
 
   useEffect(() => {
     if (!open) return;
@@ -74,9 +86,10 @@ export default function WardrobeSlotModal({
     setModel(null);
     setEquipOnSave(defaultEquipOnSave);
     setPreviewUrl(null);
+    setDisplayName(initialDisplayName);
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(t);
-  }, [open, defaultEquipOnSave, slotId]);
+  }, [open, defaultEquipOnSave, slotId, initialDisplayName]);
 
   useEffect(() => {
     if (!file) {
@@ -103,7 +116,13 @@ export default function WardrobeSlotModal({
   if (!open) return null;
 
   const previewSource = previewUrl || existingTextureSrc;
-  const canSave = Boolean(file) && !localErr && !saving;
+  const trimmedName = displayName.trim();
+  const nameChanged =
+    trimmedName !== String(initialDisplayName || "").trim();
+  const canSave =
+    !localErr &&
+    !saving &&
+    (Boolean(file) || (filled && nameChanged));
 
   async function onPick(f: File | null) {
     setLocalErr(null);
@@ -159,6 +178,20 @@ export default function WardrobeSlotModal({
         ) : null}
 
         <label className="mt-4 flex flex-col gap-1.5 text-sm text-[var(--tfmc-cream)]">
+          Name{" "}
+          <span className="font-normal text-[var(--tfmc-stone)]">(optional)</span>
+          <input
+            type="text"
+            maxLength={NAME_MAX}
+            value={displayName}
+            disabled={saving}
+            placeholder={namePlaceholder}
+            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] px-3 py-2 text-sm text-[var(--tfmc-cream)] placeholder:text-[var(--tfmc-stone)]"
+            onChange={(e) => setDisplayName(e.target.value.slice(0, NAME_MAX))}
+          />
+        </label>
+
+        <label className="mt-4 flex flex-col gap-1.5 text-sm text-[var(--tfmc-cream)]">
           PNG file
           <input
             ref={inputRef}
@@ -179,7 +212,7 @@ export default function WardrobeSlotModal({
             <input
               type="checkbox"
               checked={equipOnSave}
-              disabled={saving}
+              disabled={saving || !file}
               onChange={(e) => setEquipOnSave(e.target.checked)}
             />
             Equip on save
@@ -215,8 +248,16 @@ export default function WardrobeSlotModal({
             type="button"
             disabled={!canSave}
             onClick={() => {
-              if (!file || !canSave) return;
-              onSave(file, canEquip && equipOnSave);
+              if (!canSave) return;
+              const name =
+                trimmedName.length === 0
+                  ? null
+                  : trimmedName.slice(0, NAME_MAX);
+              onSave({
+                file,
+                equip: Boolean(file) && canEquip && equipOnSave,
+                displayName: name,
+              });
             }}
             className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-sm bg-[var(--tfmc-accent)] px-3 py-2 text-sm font-medium text-[var(--tfmc-ink)] transition-opacity disabled:opacity-50"
           >
@@ -226,7 +267,7 @@ export default function WardrobeSlotModal({
                   className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--tfmc-ink)] border-t-transparent"
                   aria-hidden
                 />
-                Signing skin…
+                {file ? "Signing skin…" : "Saving…"}
               </>
             ) : (
               "Save"

@@ -524,7 +524,8 @@ customise → Custom/Pending on list → claim gates → grant when AS has skin
 
 - Slots: base + masked (all) · extras by rank (1/1/2/3/3 swappable)
 - 64×64 only; MineSkin on Save; no staff review
-- Apply on join + character switch; mask on/off; `/rpcharacterwardrobe`
+- Apply on join + character switch; mask on/off; `/rpcharacter wardrobe`
+- Soft refresh ~45s; web PENDING until plugin ack after apply
 - Rank drop wipes extras; empty base = no auto-apply
 - Creation: `platform` game tip vs web upload card
 
@@ -534,12 +535,14 @@ customise → Custom/Pending on list → claim gates → grant when AS has skin
 - [ ] Web: upload 64×64 base → spinner → slot ready with 3D preview
 - [ ] Non-64×64 rejected
 - [ ] Locked extras show Gilded+ / Ascended+ (coloured when possible)
-- [ ] Masked upload; not selectable in `/rpcharacterwardrobe`
+- [ ] Masked upload; not selectable in `/rpcharacter wardrobe`
 - [ ] Character switch / join applies active skin; empty base leaves account skin
 - [ ] Mask on/off swaps masked ↔ active
 - [ ] Gilded unlocks 2 swappable; Ascended 3
 - [ ] Rank drop wipes extras
 - [ ] Game create: wardrobe tip only; web create: wardrobe card (optional upload)
+- [ ] Optional skin names (defaults Base / Skin 2 / Skin 3 / Masked)
+- [ ] PENDING overlay clears after in-game pull/apply ack
 
 Checkpoint:
 

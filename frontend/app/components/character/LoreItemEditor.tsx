@@ -18,10 +18,10 @@ import {
 } from "../../../lib/textValidation";
 import {
   NAME_STYLES,
-  previewSpans,
-  previewStyleCss,
+  previewColourStopRuns,
   type NameStyle,
 } from "../../../lib/skins/namePreview";
+import FormattedMcRuns from "../shared/FormattedMcRuns";
 import {
   assertFileSize,
   expectedSizeForField,
@@ -383,15 +383,27 @@ export default function LoreItemEditor({
     () => hasInlineFormatCodes(previewName),
     [previewName]
   );
-  const nameSpans = useMemo(
-    () => previewSpans(previewName, colours),
-    [previewName, colours]
-  );
-  const nameInlineRuns = useMemo(
-    () => (nameHasInline ? parseNameRuns(previewName) : []),
-    [nameHasInline, previewName]
-  );
-  const nameStyleCss = useMemo(() => previewStyleCss(styles), [styles]);
+  const namePreviewRuns = useMemo(() => {
+    if (nameHasInline) {
+      const styleSet = new Set(styles.map((s) => s.toLowerCase()));
+      return parseNameRuns(previewName).map((run) => ({
+        ...run,
+        bold: run.bold || styleSet.has("bold") || undefined,
+        italic: run.italic || styleSet.has("italic") || undefined,
+        underline:
+          run.underline ||
+          styleSet.has("underline") ||
+          styleSet.has("underlined") ||
+          undefined,
+        strike:
+          run.strike ||
+          styleSet.has("strikethrough") ||
+          styleSet.has("strike") ||
+          undefined,
+      }));
+    }
+    return previewColourStopRuns(previewName, colours, styles);
+  }, [nameHasInline, previewName, colours, styles]);
   const previewLore = useMemo(() => {
     const base = item.base_preview.lore || [];
     const custom = lore.map((l) => l.trim()).filter(Boolean);
@@ -656,36 +668,8 @@ export default function LoreItemEditor({
           Preview
         </h2>
         <div className="mt-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[#1a1a1a] px-4 py-3 font-mono text-sm">
-          <p className="leading-relaxed" style={nameHasInline ? undefined : nameStyleCss}>
-            {nameHasInline
-              ? nameInlineRuns.map((run, ri) => (
-                  <span
-                    key={ri}
-                    style={{
-                      color: run.color,
-                      fontWeight: run.bold || styles.includes("bold") ? 700 : undefined,
-                      fontStyle:
-                        run.italic || styles.includes("italic") ? "italic" : undefined,
-                      textDecoration: [
-                        run.underline || styles.includes("underline")
-                          ? "underline"
-                          : "",
-                        run.strike || styles.includes("strikethrough")
-                          ? "line-through"
-                          : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" "),
-                    }}
-                  >
-                    {run.text}
-                  </span>
-                ))
-              : nameSpans.map((span, i) => (
-                  <span key={i} style={{ color: span.color }}>
-                    {span.char}
-                  </span>
-                ))}
+          <p className="leading-relaxed">
+            <FormattedMcRuns runs={namePreviewRuns} />
           </p>
           <ul className="mt-2 space-y-1">
             {previewLore.map((line, li) => (
@@ -693,24 +677,7 @@ export default function LoreItemEditor({
                 {line === " " || line === "" ? (
                   <span className="inline-block min-h-[1em]">{"\u00A0"}</span>
                 ) : (
-                  parseLoreRuns(line).map((run, ri) => (
-                    <span
-                      key={ri}
-                      style={{
-                        color: run.color,
-                        fontWeight: run.bold ? 700 : undefined,
-                        fontStyle: run.italic ? "italic" : undefined,
-                        textDecoration: [
-                          run.underline ? "underline" : "",
-                          run.strike ? "line-through" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" "),
-                      }}
-                    >
-                      {run.text}
-                    </span>
-                  ))
+                  <FormattedMcRuns runs={parseLoreRuns(line)} />
                 )}
               </li>
             ))}

@@ -4,9 +4,9 @@ import { useState } from "react";
 import {
   LEGACY_PALETTE,
   normalizePreviewHex,
-  previewSpans,
-  previewStyleCss,
+  previewColourStopRuns,
 } from "../../../lib/skins/namePreview";
+import FormattedMcRuns from "./FormattedMcRuns";
 
 const inputClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60";
@@ -43,8 +43,11 @@ export default function NameColourPicker({
   const lockedForRank = maxStops <= 0;
   const interactiveLocked = disabled || lockedForRank;
   const cap = Math.max(0, Math.min(8, maxStops));
-  const spans = previewSpans(previewText.trim() || "Preview", colours);
-  const styleCss = previewStyleCss(previewStyles);
+  const previewRuns = previewColourStopRuns(
+    previewText.trim() || "Preview",
+    colours,
+    previewStyles
+  );
 
   function addColour(token: string) {
     if (interactiveLocked) return;
@@ -203,16 +206,11 @@ export default function NameColourPicker({
           <p
             className="m-0 text-xl tracking-wide"
             style={{
-              ...styleCss,
               fontFamily:
                 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace',
             }}
           >
-            {spans.map((span, i) => (
-              <span key={i} style={{ color: span.color }}>
-                {span.char === " " ? "\u00a0" : span.char}
-              </span>
-            ))}
+            <FormattedMcRuns runs={previewRuns} />
           </p>
         </div>
       </div>

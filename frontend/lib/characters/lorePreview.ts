@@ -1,4 +1,8 @@
-/** Inline Minecraft/TLibs-style colour runs for lore / name preview. */
+/** Canonical Minecraft / TLibs inline format → web colour runs.
+
+ * Use parseNameRuns / parseLoreRuns here only — do not reimplement &# / § / &
+ * decoding elsewhere. Render with FormattedMcRuns.
+ */
 
 import { LEGACY_PALETTE } from "../skins/namePreview";
 

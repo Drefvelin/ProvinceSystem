@@ -36,6 +36,7 @@ from src.characters.lore_items import (
 from src.characters.roster import RosterError, replace_roster
 from src.characters.wardrobe import (
     WardrobeError,
+    ack_wardrobe_slots,
     clear_pending_create_wardrobe,
     clear_slot,
     get_wardrobe,
@@ -43,6 +44,7 @@ from src.characters.wardrobe import (
     resolve_slot_texture_path,
     set_active_slot,
     set_active_slot_for_plugin,
+    set_slot_display_name,
     upload_pending_create_wardrobe,
     upload_slot,
 )
@@ -74,6 +76,18 @@ class WardrobeActiveBody(BaseModel):
     """PATCH body for wardrobe active slot. null clears auto-apply."""
 
     slot: str | None = None
+
+
+class WardrobeNameBody(BaseModel):
+    """PATCH body for wardrobe slot display name. null clears to default."""
+
+    display_name: str | None = None
+
+
+class WardrobeAckBody(BaseModel):
+    """Plugin ack after pull+apply for pending wardrobe slots."""
+
+    slots: list[str] = Field(default_factory=list)
 
 
 def _require_plugin(x_plugin_key: str | None) -> None:
@@ -471,9 +485,36 @@ async def post_character_wardrobe_slot(
             detail="Missing multipart file field 'texture' (or 'file')",
         )
     png_bytes = await file.read()
+    display_name = form.get("display_name")
+    if display_name is not None and not isinstance(display_name, str):
+        display_name = str(display_name)
     try:
         return upload_slot(
-            session["player_uuid"], character_id, slot, png_bytes
+            session["player_uuid"],
+            character_id,
+            slot,
+            png_bytes,
+            display_name=display_name,
+        )
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.patch("/{character_id}/wardrobe/{slot}/name")
+def patch_character_wardrobe_slot_name(
+    character_id: str,
+    slot: str,
+    body: WardrobeNameBody,
+    authorization: str | None = Header(default=None),
+):
+    """Rename a filled wardrobe slot (no re-sign; does not set apply pending)."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return set_slot_display_name(
+            session["player_uuid"],
+            character_id,
+            slot,
+            body.display_name,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
@@ -547,9 +588,16 @@ async def post_pending_create_wardrobe(
             detail="Missing multipart file field 'texture' (or 'file')",
         )
     png_bytes = await file.read()
+    display_name = form.get("display_name")
+    if display_name is not None and not isinstance(display_name, str):
+        display_name = str(display_name)
     try:
         return upload_pending_create_wardrobe(
-            session["player_uuid"], create_id, slot, png_bytes
+            session["player_uuid"],
+            create_id,
+            slot,
+            png_bytes,
+            display_name=display_name,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
@@ -692,6 +740,21 @@ def plugin_get_wardrobe(
     _require_plugin(x_plugin_key)
     try:
         return get_wardrobe_for_plugin(player_uuid, character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.post("/plugin/wardrobe/{player_uuid}/{character_id}/ack")
+def plugin_ack_wardrobe(
+    player_uuid: str,
+    character_id: str,
+    body: WardrobeAckBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Clear apply_pending after plugin pull + apply."""
+    _require_plugin(x_plugin_key)
+    try:
+        return ack_wardrobe_slots(player_uuid, character_id, body.slots)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
 
