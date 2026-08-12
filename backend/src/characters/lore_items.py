@@ -204,6 +204,9 @@ def claim_status(
 ) -> dict[str, Any]:
     """Plugin helper: whether claim should wait on pending_skin / has ready rows.
 
+    ``pending_skin`` is true only while a linked skin is still staff-``pending``.
+    Approved-but-not-applied skins do not set this flag (in-game pack / AS gate).
+
     When ``kit_id`` is set, only customisations whose ``kit_key`` belongs to that
     kit (from catalog ``editable_kit`` / ``kits``) are considered. Fallback when
     kits payload is missing: for ``starter`` (default), any row for the character.
@@ -223,19 +226,45 @@ def claim_status(
         rows = conn.execute(
             """
             SELECT LOWER(COALESCE(state, '')) AS state,
-                   LOWER(COALESCE(kit_key, '')) AS kit_key
+                   LOWER(COALESCE(kit_key, '')) AS kit_key,
+                   submission_id
             FROM lore_item_customisations
             WHERE player_uuid = ? AND character_id = ?
             """,
             (uuid, cid),
         ).fetchall()
+        sub_ids = [
+            str(r["submission_id"]).strip()
+            for r in rows
+            if r["submission_id"] is not None and str(r["submission_id"]).strip()
+        ]
+        sub_status: dict[str, str] = {}
+        if sub_ids:
+            placeholders = ",".join("?" * len(sub_ids))
+            for sub in conn.execute(
+                f"SELECT id, LOWER(COALESCE(status, '')) AS status "
+                f"FROM submissions WHERE id IN ({placeholders})",
+                sub_ids,
+            ).fetchall():
+                sid = str(sub["id"] or "").strip()
+                if sid:
+                    sub_status[sid] = str(sub["status"] or "").strip().lower()
+
     for row in rows:
         key = str(row["kit_key"] or "").strip().lower()
         if allowed_keys is not None and key not in allowed_keys:
             continue
         state = str(row["state"] or "").strip().lower()
         if state == STATE_PENDING_SKIN:
-            pending_skin = True
+            sid = (
+                str(row["submission_id"]).strip()
+                if row["submission_id"] is not None
+                else ""
+            )
+            # Staff approval only. Approved → pack/AS gate; missing row → treat as pending.
+            st = sub_status.get(sid, "pending" if sid else "")
+            if not sid or st == "pending":
+                pending_skin = True
         elif state == STATE_READY:
             ready = True
     return {"pending_skin": pending_skin, "ready": ready, "kit_id": kit}

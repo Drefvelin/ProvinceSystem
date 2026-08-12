@@ -16,7 +16,9 @@ function statusMessage(row: SubmissionPublic): string {
           ? `Denied: ${row.deny_reason.trim()}`
           : "Denied. No reason given.";
       case "approved":
-        return "Approved. Waiting to be applied on the server (curated pack).";
+        return (
+          "Approved. Waiting to be applied on the server (curated pack; within 24 hours)."
+        );
       case "applied":
         return "Live on the server in the curated shop pack.";
       case "revoked":
@@ -37,7 +39,9 @@ function statusMessage(row: SubmissionPublic): string {
         ? `Denied: ${row.deny_reason.trim()}`
         : "Denied. No reason given.";
     case "approved":
-      return "Approved. Waiting to be applied on the server.";
+      return (
+        "Approved. Your skin will be added to the pack within 24 hours."
+      );
     case "applied":
       return "Live on the server.";
     case "revoked":
@@ -132,7 +136,19 @@ export default function StatusCard({ row }: Props) {
       <dl className="space-y-3 text-sm">
         <div>
           <dt className="text-[var(--tfmc-stone)]">Status</dt>
-          <dd className="font-medium text-[var(--tfmc-cream)]">{row.status}</dd>
+          <dd className="font-medium text-[var(--tfmc-cream)]">
+            {row.status === "pending"
+              ? "Awaiting approval"
+              : row.status === "approved"
+                ? "Pending pack"
+                : row.status === "applied"
+                  ? "Live"
+                  : row.status === "denied"
+                    ? "Denied"
+                    : row.status === "revoked"
+                      ? "Removed"
+                      : row.status}
+          </dd>
         </div>
         <div>
           <dt className="text-[var(--tfmc-stone)]">Kind</dt>

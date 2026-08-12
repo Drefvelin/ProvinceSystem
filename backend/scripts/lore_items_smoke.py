@@ -799,6 +799,21 @@ def main() -> None:
         )
         conn.commit()
 
+    r = client.get(
+        f"/characters/plugin/lore-items/claim-status"
+        f"?player_uuid={player}&character_id={char_id}&kit_id=starter",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"claim-status after approve: {r.status_code} {r.text}")
+    claim_approved = r.json()
+    if claim_approved.get("pending_skin") is not False:
+        fail(
+            "approved-not-applied should not set pending_skin "
+            f"(staff approval done): {claim_approved}"
+        )
+    print("OK claim-status pending_skin=false while submission approved")
+
     from src.skins.submissions import mark_applied
 
     applied = mark_applied([sub_id])

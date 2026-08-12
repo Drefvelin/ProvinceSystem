@@ -36,14 +36,31 @@ function customiseState(c: LoreItemDraft | undefined): string {
   return String(c?.state || "").trim().toLowerCase();
 }
 
+function submissionStatus(c: LoreItemDraft | undefined): string {
+  return String(c?.submission_status || "").trim().toLowerCase();
+}
+
+/** Staff review not done yet. */
 function isPendingApproval(item: CharacterKitItem): boolean {
   const c = item.customise;
   if (!c) return false;
   const state = customiseState(c);
-  const sub = String(c.submission_status || "")
-    .trim()
-    .toLowerCase();
-  return state === "pending_skin" || sub === "pending";
+  const sub = submissionStatus(c);
+  if (sub === "pending") return true;
+  return state === "pending_skin" && sub !== "approved" && sub !== "applied";
+}
+
+/** Approved by staff; waiting for pack / ArmourShop apply. */
+function isPendingPack(item: CharacterKitItem): boolean {
+  const c = item.customise;
+  if (!c) return false;
+  return (
+    customiseState(c) === "pending_skin" && submissionStatus(c) === "approved"
+  );
+}
+
+function isSkinInFlight(item: CharacterKitItem): boolean {
+  return isPendingApproval(item) || isPendingPack(item);
 }
 
 function hasCustomise(item: CharacterKitItem): boolean {
@@ -188,12 +205,14 @@ export default function CharacterKitDetailPage() {
 
           <ul className="mt-8 divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
             {kit.items.map((item) => {
-              const pending = isPendingApproval(item);
+              const awaitingApproval = isPendingApproval(item);
+              const awaitingPack = isPendingPack(item);
+              const inFlight = isSkinInFlight(item);
               const custom = hasCustomise(item);
               const canEdit =
                 Boolean(item.editable && item.kit_key) &&
                 kit.claimable &&
-                !pending;
+                !inFlight;
               const statusHref =
                 item.kit_key &&
                 `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kit.id)}/edit/${encodeURIComponent(item.kit_key)}/status`;
@@ -206,10 +225,10 @@ export default function CharacterKitDetailPage() {
                   key={`${item.path}-${item.amount}`}
                   className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className={pending ? "opacity-55" : undefined}>
+                  <div className={inFlight ? "opacity-55" : undefined}>
                     <p
                       className={
-                        pending
+                        inFlight
                           ? "text-[var(--tfmc-stone)]"
                           : "text-[var(--tfmc-cream)]"
                       }
@@ -227,13 +246,17 @@ export default function CharacterKitDetailPage() {
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
                         Claimed · editing closed
                       </p>
-                    ) : pending ? (
+                    ) : awaitingApproval ? (
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
-                        Pending approval
+                        Awaiting approval
+                      </p>
+                    ) : awaitingPack ? (
+                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
+                        Pending pack (within 24 hours)
                       </p>
                     ) : null}
                   </div>
-                  {pending && statusHref && kit.claimable ? (
+                  {inFlight && statusHref && kit.claimable ? (
                     <Link
                       href={statusHref}
                       className="inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)] transition-opacity hover:opacity-90"
