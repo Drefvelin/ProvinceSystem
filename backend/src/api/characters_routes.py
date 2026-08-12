@@ -24,6 +24,7 @@ from src.characters.lore_items import (
     claim_status,
     clear_customisations_for_kit,
     customise_lore_item,
+    delete_lore_item_customise,
     list_character_kits,
     list_lore_items,
     list_pending_for_plugin,
@@ -355,6 +356,26 @@ async def post_lore_item_customise(
             character_id,
             kit_key,
             **kwargs,
+        )
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+
+
+@characters_router.delete("/lore-items/{kit_key}/customise")
+def delete_lore_item_customise_route(
+    kit_key: str,
+    character_id: str | None = None,
+    kit_id: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Wipe one kit-item customise draft (player). Does not delete skins."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return delete_lore_item_customise(
+            session["player_uuid"],
+            character_id,
+            kit_key,
+            kit_id=kit_id,
         )
     except LoreItemError as e:
         raise _lore_http(e) from e

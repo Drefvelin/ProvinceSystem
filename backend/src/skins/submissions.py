@@ -1006,6 +1006,11 @@ def approve_submission(submission_id: str) -> dict:
 
 
 def deny_submission(submission_id: str, reason: str) -> dict:
+    """Deny a pending submission: notify payload, lore clear, then hard purge.
+
+    Denied rows are not retained (PK must free for resubmit). Response is
+    ephemeral for Discord/API clients.
+    """
     try:
         reason = assert_prose(reason, min_len=1, max_len=200, field="deny reason")
     except TextValidationError as e:
@@ -1018,27 +1023,20 @@ def deny_submission(submission_id: str, reason: str) -> dict:
         raise SubmissionError("Only pending submissions can be denied")
 
     reviewed_at = _iso_now()
-    with connect() as conn:
-        conn.execute(
-            """
-            UPDATE submissions
-            SET status = 'denied', reviewed_at = ?, deny_reason = ?
-            WHERE id = ?
-            """,
-            (reviewed_at, reason, submission_id),
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT * FROM submissions WHERE id = ?",
-            (submission_id,),
-        ).fetchone()
+    payload = _public_row(row)
+    payload["status"] = "denied"
+    payload["deny_reason"] = reason
+    payload["reviewed_at"] = reviewed_at
+
     try:
         from src.characters.lore_items import clear_pending_submission
 
-        clear_pending_submission(submission_id)
+        clear_pending_submission(submission_id, reason=reason)
     except Exception:
         pass
-    return _public_row(row)
+
+    _rollback_submission(submission_id)
+    return payload
 
 
 def list_pending() -> list[dict]:
@@ -1237,8 +1235,9 @@ def list_deletable_staff_skins() -> list[dict]:
 def revoke_submission(submission_id: str) -> dict:
     """Hard-delete a submission row and its on-disk files (staff delete).
 
-    Any status is allowed (pending/approved/applied/revoked/denied). Missing id
-    raises SubmissionError so the plugin can report "Submission not found".
+    Any status is allowed (pending/approved/applied/revoked). Denied is not
+    stored (deny already purges). Missing id raises SubmissionError so the
+    plugin can report "Submission not found".
     """
     sid = (submission_id or "").strip()
     if not sid:

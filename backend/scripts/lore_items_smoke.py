@@ -320,6 +320,15 @@ def main() -> None:
         fail(f"granted kit expected 403, got {r.status_code} {r.text}")
     print("OK GET kit_status=granted -> 403")
 
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"DELETE on granted kit expected 403, got {r.status_code} {r.text}")
+    print("OK DELETE kit_status=granted -> 403")
+
     r = client.put(
         "/characters/plugin/roster",
         json={
@@ -432,12 +441,80 @@ def main() -> None:
     if preview.get("display_name") != "Trailblade":
         fail(f"preview name overlay failed: {preview}")
     lore = preview.get("lore") or []
-    if "A starter blade." not in lore or "A custom line." not in lore:
-        fail(f"preview lore merge failed: {lore}")
+    if "A starter blade." not in lore and not any(
+        "A starter blade." in str(x) for x in lore
+    ):
+        fail(f"preview lore merge failed (base): {lore}")
+    if not any("A custom line." in str(x) for x in lore):
+        fail(f"preview lore merge failed (custom): {lore}")
     draft = customise.get("draft") or {}
     if draft.get("display_name") != "Trailblade":
         fail(f"draft not stored: {draft}")
     print("OK POST name+lore stores + overlays preview")
+
+    # Player delete one kit-item customise (keeps skins; idempotent)
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"DELETE customise expected 200, got {r.status_code} {r.text}")
+    deleted_body = r.json()
+    if not deleted_body.get("ok") or int(deleted_body.get("deleted") or 0) < 1:
+        fail(f"DELETE expected deleted>=1: {deleted_body}")
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT 1 FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if row is not None:
+        fail("DELETE should remove lore_item_customisations row")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"list after DELETE: {r.status_code} {r.text}")
+    knife = next(
+        (
+            i
+            for i in (r.json().get("items") or [])
+            if i.get("kit_key") == "iron_hunting_knife"
+        ),
+        None,
+    )
+    if not knife:
+        fail(f"knife missing after DELETE: {r.json()}")
+    d = knife.get("draft") or {}
+    if d.get("display_name") or d.get("state") not in (None, "", "draft"):
+        # empty draft or default draft-only is fine; custom name must be gone
+        if str(d.get("display_name") or "").strip() == "Trailblade":
+            fail(f"draft should be cleared after DELETE: {d}")
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"idempotent DELETE expected 200, got {r.status_code} {r.text}")
+    if r.json().get("deleted") != 0:
+        fail(f"idempotent DELETE expected deleted=0: {r.json()}")
+    print("OK DELETE customise wipes row; second DELETE deleted=0")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Trailblade",
+            "lore": ["A custom line."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"re-POST name+lore after DELETE expected 200, got {r.status_code} {r.text}")
 
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
@@ -531,28 +608,38 @@ def main() -> None:
         fail(f"expected pending_skin while submission pending: {body}")
     print("OK POST name+lore while upload pending -> stays pending_skin")
 
-    # Skin deny → whole customise denied; name/lore kept; not claim-ready
+    # Skin deny → purge submission; customise denied; name/lore kept; not claim-ready
     from src.skins.submissions import deny_submission
 
     denied = deny_submission(str(sub_id), "Needs a cleaner silhouette")
     if denied.get("status") != "denied":
         fail(f"deny_submission expected denied: {denied}")
+    if "cleaner silhouette" not in str(denied.get("deny_reason") or ""):
+        fail(f"deny response should include reason: {denied}")
     with connect() as conn:
+        gone = conn.execute(
+            "SELECT 1 FROM submissions WHERE id = ?",
+            (sub_id,),
+        ).fetchone()
         lore_denied = conn.execute(
             """
             SELECT state, submission_id, display_name, lore_json,
-                   ready_at, existing_skin_id, skin_slug
+                   ready_at, existing_skin_id, skin_slug, deny_reason
             FROM lore_item_customisations
             WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
             """,
             (player, char_id, "iron_hunting_knife"),
         ).fetchone()
+    if gone is not None:
+        fail(f"deny should purge submissions row: {sub_id}")
     if lore_denied is None or str(lore_denied["state"]) != "denied":
         fail(f"expected denied customise state: {lore_denied}")
     if str(lore_denied["submission_id"] or "") != str(sub_id):
         fail(f"deny should keep submission_id: {lore_denied}")
     if str(lore_denied["display_name"] or "") != "Ready Blade":
         fail(f"deny should keep display_name: {lore_denied}")
+    if "cleaner silhouette" not in str(lore_denied["deny_reason"] or ""):
+        fail(f"deny should store deny_reason on lore row: {lore_denied}")
     if lore_denied["ready_at"] is not None:
         fail(f"deny should clear ready_at: {lore_denied}")
     if lore_denied["existing_skin_id"] is not None or lore_denied["skin_slug"] is not None:
@@ -595,7 +682,7 @@ def main() -> None:
     )
     if r.status_code != 400:
         fail(f"denied resubmit without skin expected 400, got {r.status_code} {r.text}")
-    print("OK deny skin -> customise denied; name/lore kept; resubmit needs skin")
+    print("OK deny skin -> purged; customise denied; name/lore kept; resubmit needs skin")
 
     # Clear denied row to exercise ready-without-skin path
     with connect() as conn:
@@ -603,7 +690,7 @@ def main() -> None:
             """
             UPDATE lore_item_customisations
             SET submission_id = NULL, state = 'draft', skin_slug = NULL,
-                existing_skin_id = NULL, ready_at = NULL
+                existing_skin_id = NULL, ready_at = NULL, deny_reason = NULL
             WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
             """,
             (player, char_id, "iron_hunting_knife"),

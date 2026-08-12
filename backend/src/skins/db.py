@@ -1,3 +1,4 @@
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -32,6 +33,7 @@ def migrate() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SKINS_DIR.mkdir(parents=True, exist_ok=True)
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
+    denied_ids: list[str] = []
     with connect() as conn:
         conn.executescript(schema)
         if "grip_preset" not in _column_names(conn, "submissions"):
@@ -378,9 +380,27 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE lore_item_customisations ADD COLUMN name_styles TEXT"
             )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "deny_reason" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN deny_reason TEXT"
+            )
+        denied_ids = [
+            str(r["id"])
+            for r in conn.execute(
+                "SELECT id FROM submissions WHERE status = 'denied'"
+            ).fetchall()
+        ]
+        if denied_ids:
+            conn.execute("DELETE FROM submissions WHERE status = 'denied'")
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")
         conn.execute("DROP INDEX IF EXISTS idx_discord_links_player_key")
         conn.execute("DROP INDEX IF EXISTS idx_player_keys_key")
         conn.commit()
+
+    for sid in denied_ids:
+        out = SKINS_DIR / sid
+        if out.exists():
+            shutil.rmtree(out, ignore_errors=True)

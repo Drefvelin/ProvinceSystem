@@ -14,14 +14,14 @@ function statusMessage(item: LoreItemRow): string {
   switch (state) {
     case "pending_skin":
       return (
-        "Submitted. It can take up to 5 minutes for your request to enter the system. " +
-        "You will get a Discord DM once the kit is ready to claim. " +
-        "Your custom skin needs staff approval before the kit is ready."
+        "Awaiting staff approval for your custom skin. It can take a few minutes " +
+        "to enter review. After approval, claim in-game once the skin is on the server."
       );
     case "ready":
       return (
         "Your customise is ready. Claim the kit in-game when it is available " +
-        "for this character."
+        "for this character. If a skin was uploaded, wait until it has been " +
+        "applied on the server."
       );
     case "denied":
       return deny

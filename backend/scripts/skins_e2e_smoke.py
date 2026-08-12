@@ -538,6 +538,62 @@ def main() -> None:
         f"add_name colours/styles ok (freeform filename)"
     )
 
+    # Deny purges row so the same item name/id can be reused
+    reuse_tex = make_png(16, 16, fill=201)
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Smoke Deny Reuse",
+            "base_set": "swords",
+        },
+        files=[("texture", ("deny_reuse_a.png", reuse_tex, "image/png"))],
+        headers=auth2,
+    )
+    if r.status_code != 200:
+        fail(f"deny-reuse upload: {r.status_code} {r.text}")
+    reuse_id = r.json()["id"]
+    expected_reuse = build_submission_id(IGN, "Smoke Deny Reuse")
+    if reuse_id != expected_reuse:
+        fail(f"deny-reuse id expected {expected_reuse}, got {reuse_id}")
+    r = client.post(
+        f"/skins/submissions/{reuse_id}/deny",
+        json={"reason": "Needs a cleaner silhouette"},
+        headers=staff,
+    )
+    if r.status_code != 200:
+        fail(f"deny-reuse deny: {r.status_code} {r.text}")
+    if r.json().get("status") != "denied":
+        fail(f"deny-reuse response status: {r.json()}")
+    with connect() as conn:
+        if conn.execute(
+            "SELECT 1 FROM submissions WHERE id = ?", (reuse_id,)
+        ).fetchone():
+            fail(f"deny should purge submissions row: {reuse_id}")
+    reuse_tex2 = make_png(16, 16, fill=202)
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "handheld",
+            "display_name": "Smoke Deny Reuse",
+            "base_set": "swords",
+        },
+        files=[("texture", ("deny_reuse_b.png", reuse_tex2, "image/png"))],
+        headers=auth2,
+    )
+    if r.status_code != 200:
+        fail(f"deny-reuse reupload: {r.status_code} {r.text}")
+    if r.json().get("id") != reuse_id:
+        fail(f"deny-reuse reupload id expected {reuse_id}, got {r.json().get('id')}")
+    r = client.post(
+        f"/skins/submissions/{reuse_id}/deny",
+        json={"reason": "Cleanup after reuse check"},
+        headers=staff,
+    )
+    if r.status_code != 200:
+        fail(f"deny-reuse cleanup deny: {r.status_code} {r.text}")
+    print("deny purge + same-id resubmit ok")
+
     # Third session for large
     r = client.post(
         "/skins/codes",

@@ -9,6 +9,7 @@ import {
   logoutCharacter,
   type CharacterKit,
   type CharacterKitItem,
+  type LoreItemDraft,
 } from "../../../../../lib/characters/api";
 import {
   clearSession,
@@ -31,7 +32,43 @@ function uiDevSession(): CharacterSession {
   };
 }
 
+function customiseState(c: LoreItemDraft | undefined): string {
+  return String(c?.state || "").trim().toLowerCase();
+}
+
+function isPendingApproval(item: CharacterKitItem): boolean {
+  const c = item.customise;
+  if (!c) return false;
+  const state = customiseState(c);
+  const sub = String(c.submission_status || "")
+    .trim()
+    .toLowerCase();
+  return state === "pending_skin" || sub === "pending";
+}
+
+function hasCustomise(item: CharacterKitItem): boolean {
+  const c = item.customise;
+  if (!c) return false;
+  const state = customiseState(c);
+  if (
+    state === "pending_skin" ||
+    state === "ready" ||
+    state === "denied" ||
+    state === "applied"
+  ) {
+    return true;
+  }
+  if (String(c.display_name || "").trim()) return true;
+  if (Array.isArray(c.lore) && c.lore.some((l) => String(l || "").trim())) {
+    return true;
+  }
+  if (c.existing_skin_id || c.submission_id || c.skin_slug) return true;
+  return false;
+}
+
 function itemLabel(item: CharacterKitItem): string {
+  const custom = String(item.customise?.display_name || "").trim();
+  if (custom) return custom;
   if (item.preview?.display_name) return item.preview.display_name;
   const path = item.path || "";
   const seg = path.includes(".") ? path.slice(path.lastIndexOf(".") + 1) : path;
@@ -151,15 +188,32 @@ export default function CharacterKitDetailPage() {
 
           <ul className="mt-8 divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
             {kit.items.map((item) => {
+              const pending = isPendingApproval(item);
+              const custom = hasCustomise(item);
               const canEdit =
-                Boolean(item.editable && item.kit_key) && kit.claimable;
+                Boolean(item.editable && item.kit_key) &&
+                kit.claimable &&
+                !pending;
+              const statusHref =
+                item.kit_key &&
+                `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kit.id)}/edit/${encodeURIComponent(item.kit_key)}/status`;
+              const editHref =
+                item.kit_key &&
+                `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kit.id)}/edit/${encodeURIComponent(item.kit_key)}`;
+
               return (
                 <li
                   key={`${item.path}-${item.amount}`}
                   className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <p className="text-[var(--tfmc-cream)]">
+                  <div className={pending ? "opacity-55" : undefined}>
+                    <p
+                      className={
+                        pending
+                          ? "text-[var(--tfmc-stone)]"
+                          : "text-[var(--tfmc-cream)]"
+                      }
+                    >
                       {itemLabel(item)}
                       <span className="ml-2 text-sm text-[var(--tfmc-stone)]">
                         ×{item.amount}
@@ -173,14 +227,30 @@ export default function CharacterKitDetailPage() {
                       <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
                         Claimed · editing closed
                       </p>
+                    ) : pending ? (
+                      <p className="mt-1 text-xs text-[var(--tfmc-mist)]">
+                        Pending approval
+                      </p>
                     ) : null}
                   </div>
-                  {canEdit ? (
+                  {pending && statusHref && kit.claimable ? (
                     <Link
-                      href={`/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kit.id)}/edit/${encodeURIComponent(item.kit_key!)}`}
-                      className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
+                      href={statusHref}
+                      className="inline-flex items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] px-4 py-2 text-sm text-[var(--tfmc-stone)] transition-opacity hover:opacity-90"
+                    >
+                      View status
+                    </Link>
+                  ) : canEdit && editHref ? (
+                    <Link
+                      href={editHref}
+                      className="inline-flex items-center justify-center gap-2 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
                     >
                       Edit
+                      {custom ? (
+                        <span className="rounded-sm bg-[#2b6cb0] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#e8f1fb]">
+                          Custom
+                        </span>
+                      ) : null}
                     </Link>
                   ) : null}
                 </li>

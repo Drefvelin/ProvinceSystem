@@ -475,6 +475,39 @@ Checkpoint:
 /skins book → apply → kit journal → claim → sign → signed texture
 ```
 
+## Step 29 — Kit customise visibility + claim AS gate
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-29/00-index.md](./Planning/batches/step-29/00-index.md).
+
+**Code:** 29.01–29.06 done (customise visibility + claim AS gate + docs). Operator ticks below.
+
+### Deploy
+
+1. PS player delete-customise for one kit item + FE kit list/editor UX.
+2. RPC claim: approval block + ArmourShop slug presence (“awaiting skins”).
+3. Status copy: pending approval only (no kit-ready DM).
+
+### Locked
+
+- List: custom name, blue Custom tag, pending gray / no Edit
+- Dirty Submit; Delete resets customise only (not skin)
+- Claim pulls web; missing AS skin → awaiting skins message
+
+### Operator checklist
+
+- [ ] Kit list shows Custom tag / pending gray + no Edit while awaiting approval
+- [ ] Dirty Submit; Delete resets item, skin remains in `/skins`
+- [ ] Claim while approval pending → approval message
+- [ ] Claim after approve before pack → “awaiting skins”
+- [ ] Claim after AS apply → custom item granted
+- [ ] Customise only journal (or only knife) → claim OK when that skin is ready
+
+Checkpoint:
+
+```text
+customise → Custom/Pending on list → claim gates → grant when AS has skin
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

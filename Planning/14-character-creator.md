@@ -1,10 +1,10 @@
 # 14 — Character creator (web + RPCharacters)
 
-**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Kit lore editor polish **implemented** ([step-23](./batches/step-23/00-index.md)). Sheet traits/attrs/background parity **implemented** ([step-24](./batches/step-24/00-index.md)). Kit customise submit + deny UX **implemented** ([step-25](./batches/step-25/00-index.md)). Kit asset sync + post-submit status **implemented** ([step-26](./batches/step-26/00-index.md)). Phase 4 wardrobe deferred.  
+**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Kit lore editor polish **implemented** ([step-23](./batches/step-23/00-index.md)). Sheet traits/attrs/background parity **implemented** ([step-24](./batches/step-24/00-index.md)). Kit customise submit + deny UX **implemented** ([step-25](./batches/step-25/00-index.md)). Kit asset sync + post-submit status **implemented** ([step-26](./batches/step-26/00-index.md)). Kit customise visibility + claim AS gate **implemented** ([step-29](./batches/step-29/00-index.md)). Phase 4 wardrobe deferred.  
 **Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend` · (Phase 3) `Workspace/armourshop/`  
 **Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 
-Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet) · [step-23](./batches/step-23/00-index.md) (kit editor polish) · [step-24](./batches/step-24/00-index.md) (sheet parity polish) · [step-25](./batches/step-25/00-index.md) (kit submit/deny UX) · [step-26](./batches/step-26/00-index.md) (kit asset sync + status).
+Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet) · [step-23](./batches/step-23/00-index.md) (kit editor polish) · [step-24](./batches/step-24/00-index.md) (sheet parity polish) · [step-25](./batches/step-25/00-index.md) (kit submit/deny UX) · [step-26](./batches/step-26/00-index.md) (kit asset sync + status) · [step-27](./batches/step-27/00-index.md) (templates + resetkit) · [step-28](./batches/step-28/00-index.md) (book journal) · [step-29](./batches/step-29/00-index.md) (customise visibility + claim gate).
 
 ---
 
@@ -25,6 +25,7 @@ Donators (and later all players) create and manage RP characters on the website 
 | **3c** | Sheet parity polish | Personality/evil traits, merged attrs, profession EXP, writable-book background, empty-lore fix — **done** ([step-24](./batches/step-24/00-index.md)) |
 | **3d** | Kit submit + deny UX | Submit item CTA, timing/approval copy, file chips; skin deny → customise denied — **done** ([step-25](./batches/step-25/00-index.md)) |
 | **3e** | Kit asset sync + status | Catalog sync uploads default kit PNGs; post-submit status page — **done** ([step-26](./batches/step-26/00-index.md)) |
+| **3f** | Customise visibility + claim gate | Custom/Pending on kit list; dirty Submit; delete customise; in-game awaiting skins — **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed) |
 | **4** | Character skin wardrobe | Optional Mojang/player skins (incl. masked texture); separate from item `/skins` and RP identity masks |
 
 Phase 3 **requires** Phase 2 kit claim in RPC. Step 22 is FE/roster polish on top of Phase 1–3. Phase 4 is independent of kit/lore.
@@ -121,7 +122,7 @@ Replace ConditionalEvents `/tfmc starter` (see `Workspace/plugins/ConditionalEve
 | Claim command | `/rpcharacter kit <kitId>` with that character **active**. No auto-grant on join, reload, or create |
 | Cooldown | **Per kit** (player UUID × kit id), hours from that kit’s `cooldown-hours` |
 | Once per character | Per kit `once-per-character: true|false`. `true` (starter): at most one successful claim per character. `false`: claim again after that kit’s cooldown expires |
-| Claim blocked | That kit’s cooldown active; once-per-character already `granted`; **or** (Phase 3) customise for that kit is `pending_skin` — hold **whole kit** until `ready` |
+| Claim blocked | That kit’s cooldown active; once-per-character already `granted`; **or** (Phase 3) customise awaiting **staff approval**; **or** (Step 29) required skin not yet on ArmourShop — in-game *awaiting skins* |
 | Create during cooldown | Always allowed; claim when that kit’s cooldown is clear |
 | Player messaging | Discord (and ops). **Do not** add tip/nudge copy in FE/RPC |
 | Sync | All kit defs + per-character per-kit status + per-kit cooldown remaining → ProvinceSystem |
@@ -185,8 +186,8 @@ Customise **editable** kit lines (starter knife = same `IRON_HUNTING_KNIFE`). No
 | Which parts editable | `kits.yml` `editable` (`base-set` / `skin-png` / `2d-template` / optional `3d-template`; no staff `category`) |
 | When / where | **Website character screen:** ALIVE character → Kits → kit → Edit editable item. **Not** create wizard; in-game create has no kit editor |
 | Eligibility | Customise while that kit is still **claimable** for the character. Once-per-character + already claimed → no customise |
-| Claim gate | `pending_skin` for that kit+character blocks `/rpcharacter kit <id>` until `ready`; claim applies skin+lore |
-| Web UI | Character detail (menu-like) + kits browser + item editor (NBT preview); show all items, Edit only on editable |
+| Claim gate | Website: pending **approval**. In-game: block if approval pending **or** skin slug missing on ArmourShop (*awaiting skins*). No kit-ready Discord DM ([step-29](./batches/step-29/00-index.md)) |
+| Web UI | Character detail + kits browser + item editor; show custom name + **Custom** tag; pending gray / no Edit; dirty Submit; Delete resets customise only |
 | Sync | **All** kits from RPC → API → site |
 | Extensibility | More kits / editable lines via YAML the same way |
 
@@ -232,7 +233,8 @@ Phase 3: character kits UI **21.09**; docs **21.05** — **implemented**.
 Kit customise submit + deny UX: [step-25](./batches/step-25/00-index.md) — **done**.  
 Kit asset sync + post-submit status: [step-26](./batches/step-26/00-index.md) — **done**.  
 Kit skin templates + `resetkit`: [step-27](./batches/step-27/00-index.md) — **done**.  
-Book skins + kit journal: [step-28](./batches/step-28/00-index.md) — **done** (28.01–28.07).
+Book skins + kit journal: [step-28](./batches/step-28/00-index.md) — **done** (28.01–28.07).  
+Kit customise visibility + claim AS gate: [step-29](./batches/step-29/00-index.md) — **done** (29.01–29.06).
 
 ---
 

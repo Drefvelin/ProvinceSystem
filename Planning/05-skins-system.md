@@ -154,8 +154,8 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `grip_preset` | nullable; required when `kind=large_handheld` (`bottom` \| `middle` \| `top`) |
 | `base_set` | ArmourShop BaseSet id; required for non-armor kinds, must match kind allowlist ([step-8](./batches/step-8/00-index.md)); **null/unused for `armor_set`** |
 | `tiers` | JSON array of 1–6 armor tier ids (`iron\|steel\|abyssalite\|mythril\|mage\|infantry`); only set for `armor_set` |
-| `status` | `pending` \| `approved` \| `denied` \| `applied` \| `revoked` |
-| `deny_reason` | nullable |
+| `status` | `pending` \| `approved` \| `applied` \| `revoked` (deny **purges** the row; API deny response may still say `denied`) |
+| `deny_reason` | nullable while pending review path only; not retained after deny purge |
 | `dir_path` | relative folder under `data/skins/` |
 | `created_at` / `reviewed_at` / `applied_at` | |
 | `discord_message_id` | nullable |
@@ -280,7 +280,7 @@ Full checklist and IA layout: **[10-armourshop-itemsadder.md](./10-armourshop-it
 | `GET /skins/staff/submissions/{id}/files/{filename}` | Download one PNG under that submission dir |
 | `GET /skins/submissions/{id}/review-sheet` | Contact sheet (optional for Discord later) |
 | `POST /skins/submissions/{id}/approve` | |
-| `POST /skins/submissions/{id}/deny` | `{ "reason" }` |
+| `POST /skins/submissions/{id}/deny` | `{ "reason" }` — purges submission (row + files); slug free for resubmit |
 
 ### API → Discord
 

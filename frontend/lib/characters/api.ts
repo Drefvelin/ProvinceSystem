@@ -677,3 +677,37 @@ export async function customiseLoreItem(
   }
   return data as CustomiseLoreItemResult;
 }
+
+export type DeleteLoreItemCustomiseResult = {
+  ok: boolean;
+  character_id: string;
+  kit_id: string;
+  kit_key: string;
+  deleted: number;
+};
+
+export async function deleteLoreItemCustomise(
+  sessionToken: string,
+  characterId: string,
+  kitKey: string,
+  kitId = "starter"
+): Promise<DeleteLoreItemCustomiseResult> {
+  const cid = encodeURIComponent(characterId.trim());
+  const key = encodeURIComponent(kitKey.trim());
+  const kid = encodeURIComponent(kitId.trim() || "starter");
+  const res = await apiFetch(
+    `${getApiBase()}/characters/lore-items/${key}/customise?character_id=${cid}&kit_id=${kid}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(sessionToken),
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Delete customise failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as DeleteLoreItemCustomiseResult;
+}

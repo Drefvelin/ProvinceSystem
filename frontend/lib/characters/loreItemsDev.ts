@@ -183,3 +183,7 @@ export function uiDevApplyCustomise(
   uiDevCached = next;
   return next;
 }
+
+export function uiDevDeleteCustomise(): void {
+  uiDevCached = null;
+}

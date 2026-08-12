@@ -63,6 +63,7 @@ type Props = {
   nameColourStops?: number;
   submitting?: boolean;
   refreshing?: boolean;
+  deleting?: boolean;
   error?: string | null;
   successMessage?: string | null;
   onSubmit: (input: {
@@ -78,6 +79,7 @@ type Props = {
     nameStyles?: NameStyle[];
   }) => void | Promise<void>;
   onRefreshStatus?: () => void | Promise<void>;
+  onDelete?: () => void | Promise<void>;
 };
 
 function parseDraftStyles(raw: unknown): NameStyle[] {
@@ -93,6 +95,25 @@ function parseDraftStyles(raw: unknown): NameStyle[] {
     }
   }
   return out;
+}
+
+function draftHasCustomise(item: LoreItemRow): boolean {
+  const d = item.draft;
+  const state = String(d.state || "").toLowerCase();
+  if (
+    state === "pending_skin" ||
+    state === "ready" ||
+    state === "denied" ||
+    state === "applied"
+  ) {
+    return true;
+  }
+  if (String(d.display_name || "").trim()) return true;
+  if (Array.isArray(d.lore) && d.lore.some((l) => String(l || "").trim())) {
+    return true;
+  }
+  if (d.existing_skin_id || d.submission_id || d.skin_slug) return true;
+  return false;
 }
 
 const inputClass =
@@ -151,10 +172,12 @@ export default function LoreItemEditor({
   nameColourStops = 0,
   submitting = false,
   refreshing = false,
+  deleting = false,
   error = null,
   successMessage = null,
   onSubmit,
   onRefreshStatus,
+  onDelete,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const modelRef = useRef<HTMLInputElement>(null);
@@ -191,11 +214,58 @@ export default function LoreItemEditor({
     signed: string | null;
   }>({ unsigned: null, signed: null });
 
+  const baseline = useMemo(
+    () => ({
+      displayName: item.draft.display_name || "",
+      lore: (item.draft.lore || []).map(String),
+      colours: Array.isArray(item.draft.name_colours)
+        ? item.draft.name_colours.map(String)
+        : [],
+      styles: parseDraftStyles(item.draft.name_styles),
+      skinMode: (item.draft.existing_skin_id ? "pick" : "upload") as SkinMode,
+      pickedSkinId: item.draft.existing_skin_id || "",
+      use3d: false,
+    }),
+    [item]
+  );
+
   const flatKind = asSkinKind(item["2d_template"], "handheld");
   const isBook = flatKind === "book";
   const threeDKindRaw = String(item["3d_template"] || "").trim();
   const allows3d = Boolean(threeDKindRaw) && !isBook;
   const threeDKind = allows3d ? asSkinKind(threeDKindRaw, "item_3d") : null;
+
+  const isDirty = useMemo(() => {
+    if (displayName.trim() !== baseline.displayName.trim()) return true;
+    if (lore.length !== baseline.lore.length) return true;
+    if (lore.some((line, i) => line !== baseline.lore[i])) return true;
+    if (colours.length !== baseline.colours.length) return true;
+    if (colours.some((c, i) => c !== baseline.colours[i])) return true;
+    if (styles.length !== baseline.styles.length) return true;
+    if (styles.some((s, i) => s !== baseline.styles[i])) return true;
+    if (skinMode !== baseline.skinMode) return true;
+    if (skinMode === "pick" && pickedSkinId !== baseline.pickedSkinId) {
+      return true;
+    }
+    if (textureFile || unsignedFile || signedFile || modelFile) return true;
+    if (use3d !== baseline.use3d) return true;
+    return false;
+  }, [
+    baseline,
+    colours,
+    displayName,
+    lore,
+    modelFile,
+    pickedSkinId,
+    signedFile,
+    skinMode,
+    styles,
+    textureFile,
+    unsignedFile,
+    use3d,
+  ]);
+
+  const showDelete = Boolean(onDelete) && draftHasCustomise(item);
 
   useEffect(() => {
     if (!allows3d && use3d) {
@@ -406,6 +476,10 @@ export default function LoreItemEditor({
       setLocalError(
         "Skin was denied. Choose a different skin (upload or pick) and submit again."
       );
+      return;
+    }
+    if (!isDirty) {
+      setLocalError("No changes to submit");
       return;
     }
     if (skinMode === "upload" && isBook) {
@@ -850,16 +924,36 @@ export default function LoreItemEditor({
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={submitting || submitBlocked}
+            disabled={submitting || deleting || submitBlocked || !isDirty}
             className="rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
           >
             {submitting ? "Submitting…" : "Submit item"}
           </button>
+          {showDelete ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  typeof window !== "undefined" &&
+                  !window.confirm(
+                    "Reset this item to the kit default? Your uploaded skin stays in Player skins."
+                  )
+                ) {
+                  return;
+                }
+                void onDelete?.();
+              }}
+              disabled={submitting || deleting}
+              className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-2 text-sm text-[#e8a0a0] disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete customise"}
+            </button>
+          ) : null}
           {onRefreshStatus ? (
             <button
               type="button"
               onClick={() => void onRefreshStatus()}
-              disabled={refreshing || submitting}
+              disabled={refreshing || submitting || deleting}
               className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
             >
               {refreshing ? "Refreshing…" : "Refresh status"}

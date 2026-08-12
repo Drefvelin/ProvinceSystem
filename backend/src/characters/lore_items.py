@@ -493,8 +493,13 @@ def _load_row(
         return None
     keys = _row_keys(row)
     submission_id = row["submission_id"]
+    state = str(row["state"] if "state" in keys else STATE_DRAFT) or STATE_DRAFT
     submission_status = None
     deny_reason = None
+    if "deny_reason" in keys:
+        raw_reason = row["deny_reason"]
+        if raw_reason is not None and str(raw_reason).strip():
+            deny_reason = str(raw_reason).strip()
     if submission_id:
         with connect() as conn:
             sub = conn.execute(
@@ -506,6 +511,10 @@ def _load_row(
             reason = sub["deny_reason"] if "deny_reason" in sub.keys() else None
             if reason is not None and str(reason).strip():
                 deny_reason = str(reason).strip()
+        elif state == STATE_DENIED:
+            submission_status = STATE_DENIED
+    elif state == STATE_DENIED:
+        submission_status = STATE_DENIED
     return {
         "display_name": str(row["display_name"] or ""),
         "lore": _parse_lore_json(row["lore_json"]),
@@ -513,7 +522,7 @@ def _load_row(
         "submission_id": submission_id,
         "submission_status": submission_status,
         "deny_reason": deny_reason,
-        "state": str(row["state"] if "state" in keys else STATE_DRAFT) or STATE_DRAFT,
+        "state": state,
         "skin_slug": row["skin_slug"] if "skin_slug" in keys else None,
         "ready_at": row["ready_at"] if "ready_at" in keys else None,
         "applied_at": row["applied_at"] if "applied_at" in keys else None,
@@ -1400,12 +1409,74 @@ def customise_lore_item(
                     now,
                 ),
             )
+        if "deny_reason" in cols:
+            conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET deny_reason = NULL
+                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                """,
+                (player_uuid, cid, kit_key_norm),
+            )
         conn.commit()
 
     item = _build_item(player_uuid, cid, editable)
     item["kit_id"] = kit
     return {"ok": True, **item}
 
+
+def delete_lore_item_customise(
+    player_uuid: str,
+    character_id: str | None,
+    kit_key: str,
+    kit_id: str | None = None,
+) -> dict[str, Any]:
+    """Wipe one kit-item customise row (player). Does not delete skin submissions."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise LoreItemError("Invalid session", status_code=401)
+    cid = _require_character_id(character_id)
+    kit = (kit_id or "starter").strip().lower() or "starter"
+    _require_customise_allowed(uuid, cid, kit)
+
+    key = (kit_key or "").strip()
+    if not key:
+        raise LoreItemError("kit_key is required", status_code=400)
+    editable = _editable_by_key(key)
+    row_kit = str(editable.get("kit_id") or "").strip().lower()
+    if row_kit and row_kit != kit:
+        raise LoreItemError(
+            f"kit_key '{key}' does not belong to kit '{kit}'",
+            status_code=400,
+        )
+    allowed = _kit_editable_keys(kit)
+    kit_key_norm = str(editable.get("kit_key") or "").strip()
+    if allowed is not None and kit_key_norm.lower() not in allowed:
+        raise LoreItemError(
+            f"kit_key '{key}' does not belong to kit '{kit}'",
+            status_code=400,
+        )
+
+    with connect() as conn:
+        cur = conn.execute(
+            """
+            DELETE FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (uuid, cid, kit_key_norm),
+        )
+        deleted = int(cur.rowcount or 0)
+        conn.commit()
+
+    return {
+        "ok": True,
+        "character_id": cid,
+        "kit_id": kit,
+        "kit_key": kit_key_norm,
+        "deleted": deleted,
+    }
 
 
 def clear_customisations_for_kit(
@@ -1509,28 +1580,56 @@ def promote_ready_for_submissions(submission_ids: list[str]) -> int:
     return promoted
 
 
-def clear_pending_submission(submission_id: str) -> int:
-    """On deny: mark matching customise rows denied; keep name/lore and submission_id."""
+def clear_pending_submission(
+    submission_id: str, reason: str | None = None
+) -> int:
+    """On deny: mark matching customise rows denied; keep name/lore and submission_id.
+
+    Stores deny_reason on the lore row (submission is purged after deny).
+    """
     from src.skins.db import connect
 
     sid = (submission_id or "").strip()
     if not sid:
         return 0
     now = _iso_now()
+    reason_s = (reason or "").strip() or None
     with connect() as conn:
-        cur = conn.execute(
-            """
-            UPDATE lore_item_customisations
-            SET state = ?,
-                ready_at = NULL,
-                existing_skin_id = NULL,
-                skin_slug = NULL,
-                updated_at = ?
-            WHERE submission_id = ?
-              AND LOWER(COALESCE(state, '')) = ?
-            """,
-            (STATE_DENIED, now, sid, STATE_PENDING_SKIN),
-        )
+        cols = {
+            r["name"]
+            for r in conn.execute(
+                "PRAGMA table_info(lore_item_customisations)"
+            ).fetchall()
+        }
+        if "deny_reason" in cols:
+            cur = conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET state = ?,
+                    deny_reason = ?,
+                    ready_at = NULL,
+                    existing_skin_id = NULL,
+                    skin_slug = NULL,
+                    updated_at = ?
+                WHERE submission_id = ?
+                  AND LOWER(COALESCE(state, '')) = ?
+                """,
+                (STATE_DENIED, reason_s, now, sid, STATE_PENDING_SKIN),
+            )
+        else:
+            cur = conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET state = ?,
+                    ready_at = NULL,
+                    existing_skin_id = NULL,
+                    skin_slug = NULL,
+                    updated_at = ?
+                WHERE submission_id = ?
+                  AND LOWER(COALESCE(state, '')) = ?
+                """,
+                (STATE_DENIED, now, sid, STATE_PENDING_SKIN),
+            )
         cleared = int(cur.rowcount or 0)
         conn.commit()
     return cleared

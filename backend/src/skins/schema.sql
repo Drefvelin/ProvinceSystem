@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS lore_item_customisations (
     skin_slug TEXT,
     ready_at TEXT,
     applied_at TEXT,
+    deny_reason TEXT,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (player_uuid, character_id, kit_key)
 );

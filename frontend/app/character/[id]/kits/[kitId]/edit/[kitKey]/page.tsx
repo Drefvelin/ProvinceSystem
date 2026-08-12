@@ -7,6 +7,7 @@ import LoreItemEditor from "../../../../../../components/character/LoreItemEdito
 import {
   CharactersApiError,
   customiseLoreItem,
+  deleteLoreItemCustomise,
   listLoreItems,
   logoutCharacter,
   type LoreItemRow,
@@ -14,6 +15,7 @@ import {
 import {
   UI_DEV_LORE_CHARACTER_ID,
   uiDevApplyCustomise,
+  uiDevDeleteCustomise,
   uiDevLoreItemsResponse,
 } from "../../../../../../../lib/characters/loreItemsDev";
 import {
@@ -50,9 +52,11 @@ export default function CharacterKitEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const statusHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}/status`;
+  const backHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
 
   const load = useCallback(
     async (token: string) => {
@@ -165,13 +169,40 @@ export default function CharacterKitEditPage() {
     }
   }
 
+  async function onDelete() {
+    if (!session || !item || deleting) return;
+    setDeleting(true);
+    setFormError(null);
+    try {
+      if (uiDev) {
+        uiDevDeleteCustomise();
+        router.push(backHref);
+        return;
+      }
+      await deleteLoreItemCustomise(
+        session.session_token,
+        characterId,
+        item.kit_key,
+        kitId
+      );
+      router.push(backHref);
+    } catch (err) {
+      setFormError(
+        err instanceof CharactersApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Delete failed"
+      );
+      setDeleting(false);
+    }
+  }
+
   if (!ready) {
     return (
       <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
     );
   }
-
-  const backHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
 
   return (
     <div className="char-rise">
@@ -185,7 +216,7 @@ export default function CharacterKitEditPage() {
         <button
           type="button"
           onClick={onLogout}
-          disabled={loggingOut || submitting}
+          disabled={loggingOut || submitting || deleting}
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
         >
           {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
@@ -204,9 +235,11 @@ export default function CharacterKitEditPage() {
           sessionToken={session?.session_token || UI_DEV_SESSION_TOKEN}
           nameColourStops={uiDev ? 4 : 4}
           submitting={submitting}
+          deleting={deleting}
           error={formError}
           successMessage={null}
           onSubmit={onSubmit}
+          onDelete={onDelete}
         />
       ) : null}
     </div>
