@@ -225,15 +225,23 @@ export default function CharacterSheet({ character, catalog }: Props) {
 
       <nav className="mt-10 flex flex-col gap-3">
         {isAlive ? (
-          <Link
-            href={`/character/${encodeURIComponent(character.id)}/kits`}
-            className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
-          >
-            Kits
-          </Link>
+          <>
+            <Link
+              href={`/character/${encodeURIComponent(character.id)}/kits`}
+              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+            >
+              Kits
+            </Link>
+            <Link
+              href={`/character/${encodeURIComponent(character.id)}/wardrobe`}
+              className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] px-4 py-3 text-[var(--tfmc-cream)] transition-colors hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_6%,transparent)]"
+            >
+              Wardrobe
+            </Link>
+          </>
         ) : (
           <p className="text-sm text-[var(--tfmc-mist)]">
-            Kits are available for alive characters.
+            Kits and wardrobe are available for alive characters.
           </p>
         )}
       </nav>

@@ -145,3 +145,26 @@ CREATE TABLE IF NOT EXISTS lore_item_customisations (
     updated_at TEXT NOT NULL,
     PRIMARY KEY (player_uuid, character_id, kit_key)
 );
+
+CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
+    player_uuid TEXT NOT NULL,
+    character_id TEXT NOT NULL,
+    slot TEXT NOT NULL,
+    png_relpath TEXT,
+    texture_value TEXT,
+    texture_signature TEXT,
+    model TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (player_uuid, character_id, slot)
+);
+
+CREATE TABLE IF NOT EXISTS character_create_wardrobe (
+    create_id TEXT NOT NULL,
+    slot TEXT NOT NULL,
+    png_relpath TEXT,
+    texture_value TEXT,
+    texture_signature TEXT,
+    model TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (create_id, slot)
+);

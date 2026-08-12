@@ -508,6 +508,45 @@ Checkpoint:
 customise → Custom/Pending on list → claim gates → grant when AS has skin
 ```
 
+## Step 30 — Character skin wardrobe (Phase 4)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-30/00-index.md](./Planning/batches/step-30/00-index.md).
+
+**Code:** 30.01–30.08 done (wardrobe API, MineSkin, web UI, RPC apply/mask/cmd, creation stages, docs). Operator ticks below when live.
+
+### Deploy
+
+1. Free MineSkin API key on PS backend (`MINESKIN_API_KEY` in gitignored `.env`).
+2. PS API + FE wardrobe + RPC jar (apply / wardrobe command / mask / stages).
+3. Catalog reload (`/rpcharacter catalog sync`) so `wardrobe-skin-slots` + stage `platform` (incl. wardrobe stages) sync.
+
+### Locked
+
+- Slots: base + masked (all) · extras by rank (1/1/2/3/3 swappable)
+- 64×64 only; MineSkin on Save; no staff review
+- Apply on join + character switch; mask on/off; `/rpcharacterwardrobe`
+- Rank drop wipes extras; empty base = no auto-apply
+- Creation: `platform` game tip vs web upload card
+
+### Operator checklist
+
+- [ ] Free MineSkin API key configured on PS backend
+- [ ] Web: upload 64×64 base → spinner → slot ready with 3D preview
+- [ ] Non-64×64 rejected
+- [ ] Locked extras show Gilded+ / Ascended+ (coloured when possible)
+- [ ] Masked upload; not selectable in `/rpcharacterwardrobe`
+- [ ] Character switch / join applies active skin; empty base leaves account skin
+- [ ] Mask on/off swaps masked ↔ active
+- [ ] Gilded unlocks 2 swappable; Ascended 3
+- [ ] Rank drop wipes extras
+- [ ] Game create: wardrobe tip only; web create: wardrobe card (optional upload)
+
+Checkpoint:
+
+```text
+web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank wipe
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

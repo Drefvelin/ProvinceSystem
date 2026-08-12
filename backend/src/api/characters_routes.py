@@ -34,6 +34,18 @@ from src.characters.lore_items import (
     store_plugin_kit_skin,
 )
 from src.characters.roster import RosterError, replace_roster
+from src.characters.wardrobe import (
+    WardrobeError,
+    clear_pending_create_wardrobe,
+    clear_slot,
+    get_wardrobe,
+    get_wardrobe_for_plugin,
+    resolve_slot_texture_path,
+    set_active_slot,
+    set_active_slot_for_plugin,
+    upload_pending_create_wardrobe,
+    upload_slot,
+)
 from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
 from src.skins.codes import get_session, revoke_session
 
@@ -52,9 +64,16 @@ class RosterBody(BaseModel):
     real_age_set: bool | None = None
     account_created_at_epoch: int | None = None
     name_colour_stops: int | None = None
+    wardrobe_skin_slots: int | None = None
     kit_cooldown_seconds_remaining: int | None = None
     kit_cooldown_hours: int | None = None
     kit_cooldowns: dict | None = None
+
+
+class WardrobeActiveBody(BaseModel):
+    """PATCH body for wardrobe active slot. null clears auto-apply."""
+
+    slot: str | None = None
 
 
 def _require_plugin(x_plugin_key: str | None) -> None:
@@ -94,6 +113,10 @@ def _character_session_from_auth(authorization: str | None) -> dict:
 
 
 def _lore_http(exc: LoreItemError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail=str(exc))
+
+
+def _wardrobe_http(exc: WardrobeError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))
 
 
@@ -381,6 +404,95 @@ def delete_lore_item_customise_route(
         raise _lore_http(e) from e
 
 
+@characters_router.get("/{character_id}/wardrobe")
+def get_character_wardrobe(
+    character_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """List wardrobe slots + active for a roster character."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return get_wardrobe(session["player_uuid"], character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.patch("/{character_id}/wardrobe/active")
+def patch_character_wardrobe_active(
+    character_id: str,
+    body: WardrobeActiveBody,
+    authorization: str | None = Header(default=None),
+):
+    """Set or clear the active swappable wardrobe slot."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return set_active_slot(session["player_uuid"], character_id, body.slot)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.get("/{character_id}/wardrobe/{slot}/texture")
+def get_character_wardrobe_texture(
+    character_id: str,
+    slot: str,
+    authorization: str | None = Header(default=None),
+):
+    """Serve uploaded wardrobe PNG for preview (owner only)."""
+    from fastapi.responses import FileResponse
+
+    session = _character_session_from_auth(authorization)
+    try:
+        path = resolve_slot_texture_path(
+            session["player_uuid"], character_id, slot
+        )
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+    return FileResponse(
+        path,
+        media_type="image/png",
+        filename=f"{slot}.png",
+    )
+
+
+@characters_router.post("/{character_id}/wardrobe/{slot}")
+async def post_character_wardrobe_slot(
+    character_id: str,
+    slot: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    """Upload a 64x64 PNG into a wardrobe slot (MineSkin sign in 30.03)."""
+    session = _character_session_from_auth(authorization)
+    form = await request.form()
+    file = form.get("texture") or form.get("file")
+    if file is None or not hasattr(file, "read"):
+        raise HTTPException(
+            status_code=400,
+            detail="Missing multipart file field 'texture' (or 'file')",
+        )
+    png_bytes = await file.read()
+    try:
+        return upload_slot(
+            session["player_uuid"], character_id, slot, png_bytes
+        )
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.delete("/{character_id}/wardrobe/{slot}")
+def delete_character_wardrobe_slot(
+    character_id: str,
+    slot: str,
+    authorization: str | None = Header(default=None),
+):
+    """Clear one wardrobe slot (and PNG)."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return clear_slot(session["player_uuid"], character_id, slot)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
 @characters_router.post("/logout")
 def post_logout(
     authorization: str | None = Header(default=None),
@@ -416,6 +528,47 @@ async def post_character(
         "created_at": row["created_at"],
         "payload": row["payload"],
     }
+
+
+@characters_router.post("/creates/{create_id}/wardrobe/{slot}")
+async def post_pending_create_wardrobe(
+    create_id: str,
+    slot: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    """Upload a signed wardrobe slot for a pending web create."""
+    session = _character_session_from_auth(authorization)
+    form = await request.form()
+    file = form.get("texture") or form.get("file")
+    if file is None or not hasattr(file, "read"):
+        raise HTTPException(
+            status_code=400,
+            detail="Missing multipart file field 'texture' (or 'file')",
+        )
+    png_bytes = await file.read()
+    try:
+        return upload_pending_create_wardrobe(
+            session["player_uuid"], create_id, slot, png_bytes
+        )
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.delete("/creates/{create_id}/wardrobe/{slot}")
+def delete_pending_create_wardrobe(
+    create_id: str,
+    slot: str,
+    authorization: str | None = Header(default=None),
+):
+    """Clear a pending-create wardrobe slot draft."""
+    session = _character_session_from_auth(authorization)
+    try:
+        return clear_pending_create_wardrobe(
+            session["player_uuid"], create_id, slot
+        )
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
 
 
 @characters_router.get("")
@@ -520,9 +673,39 @@ def plugin_put_roster(
             body.real_age_set,
             body.account_created_at_epoch,
             body.name_colour_stops,
+            body.wardrobe_skin_slots,
             body.kit_cooldown_seconds_remaining,
             body.kit_cooldown_hours,
             body.kit_cooldowns,
         )
     except RosterError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@characters_router.get("/plugin/wardrobe/{player_uuid}/{character_id}")
+def plugin_get_wardrobe(
+    player_uuid: str,
+    character_id: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Pull signed wardrobe for RPC apply (includes texture value/signature)."""
+    _require_plugin(x_plugin_key)
+    try:
+        return get_wardrobe_for_plugin(player_uuid, character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.patch("/plugin/wardrobe/{player_uuid}/{character_id}/active")
+def plugin_patch_wardrobe_active(
+    player_uuid: str,
+    character_id: str,
+    body: WardrobeActiveBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Set active swappable slot from in-game wardrobe command."""
+    _require_plugin(x_plugin_key)
+    try:
+        return set_active_slot_for_plugin(player_uuid, character_id, body.slot)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e

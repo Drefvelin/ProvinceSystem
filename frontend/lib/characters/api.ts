@@ -173,6 +173,8 @@ export type CatalogStage = {
   entries?: unknown;
   require_account_age_hours_min?: number;
   require_account_age_hours_max?: number;
+  /** both (default) | web | game — creation client filter */
+  platform?: "both" | "web" | "game" | string;
   dependency?: {
     type?: string;
     mode?: string;
@@ -250,8 +252,19 @@ export type SlotLimits = {
   defaults?: {
     max_alive_characters?: number;
     name_colour_stops?: number;
+    wardrobe_skin_slots?: number;
   };
-  groups?: unknown[];
+  groups?: Array<{
+    id?: string;
+    permission?: string;
+    display_name?: string;
+    tier?: number;
+    visible?: boolean;
+    max_alive_characters?: number;
+    name_colour_stops?: number;
+    wardrobe_skin_slots?: number;
+    [key: string]: unknown;
+  }>;
 };
 
 export async function getCreationCatalog(
@@ -320,6 +333,8 @@ export type CharacterListResponse = {
   evil_unlocked?: boolean;
   /** Rank perk: max name colour stops (0 = locked). */
   name_colour_stops?: number;
+  /** Swappable wardrobe skins (1–3). */
+  wardrobe_skin_slots?: number;
   /** Snapshot seconds remaining until next kit grant is allowed. */
   kit_cooldown_seconds_remaining?: number;
   /** Config echo of kit cooldown length in hours. */
@@ -366,6 +381,15 @@ export async function listCharacters(
       typeof body.name_colour_stops === "number"
         ? Math.max(0, body.name_colour_stops)
         : 0,
+    wardrobe_skin_slots: Math.max(
+      1,
+      Math.min(
+        3,
+        typeof body.wardrobe_skin_slots === "number"
+          ? body.wardrobe_skin_slots
+          : 1
+      )
+    ),
     kit_cooldown_seconds_remaining:
       typeof body.kit_cooldown_seconds_remaining === "number"
         ? Math.max(0, body.kit_cooldown_seconds_remaining)
@@ -710,4 +734,208 @@ export async function deleteLoreItemCustomise(
     );
   }
   return data as DeleteLoreItemCustomiseResult;
+}
+
+/* --- Character skin wardrobe (Phase 4) --- */
+
+export type WardrobeSlotId = "base" | "extra_1" | "extra_2" | "masked";
+
+export type WardrobeSlot = {
+  slot: WardrobeSlotId | string;
+  unlocked: boolean;
+  filled: boolean;
+  model?: string | null;
+  has_signature?: boolean;
+  signed?: boolean;
+  texture_url?: string | null;
+};
+
+export type WardrobeResponse = {
+  character_id: string;
+  active_slot: WardrobeSlotId | string | null;
+  swappable_slots: number;
+  slots: WardrobeSlot[];
+  uploaded_slot?: string;
+  signed?: boolean;
+};
+
+export async function getWardrobe(
+  sessionToken: string,
+  characterId: string
+): Promise<WardrobeResponse> {
+  const id = encodeURIComponent(characterId.trim());
+  const res = await apiFetch(`${getApiBase()}/characters/${id}/wardrobe`, {
+    headers: authHeaders(sessionToken),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Wardrobe failed (${res.status})`),
+      res.status
+    );
+  }
+  const body = data as WardrobeResponse;
+  return {
+    character_id: String(body.character_id || characterId),
+    active_slot: body.active_slot ?? null,
+    swappable_slots: Math.max(1, Number(body.swappable_slots) || 1),
+    slots: Array.isArray(body.slots) ? body.slots : [],
+  };
+}
+
+export async function uploadWardrobeSlot(
+  sessionToken: string,
+  characterId: string,
+  slot: string,
+  file: File
+): Promise<WardrobeResponse> {
+  const id = encodeURIComponent(characterId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const form = new FormData();
+  form.append("texture", file, file.name || "skin.png");
+  const res = await apiFetch(
+    `${getApiBase()}/characters/${id}/wardrobe/${s}`,
+    {
+      method: "POST",
+      headers: authHeaders(sessionToken),
+      body: form,
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Upload failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as WardrobeResponse;
+}
+
+export async function clearWardrobeSlot(
+  sessionToken: string,
+  characterId: string,
+  slot: string
+): Promise<WardrobeResponse> {
+  const id = encodeURIComponent(characterId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/${id}/wardrobe/${s}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(sessionToken),
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Clear slot failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as WardrobeResponse;
+}
+
+export async function setWardrobeActive(
+  sessionToken: string,
+  characterId: string,
+  slot: string | null
+): Promise<WardrobeResponse> {
+  const id = encodeURIComponent(characterId.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/${id}/wardrobe/active`,
+    {
+      method: "PATCH",
+      headers: {
+        ...authHeaders(sessionToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ slot }),
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Set active failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as WardrobeResponse;
+}
+
+export async function uploadPendingCreateWardrobe(
+  sessionToken: string,
+  createId: string,
+  slot: string,
+  file: File
+): Promise<{ ok: boolean; create_id: string; slot: string; signed?: boolean }> {
+  const cid = encodeURIComponent(createId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const form = new FormData();
+  form.append("texture", file, file.name || "skin.png");
+  const res = await apiFetch(
+    `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
+    {
+      method: "POST",
+      headers: authHeaders(sessionToken),
+      body: form,
+    }
+  );
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Pending wardrobe upload failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as {
+    ok: boolean;
+    create_id: string;
+    slot: string;
+    signed?: boolean;
+  };
+}
+
+export async function clearPendingCreateWardrobe(
+  sessionToken: string,
+  createId: string,
+  slot: string
+): Promise<void> {
+  const cid = encodeURIComponent(createId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(sessionToken),
+    }
+  );
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new CharactersApiError(
+      detailMessage(data, `Clear pending wardrobe failed (${res.status})`),
+      res.status
+    );
+  }
+}
+
+export async function fetchWardrobeTextureBlob(
+  sessionToken: string,
+  characterId: string,
+  slot: string
+): Promise<string> {
+  const id = encodeURIComponent(characterId.trim());
+  const s = encodeURIComponent(slot.trim());
+  const res = await apiFetch(
+    `${getApiBase()}/characters/${id}/wardrobe/${s}/texture`,
+    { headers: authHeaders(sessionToken) }
+  );
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new CharactersApiError(
+      detailMessage(data, `Texture failed (${res.status})`),
+      res.status
+    );
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }

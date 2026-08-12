@@ -49,6 +49,7 @@ const INTERACTIVE_TYPES = new Set([
   "attributes",
   "clue",
   "summary",
+  "wardrobe",
 ]);
 
 export function newDraft(catalog: CreationCatalog): WizardDraft {
@@ -148,6 +149,8 @@ export function playableStages(
   return stages.filter((s) => {
     const t = String(s.type || "").toLowerCase();
     if (!t) return false;
+    const platform = String(s.platform || "both").toLowerCase();
+    if (platform === "game") return false;
     if (opts?.skipRealAge && isRealAgeStage(s)) return false;
     if (!passesTraitDependency(s, opts?.selectedTraitIds)) return false;
     if (!passesAccountAgeGate(s, opts)) return false;
@@ -751,7 +754,7 @@ export function stageCanContinue(
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
 
-  if (type === "info" || type === "summary") return true;
+  if (type === "info" || type === "summary" || type === "wardrobe") return true;
 
   if (type === "setter") {
     if (target === "real_age") {

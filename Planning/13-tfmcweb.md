@@ -262,4 +262,4 @@ Staging verify script: [08-docs-verify.md](./batches/step-17/08-docs-verify.md).
 
 ## Next step
 
-Character creator Phase 1 is **done** (staging verified). Phase 2 kit plumbing **done** ([step-20](./batches/step-20/00-index.md) 20.01–20.03); claim + lore-item cutover in [step-21](./batches/step-21/00-index.md) (**21.06 → 21.07 → 21.05**). Phase 4 wardrobe stays later.
+Character creator Phase 1 is **done** (staging verified). Phase 2 kit plumbing **done** ([step-20](./batches/step-20/00-index.md) 20.01–20.03); claim + lore-item cutover in [step-21](./batches/step-21/00-index.md) (**21.06 → 21.07 → 21.05**). Phase 4 wardrobe **planned** ([step-30](./batches/step-30/00-index.md)).

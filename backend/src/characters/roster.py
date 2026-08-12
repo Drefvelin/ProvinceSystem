@@ -58,6 +58,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         "real_age_set": False,
         "account_created_at_epoch": None,
         "name_colour_stops": 0,
+        "wardrobe_skin_slots": 1,
         "kit_cooldown_seconds_remaining": 0,
         "kit_cooldown_hours": None,
         "kit_cooldowns": {},
@@ -69,6 +70,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
             """
             SELECT max_alive_characters, eighteen, real_age_set,
                    account_created_at_epoch, name_colour_stops,
+                   wardrobe_skin_slots,
                    kit_cooldown_seconds_remaining, kit_cooldown_hours,
                    kit_cooldowns_json
             FROM character_player_meta
@@ -102,6 +104,16 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
             name_colour_stops = max(0, int(row["name_colour_stops"]))
         except (TypeError, ValueError):
             name_colour_stops = 0
+    wardrobe_skin_slots = 1
+    try:
+        raw_slots = row["wardrobe_skin_slots"]
+    except (KeyError, IndexError):
+        raw_slots = None
+    if raw_slots is not None:
+        try:
+            wardrobe_skin_slots = max(1, min(3, int(raw_slots)))
+        except (TypeError, ValueError):
+            wardrobe_skin_slots = 1
     kit_cooldown_seconds_remaining = 0
     if row["kit_cooldown_seconds_remaining"] is not None:
         try:
@@ -134,6 +146,7 @@ def get_player_meta(player_uuid: str) -> dict[str, Any]:
         "real_age_set": real_age_set,
         "account_created_at_epoch": account_created_at_epoch,
         "name_colour_stops": name_colour_stops,
+        "wardrobe_skin_slots": wardrobe_skin_slots,
         "kit_cooldown_seconds_remaining": kit_cooldown_seconds_remaining,
         "kit_cooldown_hours": kit_cooldown_hours,
         "kit_cooldowns": kit_cooldowns,
@@ -147,6 +160,14 @@ def get_stored_max_alive(player_uuid: str) -> int | None:
 def get_name_colour_stops(player_uuid: str) -> int:
     """Resolved colour-stop entitlement (0 = no colour)."""
     return int(get_player_meta(player_uuid).get("name_colour_stops") or 0)
+
+
+def get_wardrobe_skin_slots(player_uuid: str) -> int:
+    """Swappable wardrobe skins (1–3). Defaults to 1 when unset."""
+    try:
+        return max(1, min(3, int(get_player_meta(player_uuid).get("wardrobe_skin_slots") or 1)))
+    except (TypeError, ValueError):
+        return 1
 
 
 def get_max_alive(
@@ -354,6 +375,7 @@ def replace_roster(
     real_age_set: bool | None = None,
     account_created_at_epoch: int | None = None,
     name_colour_stops: int | None = None,
+    wardrobe_skin_slots: int | None = None,
     kit_cooldown_seconds_remaining: int | None = None,
     kit_cooldown_hours: int | None = None,
     kit_cooldowns: dict | None = None,
@@ -402,6 +424,16 @@ def replace_roster(
             raise RosterError("name_colour_stops must be an integer") from e
         if next_colour_stops < 0:
             raise RosterError("name_colour_stops must be >= 0")
+
+    next_wardrobe_slots: int | None = None
+    if wardrobe_skin_slots is not None:
+        try:
+            next_wardrobe_slots = int(wardrobe_skin_slots)
+        except (TypeError, ValueError) as e:
+            raise RosterError("wardrobe_skin_slots must be an integer") from e
+        if next_wardrobe_slots < 1:
+            raise RosterError("wardrobe_skin_slots must be >= 1")
+        next_wardrobe_slots = min(3, next_wardrobe_slots)
 
     next_kit_seconds: int | None = None
     if kit_cooldown_seconds_remaining is not None:
@@ -507,6 +539,7 @@ def replace_roster(
             or real_age_set is not None
             or next_account_epoch is not None
             or next_colour_stops is not None
+            or next_wardrobe_slots is not None
             or next_kit_seconds is not None
             or next_kit_hours is not None
             or next_kit_cooldowns_json is not None
@@ -520,6 +553,7 @@ def replace_roster(
             next_real = None if real_age_set is None else (1 if real_age_set else 0)
             stored_epoch = next_account_epoch
             stored_stops = next_colour_stops
+            stored_wardrobe = next_wardrobe_slots
             stored_kit_seconds = next_kit_seconds
             stored_kit_hours = next_kit_hours
             stored_kit_cooldowns = next_kit_cooldowns_json
@@ -537,6 +571,11 @@ def replace_roster(
                         stored_stops = existing["name_colour_stops"]
                     except (KeyError, IndexError):
                         stored_stops = None
+                if stored_wardrobe is None:
+                    try:
+                        stored_wardrobe = existing["wardrobe_skin_slots"]
+                    except (KeyError, IndexError):
+                        stored_wardrobe = None
                 if stored_kit_seconds is None:
                     try:
                         stored_kit_seconds = existing[
@@ -562,16 +601,18 @@ def replace_roster(
                 INSERT INTO character_player_meta (
                     player_uuid, max_alive_characters, eighteen, real_age_set,
                     account_created_at_epoch, name_colour_stops,
+                    wardrobe_skin_slots,
                     kit_cooldown_seconds_remaining, kit_cooldown_hours,
                     kit_cooldowns_json, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(player_uuid) DO UPDATE SET
                     max_alive_characters = excluded.max_alive_characters,
                     eighteen = excluded.eighteen,
                     real_age_set = excluded.real_age_set,
                     account_created_at_epoch = excluded.account_created_at_epoch,
                     name_colour_stops = excluded.name_colour_stops,
+                    wardrobe_skin_slots = excluded.wardrobe_skin_slots,
                     kit_cooldown_seconds_remaining =
                         excluded.kit_cooldown_seconds_remaining,
                     kit_cooldown_hours = excluded.kit_cooldown_hours,
@@ -585,6 +626,7 @@ def replace_roster(
                     next_real,
                     stored_epoch,
                     stored_stops,
+                    stored_wardrobe,
                     stored_kit_seconds,
                     stored_kit_hours,
                     stored_kit_cooldowns,
@@ -608,6 +650,8 @@ def replace_roster(
         out["account_created_at_epoch"] = next_account_epoch
     if next_colour_stops is not None:
         out["name_colour_stops"] = next_colour_stops
+    if next_wardrobe_slots is not None:
+        out["wardrobe_skin_slots"] = next_wardrobe_slots
     if next_kit_seconds is not None:
         out["kit_cooldown_seconds_remaining"] = next_kit_seconds
     if next_kit_hours is not None:

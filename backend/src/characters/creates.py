@@ -537,6 +537,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
         "account_age_seconds": account_age_seconds,
         "evil_unlocked": evil_unlocked,
         "name_colour_stops": int(meta.get("name_colour_stops") or 0),
+        "wardrobe_skin_slots": int(meta.get("wardrobe_skin_slots") or 1),
         "kit_cooldown_seconds_remaining": int(
             meta.get("kit_cooldown_seconds_remaining") or 0
         ),
@@ -554,6 +555,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
 def mark_applied_results(results: list) -> dict[str, Any]:
     from src.skins.db import connect
     from src.characters.lore_items import remount_character_id
+    from src.characters.wardrobe import flush_pending_wardrobe
 
     if not isinstance(results, list):
         raise CreateError("results must be a list")
@@ -619,5 +621,6 @@ def mark_applied_results(results: list) -> dict[str, Any]:
 
     for player_uuid, create_id, character_id in remounts:
         remount_character_id(player_uuid, create_id, character_id)
+        flush_pending_wardrobe(player_uuid, create_id, character_id)
 
     return {"ok": True, "applied": applied, "rejected": rejected}

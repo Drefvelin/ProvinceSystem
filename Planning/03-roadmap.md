@@ -219,7 +219,7 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Track E — Web character creator
 
-**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). **E3e / Step 25** kit submit + deny UX **done** (25.03 docs closed). **E3f / Step 26** kit asset sync + status **done** (26.03 docs closed). **E3g / Step 27** kit templates + `resetkit` **done** (27.05 docs closed). **E3h / Step 28** book skins + kit journal **done** (28.07 docs closed). **E3i / Step 29** kit customise visibility + claim AS gate **done** (29.06 docs closed). E4 wardrobe deferred.  
+**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). **E3e / Step 25** kit submit + deny UX **done** (25.03 docs closed). **E3f / Step 26** kit asset sync + status **done** (26.03 docs closed). **E3g / Step 27** kit templates + `resetkit` **done** (27.05 docs closed). **E3h / Step 28** book skins + kit journal **done** (28.07 docs closed). **E3i / Step 29** kit customise visibility + claim AS gate **done** (29.06 docs closed). **E4 / Step 30** wardrobe **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed; staging ticks open).  
 **Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend · (E3) ArmourShop
 
 | Phase | Detail |
@@ -235,10 +235,11 @@ Quotas, retention, module template, optional brewery stub.
 | E3g / Step 27 | Kit `2d-template` / `3d-template` + staff `resetkit` — **done** ([step-27](./batches/step-27/00-index.md) / [27.05](./batches/step-27/05-docs-verify.md)) |
 | E3h / Step 28 | Book skins (unsigned/signed) + kit journal + sign swap — **done** ([step-28](./batches/step-28/00-index.md); 28.07 docs closed) |
 | E3i / Step 29 | Kit customise visibility (Custom tag, dirty submit, delete) + in-game claim AS gate — **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed) |
-| E4 | Character skin wardrobe (optional Mojang/masked) |
+| E4 / Step 30 | Character skin wardrobe (MineSkin + web frames + `/rpcharacterwardrobe`) — **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed) |
 
 **Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  
-**Locked (Phase 2–3):** See [14-character-creator.md](./14-character-creator.md) (generic kits; character kits UI; Discord owns player messaging).
+**Locked (Phase 2–3):** See [14-character-creator.md](./14-character-creator.md) (generic kits; character kits UI; Discord owns player messaging).  
+**Locked (Phase 4):** See [14-character-creator.md](./14-character-creator.md) / [step-30](./batches/step-30/00-index.md).
 
 **Out of Track E Phase 1:** Kit, lore editor, player skins.  
 **Out of Step 20:** Lore-item / multi-kit UI (E3).
@@ -255,6 +256,6 @@ Quotas, retention, module template, optional brewery stub.
 6. **Step 18 / Track D** — **code done**; human staging verify on live  
 7. **Track E / step-19 Phase 1** — **done** (staging verified)  
 8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
-9. **Track E / step-22–25** — sheet + kit editor polish + sheet parity + submit/deny UX **done**; E4 / overlays as capacity allows; run [STAGING](../STAGING.md) Step 20–25 when ready
+9. **Track E / step-22–30** — sheet + kit polish + wardrobe **done**; run [STAGING](../STAGING.md) Step 20–30 when ready
 
 Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.

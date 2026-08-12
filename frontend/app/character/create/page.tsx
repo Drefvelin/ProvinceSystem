@@ -33,6 +33,7 @@ export default function CharacterCreatePage() {
   const [evilUnlocked, setEvilUnlocked] = useState(false);
   const [accountAgeSeconds, setAccountAgeSeconds] = useState(0);
   const [nameColourStops, setNameColourStops] = useState(0);
+  const [wardrobeSkinSlots, setWardrobeSkinSlots] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -77,6 +78,14 @@ export default function CharacterCreatePage() {
       } else {
         setNameColourStops(0);
       }
+      const wardrobeSlotsRaw = params?.get("wardrobeSlots");
+      if (wardrobeSlotsRaw != null && wardrobeSlotsRaw !== "") {
+        setWardrobeSkinSlots(
+          Math.max(1, Math.min(3, Number(wardrobeSlotsRaw) || 1))
+        );
+      } else {
+        setWardrobeSkinSlots(1);
+      }
       setReady(true);
       return;
     }
@@ -113,6 +122,9 @@ export default function CharacterCreatePage() {
         }
         setNameColourStops(
           Math.max(0, Math.min(8, Number(list.name_colour_stops) || 0))
+        );
+        setWardrobeSkinSlots(
+          Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1))
         );
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
@@ -188,6 +200,7 @@ export default function CharacterCreatePage() {
           evilUnlocked={evilUnlocked}
           accountAgeSeconds={accountAgeSeconds}
           nameColourStops={nameColourStops}
+          wardrobeSkinSlots={wardrobeSkinSlots}
         />
       ) : null}
     </main>

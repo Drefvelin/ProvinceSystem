@@ -6,6 +6,7 @@ _SKINS_PKG = Path(__file__).resolve().parent
 DATA_DIR = _SKINS_PKG.parent / "data"
 DB_PATH = DATA_DIR / "province.db"
 SKINS_DIR = DATA_DIR / "skins"
+WARDROBE_DIR = DATA_DIR / "wardrobe"
 SCHEMA_PATH = _SKINS_PKG / "schema.sql"
 
 
@@ -32,6 +33,7 @@ def _tables(conn: sqlite3.Connection) -> set[str]:
 def migrate() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SKINS_DIR.mkdir(parents=True, exist_ok=True)
+    WARDROBE_DIR.mkdir(parents=True, exist_ok=True)
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
     denied_ids: list[str] = []
     with connect() as conn:
@@ -384,6 +386,47 @@ def migrate() -> None:
         if "deny_reason" not in lore_cols:
             conn.execute(
                 "ALTER TABLE lore_item_customisations ADD COLUMN deny_reason TEXT"
+            )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
+                player_uuid TEXT NOT NULL,
+                character_id TEXT NOT NULL,
+                slot TEXT NOT NULL,
+                png_relpath TEXT,
+                texture_value TEXT,
+                texture_signature TEXT,
+                model TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (player_uuid, character_id, slot)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS character_create_wardrobe (
+                create_id TEXT NOT NULL,
+                slot TEXT NOT NULL,
+                png_relpath TEXT,
+                texture_value TEXT,
+                texture_signature TEXT,
+                model TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (create_id, slot)
+            )
+            """
+        )
+        roster_cols = _column_names(conn, "character_roster")
+        if "wardrobe_active_slot" not in roster_cols:
+            conn.execute(
+                "ALTER TABLE character_roster "
+                "ADD COLUMN wardrobe_active_slot TEXT"
+            )
+        meta_cols = _column_names(conn, "character_player_meta")
+        if "wardrobe_skin_slots" not in meta_cols:
+            conn.execute(
+                "ALTER TABLE character_player_meta "
+                "ADD COLUMN wardrobe_skin_slots INTEGER"
             )
         denied_ids = [
             str(r["id"])

@@ -1,7 +1,12 @@
 import logging
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Load backend/.env (gitignored) before any env-based auth/signing.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # --------------------
 # Logging (warnings+)

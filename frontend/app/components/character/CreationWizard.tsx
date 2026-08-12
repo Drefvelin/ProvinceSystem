@@ -9,9 +9,13 @@ import SelectableOption from "./SelectableOption";
 import {
   CharactersApiError,
   createCharacter,
+  uploadPendingCreateWardrobe,
   type CatalogStage,
   type CreationCatalog,
 } from "../../../lib/characters/api";
+import WardrobeEditor, {
+  type WardrobeDraftFiles,
+} from "./WardrobeEditor";
 import {
   ageFromBirthday,
   fictionalBirthdayLabel,
@@ -68,6 +72,8 @@ type Props = {
   accountAgeSeconds?: number;
   /** Rank perk: max name colour stops (0 = locked / donators only). */
   nameColourStops?: number;
+  /** Swappable wardrobe skins (1–3). */
+  wardrobeSkinSlots?: number;
 };
 
 function displayName(row: { id: string; name?: string }): string {
@@ -83,6 +89,9 @@ function StageBody({
   skipRealAge = false,
   accountAgeSeconds = 0,
   nameColourStops = 0,
+  wardrobeDraft,
+  onWardrobeDraftChange,
+  wardrobeSkinSlots = 1,
 }: {
   stage: CatalogStage;
   draft: WizardDraft;
@@ -92,11 +101,36 @@ function StageBody({
   skipRealAge?: boolean;
   accountAgeSeconds?: number;
   nameColourStops?: number;
+  wardrobeDraft: WardrobeDraftFiles;
+  onWardrobeDraftChange: (next: WardrobeDraftFiles) => void;
+  wardrobeSkinSlots?: number;
 }) {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
   const copy = parseStageCopy(stage);
   const modifierTotals = draftModifierTotals(draft, catalog);
+
+  if (type === "wardrobe") {
+    return (
+      <div className="flex flex-col gap-4">
+        {copy.bodyLines.map((line, i) => (
+          <p
+            key={`${stage.id}-body-${i}`}
+            className="text-sm leading-relaxed text-[var(--tfmc-mist)]"
+          >
+            {line}
+          </p>
+        ))}
+        <WardrobeEditor
+          mode="draft"
+          slotLimits={catalog.slot_limits}
+          swappableSlots={wardrobeSkinSlots}
+          draftFiles={wardrobeDraft}
+          onDraftFilesChange={onWardrobeDraftChange}
+        />
+      </div>
+    );
+  }
 
   if (type === "info") {
     return (
@@ -624,9 +658,12 @@ export default function CreationWizard({
   evilUnlocked = false,
   accountAgeSeconds = 0,
   nameColourStops = 0,
+  wardrobeSkinSlots = 1,
 }: Props) {
   const router = useRouter();
   const [draft, setDraft] = useState(() => newDraft(catalog));
+  const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraftFiles>({});
+  const [pendingCreateId, setPendingCreateId] = useState<string | null>(null);
   const stages = useMemo(
     () =>
       playableStages(catalog, {
@@ -708,14 +745,37 @@ export default function CreationWizard({
         // eslint-disable-next-line no-console
         console.info("[character UI-dev] create draft", {
           body: toCreateBody(draft, { nameColourStops }),
+          wardrobeDraft,
         });
         setUiDevDone(true);
         return;
       }
-      await createCharacter(
-        sessionToken,
-        toCreateBody(draft, { nameColourStops })
-      );
+      let createId = pendingCreateId;
+      if (!createId) {
+        const created = await createCharacter(
+          sessionToken,
+          toCreateBody(draft, { nameColourStops })
+        );
+        createId = String(created.id || "").trim();
+        if (!createId) {
+          throw new Error("Create succeeded but no id returned");
+        }
+        setPendingCreateId(createId);
+      }
+
+      const slots = Object.entries(wardrobeDraft).filter(
+        ([, file]) => file instanceof File
+      ) as [string, File][];
+      for (const [slot, file] of slots) {
+        setError(`Signing skin (${slot})…`);
+        await uploadPendingCreateWardrobe(
+          sessionToken,
+          createId,
+          slot,
+          file
+        );
+      }
+      setError(null);
       router.replace("/character");
     } catch (err) {
       setError(
@@ -786,6 +846,9 @@ export default function CreationWizard({
               skipRealAge={skipRealAge}
               accountAgeSeconds={accountAgeSeconds}
               nameColourStops={nameColourStops}
+              wardrobeDraft={wardrobeDraft}
+              onWardrobeDraftChange={setWardrobeDraft}
+              wardrobeSkinSlots={wardrobeSkinSlots}
             />
           </div>
         </div>

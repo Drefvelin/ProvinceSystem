@@ -1,10 +1,10 @@
 # 14 — Character creator (web + RPCharacters)
 
-**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Kit lore editor polish **implemented** ([step-23](./batches/step-23/00-index.md)). Sheet traits/attrs/background parity **implemented** ([step-24](./batches/step-24/00-index.md)). Kit customise submit + deny UX **implemented** ([step-25](./batches/step-25/00-index.md)). Kit asset sync + post-submit status **implemented** ([step-26](./batches/step-26/00-index.md)). Kit customise visibility + claim AS gate **implemented** ([step-29](./batches/step-29/00-index.md)). Phase 4 wardrobe deferred.  
+**Status:** Phase 1 **implemented** ([step-19](./batches/step-19/00-index.md)). Phase 2 multi-kit claim **implemented** ([step-20](./batches/step-20/00-index.md) / [21.08](./batches/step-21/08-kits-yml-and-kit-service.md)). Phase 3 character kits UI **implemented** ([21.09](./batches/step-21/09-kits-web-character-ui.md)). Web read-only sheet parity **implemented** ([step-22](./batches/step-22/00-index.md)). Kit lore editor polish **implemented** ([step-23](./batches/step-23/00-index.md)). Sheet traits/attrs/background parity **implemented** ([step-24](./batches/step-24/00-index.md)). Kit customise submit + deny UX **implemented** ([step-25](./batches/step-25/00-index.md)). Kit asset sync + post-submit status **implemented** ([step-26](./batches/step-26/00-index.md)). Kit customise visibility + claim AS gate **implemented** ([step-29](./batches/step-29/00-index.md)). Phase 4 wardrobe **implemented** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed; staging ticks open).  
 **Repos:** `Workspace/rpcharacters/` · `ProvinceSystem` · `Workspace/tfmcweb/` · `frontend` · (Phase 3) `Workspace/armourshop/`  
 **Depends on:** TFMCWeb identity + `/token create character` ([13-tfmcweb.md](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 
-Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet) · [step-23](./batches/step-23/00-index.md) (kit editor polish) · [step-24](./batches/step-24/00-index.md) (sheet parity polish) · [step-25](./batches/step-25/00-index.md) (kit submit/deny UX) · [step-26](./batches/step-26/00-index.md) (kit asset sync + status) · [step-27](./batches/step-27/00-index.md) (templates + resetkit) · [step-28](./batches/step-28/00-index.md) (book journal) · [step-29](./batches/step-29/00-index.md) (customise visibility + claim gate).
+Companion batches: [step-19](./batches/step-19/00-index.md) (Phase 1) · [step-20](./batches/step-20/00-index.md) (Phase 2 kits) · [step-21](./batches/step-21/00-index.md) (Phase 3 kits + lore) · [step-22](./batches/step-22/00-index.md) (web character sheet) · [step-23](./batches/step-23/00-index.md) (kit editor polish) · [step-24](./batches/step-24/00-index.md) (sheet parity polish) · [step-25](./batches/step-25/00-index.md) (kit submit/deny UX) · [step-26](./batches/step-26/00-index.md) (kit asset sync + status) · [step-27](./batches/step-27/00-index.md) (templates + resetkit) · [step-28](./batches/step-28/00-index.md) (book journal) · [step-29](./batches/step-29/00-index.md) (customise visibility + claim gate) · [step-30](./batches/step-30/00-index.md) (Phase 4 wardrobe).
 
 ---
 
@@ -26,7 +26,7 @@ Donators (and later all players) create and manage RP characters on the website 
 | **3d** | Kit submit + deny UX | Submit item CTA, timing/approval copy, file chips; skin deny → customise denied — **done** ([step-25](./batches/step-25/00-index.md)) |
 | **3e** | Kit asset sync + status | Catalog sync uploads default kit PNGs; post-submit status page — **done** ([step-26](./batches/step-26/00-index.md)) |
 | **3f** | Customise visibility + claim gate | Custom/Pending on kit list; dirty Submit; delete customise; in-game awaiting skins — **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed) |
-| **4** | Character skin wardrobe | Optional Mojang/player skins (incl. masked texture); separate from item `/skins` and RP identity masks |
+| **4** | Character skin wardrobe | Optional Mojang-signed player skins (base + rank extras + masked); web manage / in-game swap — **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed) |
 
 Phase 3 **requires** Phase 2 kit claim in RPC. Step 22 is FE/roster polish on top of Phase 1–3. Phase 4 is independent of kit/lore.
 
@@ -197,6 +197,33 @@ Customise **editable** kit lines (starter knife = same `IRON_HUNTING_KNIFE`). No
 
 ---
 
+## Locked decisions (Phase 4 — character skin wardrobe)
+
+Batches: [step-30](./batches/step-30/00-index.md). Separate from item `/skins` and RP identity masks (`MaskService`).
+
+| Concern | Choice |
+|---------|--------|
+| Slots | `base` + `masked` (everyone) · up to 2 extras by rank |
+| `wardrobe-skin-slots` | Default/Noble **1** · Gilded **2** · Ascended/Legacy **3** (swappable only; masked always extra) |
+| Active | Persist swappable active slot; masked never manual |
+| Empty base | Optional upload; no skin → no apply on switch (keep account look) |
+| Rank drop | Wipe extras above new max |
+| PNG | **64×64 only**; detect slim/classic |
+| Sign | MineSkin v2 + **free** API key; Save uploads; no staff review |
+| Apply | Join + character switch; mask on/off for masked; RPC wins vs other skin plugins |
+| Web | Standing frames; locked red + formatted Gilded+/Ascended+; modal preview → Save spinner |
+| In-game | `/rpcharacterwardrobe` quick-swap filled unlocked slots |
+| Creation | Stage `platform: web\|game\|both` — game tip only; web wardrobe card |
+
+### Checkpoint (Phase 4)
+
+```text
+web upload → MineSkin → wardrobe ready → switch/join apply
+  → mask swap · /rpcharacterwardrobe · rank wipe
+```
+
+---
+
 ## Architecture (Phase 1 + kits + web customise)
 
 ```mermaid
@@ -224,7 +251,6 @@ flowchart LR
 
 ## Out of Phase 1
 
-- Player/Mojang skin wardrobe (Phase 4)
 - Rewriting non-attribute selection stages into sheets
 - Website passwords / OAuth
 
@@ -234,7 +260,8 @@ Kit customise submit + deny UX: [step-25](./batches/step-25/00-index.md) — **d
 Kit asset sync + post-submit status: [step-26](./batches/step-26/00-index.md) — **done**.  
 Kit skin templates + `resetkit`: [step-27](./batches/step-27/00-index.md) — **done**.  
 Book skins + kit journal: [step-28](./batches/step-28/00-index.md) — **done** (28.01–28.07).  
-Kit customise visibility + claim AS gate: [step-29](./batches/step-29/00-index.md) — **done** (29.01–29.06).
+Kit customise visibility + claim AS gate: [step-29](./batches/step-29/00-index.md) — **done** (29.01–29.06).  
+Phase 4 wardrobe: [step-30](./batches/step-30/00-index.md) — **done** (30.01–30.08); operator [STAGING](../STAGING.md) Step 30 when live.
 
 ---
 

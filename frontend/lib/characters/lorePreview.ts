@@ -33,6 +33,9 @@ export function ensureLoreGray(line: string): string {
 
 function hasLeadingLoreColour(line: string): boolean {
   if (!line) return false;
+  if (line.startsWith("&#") && line.length >= 8) {
+    return /^&#[0-9A-Fa-f]{6}/.test(line);
+  }
   if ((line[0] === "§" || line[0] === "&") && line.length >= 2) {
     const code = line[1]!.toLowerCase();
     return "0123456789abcdef".includes(code);
@@ -46,13 +49,14 @@ function hasLeadingLoreColour(line: string): boolean {
 export function hasInlineFormatCodes(raw: string): boolean {
   const s = String(raw || "");
   if (/[§&][0-9a-fk-or]/i.test(s)) return true;
+  if (/&#[0-9A-Fa-f]{6}/.test(s)) return true;
   if (/#[0-9A-Fa-f]{6}/.test(s)) return true;
   return false;
 }
 
 /**
  * Parse a lore line into coloured runs (inline codes mid-line).
- * Supports §x / &x, §l/§o/§n/§m/§r, and #RRGGBB.
+ * Supports §x / &x, §l/§o/§n/§m/§r, &#RRGGBB, and #RRGGBB.
  */
 export function parseLoreRuns(raw: string): LoreRun[] {
   return parseInlineRuns(ensureLoreGray(raw), "#aaaaaa");
@@ -84,6 +88,17 @@ function parseInlineRuns(line: string, defaultColor: string): LoreRun[] {
   let i = 0;
   while (i < line.length) {
     const ch = line[i]!;
+    // TLibs / permission-groups: &#RRGGBB before plain & codes
+    if (ch === "&" && i + 7 < line.length && line[i + 1] === "#") {
+      const hex = normalizeHex(line.slice(i + 1, i + 8));
+      if (hex) {
+        flush();
+        color = hex;
+        bold = italic = underline = strike = false;
+        i += 8;
+        continue;
+      }
+    }
     if ((ch === "§" || ch === "&") && i + 1 < line.length) {
       const code = line[i + 1]!.toLowerCase();
       flush();
