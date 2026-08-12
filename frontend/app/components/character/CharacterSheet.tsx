@@ -73,7 +73,8 @@ export default function CharacterSheet({ character, catalog }: Props) {
   const age = String(character.age || "").trim();
   const birthdayIso = String(character.birthday || "").trim();
   const birthday =
-    formatFantasyBirthday(birthdayIso, catalog?.calendar) || birthdayIso;
+    formatFantasyBirthday(birthdayIso, catalog?.validation?.calendar) ||
+    birthdayIso;
   const gender = String(character.gender || "").trim();
   const description = String(character.description || "").trim();
   const background = String(character.background || "").trim();
