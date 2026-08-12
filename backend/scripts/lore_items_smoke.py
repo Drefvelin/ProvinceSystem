@@ -410,6 +410,8 @@ def main() -> None:
     status_body = r.json()
     if status_body.get("pending_skin") is not False:
         fail(f"expected pending_skin false initially: {status_body}")
+    if status_body.get("pending_pack") is not False:
+        fail(f"expected pending_pack false initially: {status_body}")
     print("OK GET plugin lore-items claim-status")
 
     r = client.post(
@@ -652,7 +654,7 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"claim-status after deny: {r.status_code} {r.text}")
     claim = r.json()
-    if claim.get("pending_skin") or claim.get("ready"):
+    if claim.get("pending_skin") or claim.get("pending_pack") or claim.get("ready"):
         fail(f"denied customise must not be pending/ready: {claim}")
     r = client.get(
         f"/characters/lore-items?character_id={char_id}&kit_id=starter",
@@ -812,7 +814,12 @@ def main() -> None:
             "approved-not-applied should not set pending_skin "
             f"(staff approval done): {claim_approved}"
         )
-    print("OK claim-status pending_skin=false while submission approved")
+    if claim_approved.get("pending_pack") is not True:
+        fail(
+            "approved-not-applied should set pending_pack=true: "
+            f"{claim_approved}"
+        )
+    print("OK claim-status pending_pack=true while submission approved")
 
     from src.skins.submissions import mark_applied
 

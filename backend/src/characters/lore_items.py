@@ -202,10 +202,12 @@ def claim_status(
     character_id: str,
     kit_id: str | None = None,
 ) -> dict[str, Any]:
-    """Plugin helper: whether claim should wait on pending_skin / has ready rows.
+    """Plugin helper: claim gates for pending approval / pending pack / ready rows.
 
-    ``pending_skin`` is true only while a linked skin is still staff-``pending``.
-    Approved-but-not-applied skins do not set this flag (in-game pack / AS gate).
+    ``pending_skin`` — linked skin still staff-``pending`` (awaiting approval).
+    ``pending_pack`` — skin approved but not pack-applied yet (customise still
+    ``pending_skin`` with submission ``approved``). Claim must wait; skins are
+    not on ArmourShop yet.
 
     When ``kit_id`` is set, only customisations whose ``kit_key`` belongs to that
     kit (from catalog ``editable_kit`` / ``kits``) are considered. Fallback when
@@ -217,9 +219,15 @@ def claim_status(
     cid = (character_id or "").strip()
     kit = (kit_id or "starter").strip().lower() or "starter"
     pending_skin = False
+    pending_pack = False
     ready = False
     if not uuid or not cid:
-        return {"pending_skin": False, "ready": False, "kit_id": kit}
+        return {
+            "pending_skin": False,
+            "pending_pack": False,
+            "ready": False,
+            "kit_id": kit,
+        }
 
     allowed_keys = _kit_editable_keys(kit)
     with connect() as conn:
@@ -261,13 +269,22 @@ def claim_status(
                 if row["submission_id"] is not None
                 else ""
             )
-            # Staff approval only. Approved → pack/AS gate; missing row → treat as pending.
             st = sub_status.get(sid, "pending" if sid else "")
-            if not sid or st == "pending":
+            if st == "approved":
+                pending_pack = True
+            elif not sid or st == "pending":
                 pending_skin = True
+            elif st != "applied":
+                # Unknown / odd status while customise still pending_skin — block claim.
+                pending_pack = True
         elif state == STATE_READY:
             ready = True
-    return {"pending_skin": pending_skin, "ready": ready, "kit_id": kit}
+    return {
+        "pending_skin": pending_skin,
+        "pending_pack": pending_pack,
+        "ready": ready,
+        "kit_id": kit,
+    }
 
 
 def _kit_editable_keys(kit_id: str) -> set[str] | None:
