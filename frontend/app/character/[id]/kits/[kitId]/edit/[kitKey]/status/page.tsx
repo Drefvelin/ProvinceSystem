@@ -3,29 +3,27 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import LoreItemEditor from "../../../../../../components/character/LoreItemEditor";
+import CustomiseStatusCard from "../../../../../../../components/character/CustomiseStatusCard";
 import {
   CharactersApiError,
-  customiseLoreItem,
   listLoreItems,
   logoutCharacter,
   type LoreItemRow,
-} from "../../../../../../../lib/characters/api";
+} from "../../../../../../../../lib/characters/api";
 import {
   UI_DEV_LORE_CHARACTER_ID,
-  uiDevApplyCustomise,
   uiDevLoreItemsResponse,
-} from "../../../../../../../lib/characters/loreItemsDev";
+} from "../../../../../../../../lib/characters/loreItemsDev";
 import {
   clearSession,
   getSession,
   isSessionValid,
   type CharacterSession,
-} from "../../../../../../../lib/characters/session";
+} from "../../../../../../../../lib/characters/session";
 import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
-} from "../../../../../../../lib/characters/uiDev";
+} from "../../../../../../../../lib/characters/uiDev";
 
 function uiDevSession(): CharacterSession {
   return {
@@ -36,7 +34,13 @@ function uiDevSession(): CharacterSession {
   };
 }
 
-export default function CharacterKitEditPage() {
+function customiseState(item: LoreItemRow): string {
+  const fromRow = String(item.state || "").trim().toLowerCase();
+  if (fromRow) return fromRow;
+  return String(item.draft?.state || "").trim().toLowerCase();
+}
+
+export default function CharacterKitCustomiseStatusPage() {
   const router = useRouter();
   const params = useParams();
   const characterId = String(params?.id || "").trim();
@@ -48,16 +52,12 @@ export default function CharacterKitEditPage() {
   const [session, setSession] = useState<CharacterSession | null>(null);
   const [item, setItem] = useState<LoreItemRow | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-
-  const statusHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}/status`;
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
     async (token: string) => {
       setError(null);
-      setFormError(null);
       try {
         if (uiDev) {
           const data = uiDevLoreItemsResponse(
@@ -82,7 +82,7 @@ export default function CharacterKitEditPage() {
             ? err.message
             : err instanceof Error
               ? err.message
-              : "Failed to load item"
+              : "Failed to load status"
         );
       }
     },
@@ -111,6 +111,16 @@ export default function CharacterKitEditPage() {
     void load(s.session_token).finally(() => setReady(true));
   }, [characterId, kitKey, load, router, uiDev]);
 
+  async function onRefresh() {
+    if (!session || refreshing) return;
+    setRefreshing(true);
+    try {
+      await load(session.session_token);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function onLogout() {
     if (!session || loggingOut) return;
     setLoggingOut(true);
@@ -124,57 +134,21 @@ export default function CharacterKitEditPage() {
     }
   }
 
-  async function onSubmit(input: {
-    displayName: string;
-    lore: string[];
-    existingSkinId?: string | null;
-    textureFile?: File | null;
-    modelFile?: File | null;
-    use3d?: boolean;
-    nameColours?: string[];
-  }) {
-    if (!session || !item) return;
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      if (uiDev) {
-        uiDevApplyCustomise(item, input);
-        router.push(statusHref);
-        return;
-      }
-      await customiseLoreItem(
-        session.session_token,
-        characterId,
-        item.kit_key,
-        input,
-        kitId
-      );
-      router.push(statusHref);
-    } catch (err) {
-      setFormError(
-        err instanceof CharactersApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Submit failed"
-      );
-      setSubmitting(false);
-    }
-  }
-
   if (!ready) {
     return (
       <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
     );
   }
 
-  const backHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
+  const kitHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}`;
+  const editHref = `/character/${encodeURIComponent(characterId)}/kits/${encodeURIComponent(kitId)}/edit/${encodeURIComponent(kitKey)}`;
+  const denied = item ? customiseState(item) === "denied" : false;
 
   return (
     <div className="char-rise">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={backHref}
+          href={kitHref}
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
         >
           Back to kit
@@ -182,7 +156,7 @@ export default function CharacterKitEditPage() {
         <button
           type="button"
           onClick={onLogout}
-          disabled={loggingOut || submitting}
+          disabled={loggingOut}
           className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
         >
           {loggingOut ? "Logging out…" : uiDev ? "Exit" : "Log out"}
@@ -190,21 +164,35 @@ export default function CharacterKitEditPage() {
       </div>
 
       <h1 className="mb-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)]">
-        Edit item
+        Customise status
       </h1>
 
       {error ? (
-        <p className="text-sm text-[#e8a0a0]">{error}</p>
+        <p className="text-sm text-[#e8a0a0]" role="alert">
+          {error}
+        </p>
       ) : item ? (
-        <LoreItemEditor
-          item={item}
-          sessionToken={session?.session_token || UI_DEV_SESSION_TOKEN}
-          nameColourStops={uiDev ? 4 : 4}
-          submitting={submitting}
-          error={formError}
-          successMessage={null}
-          onSubmit={onSubmit}
-        />
+        <>
+          <CustomiseStatusCard item={item} />
+          <div className="mt-8 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={() => void onRefresh()}
+              disabled={refreshing}
+              className="text-sm text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+            >
+              {refreshing ? "Refreshing…" : "Refresh status"}
+            </button>
+            {denied ? (
+              <Link
+                href={editHref}
+                className="text-sm text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
+              >
+                Edit again
+              </Link>
+            ) : null}
+          </div>
+        </>
       ) : null}
     </div>
   );

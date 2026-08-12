@@ -29,6 +29,7 @@ from src.characters.lore_items import (
     mark_lore_items_applied,
     resolve_default_kit_texture,
     resolve_pickable_texture,
+    store_plugin_kit_skin,
 )
 from src.characters.roster import RosterError, replace_roster
 from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
@@ -119,6 +120,21 @@ async def plugin_put_creation_catalog(
         "classes": result["classes_count"],
         "updated_at": result["updated_at"],
     }
+
+
+@characters_router.put("/plugin/kit-skins/{name}")
+async def plugin_put_kit_skin(
+    name: str,
+    request: Request,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """RPCharacters uploads default editable-kit PNG (assets/{name}.png)."""
+    _require_plugin(x_plugin_key)
+    data = await request.body()
+    try:
+        return store_plugin_kit_skin(name, data)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
 
 
 @characters_router.get("/creation-catalog")

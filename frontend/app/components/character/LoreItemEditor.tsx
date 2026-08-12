@@ -296,9 +296,6 @@ export default function LoreItemEditor({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-10">
-      {showError ? (
-        <p className="text-sm text-[#e8a0a0]">{showError}</p>
-      ) : null}
       {successMessage ? (
         <p className="whitespace-pre-wrap text-sm text-[var(--tfmc-mist)]">
           {successMessage}
@@ -597,24 +594,29 @@ export default function LoreItemEditor({
         )}
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={submitting || submitBlocked}
-          className="rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
-        >
-          {submitting ? "Submitting…" : "Submit item"}
-        </button>
-        {onRefreshStatus ? (
-          <button
-            type="button"
-            onClick={() => void onRefreshStatus()}
-            disabled={refreshing || submitting}
-            className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
-          >
-            {refreshing ? "Refreshing…" : "Refresh status"}
-          </button>
+      <div className="flex flex-col gap-3">
+        {showError ? (
+          <p className="text-sm text-[#e8a0a0]">{showError}</p>
         ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={submitting || submitBlocked}
+            className="rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
+          >
+            {submitting ? "Submitting…" : "Submit item"}
+          </button>
+          {onRefreshStatus ? (
+            <button
+              type="button"
+              onClick={() => void onRefreshStatus()}
+              disabled={refreshing || submitting}
+              className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline disabled:opacity-50"
+            >
+              {refreshing ? "Refreshing…" : "Refresh status"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </form>
   );

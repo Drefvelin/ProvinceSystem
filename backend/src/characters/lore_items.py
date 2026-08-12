@@ -696,6 +696,20 @@ def _ia_path(skin_slug: str | None, ia_namespace: str | None = None) -> str | No
     return f"ia.{ns}:{slug}"
 
 
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+MAX_KIT_SKIN_BYTES = 2 * 1024 * 1024
+
+
+def _backend_root():
+    from pathlib import Path
+
+    return Path(__file__).resolve().parents[2]
+
+
+def _kit_skins_dir():
+    return _backend_root() / "assets" / "kit_skins"
+
+
 def _kit_skins_search_dirs() -> list:
     """Directories that may contain default kit PNGs named {skin_png}.png."""
     import os
@@ -705,11 +719,10 @@ def _kit_skins_search_dirs() -> list:
     env = (os.environ.get("KIT_SKINS_DIR") or "").strip()
     if env:
         dirs.append(Path(env))
-    # ProvinceSystem/backend/assets/kit_skins
-    backend_root = Path(__file__).resolve().parents[2]
-    dirs.append(backend_root / "assets" / "kit_skins")
-    # Monorepo fallback: RPC plugin resource shipped with the jar
-    tfmc_root = backend_root.parent.parent
+    # ProvinceSystem/backend/assets/kit_skins (plugin sync target)
+    dirs.append(_kit_skins_dir())
+    # Monorepo fallback: RPC plugin resource shipped with the jar (local only)
+    tfmc_root = _backend_root().parent.parent
     dirs.append(
         tfmc_root
         / "Workspace"
@@ -720,6 +733,56 @@ def _kit_skins_search_dirs() -> list:
         / "assets"
     )
     return dirs
+
+
+def sanitize_kit_skin_stem(name: str | None) -> str:
+    """Stem only: no path separators or '..'. Raises LoreItemError."""
+    raw = (name or "").strip()
+    if raw.lower().endswith(".png"):
+        raw = raw[:-4].strip()
+    if not raw:
+        raise LoreItemError("kit skin name is required", status_code=400)
+    if "/" in raw or "\\" in raw or ".." in raw:
+        raise LoreItemError("invalid kit skin name", status_code=400)
+    # Keep stems filesystem-safe and URL-path-safe
+    for ch in raw:
+        if ch.isalnum() or ch in ("_", "-", "."):
+            continue
+        raise LoreItemError("invalid kit skin name", status_code=400)
+    if raw.startswith(".") or raw.endswith("."):
+        raise LoreItemError("invalid kit skin name", status_code=400)
+    return raw
+
+
+def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
+    """Write plugin-synced default kit PNG under assets/kit_skins/."""
+    import os
+
+    stem = sanitize_kit_skin_stem(name)
+    if not data:
+        raise LoreItemError("empty body", status_code=400)
+    if len(data) > MAX_KIT_SKIN_BYTES:
+        raise LoreItemError(
+            f"PNG exceeds max size ({MAX_KIT_SKIN_BYTES} bytes)", status_code=400
+        )
+    if not data.startswith(PNG_MAGIC):
+        raise LoreItemError("body must be a PNG", status_code=400)
+
+    out_dir = _kit_skins_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / f"{stem}.png"
+    tmp = out_dir / f".{stem}.png.tmp"
+    try:
+        tmp.write_bytes(data)
+        os.replace(tmp, target)
+    except OSError as e:
+        try:
+            if tmp.is_file():
+                tmp.unlink()
+        except OSError:
+            pass
+        raise LoreItemError(f"could not write kit skin: {e}", status_code=500) from e
+    return {"ok": True, "name": stem, "path": f"assets/kit_skins/{stem}.png"}
 
 
 def resolve_default_kit_texture(kit_key: str):

@@ -382,6 +382,36 @@ Checkpoint:
 Submit item → deny skin → denied customise → resubmit with new skin
 ```
 
+## Step 26 — Kit asset sync + post-submit status
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-26/00-index.md](./Planning/batches/step-26/00-index.md).
+
+**Code:** 26.01–26.03 done (kit-skin PUT sync + status page + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. ProvinceSystem API with `PUT /characters/plugin/kit-skins/{name}`.
+2. RPCharacters jar that uploads `assets/{skin_png}.png` after catalog sync.
+3. FE customise status page + post-submit redirect.
+
+### Locked
+
+- RPC owns assets; catalog sync copies to `backend/assets/kit_skins/`
+- Missing PNG: warn + skip; catalog still succeeds
+- After submit → character status page (not skins token route)
+
+### Operator checklist
+
+- [ ] Catalog/reload syncs `knife_skin.png`; default preview works on staging
+- [ ] Submit item → status page (pending/ready copy)
+- [ ] Denied status shows reason + Edit again
+
+Checkpoint:
+
+```text
+reload → default knife preview → submit → status page → deny → Edit again
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.
