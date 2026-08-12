@@ -176,7 +176,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 13. **Web character sheet / Step 22** — **done** ([step-22](./batches/step-22/00-index.md); [22.03](./batches/step-22/03-docs-verify.md))  
 14. **Kit lore editor polish / Step 23** — **done** ([step-23](./batches/step-23/00-index.md); [23.04](./batches/step-23/04-docs-verify.md))  
 15. **Character sheet parity / Step 24** — **done** ([step-24](./batches/step-24/00-index.md); [24.04](./batches/step-24/04-docs-verify.md))  
-16. Cropped overlays / Phase 4 (character skins) as capacity allows; tick [STAGING](../STAGING.md) Step 20–24 when ready  
+16. **Kit submit + deny UX / Step 25** — **done** ([step-25](./batches/step-25/00-index.md); [25.03](./batches/step-25/03-docs-verify.md))  
+17. Cropped overlays / Phase 4 (character skins) as capacity allows; tick [STAGING](../STAGING.md) Step 20–25 when ready  
 
 ---
 
@@ -191,4 +192,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
-Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** (staging verified). Step 20–21 kits **done**. Step 22 web character sheet **done**. Step 23 kit lore editor polish **done** ([step-23](./batches/step-23/00-index.md)). Step 24 sheet parity **done** ([step-24](./batches/step-24/00-index.md)). Next: operator staging Step 20–24 / Phase 4 as capacity.
+Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** (staging verified). Step 20–21 kits **done**. Step 22 web character sheet **done**. Step 23 kit lore editor polish **done** ([step-23](./batches/step-23/00-index.md)). Step 24 sheet parity **done** ([step-24](./batches/step-24/00-index.md)). Step 25 kit submit/deny UX **done** ([step-25](./batches/step-25/00-index.md)). Next: operator staging Step 20–25 / Phase 4 as capacity.

@@ -49,6 +49,8 @@ function buildFixtureItem(): LoreItemRow {
       existing_skin_id: null,
       submission_id: null,
       submission_status: null,
+      deny_reason: null,
+      state: "draft",
       name_colours: ["#55ff55"],
     },
     pickable_skins: [
@@ -68,6 +70,28 @@ function buildFixtureItem(): LoreItemRow {
       },
     ],
   };
+}
+
+/** Optional denied fixture for UI-dev banner checks. */
+export function uiDevDeniedLoreItem(
+  characterId: string = UI_DEV_LORE_CHARACTER_ID
+): LoreItemsResponse {
+  const base = buildFixtureItem();
+  const denied: LoreItemRow = {
+    ...base,
+    state: "denied",
+    draft: {
+      ...base.draft,
+      submission_id: "ui-dev-denied-submission",
+      submission_status: "denied",
+      deny_reason: "Needs a cleaner silhouette",
+      state: "denied",
+      existing_skin_id: null,
+      skin_slug: null,
+    },
+  };
+  uiDevCached = denied;
+  return { character_id: characterId, items: [denied] };
 }
 
 export function uiDevLoreItemsResponse(
@@ -95,18 +119,37 @@ export function uiDevApplyCustomise(
   const name = input.displayName.trim() || base.display_name;
   const customLore = input.lore.map((l) => l.trim()).filter(Boolean);
   const hasTexture = Boolean(input.textureFile);
+  const prevDenied =
+    String(prev.draft.state || "").toLowerCase() === "denied" ||
+    String(prev.draft.submission_status || "").toLowerCase() === "denied";
+  if (
+    prevDenied &&
+    !hasTexture &&
+    !(input.existingSkinId && String(input.existingSkinId).trim())
+  ) {
+    throw new Error(
+      "Skin was denied. Choose a different skin (upload or pick) and submit again."
+    );
+  }
+
   let existing = prev.draft.existing_skin_id;
   let submissionId = prev.draft.submission_id;
   let submissionStatus = prev.draft.submission_status;
+  let state = prev.draft.state || "draft";
+  let denyReason = prev.draft.deny_reason ?? null;
 
   if (hasTexture) {
     existing = null;
     submissionId = "ui-dev-pending-submission";
     submissionStatus = "pending";
+    state = "pending_skin";
+    denyReason = null;
   } else if (input.existingSkinId) {
     existing = input.existingSkinId;
     submissionId = null;
     submissionStatus = null;
+    state = "ready";
+    denyReason = null;
   }
 
   const next: LoreItemRow & { ok: boolean } = {
@@ -123,6 +166,8 @@ export function uiDevApplyCustomise(
       existing_skin_id: existing,
       submission_id: submissionId,
       submission_status: submissionStatus,
+      deny_reason: denyReason,
+      state,
       name_colours: input.nameColours || [],
     },
   };

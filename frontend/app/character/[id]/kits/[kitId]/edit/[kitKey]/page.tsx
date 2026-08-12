@@ -137,12 +137,18 @@ export default function CharacterKitEditPage() {
     setSubmitting(true);
     setFormError(null);
     setSuccessMessage(null);
+    const uploadedNewSkin = Boolean(input.textureFile);
+    const timingLine =
+      "It can take up to 5 minutes for a submission to enter the system. You will get a Discord DM once the kit is ready to claim.";
+    const successCopy = uploadedNewSkin
+      ? `Item submitted. ${timingLine} Your custom skin needs staff approval before the kit is ready.`
+      : `Item submitted. ${timingLine}`;
     try {
       if (uiDev) {
         const next = uiDevApplyCustomise(item, input);
         setItem(next);
         setEditorKey((k) => k + 1);
-        setSuccessMessage("Saved (UI-dev).");
+        setSuccessMessage(`${successCopy} (UI-dev)`);
         return;
       }
       const next = await customiseLoreItem(
@@ -154,14 +160,14 @@ export default function CharacterKitEditPage() {
       );
       setItem(next);
       setEditorKey((k) => k + 1);
-      setSuccessMessage("Saved.");
+      setSuccessMessage(successCopy);
     } catch (err) {
       setFormError(
         err instanceof CharactersApiError
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Save failed"
+            : "Submit failed"
       );
     } finally {
       setSubmitting(false);
@@ -204,7 +210,9 @@ export default function CharacterKitEditPage() {
       ) : item ? (
         <>
           {successMessage ? (
-            <p className="mb-3 text-sm text-[var(--tfmc-mist)]">{successMessage}</p>
+            <p className="mb-3 whitespace-pre-wrap text-sm text-[var(--tfmc-mist)]">
+              {successMessage}
+            </p>
           ) : null}
           {formError ? (
             <p className="mb-3 text-sm text-[#e8a0a0]">{formError}</p>
@@ -215,6 +223,7 @@ export default function CharacterKitEditPage() {
             sessionToken={session?.session_token || UI_DEV_SESSION_TOKEN}
             nameColourStops={uiDev ? 4 : 4}
             submitting={submitting}
+            successMessage={null}
             onSubmit={onSubmit}
           />
         </>

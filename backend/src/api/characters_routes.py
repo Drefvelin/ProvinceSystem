@@ -27,6 +27,7 @@ from src.characters.lore_items import (
     list_lore_items,
     list_pending_for_plugin,
     mark_lore_items_applied,
+    resolve_default_kit_texture,
     resolve_pickable_texture,
 )
 from src.characters.roster import RosterError, replace_roster
@@ -176,6 +177,26 @@ def get_lore_item_skin_texture(
         path,
         media_type="image/png",
         filename=f"{submission_id}.png",
+    )
+
+
+@characters_router.get("/lore-items/{kit_key}/default-texture")
+def get_lore_item_default_texture(
+    kit_key: str,
+    authorization: str | None = Header(default=None),
+):
+    """PNG for the catalog default skin (e.g. knife_skin) used in the editor preview."""
+    from fastapi.responses import FileResponse
+
+    _character_session_from_auth(authorization)
+    try:
+        path = resolve_default_kit_texture(kit_key)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+    return FileResponse(
+        path,
+        media_type="image/png",
+        filename=path.name,
     )
 
 

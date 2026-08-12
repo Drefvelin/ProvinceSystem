@@ -445,6 +445,7 @@ export type LoreItemDraft = {
   existing_skin_id: string | null;
   submission_id: string | null;
   submission_status: string | null;
+  deny_reason?: string | null;
   state?: string;
   skin_slug?: string | null;
   name_colours?: string[] | null;
@@ -469,6 +470,8 @@ export type LoreItemRow = {
   preview: LoreItemPreview;
   draft: LoreItemDraft;
   pickable_skins: LoreItemPickableSkin[];
+  state?: string;
+  skin_slug?: string | null;
 };
 
 export type LoreItemsResponse = {
@@ -548,6 +551,11 @@ export function loreItemSkinTextureUrl(
     ? `?base_set=${encodeURIComponent(baseSet.trim())}`
     : "";
   return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs}`;
+}
+
+export function loreItemDefaultTextureUrl(kitKey: string): string {
+  const key = encodeURIComponent(kitKey.trim());
+  return `${getApiBase()}/characters/lore-items/${key}/default-texture`;
 }
 
 export async function listLoreItems(

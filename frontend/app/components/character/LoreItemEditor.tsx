@@ -5,6 +5,7 @@ import ModelPreview from "../skins/ModelPreview";
 import NameColourPicker from "../shared/NameColourPicker";
 import {
   authHeaders,
+  loreItemDefaultTextureUrl,
   loreItemSkinTextureUrl,
   type LoreItemRow,
 } from "../../../lib/characters/api";
@@ -20,6 +21,9 @@ import { ITEM_SIZE, assertFileSize } from "../../../lib/skins/sizes";
 const LORE_MAX_LINES = 6;
 const LORE_LINE_MAX = 48;
 const DISPLAY_NAME_MAX = 80;
+
+const FILE_INPUT_CLASS =
+  "text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]";
 
 type SkinMode = "upload" | "pick";
 
@@ -128,6 +132,70 @@ export default function LoreItemEditor({
     item.draft.existing_skin_id || ""
   );
   const [localError, setLocalError] = useState<string | null>(null);
+  const [previewTexture, setPreviewTexture] = useState<File | null>(null);
+
+  const isDenied =
+    String(item.draft.state || "").toLowerCase() === "denied" ||
+    String(item.draft.submission_status || "").toLowerCase() === "denied";
+  const denyReason = String(item.draft.deny_reason || "").trim();
+
+  const hasNewSkin =
+    (skinMode === "upload" && Boolean(textureFile)) ||
+    (skinMode === "pick" && Boolean(pickedSkinId.trim()));
+  const submitBlocked = isDenied && !hasNewSkin;
+
+  useEffect(() => {
+    let dead = false;
+    let objectUrl: string | null = null;
+
+    async function loadPreview() {
+      try {
+        if (skinMode === "upload" && textureFile) {
+          if (!dead) setPreviewTexture(textureFile);
+          return;
+        }
+        let url: string | null = null;
+        let filename = "preview.png";
+        if (skinMode === "pick" && pickedSkinId.trim()) {
+          url = loreItemSkinTextureUrl(pickedSkinId, item.base_set);
+          filename = `${pickedSkinId.trim()}.png`;
+        } else if (item.skin_png || item.kit_key) {
+          url = loreItemDefaultTextureUrl(item.kit_key);
+          filename = `${String(item.skin_png || item.kit_key).trim() || "default"}.png`;
+        }
+        if (!url) {
+          if (!dead) setPreviewTexture(null);
+          return;
+        }
+        const res = await fetch(url, { headers: authHeaders(sessionToken) });
+        if (!res.ok) {
+          if (!dead) setPreviewTexture(null);
+          return;
+        }
+        const blob = await res.blob();
+        const file = new File([blob], filename, {
+          type: blob.type || "image/png",
+        });
+        if (!dead) setPreviewTexture(file);
+      } catch {
+        if (!dead) setPreviewTexture(null);
+      }
+    }
+
+    void loadPreview();
+    return () => {
+      dead = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [
+    skinMode,
+    textureFile,
+    pickedSkinId,
+    item.kit_key,
+    item.skin_png,
+    item.base_set,
+    sessionToken,
+  ]);
 
   const nameErr = displayName
     ? displayNameError(displayName, {
@@ -202,6 +270,12 @@ export default function LoreItemEditor({
       setLocalError("Display name is required");
       return;
     }
+    if (submitBlocked) {
+      setLocalError(
+        "Skin was denied. Choose a different skin (upload or pick) and submit again."
+      );
+      return;
+    }
     if (skinMode === "upload" && use3d && !modelFile) {
       setLocalError("3D upload requires a model JSON file");
       return;
@@ -226,7 +300,17 @@ export default function LoreItemEditor({
         <p className="text-sm text-[#e8a0a0]">{showError}</p>
       ) : null}
       {successMessage ? (
-        <p className="text-sm text-[var(--tfmc-mist)]">{successMessage}</p>
+        <p className="whitespace-pre-wrap text-sm text-[var(--tfmc-mist)]">
+          {successMessage}
+        </p>
+      ) : null}
+      {isDenied ? (
+        <p className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_35%,transparent)] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] px-3 py-2 text-sm text-[#e8a0a0]">
+          Your custom skin was denied
+          {denyReason ? `: ${denyReason}` : "."} Name and lore are kept.
+          Choose a different skin and submit again. The kit is not ready to
+          claim until a new skin is accepted.
+        </p>
       ) : null}
 
       <section>
@@ -362,8 +446,9 @@ export default function LoreItemEditor({
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           Upload a new texture or pick one of your applied knives skins / staff
-          i_tools knives. After approval, uploads land in player skins for later
-          use in-game.
+          i_tools knives. The renderer shows the default Iron Hunting Knife
+          until you choose your own. After approval, uploads land in player
+          skins for later use in-game.
         </p>
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <button
@@ -421,23 +506,28 @@ export default function LoreItemEditor({
               type="file"
               accept="image/png"
               onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-              className="text-sm text-[var(--tfmc-mist)]"
+              className={FILE_INPUT_CLASS}
             />
-            {use3d ? (
-              <input
-                ref={modelRef}
-                type="file"
-                accept="application/json,.json"
-                onChange={(e) => setModelFile(e.target.files?.[0] ?? null)}
-                className="text-sm text-[var(--tfmc-mist)]"
-              />
-            ) : null}
             {textureFile ? (
-              <ModelPreview
-                kind={use3d ? "item_3d" : "handheld"}
-                modelFile={use3d ? modelFile : null}
-                textureFile={textureFile}
-              />
+              <span className="text-xs text-[var(--tfmc-cream)]">
+                Selected: {textureFile.name}
+              </span>
+            ) : null}
+            {use3d ? (
+              <>
+                <input
+                  ref={modelRef}
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={(e) => setModelFile(e.target.files?.[0] ?? null)}
+                  className={FILE_INPUT_CLASS}
+                />
+                {modelFile ? (
+                  <span className="text-xs text-[var(--tfmc-cream)]">
+                    Selected: {modelFile.name}
+                  </span>
+                ) : null}
+              </>
             ) : null}
           </div>
         ) : item.pickable_skins.length === 0 ? (
@@ -478,15 +568,42 @@ export default function LoreItemEditor({
             })}
           </ul>
         )}
+
+        {previewTexture ? (
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+              {skinMode === "upload" && textureFile
+                ? "Upload preview"
+                : skinMode === "pick" && pickedSkinId
+                  ? "Selected skin"
+                  : "Default skin"}
+            </p>
+            <ModelPreview
+              kind={
+                skinMode === "upload" && use3d && modelFile
+                  ? "item_3d"
+                  : "handheld"
+              }
+              modelFile={
+                skinMode === "upload" && use3d && modelFile ? modelFile : null
+              }
+              textureFile={previewTexture}
+            />
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+            Default skin preview unavailable.
+          </p>
+        )}
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || submitBlocked}
           className="rounded-sm bg-[var(--tfmc-moss)] px-4 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
         >
-          {submitting ? "Saving…" : "Save customise"}
+          {submitting ? "Submitting…" : "Submit item"}
         </button>
         {onRefreshStatus ? (
           <button

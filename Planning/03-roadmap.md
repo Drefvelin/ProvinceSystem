@@ -219,7 +219,7 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Track E — Web character creator
 
-**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). E4 wardrobe deferred.  
+**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). **E3e / Step 25** kit submit + deny UX **done** (25.03 docs closed). E4 wardrobe deferred.  
 **Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend · (E3) ArmourShop
 
 | Phase | Detail |
@@ -230,6 +230,7 @@ Quotas, retention, module template, optional brewery stub.
 | E3b / Step 22 | Read-only web character sheet + shared margins — **done** ([step-22](./batches/step-22/00-index.md) / [22.03](./batches/step-22/03-docs-verify.md)) |
 | E3c / Step 23 | Kit lore editor polish (colours, lore codes, pick thumbs, 3D) — **done** ([step-23](./batches/step-23/00-index.md) / [23.04](./batches/step-23/04-docs-verify.md)) |
 | E3d / Step 24 | Sheet traits (personality/evil), merged attrs, profession EXP, writable-book background, empty-lore fix — **done** ([step-24](./batches/step-24/00-index.md) / [24.04](./batches/step-24/04-docs-verify.md)) |
+| E3e / Step 25 | Kit Submit item UX + skin deny → customise denied — **done** ([step-25](./batches/step-25/00-index.md) / [25.03](./batches/step-25/03-docs-verify.md)) |
 | E4 | Character skin wardrobe (optional Mojang/masked) |
 
 **Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  
@@ -250,6 +251,6 @@ Quotas, retention, module template, optional brewery stub.
 6. **Step 18 / Track D** — **code done**; human staging verify on live  
 7. **Track E / step-19 Phase 1** — **done** (staging verified)  
 8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
-9. **Track E / step-22–24** — sheet + kit editor polish + sheet parity **done**; E4 / overlays as capacity allows; run [STAGING](../STAGING.md) Step 20–24 when ready  
+9. **Track E / step-22–25** — sheet + kit editor polish + sheet parity + submit/deny UX **done**; E4 / overlays as capacity allows; run [STAGING](../STAGING.md) Step 20–25 when ready
 
 Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.

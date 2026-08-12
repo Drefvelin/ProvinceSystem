@@ -531,12 +531,79 @@ def main() -> None:
         fail(f"expected pending_skin while submission pending: {body}")
     print("OK POST name+lore while upload pending -> stays pending_skin")
 
-    # Clear submission link to exercise ready-without-skin path
+    # Skin deny → whole customise denied; name/lore kept; not claim-ready
+    from src.skins.submissions import deny_submission
+
+    denied = deny_submission(str(sub_id), "Needs a cleaner silhouette")
+    if denied.get("status") != "denied":
+        fail(f"deny_submission expected denied: {denied}")
+    with connect() as conn:
+        lore_denied = conn.execute(
+            """
+            SELECT state, submission_id, display_name, lore_json,
+                   ready_at, existing_skin_id, skin_slug
+            FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if lore_denied is None or str(lore_denied["state"]) != "denied":
+        fail(f"expected denied customise state: {lore_denied}")
+    if str(lore_denied["submission_id"] or "") != str(sub_id):
+        fail(f"deny should keep submission_id: {lore_denied}")
+    if str(lore_denied["display_name"] or "") != "Ready Blade":
+        fail(f"deny should keep display_name: {lore_denied}")
+    if lore_denied["ready_at"] is not None:
+        fail(f"deny should clear ready_at: {lore_denied}")
+    if lore_denied["existing_skin_id"] is not None or lore_denied["skin_slug"] is not None:
+        fail(f"deny should clear skin refs: {lore_denied}")
+    r = client.get(
+        f"/characters/plugin/lore-items/claim-status"
+        f"?player_uuid={player}&character_id={char_id}&kit_id=starter",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"claim-status after deny: {r.status_code} {r.text}")
+    claim = r.json()
+    if claim.get("pending_skin") or claim.get("ready"):
+        fail(f"denied customise must not be pending/ready: {claim}")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"list after deny: {r.status_code} {r.text}")
+    knife = next(
+        (
+            i
+            for i in (r.json().get("items") or [])
+            if i.get("kit_key") == "iron_hunting_knife"
+        ),
+        None,
+    )
+    if not knife:
+        fail(f"knife missing after deny: {r.json()}")
+    d = knife.get("draft") or {}
+    if d.get("state") != "denied" or d.get("submission_status") != "denied":
+        fail(f"draft should show denied: {d}")
+    if "cleaner silhouette" not in str(d.get("deny_reason") or ""):
+        fail(f"expected deny_reason on draft: {d}")
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={"display_name": "Ready Blade", "lore": ["Line one."]},
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"denied resubmit without skin expected 400, got {r.status_code} {r.text}")
+    print("OK deny skin -> customise denied; name/lore kept; resubmit needs skin")
+
+    # Clear denied row to exercise ready-without-skin path
     with connect() as conn:
         conn.execute(
             """
             UPDATE lore_item_customisations
-            SET submission_id = NULL, state = 'draft', skin_slug = NULL
+            SET submission_id = NULL, state = 'draft', skin_slug = NULL,
+                existing_skin_id = NULL, ready_at = NULL
             WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
             """,
             (player, char_id, "iron_hunting_knife"),

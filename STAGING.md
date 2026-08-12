@@ -352,6 +352,36 @@ Checkpoint:
 empty lore → roster sheet fields → /character/[id] parity with Character Info
 ```
 
+## Step 25 — Kit customise submit + deny UX
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-25/00-index.md](./Planning/batches/step-25/00-index.md).
+
+**Code:** 25.01–25.03 done (deny customise state + FE Submit item UX + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. ProvinceSystem API with `denied` customise state on skin deny.
+2. FE lore item editor Submit item / file chips / success + denied copy.
+
+### Locked
+
+- CTA: Submit item; 5 min + Discord DM; upload needs approval
+- File inputs styled like skins upload
+- Skin deny → customise `denied`; keep name/lore; require new skin
+
+### Operator checklist
+
+- [ ] Submit item label; pick vs upload success messages differ
+- [ ] File choose looks like skins upload chip
+- [ ] Deny → customise denied, name/lore kept, kit not ready
+- [ ] Resubmit without skin blocked; with skin proceeds
+
+Checkpoint:
+
+```text
+Submit item → deny skin → denied customise → resubmit with new skin
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

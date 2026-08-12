@@ -21,6 +21,7 @@ STATE_DRAFT = "draft"
 STATE_PENDING_SKIN = "pending_skin"
 STATE_READY = "ready"
 STATE_APPLIED = "applied"
+STATE_DENIED = "denied"
 
 # Sentinel: omit existing_skin_id → leave skin refs unchanged.
 _UNSET = object()
@@ -483,20 +484,25 @@ def _load_row(
     keys = _row_keys(row)
     submission_id = row["submission_id"]
     submission_status = None
+    deny_reason = None
     if submission_id:
         with connect() as conn:
             sub = conn.execute(
-                "SELECT status FROM submissions WHERE id = ?",
+                "SELECT status, deny_reason FROM submissions WHERE id = ?",
                 (submission_id,),
             ).fetchone()
         if sub is not None:
             submission_status = str(sub["status"] or "")
+            reason = sub["deny_reason"] if "deny_reason" in sub.keys() else None
+            if reason is not None and str(reason).strip():
+                deny_reason = str(reason).strip()
     return {
         "display_name": str(row["display_name"] or ""),
         "lore": _parse_lore_json(row["lore_json"]),
         "existing_skin_id": row["existing_skin_id"],
         "submission_id": submission_id,
         "submission_status": submission_status,
+        "deny_reason": deny_reason,
         "state": str(row["state"] if "state" in keys else STATE_DRAFT) or STATE_DRAFT,
         "skin_slug": row["skin_slug"] if "skin_slug" in keys else None,
         "ready_at": row["ready_at"] if "ready_at" in keys else None,
@@ -532,6 +538,7 @@ def _load_draft(
             "existing_skin_id": None,
             "submission_id": None,
             "submission_status": None,
+            "deny_reason": None,
             "state": STATE_DRAFT,
             "skin_slug": None,
             "ready_at": None,
@@ -687,6 +694,54 @@ def _ia_path(skin_slug: str | None, ia_namespace: str | None = None) -> str | No
         return None
     ns = (ia_namespace or "").strip() or "tfmc_submissions"
     return f"ia.{ns}:{slug}"
+
+
+def _kit_skins_search_dirs() -> list:
+    """Directories that may contain default kit PNGs named {skin_png}.png."""
+    import os
+    from pathlib import Path
+
+    dirs: list = []
+    env = (os.environ.get("KIT_SKINS_DIR") or "").strip()
+    if env:
+        dirs.append(Path(env))
+    # ProvinceSystem/backend/assets/kit_skins
+    backend_root = Path(__file__).resolve().parents[2]
+    dirs.append(backend_root / "assets" / "kit_skins")
+    # Monorepo fallback: RPC plugin resource shipped with the jar
+    tfmc_root = backend_root.parent.parent
+    dirs.append(
+        tfmc_root
+        / "Workspace"
+        / "rpcharacters"
+        / "src"
+        / "main"
+        / "resources"
+        / "assets"
+    )
+    return dirs
+
+
+def resolve_default_kit_texture(kit_key: str):
+    """Path to catalog default skin PNG for an editable kit_key. Raises LoreItemError."""
+    from pathlib import Path
+
+    key = (kit_key or "").strip()
+    if not key:
+        raise LoreItemError("kit_key is required", status_code=400)
+    editable = _editable_by_key(key)
+    skin_png = str(editable.get("skin_png") or "").strip()
+    if not skin_png:
+        raise LoreItemError("no default texture for this item", status_code=404)
+    stem = skin_png[:-4] if skin_png.lower().endswith(".png") else skin_png
+    if not stem or "/" in stem or "\\" in stem or ".." in stem:
+        raise LoreItemError("no default texture for this item", status_code=404)
+    filename = f"{stem}.png"
+    for folder in _kit_skins_search_dirs():
+        path = Path(folder) / filename
+        if path.is_file():
+            return path
+    raise LoreItemError("default texture file missing", status_code=404)
 
 
 def resolve_pickable_texture(
@@ -963,6 +1018,7 @@ def customise_lore_item(
     colours_json = json.dumps(colours, separators=(",", ":")) if colours else None
 
     prev = _load_draft(player_uuid, cid, kit_key_norm)
+    prev_state = str(prev.get("state") or STATE_DRAFT).strip().lower()
     next_existing = prev.get("existing_skin_id")
     next_submission = prev.get("submission_id")
     next_slug = prev.get("skin_slug")
@@ -970,6 +1026,19 @@ def customise_lore_item(
     next_ready_at = prev.get("ready_at")
     next_applied_at = prev.get("applied_at")
     now = _iso_now()
+
+    if prev_state == STATE_DENIED:
+        has_new_upload = texture_bytes is not None
+        has_new_pick = (
+            existing_skin_id is not _UNSET
+            and existing_skin_id is not None
+            and str(existing_skin_id).strip()
+        )
+        if not has_new_upload and not has_new_pick:
+            raise LoreItemError(
+                "Skin was denied. Choose a different skin (upload or pick) and submit again.",
+                status_code=400,
+            )
 
     if texture_bytes is not None:
         if not texture_bytes:
@@ -1180,7 +1249,7 @@ def promote_ready_for_submissions(submission_ids: list[str]) -> int:
 
 
 def clear_pending_submission(submission_id: str) -> int:
-    """On deny: drop pending submission link; keep last applied snapshot fields."""
+    """On deny: mark matching customise rows denied; keep name/lore and submission_id."""
     from src.skins.db import connect
 
     sid = (submission_id or "").strip()
@@ -1188,39 +1257,20 @@ def clear_pending_submission(submission_id: str) -> int:
         return 0
     now = _iso_now()
     with connect() as conn:
-        rows = conn.execute(
+        cur = conn.execute(
             """
-            SELECT player_uuid, character_id, kit_key, applied_at, skin_slug
-            FROM lore_item_customisations
+            UPDATE lore_item_customisations
+            SET state = ?,
+                ready_at = NULL,
+                existing_skin_id = NULL,
+                skin_slug = NULL,
+                updated_at = ?
             WHERE submission_id = ?
+              AND LOWER(COALESCE(state, '')) = ?
             """,
-            (sid,),
-        ).fetchall()
-        cleared = 0
-        for row in rows:
-            if row["applied_at"]:
-                next_state = STATE_APPLIED
-            elif row["skin_slug"]:
-                next_state = STATE_READY
-            else:
-                next_state = STATE_DRAFT
-            conn.execute(
-                """
-                UPDATE lore_item_customisations
-                SET submission_id = NULL,
-                    state = ?,
-                    updated_at = ?
-                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
-                """,
-                (
-                    next_state,
-                    now,
-                    row["player_uuid"],
-                    row["character_id"],
-                    row["kit_key"],
-                ),
-            )
-            cleared += 1
+            (STATE_DENIED, now, sid, STATE_PENDING_SKIN),
+        )
+        cleared = int(cur.rowcount or 0)
         conn.commit()
     return cleared
 
