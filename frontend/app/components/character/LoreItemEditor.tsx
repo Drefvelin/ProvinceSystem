@@ -394,7 +394,11 @@ export default function LoreItemEditor({
   const nameStyleCss = useMemo(() => previewStyleCss(styles), [styles]);
   const previewLore = useMemo(() => {
     const base = item.base_preview.lore || [];
-    return [...base, ...lore.map((l) => l.trim()).filter(Boolean)];
+    const custom = lore.map((l) => l.trim()).filter(Boolean);
+    if (custom.length === 0) return base;
+    if (base.length === 0) return custom;
+    // Match in-game: MI/base lore, blank spacer, then custom lines
+    return [...base, " ", ...custom];
   }, [item.base_preview.lore, lore]);
 
   const canAddLore =
@@ -686,24 +690,28 @@ export default function LoreItemEditor({
           <ul className="mt-2 space-y-1">
             {previewLore.map((line, li) => (
               <li key={`${li}-${line.slice(0, 16)}`}>
-                {parseLoreRuns(line).map((run, ri) => (
-                  <span
-                    key={ri}
-                    style={{
-                      color: run.color,
-                      fontWeight: run.bold ? 700 : undefined,
-                      fontStyle: run.italic ? "italic" : undefined,
-                      textDecoration: [
-                        run.underline ? "underline" : "",
-                        run.strike ? "line-through" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" "),
-                    }}
-                  >
-                    {run.text}
-                  </span>
-                ))}
+                {line === " " || line === "" ? (
+                  <span className="inline-block min-h-[1em]">{"\u00A0"}</span>
+                ) : (
+                  parseLoreRuns(line).map((run, ri) => (
+                    <span
+                      key={ri}
+                      style={{
+                        color: run.color,
+                        fontWeight: run.bold ? 700 : undefined,
+                        fontStyle: run.italic ? "italic" : undefined,
+                        textDecoration: [
+                          run.underline ? "underline" : "",
+                          run.strike ? "line-through" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" "),
+                      }}
+                    >
+                      {run.text}
+                    </span>
+                  ))
+                )}
               </li>
             ))}
           </ul>

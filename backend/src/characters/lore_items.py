@@ -510,7 +510,11 @@ def _merge_preview(
         "display_name", ""
     )
     base_lore = list(base.get("lore") or [])
-    merged_lore = base_lore + list(draft_lore or [])
+    draft = [str(x) for x in (draft_lore or []) if x is not None]
+    if base_lore and draft:
+        merged_lore = base_lore + [" "] + draft
+    else:
+        merged_lore = base_lore + draft
     out: dict[str, Any] = {
         "display_name": name,
         "lore": merged_lore,
