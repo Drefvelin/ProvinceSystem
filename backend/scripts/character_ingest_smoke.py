@@ -460,10 +460,15 @@ def main() -> None:
         "birthday": "1203-04-15",
         "gender": "female",
         "description": "A quiet scout from the borderlands.",
-        "attributes": {"str": 2, "dex": 3, "con": 1},
+        "background": "Born under a red moon.\nTrained among border scouts.",
+        "attributes": {"strength": 2, "dexterity": 3, "constitution": 1, "intelligence": 0},
+        "experience_modifiers": [
+            {"profession": "miner", "alias": "Miner Experience", "amount": -10},
+            {"profession": "forester", "alias": "Forester Experience", "amount": 5},
+        ],
         "traits": [
-            {"id": "keen_eye", "name": "Keen Eye", "key": "positive"},
-            {"id": "scar", "name": "Old Scar", "key": "neutral"},
+            {"id": "cheerful", "name": "Cheerful", "key": "personality"},
+            {"id": "cruel", "name": "Cruel", "key": "evil"},
         ],
         "clues": ["Saw a red banner at dusk", "Heard wolves near the mill"],
     }
@@ -487,8 +492,12 @@ def main() -> None:
         fail(f"race_name: {sheet_row.get('race_name')}")
     if sheet_row.get("description") != sheet_char["description"]:
         fail(f"description: {sheet_row.get('description')}")
+    if sheet_row.get("background") != sheet_char["background"]:
+        fail(f"background: {sheet_row.get('background')}")
     if sheet_row.get("attributes") != sheet_char["attributes"]:
         fail(f"attributes: {sheet_row.get('attributes')}")
+    if sheet_row.get("experience_modifiers") != sheet_char["experience_modifiers"]:
+        fail(f"experience_modifiers: {sheet_row.get('experience_modifiers')}")
     if not isinstance(sheet_row.get("traits"), list) or len(sheet_row["traits"]) != 2:
         fail(f"traits: {sheet_row.get('traits')}")
     if sheet_row.get("clues") != sheet_char["clues"]:

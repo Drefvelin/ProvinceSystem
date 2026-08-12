@@ -320,6 +320,38 @@ Checkpoint:
 pick thumbs → coloured name + inline lore → claim with correct IA namespace
 ```
 
+## Step 24 — Character sheet parity (traits, attrs, background)
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-24/00-index.md](./Planning/batches/step-24/00-index.md).
+
+**Code:** 24.01–24.04 done (RPC empty lore + roster fields + PS accept + FE sheet + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. RPCharacters jar with empty-lore fix and expanded roster sheet payload.
+2. ProvinceSystem API accepting `background` + `experience_modifiers`.
+3. FE character sheet sections for EXP / background / formatted birthday.
+
+### Locked
+
+- Traits: personality / evil only
+- Attributes: merged totals; profession EXP from experience modifiers
+- Background: writable-book lore; empty lore never adds blank lines
+- Birthday display: `26/09/326 AE` (pad day/month, never pad year)
+
+### Operator checklist
+
+- [ ] Traits on sheet are personality/evil only
+- [ ] Attributes include trait modifiers; profession EXP shown
+- [ ] Background matches writable book; no blank gaps from empty lore
+- [ ] Birthday displays like `26/09/326 AE`
+
+Checkpoint:
+
+```text
+empty lore → roster sheet fields → /character/[id] parity with Character Info
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

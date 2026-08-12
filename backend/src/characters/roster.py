@@ -205,6 +205,7 @@ def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
         "birthday",
         "gender",
         "description",
+        "background",
     ):
         if key not in raw:
             continue
@@ -248,6 +249,29 @@ def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
             cleaned_traits.append(entry)
         if cleaned_traits:
             sheet["traits"] = cleaned_traits
+    xp_mods = raw.get("experience_modifiers")
+    if isinstance(xp_mods, list) and xp_mods:
+        cleaned_xp: list[dict[str, Any]] = []
+        for m in xp_mods:
+            if not isinstance(m, dict):
+                continue
+            profession = str(m.get("profession") or "").strip().lower()
+            if not profession:
+                continue
+            alias = str(m.get("alias") or profession).strip() or profession
+            try:
+                amount = int(m.get("amount"))
+            except (TypeError, ValueError):
+                continue
+            cleaned_xp.append(
+                {
+                    "profession": profession,
+                    "alias": alias,
+                    "amount": amount,
+                }
+            )
+        if cleaned_xp:
+            sheet["experience_modifiers"] = cleaned_xp
     clues = raw.get("clues")
     if isinstance(clues, list) and clues:
         cleaned_clues = [

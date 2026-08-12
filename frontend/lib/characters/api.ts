@@ -298,7 +298,10 @@ export type CharacterListItem = {
   birthday?: string | null;
   gender?: string | null;
   description?: string | null;
+  /** Writable-book trait lore (background-trait-types), stripped. */
+  background?: string | null;
   attributes?: Record<string, number> | null;
+  experience_modifiers?: ExperienceModifierDto[] | null;
   traits?: CharacterSheetTrait[] | null;
   clues?: string[] | null;
 };

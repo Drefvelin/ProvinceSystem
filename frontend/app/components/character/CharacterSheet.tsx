@@ -5,8 +5,10 @@ import type {
   CharacterListItem,
   CharacterSheetTrait,
   CreationCatalog,
+  ExperienceModifierDto,
 } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
+import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
 
 type Props = {
@@ -40,6 +42,11 @@ function groupTraits(
   }));
 }
 
+function formatXpAmount(amount: number): string {
+  if (amount > 0) return `+${amount}%`;
+  return `${amount}%`;
+}
+
 function SheetSection({
   title,
   children,
@@ -64,9 +71,12 @@ export default function CharacterSheet({ character, catalog }: Props) {
   const race = displayRace(character, catalog);
   const klass = displayClass(character, catalog);
   const age = String(character.age || "").trim();
-  const birthday = String(character.birthday || "").trim();
+  const birthdayIso = String(character.birthday || "").trim();
+  const birthday =
+    formatFantasyBirthday(birthdayIso, catalog?.calendar) || birthdayIso;
   const gender = String(character.gender || "").trim();
   const description = String(character.description || "").trim();
+  const background = String(character.background || "").trim();
 
   const identityBits = [
     race || null,
@@ -81,9 +91,20 @@ export default function CharacterSheet({ character, catalog }: Props) {
     attrs && typeof attrs === "object"
       ? Object.entries(attrs)
           .map(([k, v]) => [String(k).trim(), Number(v)] as const)
-          .filter(([k, v]) => k && Number.isFinite(v) && v > 0)
+          .filter(([k, v]) => k && Number.isFinite(v))
           .sort(([a], [b]) => a.localeCompare(b))
       : [];
+
+  const xpMods: ExperienceModifierDto[] = Array.isArray(
+    character.experience_modifiers
+  )
+    ? character.experience_modifiers.filter(
+        (m) =>
+          m &&
+          String(m.profession || m.alias || "").trim() &&
+          Number.isFinite(Number(m.amount))
+      )
+    : [];
 
   const traits = Array.isArray(character.traits)
     ? character.traits.filter((t) => t && String(t.name || t.id || "").trim())
@@ -100,7 +121,7 @@ export default function CharacterSheet({ character, catalog }: Props) {
         {character.name || "Unnamed"}
       </h1>
       <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
-        {status || "—"}
+        {status || "-"}
       </p>
 
       {identityBits.length > 0 ? (
@@ -117,10 +138,18 @@ export default function CharacterSheet({ character, catalog }: Props) {
         </SheetSection>
       ) : null}
 
+      {background ? (
+        <SheetSection title="Background">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--tfmc-mist)]">
+            {background}
+          </p>
+        </SheetSection>
+      ) : null}
+
       {attrEntries.length > 0 ? (
         <SheetSection title="Attributes">
           <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
-            {attrEntries.map(([key, rank]) => (
+            {attrEntries.map(([key, amount]) => (
               <li
                 key={key}
                 className="flex items-baseline justify-between gap-4 py-2 text-sm"
@@ -128,9 +157,33 @@ export default function CharacterSheet({ character, catalog }: Props) {
                 <span className="text-[var(--tfmc-cream)]">
                   {displayAttrName(key)}
                 </span>
-                <span className="text-[var(--tfmc-stone)]">{rank}</span>
+                <span className="text-[var(--tfmc-stone)]">{amount}</span>
               </li>
             ))}
+          </ul>
+        </SheetSection>
+      ) : null}
+
+      {xpMods.length > 0 ? (
+        <SheetSection title="Profession EXP">
+          <ul className="divide-y divide-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
+            {xpMods.map((m) => {
+              const label =
+                String(m.alias || "").trim() ||
+                capitalizeKey(String(m.profession || ""));
+              const amount = Number(m.amount);
+              return (
+                <li
+                  key={String(m.profession || label)}
+                  className="flex items-baseline justify-between gap-4 py-2 text-sm"
+                >
+                  <span className="text-[var(--tfmc-cream)]">{label}</span>
+                  <span className="text-[var(--tfmc-stone)]">
+                    {formatXpAmount(amount)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </SheetSection>
       ) : null}
