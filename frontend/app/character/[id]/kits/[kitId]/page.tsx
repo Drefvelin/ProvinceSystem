@@ -241,17 +241,22 @@ export default function CharacterKitDetailPage() {
                       View status
                     </Link>
                   ) : canEdit && editHref ? (
-                    <Link
-                      href={editHref}
-                      className="inline-flex items-center justify-center gap-2 rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
-                    >
-                      Edit
+                    <div className="flex items-center gap-2">
                       {custom ? (
-                        <span className="rounded-sm bg-[#2b6cb0] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#e8f1fb]">
+                        <span
+                          aria-label="Customised item"
+                          className="inline-flex items-center rounded-sm border border-[#5b9bd5]/70 bg-[color-mix(in_srgb,#0c1a24_72%,transparent)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8eb8e0] pointer-events-none select-none"
+                        >
                           Custom
                         </span>
                       ) : null}
-                    </Link>
+                      <Link
+                        href={editHref}
+                        className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
+                      >
+                        Edit
+                      </Link>
+                    </div>
                   ) : null}
                 </li>
               );
