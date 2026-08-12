@@ -1,4 +1,4 @@
-/** Inline Minecraft/TLibs-style colour runs for lore preview. */
+/** Inline Minecraft/TLibs-style colour runs for lore / name preview. */
 
 import { LEGACY_PALETTE } from "../skins/namePreview";
 
@@ -20,13 +20,34 @@ function normalizeHex(raw: string): string | null {
   return null;
 }
 
-/** Prepend §7 when the line has no leading colour (matches API normalize). */
+/** Prepend §7 when the line has no leading colour (matches API / in-game apply).
+
+ * Format codes alone (§l / &l) are not colours — still prepend §7.
+ */
 export function ensureLoreGray(line: string): string {
   const s = line.trim();
   if (!s) return s;
-  if (s[0] === "§" || s[0] === "&") return s;
-  if (s[0] === "#" && /^#[0-9A-Fa-f]{6}/.test(s)) return s;
+  if (hasLeadingLoreColour(s)) return s;
   return `§7${s}`;
+}
+
+function hasLeadingLoreColour(line: string): boolean {
+  if (!line) return false;
+  if ((line[0] === "§" || line[0] === "&") && line.length >= 2) {
+    const code = line[1]!.toLowerCase();
+    return "0123456789abcdef".includes(code);
+  }
+  if (line[0] === "#" && line.length >= 7) {
+    return /^#[0-9A-Fa-f]{6}/.test(line);
+  }
+  return false;
+}
+
+export function hasInlineFormatCodes(raw: string): boolean {
+  const s = String(raw || "");
+  if (/[§&][0-9a-fk-or]/i.test(s)) return true;
+  if (/#[0-9A-Fa-f]{6}/.test(s)) return true;
+  return false;
 }
 
 /**
@@ -34,9 +55,20 @@ export function ensureLoreGray(line: string): string {
  * Supports §x / &x, §l/§o/§n/§m/§r, and #RRGGBB.
  */
 export function parseLoreRuns(raw: string): LoreRun[] {
-  const line = ensureLoreGray(raw);
+  return parseInlineRuns(ensureLoreGray(raw), "#aaaaaa");
+}
+
+/**
+ * Parse item name with the same §/&/# codes as lore.
+ * Does not force gray — default is white for names.
+ */
+export function parseNameRuns(raw: string): LoreRun[] {
+  return parseInlineRuns(String(raw || ""), "#ffffff");
+}
+
+function parseInlineRuns(line: string, defaultColor: string): LoreRun[] {
   const runs: LoreRun[] = [];
-  let color = "#aaaaaa";
+  let color = defaultColor;
   let bold = false;
   let italic = false;
   let underline = false;
@@ -60,7 +92,7 @@ export function parseLoreRuns(raw: string): LoreRun[] {
       else if (code === "n") underline = true;
       else if (code === "m") strike = true;
       else if (code === "r") {
-        color = "#aaaaaa";
+        color = defaultColor;
         bold = italic = underline = strike = false;
       } else if (LEGACY.has(code)) {
         color = LEGACY.get(code)!;

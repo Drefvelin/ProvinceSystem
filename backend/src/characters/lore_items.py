@@ -389,11 +389,18 @@ def _parse_lore_json(raw: str | None) -> list[str]:
 
 
 def _lore_line_has_leading_colour(line: str) -> bool:
+    """True when the line already starts with a colour (§0-9a-f, &…, or #RRGGBB).
+
+    Format codes alone (§l bold, §o italic, …) are not colours — those lines
+    still need a leading §7 so bold/italic do not inherit client defaults
+    (purple italic).
+    """
     s = (line or "").lstrip()
     if not s:
         return False
     if s[0] in ("§", "&") and len(s) >= 2:
-        return True
+        code = s[1].lower()
+        return code in "0123456789abcdef"
     if s[0] == "#" and len(s) >= 7 and all(
         c in "0123456789abcdefABCDEF" for c in s[1:7]
     ):

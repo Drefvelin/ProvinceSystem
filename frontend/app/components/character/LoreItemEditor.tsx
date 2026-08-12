@@ -10,7 +10,7 @@ import {
   loreItemSkinTextureUrl,
   type LoreItemRow,
 } from "../../../lib/characters/api";
-import { parseLoreRuns } from "../../../lib/characters/lorePreview";
+import { hasInlineFormatCodes, parseLoreRuns, parseNameRuns } from "../../../lib/characters/lorePreview";
 import {
   DISPLAY_NAME_HINT,
   displayNameError,
@@ -379,9 +379,17 @@ export default function LoreItemEditor({
       : null;
 
   const previewName = displayName.trim() || item.base_preview.display_name || "Preview";
+  const nameHasInline = useMemo(
+    () => hasInlineFormatCodes(previewName),
+    [previewName]
+  );
   const nameSpans = useMemo(
     () => previewSpans(previewName, colours),
     [previewName, colours]
+  );
+  const nameInlineRuns = useMemo(
+    () => (nameHasInline ? parseNameRuns(previewName) : []),
+    [nameHasInline, previewName]
   );
   const nameStyleCss = useMemo(() => previewStyleCss(styles), [styles]);
   const previewLore = useMemo(() => {
@@ -531,7 +539,9 @@ export default function LoreItemEditor({
           Name
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          {DISPLAY_NAME_HINT}. Colour stops use your rank perk.
+          {DISPLAY_NAME_HINT}. Colour stops use your rank perk. You can also use
+          inline §l / &amp;l (bold), §o (italic), §n (underline), §m (strike) in
+          the name — preview shows them like lore.
         </p>
         <input
           type="text"
@@ -584,8 +594,9 @@ export default function LoreItemEditor({
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           Up to {LORE_MAX_LINES} custom lines ({LORE_LINE_MAX} characters each).
-          Use §c, &amp;c, or #RRGGBB mid-line. Plain lines get gray (§7) by
-          default.
+          Use §c, &amp;c, or #RRGGBB mid-line. Lines without a leading colour
+          (including §l / &amp;l alone) get gray (§7) first so styles stay gray,
+          not purple italic.
         </p>
         {lore.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--tfmc-mist)]">No custom lore yet.</p>
@@ -641,12 +652,36 @@ export default function LoreItemEditor({
           Preview
         </h2>
         <div className="mt-3 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[#1a1a1a] px-4 py-3 font-mono text-sm">
-          <p className="leading-relaxed" style={nameStyleCss}>
-            {nameSpans.map((span, i) => (
-              <span key={i} style={{ color: span.color }}>
-                {span.char}
-              </span>
-            ))}
+          <p className="leading-relaxed" style={nameHasInline ? undefined : nameStyleCss}>
+            {nameHasInline
+              ? nameInlineRuns.map((run, ri) => (
+                  <span
+                    key={ri}
+                    style={{
+                      color: run.color,
+                      fontWeight: run.bold || styles.includes("bold") ? 700 : undefined,
+                      fontStyle:
+                        run.italic || styles.includes("italic") ? "italic" : undefined,
+                      textDecoration: [
+                        run.underline || styles.includes("underline")
+                          ? "underline"
+                          : "",
+                        run.strike || styles.includes("strikethrough")
+                          ? "line-through"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" "),
+                    }}
+                  >
+                    {run.text}
+                  </span>
+                ))
+              : nameSpans.map((span, i) => (
+                  <span key={i} style={{ color: span.color }}>
+                    {span.char}
+                  </span>
+                ))}
           </p>
           <ul className="mt-2 space-y-1">
             {previewLore.map((line, li) => (
