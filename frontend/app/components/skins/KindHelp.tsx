@@ -113,6 +113,20 @@ const GUIDES: Record<SkinKind, KindGuide> = {
       "Set the item name / colours, then submit.",
     ],
   },
+  book: {
+    title: "Book",
+    summary:
+      "Two 16×16 covers: unsigned for the writable book, signed after the player signs it.",
+    steps: [
+      "Choose the Books base set.",
+      "Upload unsigned (writable / closed look) as a 16×16 PNG.",
+      "Upload signed (after the book is signed) as a 16×16 PNG.",
+      "Set the item name / colours, then submit.",
+    ],
+    notes: [
+      "Unsigned is what players see before signing; signed replaces it when they finish the book.",
+    ],
+  },
 };
 
 type ToggleProps = {

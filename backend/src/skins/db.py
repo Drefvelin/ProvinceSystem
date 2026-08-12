@@ -373,6 +373,11 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE lore_item_customisations ADD COLUMN name_colours TEXT"
             )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "name_styles" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations ADD COLUMN name_styles TEXT"
+            )
         # Discard player_keys system
         if "player_keys" in _tables(conn):
             conn.execute("DROP TABLE player_keys")

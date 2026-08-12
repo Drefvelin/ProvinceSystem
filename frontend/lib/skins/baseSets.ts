@@ -42,6 +42,7 @@ export const BASE_SETS: Record<SkinKind, readonly string[]> = {
   shield: ["shields"],
   helmet_3d: ["helmets"],
   gun: ["rifles", "pistols", "shotguns", "launchers"],
+  book: ["books"],
 };
 
 const LABELS: Record<string, string> = {
@@ -72,6 +73,7 @@ const LABELS: Record<string, string> = {
   pistols: "Pistols",
   shotguns: "Shotguns",
   launchers: "Launchers",
+  books: "Books",
 };
 
 export function baseSetsForKind(kind: SkinKind): readonly string[] {

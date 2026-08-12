@@ -44,6 +44,7 @@ ARMOR_FIELDS = ARMOR_ICON_FIELDS + ARMOR_LAYER_FIELDS
 BOW_PULL_FIELDS = ("pull_0", "pull_1", "pull_2")
 BOW_FRAME_FIELDS = ("texture",) + BOW_PULL_FIELDS
 CROSSBOW_FRAME_FIELDS = BOW_FRAME_FIELDS + ("charged",)
+BOOK_FIELDS = ("unsigned", "signed")
 
 
 class SlugError(ValueError):

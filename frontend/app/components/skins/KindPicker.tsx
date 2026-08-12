@@ -27,6 +27,11 @@ const OPTIONS: {
   { value: "shield", label: "Shield 3D", detail: "Model + texture" },
   { value: "helmet_3d", label: "Helmet 3D", detail: "Model + texture" },
   { value: "gun", label: "Gun", detail: "Carry · reload · aim" },
+  {
+    value: "book",
+    label: "Book",
+    detail: "Unsigned + signed · 16×16",
+  },
 ];
 
 type Props = {

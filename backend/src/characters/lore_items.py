@@ -10,6 +10,7 @@ from src.skins.submissions import (
     MAX_DISPLAY_NAME,
     SubmissionError,
     create_submission,
+    _validate_name_styles,
 )
 from src.skins.storage import StorageError
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
@@ -398,6 +399,15 @@ def _validate_name_colours(raw: list | None) -> list[str]:
         raise LoreItemError(str(e)) from e
 
 
+def _validate_lore_name_styles(raw: list | None) -> list[str]:
+    if not raw:
+        return []
+    try:
+        return _validate_name_styles(raw)
+    except SubmissionError as e:
+        raise LoreItemError(str(e)) from e
+
+
 def _validate_display_name(raw: str | None) -> str:
     try:
         return assert_display_name(
@@ -510,6 +520,9 @@ def _load_row(
         "name_colours": _parse_name_colours(
             row["name_colours"] if "name_colours" in keys else None
         ),
+        "name_styles": _parse_name_styles(
+            row["name_styles"] if "name_styles" in keys else None
+        ),
     }
 
 
@@ -525,6 +538,10 @@ def _parse_name_colours(raw: Any) -> list[str]:
     if not isinstance(data, list):
         return []
     return [str(x) for x in data if x is not None and str(x).strip()]
+
+
+def _parse_name_styles(raw: Any) -> list[str]:
+    return _parse_name_colours(raw)
 
 
 def _load_draft(
@@ -545,6 +562,7 @@ def _load_draft(
             "applied_at": None,
             "ia_namespace": None,
             "name_colours": [],
+            "name_styles": [],
         }
     slug = row.get("skin_slug") or row.get("existing_skin_id") or row.get("submission_id")
     row["ia_namespace"] = _namespace_for_skin_id(str(slug) if slug else None)
@@ -561,6 +579,9 @@ def _submission_texture_path(submission_id: str):
     path = SKINS_DIR / sid / f"{sid}.png"
     if path.is_file():
         return path
+    unsigned = SKINS_DIR / sid / f"{sid}_unsigned.png"
+    if unsigned.is_file():
+        return unsigned
     return None
 
 
@@ -865,6 +886,11 @@ def _build_item(
         "path": str(editable.get("path") or ""),
         "skin_png": str(editable.get("skin_png") or ""),
         "base_set": base_set,
+        "2d_template": str(editable.get("2d_template") or "").strip()
+        or "handheld",
+        "3d_template": (
+            str(editable.get("3d_template") or "").strip() or None
+        ),
         "eligible": True,
         "base_preview": base_preview,
         "preview": preview,
@@ -1036,9 +1062,12 @@ def customise_lore_item(
     lore: list[str] | None,
     existing_skin_id: Any = _UNSET,
     texture_bytes: bytes | None = None,
+    unsigned_bytes: bytes | None = None,
+    signed_bytes: bytes | None = None,
     model_bytes: bytes | None = None,
     use_3d: bool = False,
     name_colours: list[str] | None = None,
+    name_styles: list[str] | None = None,
     kit_id: str | None = None,
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
@@ -1070,7 +1099,12 @@ def customise_lore_item(
         )
     base_set = str(editable.get("base_set") or "").strip()
 
-    if texture_bytes is not None and existing_skin_id is not _UNSET and existing_skin_id:
+    has_upload = (
+        texture_bytes is not None
+        or unsigned_bytes is not None
+        or signed_bytes is not None
+    )
+    if has_upload and existing_skin_id is not _UNSET and existing_skin_id:
         raise LoreItemError(
             "Provide either texture upload or existing_skin_id, not both"
         )
@@ -1079,6 +1113,11 @@ def customise_lore_item(
     lore_lines = _validate_lore(lore)
     colours = _validate_name_colours(name_colours)
     colours_json = json.dumps(colours, separators=(",", ":")) if colours else None
+    styles = _validate_lore_name_styles(name_styles)
+    styles_json = json.dumps(styles, separators=(",", ":")) if styles else None
+
+    flat_kind = str(editable.get("2d_template") or "").strip() or "handheld"
+    three_d_kind = str(editable.get("3d_template") or "").strip() or None
 
     prev = _load_draft(player_uuid, cid, kit_key_norm)
     prev_state = str(prev.get("state") or STATE_DRAFT).strip().lower()
@@ -1091,7 +1130,7 @@ def customise_lore_item(
     now = _iso_now()
 
     if prev_state == STATE_DENIED:
-        has_new_upload = texture_bytes is not None
+        has_new_upload = has_upload
         has_new_pick = (
             existing_skin_id is not _UNSET
             and existing_skin_id is not None
@@ -1103,16 +1142,61 @@ def customise_lore_item(
                 status_code=400,
             )
 
-    if texture_bytes is not None:
+    if flat_kind == "book" and (
+        unsigned_bytes is not None
+        or signed_bytes is not None
+        or texture_bytes is not None
+    ):
+        if use_3d or model_bytes:
+            raise LoreItemError("3D not allowed for book items", status_code=400)
+        if texture_bytes is not None and (
+            unsigned_bytes is None or signed_bytes is None
+        ):
+            raise LoreItemError(
+                "Book customise requires unsigned and signed PNG uploads"
+            )
+        if not unsigned_bytes or not signed_bytes:
+            raise LoreItemError(
+                "Book customise requires unsigned and signed PNG uploads"
+            )
+        files: dict[str, bytes] = {
+            "unsigned": unsigned_bytes,
+            "signed": signed_bytes,
+        }
+        try:
+            created = create_submission(
+                session_row,
+                kind="book",
+                display_name=name,
+                files_bytes=files,
+                base_set=base_set or None,
+                add_name=True,
+                name_colours=colours or None,
+                name_styles=styles or None,
+            )
+        except (SubmissionError, StorageError) as e:
+            raise LoreItemError(str(e)) from e
+        next_submission = created.get("id")
+        next_existing = None
+        next_slug = None
+        next_state = STATE_PENDING_SKIN
+        next_ready_at = None
+    elif texture_bytes is not None:
         if not texture_bytes:
             raise LoreItemError("texture file is empty")
         want_3d = bool(use_3d) or bool(model_bytes)
-        if want_3d and not model_bytes:
-            raise LoreItemError("3D upload requires a model JSON file")
-        files: dict[str, bytes] = {"texture": texture_bytes}
-        kind = "handheld"
         if want_3d:
-            kind = "item_3d"
+            if not three_d_kind:
+                raise LoreItemError(
+                    "3D not allowed for this item",
+                    status_code=400,
+                )
+            if not model_bytes:
+                raise LoreItemError("3D upload requires a model JSON file")
+        files = {"texture": texture_bytes}
+        kind = flat_kind
+        if want_3d:
+            kind = three_d_kind
             files["model"] = model_bytes  # type: ignore[assignment]
         try:
             created = create_submission(
@@ -1123,6 +1207,7 @@ def customise_lore_item(
                 base_set=base_set or None,
                 add_name=True,
                 name_colours=colours or None,
+                name_styles=styles or None,
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e
@@ -1161,7 +1246,49 @@ def customise_lore_item(
             ).fetchall()
         }
         if "kit_id" in cols:
-            if "name_colours" in cols:
+            if "name_colours" in cols and "name_styles" in cols:
+                conn.execute(
+                    """
+                    INSERT INTO lore_item_customisations (
+                        player_uuid, character_id, kit_key,
+                        display_name, lore_json,
+                        existing_skin_id, submission_id,
+                        state, skin_slug, ready_at, applied_at, kit_id,
+                        name_colours, name_styles, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(player_uuid, character_id, kit_key) DO UPDATE SET
+                        display_name = excluded.display_name,
+                        lore_json = excluded.lore_json,
+                        existing_skin_id = excluded.existing_skin_id,
+                        submission_id = excluded.submission_id,
+                        state = excluded.state,
+                        skin_slug = excluded.skin_slug,
+                        ready_at = excluded.ready_at,
+                        applied_at = excluded.applied_at,
+                        kit_id = excluded.kit_id,
+                        name_colours = excluded.name_colours,
+                        name_styles = excluded.name_styles,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        player_uuid,
+                        cid,
+                        kit_key_norm,
+                        name,
+                        lore_json,
+                        next_existing,
+                        next_submission,
+                        next_state,
+                        next_slug,
+                        next_ready_at,
+                        next_applied_at,
+                        kit,
+                        colours_json,
+                        styles_json,
+                        now,
+                    ),
+                )
+            elif "name_colours" in cols:
                 conn.execute(
                     """
                     INSERT INTO lore_item_customisations (
@@ -1281,6 +1408,77 @@ def customise_lore_item(
 
 
 
+def clear_customisations_for_kit(
+    player_uuid: str,
+    character_id: str,
+    kit_id: str | None = None,
+) -> dict[str, Any]:
+    """Delete lore_item_customisations for one player/character/kit (staff resetkit)."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    cid = (character_id or "").strip()
+    kit = (kit_id or "starter").strip().lower() or "starter"
+    if not uuid or not cid:
+        raise LoreItemError(
+            "player_uuid and character_id are required",
+            status_code=400,
+        )
+
+    keys = _kit_editable_keys(kit)
+    deleted = 0
+    with connect() as conn:
+        cols = {
+            r["name"]
+            for r in conn.execute(
+                "PRAGMA table_info(lore_item_customisations)"
+            ).fetchall()
+        }
+        if "kit_id" in cols:
+            cur = conn.execute(
+                """
+                DELETE FROM lore_item_customisations
+                WHERE player_uuid = ? AND character_id = ?
+                  AND LOWER(COALESCE(kit_id, '')) = ?
+                """,
+                (uuid, cid, kit),
+            )
+            deleted += int(cur.rowcount or 0)
+
+        if keys is not None and keys:
+            placeholders = ",".join("?" for _ in keys)
+            key_list = sorted(keys)
+            cur = conn.execute(
+                f"""
+                DELETE FROM lore_item_customisations
+                WHERE player_uuid = ? AND character_id = ?
+                  AND LOWER(COALESCE(kit_key, '')) IN ({placeholders})
+                """,
+                (uuid, cid, *key_list),
+            )
+            deleted += int(cur.rowcount or 0)
+        elif keys is None and "kit_id" not in cols:
+            # Untagged starter fallback: wipe all rows for this character
+            if kit == "starter":
+                cur = conn.execute(
+                    """
+                    DELETE FROM lore_item_customisations
+                    WHERE player_uuid = ? AND character_id = ?
+                    """,
+                    (uuid, cid),
+                )
+                deleted += int(cur.rowcount or 0)
+        conn.commit()
+
+    return {
+        "ok": True,
+        "player_uuid": uuid,
+        "character_id": cid,
+        "kit_id": kit,
+        "deleted": deleted,
+    }
+
+
 def promote_ready_for_submissions(submission_ids: list[str]) -> int:
     """When skins reach applied, promote matching pending_skin customise rows."""
     from src.skins.db import connect
@@ -1361,6 +1559,9 @@ def list_pending_for_plugin() -> list[dict[str, Any]]:
         colours = _parse_name_colours(
             row["name_colours"] if "name_colours" in keys else None
         )
+        styles = _parse_name_styles(
+            row["name_styles"] if "name_styles" in keys else None
+        )
         entry: dict[str, Any] = {
             "player_uuid": row["player_uuid"],
             "character_id": row["character_id"],
@@ -1376,6 +1577,8 @@ def list_pending_for_plugin() -> list[dict[str, Any]]:
         }
         if colours:
             entry["name_colours"] = colours
+        if styles:
+            entry["name_styles"] = styles
         out.append(entry)
     return out
 

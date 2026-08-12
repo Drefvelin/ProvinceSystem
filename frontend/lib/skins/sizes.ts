@@ -8,7 +8,8 @@ export type SkinKind =
   | "item_3d"
   | "shield"
   | "helmet_3d"
-  | "gun";
+  | "gun"
+  | "book";
 
 export type Size = { w: number; h: number };
 
@@ -56,6 +57,7 @@ export const GUN_FIELDS = [
   "reload_model",
   "aim_model",
 ] as const;
+export const BOOK_FIELDS = ["unsigned", "signed"] as const;
 
 export function isLargeTextureKind(kind: SkinKind): boolean {
   return kind === "large_handheld" || kind === "large_bow";
@@ -71,6 +73,10 @@ export function isModel3dKind(kind: SkinKind): boolean {
 
 export function isGunKind(kind: SkinKind): boolean {
   return kind === "gun";
+}
+
+export function isBookKind(kind: SkinKind): boolean {
+  return kind === "book";
 }
 
 export function fileFieldsForKind(kind: SkinKind): readonly string[] {
@@ -89,6 +95,9 @@ export function fileFieldsForKind(kind: SkinKind): readonly string[] {
   if (isGunKind(kind)) {
     return GUN_FIELDS;
   }
+  if (isBookKind(kind)) {
+    return BOOK_FIELDS;
+  }
   return ["texture"];
 }
 
@@ -105,6 +114,12 @@ export function expectedSizeForField(
     }
     if ((ARMOR_LAYER_FIELDS as readonly string[]).includes(field)) {
       return LAYER_SIZE;
+    }
+    return null;
+  }
+  if (isBookKind(kind)) {
+    if ((BOOK_FIELDS as readonly string[]).includes(field)) {
+      return ITEM_SIZE;
     }
     return null;
   }
@@ -139,6 +154,9 @@ export function sizeHint(kind: SkinKind): string {
   }
   if (kind === "crossbow") {
     return "All five crossbow frames must be 16×16.";
+  }
+  if (isBookKind(kind)) {
+    return "Unsigned and signed covers must both be 16×16.";
   }
   if (isModel3dKind(kind) || isGunKind(kind)) {
     return "";

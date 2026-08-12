@@ -14,7 +14,14 @@ from PIL import Image, ImageDraw, ImageFont
 from .db import SKINS_DIR, connect
 from .name_preview import render_name_preview_png
 from .naming import ARMOR_FIELDS
-from .storage import BOW_KINDS, CROSSBOW_KINDS, GUN_KIND, ITEM_KINDS, MODEL_3D_KINDS
+from .storage import (
+    BOOK_KIND,
+    BOW_KINDS,
+    CROSSBOW_KINDS,
+    GUN_KIND,
+    ITEM_KINDS,
+    MODEL_3D_KINDS,
+)
 
 TILE_DISPLAY = 128
 ITEM_DISPLAY = 256
@@ -348,6 +355,65 @@ def _bow_body(
     return out
 
 
+def _book_body(
+    slug: str,
+    base_set: str | None,
+    out_dir: Path,
+) -> Image.Image:
+    frames: list[tuple[str, Path]] = [
+        ("unsigned", out_dir / f"{slug}_unsigned.png"),
+        ("signed", out_dir / f"{slug}_signed.png"),
+    ]
+    for label, path in frames:
+        if not path.is_file():
+            raise ReviewSheetError(f"Missing file: {path.name}")
+
+    n = len(frames)
+    cols = n
+    rows = 1
+    cell_w = BOW_DISPLAY + PAD * 2
+    cell_h = BOW_DISPLAY + LABEL_H + PAD * 2
+    width = cols * cell_w
+    height = rows * cell_h + PAD
+    canvas = Image.new("RGB", (width, height), BG)
+    draw = ImageDraw.Draw(canvas)
+    font = _font(12)
+
+    for i, (label, path) in enumerate(frames):
+        col, row = i % cols, i // cols
+        x0 = col * cell_w + PAD
+        y0 = row * cell_h + PAD
+        tile = _scale_nn(_load_rgba(path), BOW_DISPLAY)
+        _paste_centered(
+            canvas, tile, (x0, y0, x0 + BOW_DISPLAY, y0 + BOW_DISPLAY)
+        )
+        bbox = draw.textbbox((0, 0), label, font=font)
+        tw = bbox[2] - bbox[0]
+        draw.text(
+            (x0 + (BOW_DISPLAY - tw) // 2, y0 + BOW_DISPLAY + 2),
+            label,
+            fill=LABEL_COLOR,
+            font=font,
+        )
+
+    caption = "kind=book"
+    if base_set:
+        caption += f"  base={base_set}"
+    cf = _font(14)
+    cb = draw.textbbox((0, 0), caption, font=cf)
+    extra = PAD + (cb[3] - cb[1]) + PAD
+    out = Image.new("RGB", (width, height + extra), BG)
+    out.paste(canvas, (0, 0))
+    draw2 = ImageDraw.Draw(out)
+    draw2.text(
+        ((width - (cb[2] - cb[0])) // 2, height + PAD // 2),
+        caption,
+        fill=CAPTION_COLOR,
+        font=cf,
+    )
+    return out
+
+
 def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
     kind = row["kind"]
     slug = row["slug"]
@@ -371,6 +437,10 @@ def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
         if base_set:
             caption_bits.append(f"base={base_set}")
         body = _bow_body(slug, kind, base_set, out_dir)
+    elif kind == BOOK_KIND:
+        if base_set:
+            caption_bits.append(f"base={base_set}")
+        body = _book_body(slug, base_set, out_dir)
     elif kind in ITEM_KINDS or kind in MODEL_3D_KINDS or kind == GUN_KIND:
         if base_set:
             caption_bits.append(f"base={base_set}")

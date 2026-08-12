@@ -161,6 +161,12 @@ def _normalize_editable_kit(raw: list) -> list[dict[str, Any]]:
             "skin_png": str(row.get("skin_png") or "").strip(),
             "base_set": str(row.get("base_set") or "").strip(),
         }
+        two_d = str(row.get("2d_template") or "").strip()
+        if two_d:
+            entry["2d_template"] = two_d
+        three_d = str(row.get("3d_template") or "").strip()
+        if three_d:
+            entry["3d_template"] = three_d
         kit_id = str(row.get("kit_id") or "").strip().lower()
         if kit_id:
             entry["kit_id"] = kit_id

@@ -449,6 +449,7 @@ export type LoreItemDraft = {
   state?: string;
   skin_slug?: string | null;
   name_colours?: string[] | null;
+  name_styles?: string[] | null;
   ia_namespace?: string | null;
 };
 
@@ -465,6 +466,10 @@ export type LoreItemRow = {
   path: string;
   skin_png: string;
   base_set: string;
+  /** Flat upload skin kind from kits.yml (e.g. handheld). */
+  "2d_template"?: string;
+  /** Optional 3D kind; absent/null = no 3D upload. */
+  "3d_template"?: string | null;
   eligible: boolean;
   base_preview: LoreItemPreview;
   preview: LoreItemPreview;
@@ -535,9 +540,13 @@ export type CustomiseLoreItemInput = {
   existingSkinId?: string | null;
   /** When set, sends multipart; do not also set existingSkinId. */
   textureFile?: File | null;
+  /** Book kind: unsigned + signed covers (multipart). */
+  unsignedFile?: File | null;
+  signedFile?: File | null;
   modelFile?: File | null;
   use3d?: boolean;
   nameColours?: string[];
+  nameStyles?: string[];
 };
 
 export type CustomiseLoreItemResult = LoreItemRow & { ok: boolean };
@@ -594,7 +603,12 @@ export async function customiseLoreItem(
   const key = encodeURIComponent(kitKey.trim());
   const kid = encodeURIComponent(kitId.trim() || "starter");
   const url = `${getApiBase()}/characters/lore-items/${key}/customise?character_id=${cid}&kit_id=${kid}`;
-  const needsMultipart = Boolean(input.textureFile || input.modelFile);
+  const needsMultipart = Boolean(
+    input.textureFile ||
+      input.modelFile ||
+      input.unsignedFile ||
+      input.signedFile
+  );
 
   let res: Response;
   if (needsMultipart) {
@@ -604,11 +618,20 @@ export async function customiseLoreItem(
     if (input.nameColours?.length) {
       form.append("name_colours", JSON.stringify(input.nameColours));
     }
+    if (input.nameStyles?.length) {
+      form.append("name_styles", JSON.stringify(input.nameStyles));
+    }
     if (input.use3d) {
       form.append("use_3d", "true");
     }
     if (input.textureFile) {
       form.append("texture", input.textureFile);
+    }
+    if (input.unsignedFile) {
+      form.append("unsigned", input.unsignedFile);
+    }
+    if (input.signedFile) {
+      form.append("signed", input.signedFile);
     }
     if (input.modelFile) {
       form.append("model", input.modelFile);
@@ -631,6 +654,9 @@ export async function customiseLoreItem(
     }
     if (input.nameColours?.length) {
       body.name_colours = input.nameColours;
+    }
+    if (input.nameStyles?.length) {
+      body.name_styles = input.nameStyles;
     }
     res = await apiFetch(url, {
       method: "POST",

@@ -143,12 +143,26 @@ kits:
         editable:
           skin-png: knife_skin
           base-set: knives
+          2d-template: handheld
+          3d-template: item_3d
       - path: m.currency.GOLD_COIN
         amount: 32
-      # … churro, boat, book, bundle, bed
+      # … churro, boat …
+      - path: v.WRITABLE_BOOK
+        amount: 1
+        editable:
+          skin-png: journal_skin
+          base-set: books
+          2d-template: book
+          # (no 3d-template)
+      # … bundle, bed
 ```
 
 Default knife texture: `plugins/RPCharacters/assets/knife_skin.png` (do **not** scrape `tfmc_pack`). Custom skins are **player submissions** (Discord → `tfmc_submissions` / `ps_items`).
+
+**Editable templates ([step-27](./batches/step-27/00-index.md)):** `2d-template` = flat skin kind (required on editable); `3d-template` optional (omit = no 3D). Website uses catalog templates for kind + PNG size. Staff `/rpcharacter resetkit <player> <character_id> <kit_id>` clears that kit’s claim/customise state for re-test.
+
+**Book journals ([step-28](./batches/step-28/00-index.md)):** Full `/skins` kind `book` (multipart `unsigned` + `signed`, both 16×16, `base_set: books`, no 3D). Kit lines use `2d-template: book` and **omit** `3d-template`; grant stays `v.WRITABLE_BOOK`. Customise UI + bridge upload both PNGs ([28.06](./batches/step-28/06-kit-journal.md)); claim merges `{slug}`; sign swaps to `{slug}_signed` ([28.05](./batches/step-28/05-sign-swap.md)).
 
 ### Checkpoint (Phase 2)
 
@@ -168,7 +182,7 @@ Customise **editable** kit lines (starter knife = same `IRON_HUNTING_KNIFE`). No
 |---------|--------|
 | Texture + display name | Player skins pipeline → `ps_items` via Discord |
 | Custom lore | RPCharacters |
-| Which parts editable | `kits.yml` `editable` (`base-set` / `skin-png` locked; no staff `category`) |
+| Which parts editable | `kits.yml` `editable` (`base-set` / `skin-png` / `2d-template` / optional `3d-template`; no staff `category`) |
 | When / where | **Website character screen:** ALIVE character → Kits → kit → Edit editable item. **Not** create wizard; in-game create has no kit editor |
 | Eligibility | Customise while that kit is still **claimable** for the character. Once-per-character + already claimed → no customise |
 | Claim gate | `pending_skin` for that kit+character blocks `/rpcharacter kit <id>` until `ready`; claim applies skin+lore |
@@ -216,7 +230,9 @@ flowchart LR
 Phase 2 kit plumbing + claim: [step-20](./batches/step-20/00-index.md) / [21.06](./batches/step-21/06-kit-claim-command.md); multi-kit **21.08** — **implemented**.  
 Phase 3: character kits UI **21.09**; docs **21.05** — **implemented**.  
 Kit customise submit + deny UX: [step-25](./batches/step-25/00-index.md) — **done**.  
-Kit asset sync + post-submit status: [step-26](./batches/step-26/00-index.md) — **done**.
+Kit asset sync + post-submit status: [step-26](./batches/step-26/00-index.md) — **done**.  
+Kit skin templates + `resetkit`: [step-27](./batches/step-27/00-index.md) — **done**.  
+Book skins + kit journal: [step-28](./batches/step-28/00-index.md) — **done** (28.01–28.07).
 
 ---
 

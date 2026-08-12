@@ -412,6 +412,69 @@ Checkpoint:
 reload → default knife preview → submit → status page → deny → Edit again
 ```
 
+## Step 27 — Kit skin templates + `resetkit`
+
+**Playbook:** [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-27/00-index.md](./Planning/batches/step-27/00-index.md).
+
+**Code:** 27.01–27.05 done (templates + customise limits + `resetkit` + docs). Operator ticks below.
+
+### Deploy (when built)
+
+1. RPC jar parsing `2d-template` / `3d-template` + catalog fields + `resetkit`.
+2. PS/FE kit customise kind + size from templates + customise wipe route.
+3. Staff `/rpcharacter resetkit <player> <character_id> <kit_id>` + PS customise wipe.
+
+### Locked
+
+- Editable: `2d-template` required; `3d-template` optional (omit = no 3D)
+- Knife: `handheld` + `item_3d`; PNG sizes match `/skins`
+- Resetkit: ELIGIBLE + clear cooldown + clear kit customisations (RPC + PS)
+
+### Operator checklist
+
+- [ ] Catalog shows knife templates
+- [ ] Kit upload enforces 16×16; 3D optional works
+- [ ] `resetkit` allows reclaim + re-customise
+
+Checkpoint:
+
+```text
+kits.yml templates → catalog → knife 16×16 / optional 3D
+  → resetkit → claim/customise again
+```
+
+## Step 28 — Book skins + kit journal
+
+**Playbook:** [Planning/05-skins-system.md](./Planning/05-skins-system.md) · [Planning/10-armourshop-itemsadder.md](./Planning/10-armourshop-itemsadder.md) · [Planning/14-character-creator.md](./Planning/14-character-creator.md) · batches [Planning/batches/step-28/00-index.md](./Planning/batches/step-28/00-index.md).
+
+**Code:** 28.01–28.07 done (book kind + sign swap + kit journal + docs). Operator ticks below.
+
+### Deploy
+
+1. PS `book` kind (unsigned + signed) + FE KindPicker.
+2. ArmourShop pack/shop apply + sign-time texture swap.
+3. Kit editable journal (`2d-template: book`) + customise bridge.
+
+### Locked
+
+- Full `/skins` kind; two 16×16 PNGs; no 3D
+- Sign → signed texture
+- Starter grant stays `v.WRITABLE_BOOK` unless verify forces MI/IA base
+
+### Operator checklist
+
+- [ ] `/skins` Book: upload unsigned+signed → Discord review → apply
+- [ ] Equipped/usable book shows unsigned; after sign shows signed
+- [ ] Kit journal customise + claim; sign swap on kit book
+- [ ] Staff curated book path (if enabled) smoke OK
+- [ ] `resetkit` on starter re-opens journal customise
+
+Checkpoint:
+
+```text
+/skins book → apply → kit journal → claim → sign → signed texture
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

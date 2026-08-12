@@ -60,8 +60,10 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-24/00-index](./step-24/00-index.md) | 24 | Character sheet parity (traits, attrs, background) | **done** |
 | [step-25/00-index](./step-25/00-index.md) | 25 | Kit customise submit + deny UX | **done** |
 | [step-26/00-index](./step-26/00-index.md) | 26 | Kit asset sync + post-submit status | **done** |
+| [step-27/00-index](./step-27/00-index.md) | 27 | Kit skin templates + `resetkit` | **done** (code+docs; staging ticks open) |
+| [step-28/00-index](./step-28/00-index.md) | 28 | Book skins + kit journal | **done** (code+docs; staging ticks open) |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX; Step 26 = kit asset sync + status; Step 27 = kit templates + resetkit; Step 28 = book skins + kit journal.
 
 **Later:** Phase 4 character skins; SimpleFactions via TFMCWeb; migrate legacy `tfmc_armor` if desired.
 

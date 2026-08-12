@@ -22,6 +22,7 @@ from src.characters.creates import (
 from src.characters.lore_items import (
     LoreItemError,
     claim_status,
+    clear_customisations_for_kit,
     customise_lore_item,
     list_character_kits,
     list_lore_items,
@@ -233,9 +234,12 @@ async def post_lore_item_customise(
     existing_skin_id = None
     existing_provided = False
     texture_bytes: bytes | None = None
+    unsigned_bytes: bytes | None = None
+    signed_bytes: bytes | None = None
     model_bytes: bytes | None = None
     use_3d = False
     name_colours: list[str] | None = None
+    name_styles: list[str] | None = None
 
     if "multipart/form-data" in content_type:
         form = await request.form()
@@ -263,6 +267,12 @@ async def post_lore_item_customise(
         texture = form.get("texture")
         if texture is not None and hasattr(texture, "read"):
             texture_bytes = await texture.read()
+        unsigned = form.get("unsigned")
+        if unsigned is not None and hasattr(unsigned, "read"):
+            unsigned_bytes = await unsigned.read()
+        signed = form.get("signed")
+        if signed is not None and hasattr(signed, "read"):
+            signed_bytes = await signed.read()
         model = form.get("model")
         if model is not None and hasattr(model, "read"):
             model_bytes = await model.read()
@@ -281,6 +291,17 @@ async def post_lore_item_customise(
             except Exception as e:
                 raise HTTPException(
                     status_code=400, detail="name_colours must be a JSON array"
+                ) from e
+        styles_raw = form.get("name_styles")
+        if styles_raw is not None and str(styles_raw).strip() != "":
+            try:
+                parsed_s = json.loads(str(styles_raw))
+                if not isinstance(parsed_s, list):
+                    raise ValueError("not a list")
+                name_styles = [str(x) for x in parsed_s]
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, detail="name_styles must be a JSON array"
                 ) from e
     else:
         try:
@@ -304,15 +325,21 @@ async def post_lore_item_customise(
         colours_body = body.get("name_colours")
         if isinstance(colours_body, list):
             name_colours = [str(x) for x in colours_body]
+        styles_body = body.get("name_styles")
+        if isinstance(styles_body, list):
+            name_styles = [str(x) for x in styles_body]
 
     try:
         kwargs = dict(
             display_name=display_name,
             lore=lore,
             texture_bytes=texture_bytes,
+            unsigned_bytes=unsigned_bytes,
+            signed_bytes=signed_bytes,
             model_bytes=model_bytes,
             use_3d=use_3d,
             name_colours=name_colours,
+            name_styles=name_styles,
             kit_id=kit_id,
         )
         if existing_provided:
@@ -412,6 +439,21 @@ def plugin_lore_item_claim_status(
             status_code=400, detail="player_uuid and character_id are required"
         )
     return claim_status(uuid, cid, kit_id)
+
+
+@characters_router.delete("/plugin/lore-items/customisations")
+def plugin_clear_lore_item_customisations(
+    player_uuid: str | None = None,
+    character_id: str | None = None,
+    kit_id: str | None = None,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Staff resetkit: wipe customise drafts for one character + kit."""
+    _require_plugin(x_plugin_key)
+    try:
+        return clear_customisations_for_kit(player_uuid or "", character_id or "", kit_id)
+    except LoreItemError as e:
+        raise _lore_http(e) from e
 
 
 class LoreItemsAppliedBody(BaseModel):

@@ -129,9 +129,12 @@ export default function CharacterKitEditPage() {
     lore: string[];
     existingSkinId?: string | null;
     textureFile?: File | null;
+    unsignedFile?: File | null;
+    signedFile?: File | null;
     modelFile?: File | null;
     use3d?: boolean;
     nameColours?: string[];
+    nameStyles?: string[];
   }) {
     if (!session || !item) return;
     setSubmitting(true);

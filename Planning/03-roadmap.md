@@ -219,7 +219,7 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Track E — Web character creator
 
-**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). **E3e / Step 25** kit submit + deny UX **done** (25.03 docs closed). E4 wardrobe deferred.  
+**Status:** **E1 / Step 19 Phase 1 done** (staging verified). **E2 / Step 20** + **E3 / Step 21** kits **done** (21.05 docs closed; 21.07 superseded). **E3b / Step 22** web character sheet parity **done** (22.03 docs closed). **E3c / Step 23** kit lore editor polish **done** (23.04 docs closed). **E3d / Step 24** sheet traits/attrs/background parity **done** (24.04 docs closed). **E3e / Step 25** kit submit + deny UX **done** (25.03 docs closed). **E3f / Step 26** kit asset sync + status **done** (26.03 docs closed). **E3g / Step 27** kit templates + `resetkit` **done** (27.05 docs closed). **E3h / Step 28** book skins + kit journal **done** (28.07 docs closed). E4 wardrobe deferred.  
 **Repos:** RPCharacters · ProvinceSystem · TFMCWeb · frontend · (E3) ArmourShop
 
 | Phase | Detail |
@@ -231,6 +231,9 @@ Quotas, retention, module template, optional brewery stub.
 | E3c / Step 23 | Kit lore editor polish (colours, lore codes, pick thumbs, 3D) — **done** ([step-23](./batches/step-23/00-index.md) / [23.04](./batches/step-23/04-docs-verify.md)) |
 | E3d / Step 24 | Sheet traits (personality/evil), merged attrs, profession EXP, writable-book background, empty-lore fix — **done** ([step-24](./batches/step-24/00-index.md) / [24.04](./batches/step-24/04-docs-verify.md)) |
 | E3e / Step 25 | Kit Submit item UX + skin deny → customise denied — **done** ([step-25](./batches/step-25/00-index.md) / [25.03](./batches/step-25/03-docs-verify.md)) |
+| E3f / Step 26 | Kit asset sync + post-submit status — **done** ([step-26](./batches/step-26/00-index.md) / [26.03](./batches/step-26/03-docs-verify.md)) |
+| E3g / Step 27 | Kit `2d-template` / `3d-template` + staff `resetkit` — **done** ([step-27](./batches/step-27/00-index.md) / [27.05](./batches/step-27/05-docs-verify.md)) |
+| E3h / Step 28 | Book skins (unsigned/signed) + kit journal + sign swap — **done** ([step-28](./batches/step-28/00-index.md); 28.07 docs closed) |
 | E4 | Character skin wardrobe (optional Mojang/masked) |
 
 **Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  

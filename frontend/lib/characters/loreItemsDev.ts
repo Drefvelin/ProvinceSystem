@@ -40,6 +40,8 @@ function buildFixtureItem(): LoreItemRow {
     path: kit?.path || "m.tools.IRON_HUNTING_KNIFE",
     skin_png: kit?.skin_png || "knife_skin",
     base_set: kit?.base_set || "knives",
+    "2d_template": "handheld",
+    "3d_template": "item_3d",
     eligible: true,
     base_preview: basePreview,
     preview: { ...basePreview, lore: [...basePreview.lore] },
@@ -52,6 +54,7 @@ function buildFixtureItem(): LoreItemRow {
       deny_reason: null,
       state: "draft",
       name_colours: ["#55ff55"],
+      name_styles: ["bold"],
     },
     pickable_skins: [
       {
@@ -110,15 +113,20 @@ export function uiDevApplyCustomise(
     lore: string[];
     existingSkinId?: string | null;
     textureFile?: File | null;
+    unsignedFile?: File | null;
+    signedFile?: File | null;
     modelFile?: File | null;
     use3d?: boolean;
     nameColours?: string[];
+    nameStyles?: string[];
   }
 ): LoreItemRow & { ok: boolean } {
   const base = prev.base_preview;
   const name = input.displayName.trim() || base.display_name;
   const customLore = input.lore.map((l) => l.trim()).filter(Boolean);
-  const hasTexture = Boolean(input.textureFile);
+  const hasTexture = Boolean(
+    input.textureFile || (input.unsignedFile && input.signedFile)
+  );
   const prevDenied =
     String(prev.draft.state || "").toLowerCase() === "denied" ||
     String(prev.draft.submission_status || "").toLowerCase() === "denied";
@@ -169,6 +177,7 @@ export function uiDevApplyCustomise(
       deny_reason: denyReason,
       state,
       name_colours: input.nameColours || [],
+      name_styles: input.nameStyles || [],
     },
   };
   uiDevCached = next;

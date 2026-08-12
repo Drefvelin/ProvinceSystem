@@ -18,6 +18,7 @@ import {
   expectedSizeForField,
   fileFieldsForKind,
   isBowFrameKind,
+  isBookKind,
   isLargeTextureKind,
   isModel3dKind,
   isGunKind,
@@ -111,13 +112,15 @@ const fieldLabel: Record<string, string> = {
   pull_1: "Pull 1",
   pull_2: "Pull 2",
   charged: "Charged",
+  unsigned: "Unsigned cover (16×16)",
+  signed: "Signed cover (16×16)",
 };
 
 function slotLabel(kind: SkinKind, field: string): string {
   if (kind === "armor_set") {
     return fieldLabel[field] || field;
   }
-  if (isModel3dKind(kind) || isGunKind(kind)) {
+  if (isModel3dKind(kind) || isGunKind(kind) || isBookKind(kind)) {
     return fieldLabel[field] || field;
   }
   const size = isLargeTextureKind(kind) ? "32×32" : "16×16";
@@ -165,6 +168,10 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [scroll, setScroll] = useState("");
+  const [bookPreviewUrls, setBookPreviewUrls] = useState<{
+    unsigned: string | null;
+    signed: string | null;
+  }>({ unsigned: null, signed: null });
 
   useEffect(() => {
     setTiers([]);
@@ -175,6 +182,18 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
     setCategory("");
     setScroll("");
   }, [kind]);
+
+  useEffect(() => {
+    const unsigned = files.unsigned
+      ? URL.createObjectURL(files.unsigned)
+      : null;
+    const signed = files.signed ? URL.createObjectURL(files.signed) : null;
+    setBookPreviewUrls({ unsigned, signed });
+    return () => {
+      if (unsigned) URL.revokeObjectURL(unsigned);
+      if (signed) URL.revokeObjectURL(signed);
+    };
+  }, [files.unsigned, files.signed]);
 
   useEffect(() => {
     if (!staff) {
@@ -1000,6 +1019,37 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
               ) : null}
             </label>
           ))}
+          {isBookKind(kind) ? (
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  ["unsigned", "Unsigned", bookPreviewUrls.unsigned],
+                  ["signed", "Signed", bookPreviewUrls.signed],
+                ] as const
+              ).map(([key, label, url]) => (
+                <div key={key} className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--tfmc-stone)]">
+                    {label}
+                  </span>
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)]">
+                    {url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={url}
+                        alt={`${label} cover preview`}
+                        className="h-full w-full object-contain"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                    ) : (
+                      <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">
+                        No file
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {isModel3dKind(kind) || isGunKind(kind) || isFlatPreviewKind(kind) ? (
             <ModelPreview
               modelFile={previewFiles.model}

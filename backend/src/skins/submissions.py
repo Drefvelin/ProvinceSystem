@@ -14,6 +14,7 @@ from .discord_link import get_link_for_uuid
 from .naming import (
     ARMOR_TIER_LABELS,
     ARMOR_TIERS,
+    BOOK_FIELDS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
     MAX_TIER_ALIAS_LEN,
@@ -26,6 +27,7 @@ from .naming import (
 from .notifications import enqueue_submitted
 from .name_preview import write_name_preview
 from .storage import (
+    BOOK_KIND,
     BOW_KINDS,
     CROSSBOW_KINDS,
     GUN_KIND,
@@ -68,6 +70,7 @@ ALLOWED_KINDS = frozenset(
         "shield",
         "helmet_3d",
         "gun",
+        "book",
     }
 )
 BASE_SETS: dict[str, frozenset[str]] = {
@@ -83,6 +86,7 @@ BASE_SETS: dict[str, frozenset[str]] = {
     "shield": frozenset({"shields"}),
     "helmet_3d": frozenset({"helmets"}),
     "gun": frozenset({"rifles", "pistols", "shotguns", "launchers"}),
+    "book": frozenset({"books"}),
 }
 MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
 GUN_FIELDS = ("texture",) + GUN_MODEL_FIELDS
@@ -355,7 +359,7 @@ def _reject_duplicate_textures(files_bytes: dict[str, bytes]) -> None:
 
 
 def texture_sha256(files_bytes: dict[str, bytes]) -> str | None:
-    data = files_bytes.get("texture")
+    data = files_bytes.get("texture") or files_bytes.get("unsigned")
     if not data:
         return None
     return hashlib.sha256(data).hexdigest()
@@ -553,7 +557,7 @@ def create_submission(
     if kind not in ALLOWED_KINDS:
         raise SubmissionError(
             "kind must be armor_set, handheld, large_handheld, "
-            "bow, large_bow, crossbow, item_3d, shield, helmet_3d, or gun"
+            "bow, large_bow, crossbow, item_3d, shield, helmet_3d, gun, or book"
         )
 
     try:
@@ -636,6 +640,10 @@ def create_submission(
                 raise SubmissionError("Missing file: model")
         elif kind == GUN_KIND:
             missing = [f for f in GUN_FIELDS if f not in files_bytes]
+            if missing:
+                raise SubmissionError(f"Missing files: {', '.join(missing)}")
+        elif kind == BOOK_KIND:
+            missing = [f for f in BOOK_FIELDS if f not in files_bytes]
             if missing:
                 raise SubmissionError(f"Missing files: {', '.join(missing)}")
         elif "texture" not in files_bytes:

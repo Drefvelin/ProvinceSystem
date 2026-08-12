@@ -26,7 +26,7 @@ os.environ.setdefault("SKINS_DEV", "1")
 from fastapi.testclient import TestClient
 
 from server import app
-from src.skins.db import connect, migrate
+from src.skins.db import SKINS_DIR, connect, migrate
 from src.skins.naming import ARMOR_FIELDS, build_submission_id, slugify_display_name
 
 STAFF = "dev-staff-key"
@@ -585,10 +585,102 @@ def main() -> None:
         f"base_set={large['base_set']} (freeform filename)"
     )
 
+    # Book session (Step 28)
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"issue code book: {r.status_code} {r.text}")
+    r = client.post("/skins/redeem", json={"code": r.json()["code"]})
+    if r.status_code != 200:
+        fail(f"redeem book: {r.status_code} {r.text}")
+    auth_book = {"Authorization": f"Bearer {r.json()['session_token']}"}
+
+    book_unsigned = make_png(16, 16, fill=71)
+    book_signed = make_png(16, 16, fill=93)
+    book_wrong = make_png(32, 32, fill=71)
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "book",
+            "display_name": "Smoke Book Missing",
+            "base_set": "books",
+        },
+        files=[("unsigned", ("u.png", book_unsigned, "image/png"))],
+        headers=auth_book,
+    )
+    if r.status_code != 400:
+        fail(f"book missing signed expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "book",
+            "display_name": "Smoke Book Size",
+            "base_set": "books",
+        },
+        files=[
+            ("unsigned", ("u.png", book_wrong, "image/png")),
+            ("signed", ("s.png", book_signed, "image/png")),
+        ],
+        headers=auth_book,
+    )
+    if r.status_code != 400:
+        fail(f"book wrong size expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "book",
+            "display_name": "Smoke Book Bad Base",
+            "base_set": "spears",
+        },
+        files=[
+            ("unsigned", ("u.png", book_unsigned, "image/png")),
+            ("signed", ("s.png", book_signed, "image/png")),
+        ],
+        headers=auth_book,
+    )
+    if r.status_code != 400:
+        fail(f"book+spears expected 400, got {r.status_code} {r.text}")
+
+    r = client.post(
+        "/skins/submissions",
+        data={
+            "kind": "book",
+            "display_name": "Smoke Book",
+            "base_set": "books",
+        },
+        files=[
+            ("unsigned", ("cover_u.png", book_unsigned, "image/png")),
+            ("signed", ("cover_s.png", book_signed, "image/png")),
+        ],
+        headers=auth_book,
+    )
+    if r.status_code != 200:
+        fail(f"book upload: {r.status_code} {r.text}")
+    book = r.json()
+    book_id = book["id"]
+    expected_book_id = build_submission_id(IGN, "Smoke Book")
+    if book_id != expected_book_id:
+        fail(f"book id expected {expected_book_id}, got {book_id}")
+    if book.get("base_set") != "books":
+        fail(f"book base_set expected books, got {book.get('base_set')}")
+    book_dir = SKINS_DIR / book_id
+    if not (book_dir / f"{book_id}_unsigned.png").is_file():
+        fail(f"book disk missing unsigned stem under {book_dir}")
+    if not (book_dir / f"{book_id}_signed.png").is_file():
+        fail(f"book disk missing signed stem under {book_dir}")
+    print(f"book submission {book_id} base_set=books dual stems ok")
+
     for sid, label in (
         (armor_id, "armor"),
         (hand_id, "handheld"),
         (large_id, "large"),
+        (book_id, "book"),
     ):
         r = client.get(f"/skins/submissions/{sid}/review-sheet", headers=staff)
         if r.status_code != 200:
@@ -601,8 +693,8 @@ def main() -> None:
     if r.status_code != 401:
         fail(f"review-sheet without key expected 401, got {r.status_code}")
 
-    # Approve all three (leave legacy_armor pending)
-    for sid in (armor_id, hand_id, large_id):
+    # Approve all (leave legacy_armor pending)
+    for sid in (armor_id, hand_id, large_id, book_id):
         r = client.post(f"/skins/submissions/{sid}/approve", headers=staff)
         if r.status_code != 200:
             fail(f"approve {sid}: {r.status_code} {r.text}")
@@ -618,6 +710,8 @@ def main() -> None:
         fail("handheld missing from plugin approved list")
     if large_id not in by_id:
         fail("large missing from plugin approved list")
+    if book_id not in by_id:
+        fail("book missing from plugin approved list")
     if sorted(by_id[armor_id].get("tiers") or []) != sorted(armor_tiers):
         fail(
             f"armor tiers missing/incomplete on approved list: "
@@ -657,9 +751,19 @@ def main() -> None:
             "handheld name_styles missing on approved list: "
             f"{by_id[hand_id].get('name_styles')}"
         )
+    if by_id[book_id].get("base_set") != "books":
+        fail("book base_set missing on approved list")
+    approved_book_files = by_id[book_id].get("files") or []
+    if f"{book_id}_unsigned.png" not in approved_book_files:
+        fail(f"book approved missing unsigned: {approved_book_files}")
+    if f"{book_id}_signed.png" not in approved_book_files:
+        fail(f"book approved missing signed: {approved_book_files}")
     if by_id[armor_id].get("staff"):
         fail("player armor should not be staff on approved list")
-    print("plugin approved list ok (armor tiers include iron+steel, base_set null)")
+    print(
+        "plugin approved list ok "
+        "(armor tiers, handheld, large, book dual stems)"
+    )
 
     r = client.post(
         "/skins/plugin/applied",

@@ -99,6 +99,7 @@ Keep Copy and live in sync when changing scaffold. Dry-run writers should target
 | `handheld` | `generate: true` + `parent: item/handheld` | None (IA generates) |
 | `large_handheld` | `generate: false` + `model_path` | Thin per-skin JSON parenting one of **3 grip templates** (`bottom` / `middle` / `top`) |
 | `bow` / `large_bow` / `crossbow` | TBD — [8.07](./batches/step-8/07-bow-crossbow-writers.md) | Pull/draw (and crossbow charged) frames |
+| `book` | **BookWriter:** textures `item/{slug}_unsigned` + `item/{slug}_signed`; IA `{slug}` (`WRITABLE_BOOK`, unsigned) + `{slug}_signed` (`WRITTEN_BOOK`, signed); `generate: true` + `parent: item/generated`; shop lists `{slug}` only; sign → replace with `{slug}_signed` ([step-28](./batches/step-28/00-index.md)) | None (IA generates) |
 | `item` | — | **Disabled** for player upload |
 
 `base_set` → SkinSet `set:` mapping: [step-8/00-index](./batches/step-8/00-index.md).
@@ -143,6 +144,7 @@ Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-
 | `large_handheld` | ArmourShop **grip template** JSONs + thin per-skin model (`generate: false`) |
 | `bow`, `large_bow`, `crossbow` | ArmourShop writers ([8.07](./batches/step-8/07-bow-crossbow-writers.md)); pull/draw templates |
 | `item_3d`, `helmet_3d` | Donor Blockbench JSON (API autofill + validate); ArmourShop ships as-is |
+| `book` | BookWriter: two 16×16 covers; IA `{slug}` / `{slug}_signed`; shop `{slug}` only; on sign, swap stack to `{slug}_signed` ([step-28](./batches/step-28/00-index.md)) |
 | `shield` | Donor JSON + ArmourShop blocking clone (round Δ) |
 | `armor_set` 3D helmet tier | Same as `helmet_3d` under `{id}_{tier}_helmet` |
 
@@ -160,7 +162,8 @@ ia.tfmc_submissions:{id}                 # non-armor
 - Armor: **one SkinSet per tier**, key `{id}_{tier}`, `set: {tier}` — a 2-tier submission writes 2 SkinSets under `ps_armor`; `base_set` is null/unused for armor  
 - SkinSet display: plain `name`, separate `colour` (string or list of `#RRGGBB` / legacy codes), optional `add-name`, optional `styles` (`bold` / `italic` / `underline` / `strikethrough`). Runtime formatting via TLibs `applyColourGradient` (+ styles). Jar sources use `\u00A7` / UTF-8 to avoid GUI `Â` mojibake.  
 - Staff: `/armourshop submission delete <submissionId>` removes **all** tier SkinSets + all `tfmc_submissions` pack files for that submission id family + LP node + API `revoked`, then **enqueues** a deferred IA refresh (no immediate `iareload`/`iazip` — see Deferred reload below). Tab-complete lists human ids (`drefvelin_blue_knight`), never UUIDs.  
-- `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`  
+- `ps_items` kinds: `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `book` (Step 28)  
+- **`book` shop:** SkinSet / catalog entry for `{slug}` only (writable); `{slug}_signed` exists in pack for sign-time swap, not sold separately  
 - Gate with `permission: armourshop.submission.{id}` (Bukkit `hasPermission`; LP grants the node once per submission, shared across all its tiers)  
 - **No scroll** on player submission sets  
 
@@ -215,6 +218,7 @@ Point ArmourShop at `ItemsAdder Copy` (or a temp contents dir), not production. 
 - [x] Delete = deferred IA queue only, no immediate reload; tab-complete uses human ids ([step-11/05](./batches/step-11/05-delete-defer.md))  
 - [x] `item_3d` + `shield` + `helmet_3d` (blocking auto; armor per-tier 3D helmet) — [step-13](./batches/step-13/00-index.md)
 - [x] Guns carry/reload/aim — [step-14](./batches/step-14/00-index.md) (upload/apply); [step-15](./batches/step-15/00-index.md) (GaG IA ids; shop `gunskin({id})`)
+- [x] Book: BookWriter + `{slug}` / `{slug}_signed` + shop `{slug}` only + sign swap — [step-28](./batches/step-28/00-index.md)
 - [ ] Multi-view 3D review bake later
 
 ## See also

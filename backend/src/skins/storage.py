@@ -12,6 +12,7 @@ from .db import SKINS_DIR
 from .display import DisplayError, parse_and_merge_model
 from .naming import (
     ARMOR_LAYER_FIELDS,
+    BOOK_FIELDS,
     BOW_FRAME_FIELDS,
     CROSSBOW_FRAME_FIELDS,
 )
@@ -44,6 +45,7 @@ CROSSBOW_KINDS = frozenset({"crossbow"})
 ITEM_KINDS = frozenset({"handheld", "large_handheld", "item"})
 MODEL_3D_KINDS = frozenset({"item_3d", "shield", "helmet_3d"})
 GUN_KIND = "gun"
+BOOK_KIND = "book"
 GUN_MODEL_FIELDS = ("carry_model", "reload_model", "aim_model")
 GUN_MODEL_STEMS = ("carry", "reload", "aim")
 
@@ -294,6 +296,12 @@ def write_submission_files(
             _write_model_3d(out_dir, slug, kind, files)
         elif kind == GUN_KIND:
             _write_gun(out_dir, slug, files)
+        elif kind == BOOK_KIND:
+            for field in BOOK_FIELDS:
+                if field not in files:
+                    raise StorageError(f"Missing file field: {field}")
+                validate_png(files[field], ITEM_SIZE)
+                (out_dir / f"{slug}_{field}.png").write_bytes(files[field])
         else:
             raise StorageError(f"Unsupported kind: {kind}")
 

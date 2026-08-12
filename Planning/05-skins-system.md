@@ -6,7 +6,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 
 ## Goals
 
-- Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), and **guns** (`gun`; `item` disabled).
+- Donators submit **armor sets** (2D, optional per-tier 3D helmet), **weapon/tool skins** (`handheld` / `large_handheld` / `bow` / `large_bow` / `crossbow`), **3D kinds** (`item_3d` / `shield` / `helmet_3d`), **guns** (`gun`; `item` disabled), and **books** (`book`; unsigned + signed covers).
 - No website logins; codes from TFMCWeb (`/token create skin` or **`/token create skin staff`**) bound to player UUID.
 - **Player:** staff approve/deny in Discord; ArmourShop writes **`tfmc_submissions`** + `ps_*` + LP.
 - **Staff curated ([step-18](./batches/step-18/00-index.md)):** auto-approve (no bot); category + scroll on upload; writes **`tfmc_armorshop`** into real ArmourShop categories. Same kinds including guns. Legacy `tfmc_armor` unchanged.
@@ -27,12 +27,13 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 | `shield` | `texture` + `model` (one mesh) | Same 3D caps | ArmourShop clones model + locked **round blocking** display Δ |
 | `helmet_3d` | `texture` + `model` | Same 3D caps; `head` required | `generate: false` + `model_path`; `set: helmets` |
 | `gun` | `texture` + `carry_model` + `reload_model` + `aim_model` | Same 3D caps; display as `item_3d` per model | IA STONE_HOE×2 + CROSSBOW; **GaG** `skins.yml` `ia.…`; shop `gunskin({id})` |
+| `book` | `unsigned` + `signed` | Both **16×16** | Disk `{id}_unsigned.png` / `{id}_signed.png`; `base_set: books`; IA `{slug}` (`WRITABLE_BOOK`) + `{slug}_signed` (`WRITTEN_BOOK`); shop lists `{slug}` only; sign → `{slug}_signed` ([step-28](./batches/step-28/00-index.md), [10](./10-armourshop-itemsadder.md)) |
 
-**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `gun`.  
-**`base_set` pairing:** [step-8/00-index](./batches/step-8/00-index.md) + [step-13](./batches/step-13/00-index.md) + [step-14](./batches/step-14/00-index.md). Armor uses `tiers` + optional `helmet_3d_tiers`.  
+**Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `gun`, **`book` (Step 28)**.  
+**`base_set` pairing:** [step-8/00-index](./batches/step-8/00-index.md) + [step-13](./batches/step-13/00-index.md) + [step-14](./batches/step-14/00-index.md) + [step-28](./batches/step-28/00-index.md) (`books`). Armor uses `tiers` + optional `helmet_3d_tiers`.  
 **Deferred:** multi-view review bake.  
-**Track B4 / Step 13:** `item_3d` + `shield` + `helmet_3d`. **Step 14:** `gun` upload/apply. **Step 15:** GaG IA ids (no CMD dual-write).  
-**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md).  
+**Track B4 / Step 13:** `item_3d` + `shield` + `helmet_3d`. **Step 14:** `gun` upload/apply. **Step 15:** GaG IA ids (no CMD dual-write). **Step 28:** `book` unsigned/signed + kit journal.  
+**Apply:** [step-7](./batches/step-7/00-index.md), [step-8](./batches/step-8/00-index.md), [step-11/04](./batches/step-11/04-pack-shop.md), [step-13](./batches/step-13/00-index.md), [step-14](./batches/step-14/00-index.md), [step-15](./batches/step-15/00-index.md), [step-28](./batches/step-28/00-index.md).  
 **Upload preview:** [step-16](./batches/step-16/00-index.md) (planned).
 
 ### Display autofill (3D kinds)
@@ -168,6 +169,7 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 backend/src/data/skins/{submission_id}/
   meta.json          # id, slug, kind, display_name, grip_preset?, base_set, tiers, add_name, name_colours, name_styles
   …fixed stems per kind (per-tier for armor)…
+  # book: {id}_unsigned.png, {id}_signed.png
 ```
 
 Compose: mount `backend/src/data` like `input` / `output`.
@@ -181,7 +183,8 @@ Compose: mount `backend/src/data` like `input` / `output`.
 - `large_handheld`: one PNG (`texture`), 32×32 + non-empty `grip_preset` in allowed set.
 - `bow` / `large_bow`: four fields (`texture`, `pull_0`, `pull_1`, `pull_2`); sizes 16×16 / 32×32.
 - `crossbow`: five fields (bow four + `charged`), all 16×16.
-- `base_set`: required for enabled **non-armor** kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md)); reject `kind=item`. Armor uses `tiers` instead (`base_set` ignored/null).
+- `book`: both `unsigned` + `signed` PNGs, each **16×16**; `base_set` must be `books`; no model; dup `texture_hash` from **unsigned** bytes ([step-28](./batches/step-28/00-index.md)).
+- `base_set`: required for enabled **non-armor** kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md) + [step-28](./batches/step-28/00-index.md) for `books`); reject `kind=item`. Armor uses `tiers` instead (`base_set` ignored/null).
 - `item_3d` / `shield` (later): PNG + JSON; JSON parseable; required `display` keys present; combined size capped (default &lt; 30KB json+texture unless tier raises it); no path traversal in strings.
 - Never accept zip archives in MVP.
 
@@ -192,7 +195,7 @@ Staff must see submissions visually without opening Blockbench.
 | Phase | What the API serves | Who consumes |
 |-------|---------------------|--------------|
 | **Step 4 Discord MVP** | Individual on-disk PNGs via staff file download | Bot attaches raw files to `#bot-feed` |
-| Step 2+ / curl | Staff-auth **contact sheet** PNG (`review-sheet`): armor = six labeled tiles; item kinds = texture + kind/grip caption | curl / later Discord when render system ships |
+| Step 2+ / curl | Staff-auth **contact sheet** PNG (`review-sheet`): armor = six labeled tiles; item kinds = texture + kind/grip caption; **`book`** = both unsigned + signed (composite or dual attach) | curl / later Discord when render system ships |
 | Later (3D / shield) | Multi-view bake: `gui`, `ground`, first/third person hands; shield also **blocking** | Discord + site view-only viewer |
 
 - Discord does **not** embed interactive WebGL — only static images (raw files now; pre-baked sheets later).
@@ -233,7 +236,8 @@ A 2-tier submission (e.g. `iron` + `steel`) writes two independent `armors_rende
 
 `handheld`: single item; `generate: true` + `parent: item/handheld`.  
 `large_handheld`: `generate: false`; thin model parents a shipped grip template (`bottom` / `middle` / `top`).  
-`bow` / `large_bow` / `crossbow`: writers in [step-8/07](./batches/step-8/07-bow-crossbow-writers.md). Donor does not edit JSON for these kinds.
+`bow` / `large_bow` / `crossbow`: writers in [step-8/07](./batches/step-8/07-bow-crossbow-writers.md). Donor does not edit JSON for these kinds.  
+`book`: ArmourShop **BookWriter** — textures `item/{slug}_unsigned` + `item/{slug}_signed`; IA `{slug}` (`WRITABLE_BOOK`) + `{slug}_signed` (`WRITTEN_BOOK`); shop lists `{slug}` only; sign swaps to `{slug}_signed` ([10](./10-armourshop-itemsadder.md), [step-28](./batches/step-28/00-index.md)).
 
 Do **not** add manual `custom_model_data` overrides under `minecraft` (legacy `tfmc_pack` style).
 
