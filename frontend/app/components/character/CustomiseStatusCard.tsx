@@ -1,6 +1,6 @@
 "use client";
 
-import type { LoreItemRow } from "../../lib/characters/api";
+import type { LoreItemRow } from "../../../lib/characters/api";
 
 function customiseState(item: LoreItemRow): string {
   const fromRow = String(item.state || "").trim().toLowerCase();
