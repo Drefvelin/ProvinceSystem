@@ -76,7 +76,13 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
 def _normalize_entitlements(raw: Any) -> dict[str, Any]:
     """Optional entitlements block from ArmourShop permission-groups sync."""
     empty = {
-        "defaults": {"name_colour_stops": 0, "max_3d_pair_bytes": 0},
+        "defaults": {
+            "name_colour_stops": 0,
+            "max_3d_pair_bytes": 0,
+            "skin_token_cooldown_days": -1,
+            "skin_kinds": [],
+            "allow_armor_3d_helmet": False,
+        },
         "groups": [],
     }
     if raw is None:
@@ -90,20 +96,72 @@ def _normalize_entitlements(raw: Any) -> dict[str, Any]:
     if not isinstance(defaults_in, dict):
         raise CatalogError("entitlements.defaults must be an object")
 
-    def _int_field(obj: dict[str, Any], key: str, default: int = 0) -> int:
+    def _int_field(
+        obj: dict[str, Any],
+        key: str,
+        default: int = 0,
+        *,
+        min_value: int = 0,
+    ) -> int:
         if key not in obj or obj[key] is None:
             return default
         try:
             value = int(obj[key])
         except (TypeError, ValueError) as e:
             raise CatalogError(f"entitlements field '{key}' must be an integer") from e
-        if value < 0:
-            raise CatalogError(f"entitlements field '{key}' must be >= 0")
+        if value < min_value:
+            raise CatalogError(
+                f"entitlements field '{key}' must be >= {min_value}"
+            )
         return value
+
+    def _kinds_field(obj: dict[str, Any], key: str = "skin_kinds") -> list[str]:
+        raw_kinds = obj.get(key)
+        if raw_kinds is None:
+            return []
+        if not isinstance(raw_kinds, list):
+            raise CatalogError(f"entitlements field '{key}' must be a list")
+        out: list[str] = []
+        seen: set[str] = set()
+        for item in raw_kinds:
+            kind = str(item or "").strip().lower()
+            if not kind or kind in seen:
+                continue
+            seen.add(kind)
+            out.append(kind)
+        return out
+
+    def _bool_field(
+        obj: dict[str, Any], key: str, default: bool = False
+    ) -> bool:
+        if key not in obj or obj[key] is None:
+            return default
+        value = obj[key]
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(int(value))
+        if isinstance(value, str):
+            text = value.strip().lower()
+            if text in ("1", "true", "yes", "on"):
+                return True
+            if text in ("0", "false", "no", "off", ""):
+                return False
+        raise CatalogError(f"entitlements field '{key}' must be a boolean")
 
     defaults = {
         "name_colour_stops": _int_field(defaults_in, "name_colour_stops"),
         "max_3d_pair_bytes": _int_field(defaults_in, "max_3d_pair_bytes"),
+        "skin_token_cooldown_days": _int_field(
+            defaults_in,
+            "skin_token_cooldown_days",
+            -1,
+            min_value=-1,
+        ),
+        "skin_kinds": _kinds_field(defaults_in),
+        "allow_armor_3d_helmet": _bool_field(
+            defaults_in, "allow_armor_3d_helmet", False
+        ),
     }
 
     groups_in = raw.get("groups")
@@ -136,6 +194,18 @@ def _normalize_entitlements(raw: Any) -> dict[str, Any]:
                 ),
                 "max_3d_pair_bytes": _int_field(
                     row, "max_3d_pair_bytes", defaults["max_3d_pair_bytes"]
+                ),
+                "skin_token_cooldown_days": _int_field(
+                    row,
+                    "skin_token_cooldown_days",
+                    defaults["skin_token_cooldown_days"],
+                    min_value=-1,
+                ),
+                "skin_kinds": _kinds_field(row),
+                "allow_armor_3d_helmet": _bool_field(
+                    row,
+                    "allow_armor_3d_helmet",
+                    defaults["allow_armor_3d_helmet"],
                 ),
             }
         )

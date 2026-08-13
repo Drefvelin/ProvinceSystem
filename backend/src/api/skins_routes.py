@@ -16,6 +16,7 @@ from src.skins.auth import (
 )
 from src.skins.codes import (
     CodeError,
+    get_cosmetic_mint_status,
     get_session,
     issue_code,
     list_active_codes,
@@ -185,6 +186,19 @@ def post_codes(
     _require_plugin(x_plugin_key)
     try:
         return issue_code(body.player_uuid, body.scope)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.get("/plugin/cosmetic-mint-status")
+def plugin_cosmetic_mint_status(
+    player_uuid: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Last skin/drink mint timestamp for TFMCWeb shared cooldown."""
+    _require_plugin(x_plugin_key)
+    try:
+        return get_cosmetic_mint_status(player_uuid)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -767,6 +781,9 @@ class PlayerMetaBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     name_colour_stops: int = 0
     max_3d_pair_bytes: int = 0
+    skin_token_cooldown_days: int = -1
+    skin_kinds: list[str] = Field(default_factory=list)
+    allow_armor_3d_helmet: bool = False
 
 
 @skins_router.put("/plugin/catalog")

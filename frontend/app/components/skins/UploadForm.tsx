@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSubmission, checkSubmissionConflict, getCatalog, SkinsApiError } from "../../../lib/skins/api";
 import type { SkinsCatalog } from "../../../lib/skins/catalog";
 import { filterStaffCategories } from "../../../lib/skins/catalog";
-import { DEV_CATALOG_ENTITLEMENTS } from "../../../lib/skins/entitlementsDev";
+import { DEV_CATALOG_ENTITLEMENTS, DEV_SESSION_SKIN_KINDS } from "../../../lib/skins/entitlementsDev";
 import { setLastSubmissionId } from "../../../lib/skins/session";
 import {
   ARMOR_TIERS,
@@ -87,6 +87,8 @@ type Props = {
   /** From redeem / player meta (fallback: catalog defaults). */
   nameColourStops?: number;
   max3dPairBytes?: number;
+  skinKinds?: string[] | null;
+  allowArmor3dHelmet?: boolean;
 };
 
 type TierEntry = {
@@ -159,10 +161,26 @@ export default function UploadForm({
   staff = false,
   nameColourStops,
   max3dPairBytes,
+  skinKinds,
+  allowArmor3dHelmet = false,
 }: Props) {
   const router = useRouter();
-  const [kind, setKind] = useState<SkinKind>("armor_set");
-  const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
+  const resolvedKinds =
+    skinKinds != null
+      ? skinKinds
+      : staff
+        ? null
+        : DEV_SESSION_SKIN_KINDS;
+  const initialKind = (
+    resolvedKinds == null
+      ? "armor_set"
+      : resolvedKinds.includes("armor_set")
+        ? "armor_set"
+        : resolvedKinds[0] || "handheld"
+  ) as SkinKind;
+  const [kind, setKind] = useState<SkinKind>(initialKind);
+  const [baseSet, setBaseSet] = useState(defaultBaseSet(initialKind));
+  const canUseArmor3dHelmet = staff || allowArmor3dHelmet;
   const [tiers, setTiers] = useState<TierEntry[]>([]);
   const [tierToAdd, setTierToAdd] = useState<string>("");
   /** Which added tier the armor mannequin preview shows. */
@@ -193,6 +211,20 @@ export default function UploadForm({
     setCategory("");
     setScroll("");
   }, [kind]);
+
+  useEffect(() => {
+    if (canUseArmor3dHelmet) return;
+    setTiers((prev) => {
+      if (!prev.some((t) => t.helmet3d)) return prev;
+      return prev.map((t) => {
+        if (!t.helmet3d) return t;
+        const files = { ...t.files };
+        delete files.helmet_model;
+        delete files.helmet_texture;
+        return { ...t, helmet3d: false, files };
+      });
+    });
+  }, [canUseArmor3dHelmet]);
 
   useEffect(() => {
     const unsigned = files.unsigned
@@ -595,7 +627,12 @@ export default function UploadForm({
         </div>
       ) : null}
     <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-6">
-      <KindPicker value={kind} onChange={setKind} disabled={loading} />
+      <KindPicker
+        value={kind}
+        onChange={setKind}
+        disabled={loading}
+        allowedKinds={resolvedKinds}
+      />
 
       {sizeHint(kind) ? (
         <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
@@ -911,6 +948,7 @@ export default function UploadForm({
                       </select>
                     </label>
                   ) : null}
+                  {canUseArmor3dHelmet ? (
                   <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--tfmc-cream)]">
                     <FancyCheckbox
                       checked={entry.helmet3d}
@@ -922,6 +960,7 @@ export default function UploadForm({
                     />
                     3D Helmet
                   </label>
+                  ) : null}
                   <div className="flex flex-col gap-4">
                     {tierFields.map((field) => (
                       <label key={field} className="flex flex-col gap-2 text-left">

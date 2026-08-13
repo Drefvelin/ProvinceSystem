@@ -37,6 +37,15 @@ export default function RedeemForm({ onRedeemed }: Props) {
         ...(result.max_3d_pair_bytes !== undefined
           ? { max_3d_pair_bytes: result.max_3d_pair_bytes }
           : {}),
+        ...(result.skin_token_cooldown_days !== undefined
+          ? { skin_token_cooldown_days: result.skin_token_cooldown_days }
+          : {}),
+        ...(result.skin_kinds !== undefined
+          ? { skin_kinds: result.skin_kinds }
+          : {}),
+        ...(result.allow_armor_3d_helmet !== undefined
+          ? { allow_armor_3d_helmet: result.allow_armor_3d_helmet }
+          : {}),
       };
       setSession(session);
       onRedeemed(session);

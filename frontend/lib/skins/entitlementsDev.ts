@@ -2,11 +2,23 @@
 
 import type { CatalogEntitlements } from "./catalog";
 
-/** Matches ArmourShop permission-groups.yml defaults. */
+const NOBLE_KINDS = [
+  "handheld",
+  "large_handheld",
+  "bow",
+  "large_bow",
+  "crossbow",
+  "book",
+];
+
+/** Matches ArmourShop permission-groups.yml (ui-dev uses ascended-level unlock). */
 export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
   defaults: {
     name_colour_stops: 0,
     max_3d_pair_bytes: 30720,
+    skin_token_cooldown_days: -1,
+    skin_kinds: [],
+    allow_armor_3d_helmet: false,
   },
   groups: [
     {
@@ -16,6 +28,9 @@ export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
       display_name: "Noble",
       name_colour_stops: 1,
       max_3d_pair_bytes: 30720,
+      skin_token_cooldown_days: 28,
+      skin_kinds: NOBLE_KINDS,
+      allow_armor_3d_helmet: false,
     },
     {
       id: "gilded",
@@ -24,6 +39,9 @@ export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
       display_name: "Gilded",
       name_colour_stops: 2,
       max_3d_pair_bytes: 30720,
+      skin_token_cooldown_days: 21,
+      skin_kinds: ["armor_set"],
+      allow_armor_3d_helmet: false,
     },
     {
       id: "ascended",
@@ -32,6 +50,9 @@ export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
       display_name: "Ascended",
       name_colour_stops: 20,
       max_3d_pair_bytes: 30720,
+      skin_token_cooldown_days: 14,
+      skin_kinds: ["item_3d", "shield", "helmet_3d", "gun"],
+      allow_armor_3d_helmet: true,
     },
     {
       id: "legacy",
@@ -40,6 +61,19 @@ export const DEV_CATALOG_ENTITLEMENTS: CatalogEntitlements = {
       display_name: "Legacy",
       name_colour_stops: 20,
       max_3d_pair_bytes: 30720,
+      skin_token_cooldown_days: 7,
+      skin_kinds: [],
+      allow_armor_3d_helmet: true,
     },
   ],
 };
+
+/** Resolved ascended-level kinds for local upload smoke without a redeem. */
+export const DEV_SESSION_SKIN_KINDS = [
+  ...NOBLE_KINDS,
+  "armor_set",
+  "item_3d",
+  "shield",
+  "helmet_3d",
+  "gun",
+];

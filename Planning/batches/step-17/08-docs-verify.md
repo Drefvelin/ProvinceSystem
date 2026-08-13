@@ -35,7 +35,10 @@ No new feature code in this batch. Tick boxes on the live staging server.
 ### Tokens + pack
 
 - [ ] `/token create skin` (TFMCWeb, perm `tfmcweb.token.create`) → redeem on `http://127.0.0.1:13001/skins` → upload works
-- [ ] Optional smoke: `/token create character` issues a code (redeem stub 501 OK)
+- [ ] Non-ranked / entitlement defaults → mint denied
+- [ ] Ranked KindPicker filtered; armor 3D helmet hidden unless Ascended+
+- [ ] Cooldown blocks a second mint within the rank window
+- [ ] Optional smoke: `/token create character` issues a code
 - [ ] `/armourshop token create` redirects to `/token create skin`
 - [ ] ArmourShop pack pull / apply still works with `skins-api` (AS does not own link)
 

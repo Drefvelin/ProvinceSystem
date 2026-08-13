@@ -12,24 +12,27 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 | **TFMCWeb** | `Workspace/tfmcweb/` | Single MC ↔ web gate: Discord link, scoped tokens, Survival Discord freeze, warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md) |
 | **SimpleFactions** | `Workspace/simplefactions/` | Map bridge: nation JSON upload, queue, regen, province lookup |
 | **ArmourShop** | `Workspace/armourshop/` | Skins pack writer + apply (identity/tokens owned by TFMCWeb) |
+| **DrinkBuilder** | `Workspace/drinkbuilder/` | Donator BreweryX drinks + `tfmc_drinks` IA — [15-drink-builder.md](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md) (**code done**; staging [STAGING](../STAGING.md) Step 31) |
 | **RPCharacters** | `Workspace/rpcharacters/` | Characters + freeze loop; Discord gate via new freeze reason |
-| **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player **`tfmc_submissions`**; staff curated **`tfmc_armorshop`**; legacy `tfmc_armor` hand-edited |
+| **ItemsAdder** | `Workspace/plugins/ItemsAdder/` (+ `ItemsAdder Copy/`) | Resource packs; player **`tfmc_submissions`**; staff curated **`tfmc_armorshop`**; drinks **`tfmc_drinks`**; legacy `tfmc_armor` hand-edited |
 | **tfmc_bot** | `tfmc_bot/` | [Red-DiscordBot](https://github.com/cog-creators/red-discordbot) on AMP: skins review; link; guild leave/join; ban/warn DMs + Banned role |
 
 ## Product lines
 
 1. **Map** — Live borders on the web; SimpleFactions keeps the API fed; ProvinceSystem generates and serves images.  
 2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`. Staff curated: staff token → auto-approve → `tfmc_armorshop` + category/scroll ([step-18](./batches/step-18/00-index.md)).  
+2b. **Drinks** — Donator BreweryX recipes: `/token create drink` → `/drinks` → Discord approve → DrinkBuilder writes `tfmc_drinks` + `recipes.yml` ([15](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md); **code done**). Shared mint cooldown with skins on TFMCWeb.  
 3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
 4. **Characters** — Web creator Phase 1 **shipped + staging verified**: [14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md). Kits Phase 2–3 **code+docs done**: [step-20](./batches/step-20/00-index.md) / [step-21](./batches/step-21/00-index.md). Web sheet parity **done**: [step-22](./batches/step-22/00-index.md). Kit editor polish **done**: [step-23](./batches/step-23/00-index.md). Sheet traits/attrs/background polish **done**: [step-24](./batches/step-24/00-index.md). Kit submit/deny UX **done**: [step-25](./batches/step-25/00-index.md). Kit asset sync + status **done**: [step-26](./batches/step-26/00-index.md).
 5. **Discord moderation** — Notify players of MC bans/warns; guild leave grace; optional Discord role mute. In-game bans stay Essentials.
 
-Future tools (BreweryX helpers, character Phases 2–4) plug into the same website shell + TFMCWeb.
+Future tools (character polish) plug into the same website shell + TFMCWeb. **Drinks** are planned in [15](./15-drink-builder.md).
 
 ## Locked decisions
 
 - **Name:** **TFMC** = TF Minecraft. “TF” has no expansion — do not invent one (e.g. not “The Fallen”).
-- **No site logins** — skins and characters use TFMCWeb-issued UUID-bound codes (`/token create skin` / `character`); redeem → API session (character Remember me = 30d).
+- **No site logins** — skins, drinks, and characters use TFMCWeb-issued UUID-bound codes (`/token create skin` / `drink` / `character`); redeem → API session (character Remember me = 30d).
+- **Shared cosmetic mint cooldown** — skin + drink share one clock on **TFMCWeb** (not ProvinceSystem).
 - **Discord link** — in-game `/linkdiscord` + Discord `/linkdiscord <code>` bind UUID ↔ Discord id; required before upload; player DMs for submitted / approved / denied — [batches/step-5](./batches/step-5/00-index.md). **Owner: TFMCWeb** ([13](./13-tfmcweb.md) / [step-17](./batches/step-17/00-index.md)).
 - **Discord gate** — Survival players must be linked + in guild; **1h grace** on leave; freeze via RPCharacters (characters untouched); no alts; staff/helpers non-Survival not gated — [13](./13-tfmcweb.md).
 - **SQLite + disk** for skins metadata/files on the API.
@@ -81,13 +84,18 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 15b. [batches/step-20](./batches/step-20/00-index.md) — Phase 2 starter kits  
 15c. [batches/step-21](./batches/step-21/00-index.md) — Phase 3 kits + lore customise  
 
+**Drinks**
+
+15d. [15-drink-builder.md](./15-drink-builder.md) — BreweryX donator drinks  
+15e. [batches/step-31](./batches/step-31/00-index.md) — Drink Builder batches  
+
 **Local**
 
 16. [06-local-development.md](./06-local-development.md) — run website / bot / plugins locally  
 
 **Build batches (plan + implement)**
 
-17. [batches/README.md](./batches/README.md) — Step 2–21: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff skins, character creator, starter kits, lore-item editor
+17. [batches/README.md](./batches/README.md) — Step 2–31: API, UI, Discord, pack writer, plugin apply, 3D/guns, TFMCWeb, staff skins, character creator, wardrobe, **drink builder**
 
 ## Success criteria (full platform)
 
@@ -100,6 +108,11 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 
 - Link Discord → code → upload (armor_set / item / handheld / large_handheld) → Discord approve in `#bot-feed` (raw PNGs MVP) → ArmourShop writes pack → player can apply skin.
 - Naming enforced; no shareable codes granting another UUID the cosmetic; player DMs for submit / approve / deny.
+
+**Drinks** (planned — [15](./15-drink-builder.md))
+
+- `/token create drink` → `/drinks` → Discord approve → DrinkBuilder → BreweryX + optional `tfmc_drinks` texture.
+- Shared mint cooldown with skins on TFMCWeb.
 
 **Bot**
 

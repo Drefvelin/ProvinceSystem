@@ -11,6 +11,12 @@ export type SkinsSession = {
   name_colour_stops?: number;
   /** Combined texture+model byte budget for 3D kinds. */
   max_3d_pair_bytes?: number;
+  /** Days between skin token mints (-1 = cannot mint; informational on session). */
+  skin_token_cooldown_days?: number;
+  /** Allowed upload kind ids for this session. */
+  skin_kinds?: string[];
+  /** When false, armor_set cannot use per-tier 3D helmets. */
+  allow_armor_3d_helmet?: boolean;
 };
 
 type StoredSession = SkinsSession & {
@@ -25,6 +31,27 @@ function readNonNegInt(raw: unknown): number | undefined {
   const n = Number(raw);
   if (!Number.isFinite(n) || n < 0) return undefined;
   return Math.floor(n);
+}
+
+function readCooldownDays(raw: unknown): number | undefined {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < -1) return undefined;
+  return Math.floor(n);
+}
+
+function readSkinKinds(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const kind = String(item || "")
+      .trim()
+      .toLowerCase();
+    if (!kind || seen.has(kind)) continue;
+    seen.add(kind);
+    out.push(kind);
+  }
+  return out;
 }
 
 function readStored(): StoredSession | null {
@@ -51,6 +78,13 @@ function readStored(): StoredSession | null {
     if (stops !== undefined) out.name_colour_stops = stops;
     const pair = readNonNegInt(parsed.max_3d_pair_bytes);
     if (pair !== undefined) out.max_3d_pair_bytes = pair;
+    const cooldown = readCooldownDays(parsed.skin_token_cooldown_days);
+    if (cooldown !== undefined) out.skin_token_cooldown_days = cooldown;
+    const kinds = readSkinKinds(parsed.skin_kinds);
+    if (kinds !== undefined) out.skin_kinds = kinds;
+    if (typeof parsed.allow_armor_3d_helmet === "boolean") {
+      out.allow_armor_3d_helmet = parsed.allow_armor_3d_helmet;
+    }
     const lastId =
       typeof parsed.last_submission_id === "string"
         ? parsed.last_submission_id.trim()
@@ -69,6 +103,27 @@ function writeStored(stored: StoredSession): void {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 }
 
+function copyEntitlements(
+  from: SkinsSession,
+  to: SkinsSession | StoredSession
+): void {
+  if (from.name_colour_stops !== undefined) {
+    to.name_colour_stops = from.name_colour_stops;
+  }
+  if (from.max_3d_pair_bytes !== undefined) {
+    to.max_3d_pair_bytes = from.max_3d_pair_bytes;
+  }
+  if (from.skin_token_cooldown_days !== undefined) {
+    to.skin_token_cooldown_days = from.skin_token_cooldown_days;
+  }
+  if (from.skin_kinds !== undefined) {
+    to.skin_kinds = from.skin_kinds;
+  }
+  if (from.allow_armor_3d_helmet !== undefined) {
+    to.allow_armor_3d_helmet = from.allow_armor_3d_helmet;
+  }
+}
+
 export function getSession(): SkinsSession | null {
   const stored = readStored();
   if (!stored) return null;
@@ -79,12 +134,7 @@ export function getSession(): SkinsSession | null {
   };
   if (stored.staff) out.staff = true;
   if (stored.scope) out.scope = stored.scope;
-  if (stored.name_colour_stops !== undefined) {
-    out.name_colour_stops = stored.name_colour_stops;
-  }
-  if (stored.max_3d_pair_bytes !== undefined) {
-    out.max_3d_pair_bytes = stored.max_3d_pair_bytes;
-  }
+  copyEntitlements(stored, out);
   return out;
 }
 
@@ -116,12 +166,7 @@ export function setSession(session: SkinsSession): void {
   };
   if (session.staff) stored.staff = true;
   if (session.scope) stored.scope = session.scope;
-  if (session.name_colour_stops !== undefined) {
-    stored.name_colour_stops = session.name_colour_stops;
-  }
-  if (session.max_3d_pair_bytes !== undefined) {
-    stored.max_3d_pair_bytes = session.max_3d_pair_bytes;
-  }
+  copyEntitlements(session, stored);
   writeStored(stored);
 }
 

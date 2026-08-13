@@ -128,14 +128,14 @@ Apply writes IA items (STONE_HOE carry/reload, CROSSBOW aim) + GaG `skins.yml` `
 
 ### Armor 3D helmet (per tier)
 
-When tier is listed in `helmet_3d_tiers`:
+Requires ArmourShop entitlement `allow-armor-3d-helmet` (Ascended/Legacy; staff bypass). When tier is listed in `helmet_3d_tiers`:
 
 ```text
 {tier}_helmet_model.json
 {tier}_helmet_texture.png
 ```
 
-No `{tier}_helmet.png` for that tier. Flat tiers still use `{tier}_helmet.png`.
+No `{tier}_helmet.png` for that tier. Flat tiers still use `{tier}_helmet.png`. Without the entitlement, only flat `{tier}_helmet.png` is accepted.
 
 ## After validation (server storage)
 

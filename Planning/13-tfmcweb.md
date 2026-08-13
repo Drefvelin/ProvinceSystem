@@ -1,6 +1,6 @@
 # 13 — TFMCWeb (identity, tokens, Discord gate)
 
-**Status:** Implemented ([step-17](./batches/step-17/00-index.md) 17.01–17.08). Character creator Phase 1 **implemented** ([14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging in [STAGING.md](../STAGING.md).  
+**Status:** Implemented ([step-17](./batches/step-17/00-index.md) 17.01–17.08). Character creator Phase 1 **implemented** ([14-character-creator.md](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md)); tick staging in [STAGING.md](../STAGING.md). Drink mint + shared skin↔drink cooldown **shipped** ([15-drink-builder.md](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md) 31.02).  
 **Repos:** `Workspace/tfmcweb/` (Bukkit plugin) · `ProvinceSystem` · `tfmc_bot` · soft-depends `Workspace/rpcharacters` · consumers `armourshop` (pack only); SimpleFactions / character creator via TFMCWeb.
 
 Companion: [11-discord-bot.md](./11-discord-bot.md) · skins tokens today: [10-armourshop-itemsadder.md](./10-armourshop-itemsadder.md) · batches: [step-17](./batches/step-17/00-index.md).
@@ -41,7 +41,7 @@ ArmourShop historically owned Discord link (`/linkdiscord`), skins token mint, p
 |---------|--------|
 | Base URL, `X-Plugin-Key`, timeouts, async HTTP | TFMCWeb |
 | UUID ↔ Discord link + guild membership + grace | ProvinceSystem identity + TFMCWeb cache + bot leave/join |
-| Scoped feature codes (`skin`, `character`, …) | ProvinceSystem + TFMCWeb `/token create <scope>` |
+| Scoped feature codes (`skin`, `drink`, `character`, …) | ProvinceSystem + TFMCWeb `/token create <scope>` |
 | Survival Discord gate freeze | TFMCWeb → RPCharacters API |
 | Skin pack apply | ArmourShop (transport via TFMCWeb later) |
 | Essentials ban/unban | Essentials executes; TFMCWeb mirrors |
@@ -114,13 +114,18 @@ Replace ArmourShop-only mint with scoped codes:
 | Command | Scope | Redeems on |
 |---------|--------|------------|
 | `/token create skin` | `skin` | Existing `/skins` redeem |
-| `/token create character` | `character` | Future character-creator site |
+| `/token create drink` | `drink` | `/drinks` — **shipped** ([15](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md)) |
+| `/token create character` | `character` | Character-creator site |
 
 Rules:
 
 - Must be Discord-linked and not past grace (Survival players).
 - Codes bound to UUID (same threat model as skins — no shareable account takeover).
-- Session TTL: skins ~1h after redeem; character default **1h**, Remember me **30d** ([14-character-creator.md](./14-character-creator.md)).
+- Session TTL: skins/drinks ~1h after redeem; character default **1h**, Remember me **30d** ([14-character-creator.md](./14-character-creator.md)).
+- **Shared mint cooldown (`skin` + `drink`):** owned by **TFMCWeb** only (rank days in TW config). ProvinceSystem does **not** enforce mint cooldown days after Step 31.02. Character is not in the shared family.
+- **Command gate:** LP `tfmcweb.token.create` (and drink uses same unless split later).
+- **Staff mint (`skin_staff`):** bypasses shared cooldown (perm `tfmcweb.token.create.staff`). Drink staff mint optional later.
+- Skins **upload** entitlements (kinds, colour stops, 3D) remain ArmourShop → PS player-meta — separate from mint cooldown.
 
 Admin `/web` does **not** mint player tokens.
 
@@ -208,6 +213,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 | `/linkdiscord` | default true | Issue link code (move from ArmourShop) |
 | `/unlinkdiscord` | default true | Explicit unlink → Discord gate if Survival |
 | `/token create skin` | skins donator / default as today | Scoped skins code |
+| `/token create drink` | donator ranks (shared cooldown) | Scoped drink code ([step-31](./batches/step-31/00-index.md)) |
 | `/token create character` | when character web ships | Scoped character code |
 | `/token` | — | Usage |
 
@@ -252,7 +258,8 @@ Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 + Ph
 - Staff in non-Survival are not Discord-gated.
 - Leave Discord → 1h grace → rejoin OK; after 1h → freeze.
 - No alts (one Discord ↔ one UUID).
-- `/token create skin` and (when ready) `character` work from TFMCWeb.
+- `/token create skin`, `drink`, and `character` work from TFMCWeb (drink redeem in step-31.03).
+- Shared skin↔drink mint cooldown enforced on TFMCWeb (`token-cooldowns` + `GET /skins/plugin/cosmetic-mint-status`).
 - `/tempban` mirrors to Discord; `/warning` hits chat + Discord.
 - ArmourShop no longer owns link/HTTP identity.
 

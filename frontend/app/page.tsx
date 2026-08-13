@@ -28,7 +28,7 @@ export default function HubPage() {
           TFMC
         </h1>
         <p className="hub-rise-delay mt-4 max-w-md text-lg text-[var(--tfmc-mist)] sm:text-xl">
-          Maps, donator skins, and characters for TFMC.
+          Maps, donator skins, drinks, and characters for TFMC.
         </p>
         <div className="hub-fade-delay mt-10 flex flex-wrap items-center justify-center gap-4">
           <Link
@@ -42,6 +42,12 @@ export default function HubPage() {
             className="inline-flex min-w-[8.5rem] items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
           >
             Skins
+          </Link>
+          <Link
+            href="/drinks"
+            className="inline-flex min-w-[8.5rem] items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-[var(--tfmc-cream)] transition-colors hover:border-[var(--tfmc-cream)] hover:bg-[color-mix(in_srgb,var(--tfmc-cream)_8%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-cream)]"
+          >
+            Drinks
           </Link>
           <Link
             href="/character"

@@ -15,6 +15,9 @@ export type CatalogScroll = {
 export type CatalogEntitlementDefaults = {
   name_colour_stops: number;
   max_3d_pair_bytes: number;
+  skin_token_cooldown_days: number;
+  skin_kinds: string[];
+  allow_armor_3d_helmet: boolean;
 };
 
 export type CatalogEntitlementGroup = {
@@ -24,6 +27,9 @@ export type CatalogEntitlementGroup = {
   display_name: string;
   name_colour_stops: number;
   max_3d_pair_bytes: number;
+  skin_token_cooldown_days: number;
+  skin_kinds: string[];
+  allow_armor_3d_helmet: boolean;
 };
 
 export type CatalogEntitlements = {
@@ -39,7 +45,13 @@ export type SkinsCatalog = {
 };
 
 export const EMPTY_ENTITLEMENTS: CatalogEntitlements = {
-  defaults: { name_colour_stops: 0, max_3d_pair_bytes: 0 },
+  defaults: {
+    name_colour_stops: 0,
+    max_3d_pair_bytes: 0,
+    skin_token_cooldown_days: -1,
+    skin_kinds: [],
+    allow_armor_3d_helmet: false,
+  },
   groups: [],
 };
 
@@ -57,6 +69,27 @@ export function filterStaffCategories(
   });
 }
 
+function parseKindList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const kind = String(item || "")
+      .trim()
+      .toLowerCase();
+    if (!kind || seen.has(kind)) continue;
+    seen.add(kind);
+    out.push(kind);
+  }
+  return out;
+}
+
+function parseCooldown(raw: unknown, fallback: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < -1) return fallback;
+  return Math.floor(n);
+}
+
 export function parseEntitlements(raw: unknown): CatalogEntitlements {
   if (!raw || typeof raw !== "object") {
     return EMPTY_ENTITLEMENTS;
@@ -71,6 +104,12 @@ export function parseEntitlements(raw: unknown): CatalogEntitlements {
   const defaults: CatalogEntitlementDefaults = {
     name_colour_stops: Number.isFinite(stops) && stops >= 0 ? Math.floor(stops) : 0,
     max_3d_pair_bytes: Number.isFinite(pair) && pair >= 0 ? Math.floor(pair) : 0,
+    skin_token_cooldown_days: parseCooldown(
+      defaultsIn.skin_token_cooldown_days,
+      -1
+    ),
+    skin_kinds: parseKindList(defaultsIn.skin_kinds),
+    allow_armor_3d_helmet: defaultsIn.allow_armor_3d_helmet === true,
   };
   const groupsIn = Array.isArray(obj.groups) ? obj.groups : [];
   const groups: CatalogEntitlementGroup[] = [];
@@ -98,6 +137,15 @@ export function parseEntitlements(raw: unknown): CatalogEntitlements {
         Number.isFinite(gPair) && gPair >= 0
           ? Math.floor(gPair)
           : defaults.max_3d_pair_bytes,
+      skin_token_cooldown_days: parseCooldown(
+        g.skin_token_cooldown_days,
+        defaults.skin_token_cooldown_days
+      ),
+      skin_kinds: parseKindList(g.skin_kinds),
+      allow_armor_3d_helmet:
+        typeof g.allow_armor_3d_helmet === "boolean"
+          ? g.allow_armor_3d_helmet
+          : defaults.allow_armor_3d_helmet,
     });
   }
   return { defaults, groups };

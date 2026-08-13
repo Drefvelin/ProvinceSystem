@@ -60,11 +60,11 @@ flowchart TB
 |------|-----|------|
 | 0a | Donator | In-game TFMCWeb `/linkdiscord` → one-time code |
 | 0b | Donator | Discord `/linkdiscord <code>` → UUID ↔ Discord id linked |
-| 1 | Donator | In-game: `/token create skin` (perm `tfmcweb.token.create` / admin) |
+| 1 | Donator | In-game: `/token create skin` (perm `tfmcweb.token.create`; PS rejects if rank disallowed or on cooldown) |
 | 2 | TFMCWeb | `POST /skins/codes` scope=skin; shows plaintext once (**click-to-copy**) |
-| 3 | Donator | Website `/skins`: redeem code |
-| 4 | Donator | Chooses kind (no `item`); picks **`base_set`** filtered by kind (armor tier or type); grip for large; enters **Item name**; uploads PNGs named per [07](./07-naming-conventions.md) |
-| 5 | API | Requires Discord link; validates naming, **exact pixel sizes**, and `base_set`↔kind pairing; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
+| 3 | Donator | Website `/skins`: redeem code (session includes `skin_kinds` + `allow_armor_3d_helmet`) |
+| 4 | Donator | KindPicker filtered by rank; picks **`base_set`**; grip for large; **Item name**; uploads PNGs per [07](./07-naming-conventions.md). Armor 3D helmet only if entitled |
+| 5 | API | Requires Discord link; validates kind whitelist, naming, sizes, `base_set`↔kind; stores fixed stems + `discord_user_id`; status `pending`; enqueues submitted notify |
 | 5b | tfmc_bot | DM player: submission received |
 | 6 | tfmc_bot | Skins cog posts review embed to `#bot-feed` **with raw submission PNGs** (+ kind / `base_set` / grip) |
 | 7 | Staff | Approve or Deny (+ reason) from visuals |
@@ -76,7 +76,26 @@ flowchart TB
 
 **Armor files:** 4 icons (16×16) + 2 layers (64×32); tier one of iron/steel/abyssalite/mythril/mage/infantry. **Handheld:** one 16×16 + type (swords, axes, …). **Large handheld:** one 32×32 + grip + type (spears, staffs, …). **Bow / large_bow / crossbow:** after 8.07. Upload **file names** define skin id ([07](./07-naming-conventions.md)).
 
-**Failure modes:** not Discord-linked; bad PNG file names / id; wrong pixel size; incomplete armor slots; bad/missing `base_set` or wrong kind pairing; Discord double-approve; closed DMs (review still works); reload while players online; LP missing so shop hides set; wrong BaseSet gear in inventory so apply finds nothing.
+**Failure modes:** not Discord-linked; rank cannot mint / shared skin↔drink cooldown (TFMCWeb); kind not allowed for rank; armor 3D helmet without entitlement; bad PNG file names / id; wrong pixel size; incomplete armor slots; bad/missing `base_set` or wrong kind pairing; Discord double-approve; closed DMs (review still works); reload while players online; LP missing so shop hides set; wrong BaseSet gear in inventory so apply finds nothing.
+
+---
+
+## Flow 2c — Donator drink (BreweryX)
+
+**Status:** Code **shipped** (step-31.02–31.08). Human verify: [STAGING.md](../STAGING.md) Step 31.
+
+**Actors:** Donator, TFMCWeb, DrinkBuilder, website, Discord staff, ItemsAdder, BreweryX.
+
+| Step | Who | What |
+|------|-----|------|
+| 1 | Donator | `/token create drink` (shared cooldown with skin on TFMCWeb) |
+| 2 | Donator | Redeem on `/drinks`; fill brew form; Noble color-only / Gilded+ texture or reuse |
+| 3 | API | Validate ingredients allowlist + effects blacklist; store pending |
+| 4 | Bot | Review embed + sheet; Approve/Deny |
+| 5 | DrinkBuilder | If texture: write `tfmc_drinks` CMD; merge `recipes.yml`; Brewery reload |
+| 6 | Donator | Brew in-game |
+
+**Playbook:** [15-drink-builder.md](./15-drink-builder.md) · **Batches:** [step-31](./batches/step-31/00-index.md)
 
 ---
 

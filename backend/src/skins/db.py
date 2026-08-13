@@ -7,6 +7,7 @@ DATA_DIR = _SKINS_PKG.parent / "data"
 DB_PATH = DATA_DIR / "province.db"
 SKINS_DIR = DATA_DIR / "skins"
 WARDROBE_DIR = DATA_DIR / "wardrobe"
+DRINKS_DIR = DATA_DIR / "drinks"
 SCHEMA_PATH = _SKINS_PKG / "schema.sql"
 
 
@@ -34,6 +35,9 @@ def migrate() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SKINS_DIR.mkdir(parents=True, exist_ok=True)
     WARDROBE_DIR.mkdir(parents=True, exist_ok=True)
+    DRINKS_DIR.mkdir(parents=True, exist_ok=True)
+    (DRINKS_DIR / "textures").mkdir(parents=True, exist_ok=True)
+    (DRINKS_DIR / "submissions").mkdir(parents=True, exist_ok=True)
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
     denied_ids: list[str] = []
     with connect() as conn:
@@ -158,10 +162,29 @@ def migrate() -> None:
                 player_uuid TEXT PRIMARY KEY,
                 name_colour_stops INTEGER NOT NULL DEFAULT 0,
                 max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+                skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
+                skin_kinds_json TEXT NOT NULL DEFAULT '[]',
+                allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        as_meta_cols = _column_names(conn, "armourshop_player_meta")
+        if "skin_token_cooldown_days" not in as_meta_cols:
+            conn.execute(
+                "ALTER TABLE armourshop_player_meta "
+                "ADD COLUMN skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1"
+            )
+        if "skin_kinds_json" not in as_meta_cols:
+            conn.execute(
+                "ALTER TABLE armourshop_player_meta "
+                "ADD COLUMN skin_kinds_json TEXT NOT NULL DEFAULT '[]'"
+            )
+        if "allow_armor_3d_helmet" not in as_meta_cols:
+            conn.execute(
+                "ALTER TABLE armourshop_player_meta "
+                "ADD COLUMN allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0"
+            )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS creation_catalog (
@@ -457,6 +480,88 @@ def migrate() -> None:
                 "ALTER TABLE character_player_meta "
                 "ADD COLUMN wardrobe_skin_slots INTEGER"
             )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drink_submissions (
+                id TEXT PRIMARY KEY,
+                player_uuid TEXT NOT NULL,
+                code_id INTEGER NOT NULL,
+                slug TEXT NOT NULL,
+                display_name TEXT NOT NULL,
+                recipe_json TEXT NOT NULL,
+                status TEXT NOT NULL,
+                deny_reason TEXT,
+                texture_id TEXT,
+                new_texture INTEGER NOT NULL DEFAULT 0,
+                dir_path TEXT NOT NULL,
+                discord_user_id TEXT,
+                created_at TEXT NOT NULL,
+                reviewed_at TEXT,
+                applied_at TEXT,
+                FOREIGN KEY (code_id) REFERENCES codes(id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drink_textures (
+                id TEXT PRIMARY KEY,
+                owner_uuid TEXT NOT NULL,
+                cmd INTEGER,
+                ia_item_id TEXT,
+                png_path TEXT NOT NULL,
+                refcount INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drink_catalog (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                payload TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drink_player_meta (
+                player_uuid TEXT PRIMARY KEY,
+                allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS drink_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL,
+                submission_id TEXT NOT NULL,
+                discord_user_id TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                delivered_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_drink_submissions_status "
+            "ON drink_submissions(status)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_drink_submissions_slug "
+            "ON drink_submissions(slug)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_drink_textures_owner "
+            "ON drink_textures(owner_uuid)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_drink_notifications_undelivered "
+            "ON drink_notifications(delivered_at, created_at)"
+        )
         denied_ids = [
             str(r["id"])
             for r in conn.execute(

@@ -598,6 +598,17 @@ def create_submission(
     )
     colour_cap = int(entitlements["name_colour_stops"])
     pair_cap = int(entitlements["max_3d_pair_bytes"])
+    allowed_kinds = {
+        str(k).strip().lower()
+        for k in (entitlements.get("skin_kinds") or [])
+        if str(k).strip()
+    }
+    allow_armor_3d = bool(entitlements.get("allow_armor_3d_helmet"))
+    if not is_staff:
+        if kind not in allowed_kinds:
+            raise SubmissionError(
+                f"Your rank cannot upload kind '{kind}'"
+            )
 
     want_add_name = bool(add_name)
     colours = _validate_name_colours(name_colours, max_colours=colour_cap)
@@ -612,6 +623,10 @@ def create_submission(
         tier_list = _validate_tiers(tiers)
         aliases = _validate_tier_aliases(tier_list, tier_aliases)
         h3d_list = _validate_helmet_3d_tiers(tier_list, helmet_3d_tiers)
+        if h3d_list and not is_staff and not allow_armor_3d:
+            raise SubmissionError(
+                "Your rank cannot upload 3D helmets on armor sets"
+            )
         base: str | None = None
         for tier in tier_list:
             missing: list[str] = []

@@ -92,11 +92,30 @@ sequenceDiagram
 | Storage | Hash of code (SHA-256); plaintext shown once in-game |
 | Lifetime | Expiry (e.g. 24–72h); single redeem for upload session |
 | Revocation | Staff/plugin can invalidate a code row |
-| Tier limits (later) | Optional higher 3D byte caps from code / donator tier |
+| Tier limits | 3D pair byte caps + colour stops from ArmourShop `permission-groups.yml` (catalog / player-meta) |
+| Skin token cooldown | **Owned by TFMCWeb** (shared with drink). AS `skin-token-cooldown-days` deprecated for mint after [step-31.02](./batches/step-31/02-tfmcweb-shared-cooldown.md); PS `issue_code` no longer gates mint days. |
+| Allowed kinds | Per-rank additive `skin-kinds` whitelist (inherit by tier). Enforced on submit + KindPicker |
+| Armor 3D helmet | `allow-armor-3d-helmet` (Ascended+). Gates `helmet_3d_tiers` on `armor_set` |
 
-Eligibility (donator rank) is enforced **in TFMCWeb** via permission `tfmcweb.token.create` (LP for donator ranks). Command: `/token create skin`. (`/armourshop token create` redirects to that command.)
+**Command gate:** TFMCWeb LP `tfmcweb.token.create`. **Mint cooldown:** TFMCWeb shared skin+drink clock. **Upload entitlements (kinds / colours / 3D):** ProvinceSystem via ArmourShop player-meta. Staff (`skin_staff`) bypasses mint cooldown and upload gates. (`/armourshop token create` redirects to `/token create skin`.)
+
+**Drinks:** separate playbook [15-drink-builder.md](./15-drink-builder.md).
 
 Upload requires a prior **Discord link** for that UUID ([step-5](./batches/step-5/00-index.md); ownership [step-17](./batches/step-17/00-index.md)).
+
+## Skin-upload entitlements (ArmourShop)
+
+Configured in `permission-groups.yml` (synced via catalog + player-meta on join/reload). Same LP nodes as RPCharacters (`rpchar.group.*`).
+
+| Rank | Cooldown | Kinds (additive inherit) | Armor 3D helmet |
+|------|----------|--------------------------|-----------------|
+| defaults / no rank | **disallowed** (`-1`) | none | false |
+| Noble | 28 days | `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `book` | false |
+| Gilded | 21 days | + `armor_set` | false |
+| Ascended | 14 days | + `item_3d`, `shield`, `helmet_3d`, `gun` | true |
+| Legacy | 7 days | (same as Ascended) | true |
+
+**Resolve:** highest matching LP group tier `T` → union `skin-kinds` from all groups with `tier <= T`; cooldown / `allow-armor-3d-helmet` from tier `T` (walk down if missing). Int perks `name-colour-stops` / `max-3d-pair-bytes` still use MAX across matching groups.
 
 ## Discord link (MC ↔ Discord)
 
@@ -185,7 +204,7 @@ Compose: mount `backend/src/data` like `input` / `output`.
 - `crossbow`: five fields (bow four + `charged`), all 16×16.
 - `book`: both `unsigned` + `signed` PNGs, each **16×16**; `base_set` must be `books`; no model; dup `texture_hash` from **unsigned** bytes ([step-28](./batches/step-28/00-index.md)).
 - `base_set`: required for enabled **non-armor** kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md) + [step-28](./batches/step-28/00-index.md) for `books`); reject `kind=item`. Armor uses `tiers` instead (`base_set` ignored/null).
-- `item_3d` / `shield` / `helmet_3d` / `gun` / armor 3D helmets: PNG + JSON; JSON parseable; required `display` keys present; **combined texture+one JSON ≤ `max-3d-pair-bytes`** from ArmourShop `permission-groups.yml` (synced on catalog; default **30720**; gun checks texture with each of carry/reload/aim); no path traversal in strings.
+- `item_3d` / `shield` / `helmet_3d` / `gun` / armor 3D helmets: PNG + JSON; JSON parseable; required `display` keys present; **combined texture+one JSON ≤ `max-3d-pair-bytes`** from ArmourShop `permission-groups.yml` (synced on catalog; default **30720**; gun checks texture with each of carry/reload/aim); no path traversal in strings. Armor `helmet_3d_tiers` also require `allow-armor-3d-helmet`. Kind must be in the player's resolved `skin-kinds` (staff exempt).
 - `name_colours`: length capped by player ArmourShop rank stops (same LP nodes as RPC), clamped to web hard cap 8; staff tokens get 8.
 - Never accept zip archives in MVP.
 

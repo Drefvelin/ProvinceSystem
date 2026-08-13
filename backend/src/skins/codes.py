@@ -11,7 +11,7 @@ from .db import connect
 
 SESSION_TTL_HOURS = 1
 CHARACTER_REMEMBER_TTL_DAYS = 30
-ALLOWED_SCOPES = frozenset({"skin", "character", "skin_staff"})
+ALLOWED_SCOPES = frozenset({"skin", "drink", "character", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
 
 
@@ -54,7 +54,7 @@ def _normalize_scope(scope: str | None) -> str:
     if not raw:
         raw = "skin"
     if raw not in ALLOWED_SCOPES:
-        raise CodeError("scope must be 'skin', 'skin_staff', or 'character'")
+        raise CodeError("scope must be 'skin', 'drink', 'skin_staff', or 'character'")
     return raw
 
 
@@ -73,6 +73,27 @@ def _is_staff_scope(scope: str) -> bool:
     return (scope or "").strip().lower() == "skin_staff"
 
 
+def get_cosmetic_mint_status(player_uuid: str) -> dict:
+    """Last mint across shared cosmetic scopes (skin + drink) for TFMCWeb cooldown."""
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise CodeError("player_uuid is required")
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT MAX(created_at) AS last_at
+            FROM codes
+            WHERE LOWER(player_uuid) = LOWER(?)
+              AND LOWER(scope) IN ('skin', 'drink')
+            """,
+            (uuid,),
+        ).fetchone()
+    last_at = row["last_at"] if row else None
+    if last_at is None:
+        return {"last_mint_at": None, "player_uuid": uuid}
+    return {"last_mint_at": str(last_at), "player_uuid": uuid}
+
+
 def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
     from .discord_link import get_identity_status
 
@@ -84,6 +105,9 @@ def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
     status = get_identity_status(uuid)
     if not status.get("eligible"):
         raise CodeError("Link Discord in-game with /linkdiscord first")
+
+    # Mint cooldown for skin/drink is owned by TFMCWeb (shared clock).
+    # This endpoint only checks Discord eligibility and inserts the code.
 
     plaintext = generate_plaintext_code()
     now = _utcnow()
@@ -206,6 +230,8 @@ def redeem_code(plaintext: str) -> dict:
             raise CodeError("Code has expired")
         scope = _row_scope(row)
         if scope not in REDEEMABLE_SKIN_SCOPES:
+            if scope == "drink":
+                raise CodeError("This code is for drinks, not skins")
             raise CodeError("This code is for character creation, not skins")
 
         session_token = secrets.token_urlsafe(32)
@@ -247,6 +273,9 @@ def redeem_code(plaintext: str) -> dict:
         "staff": _is_staff_scope(scope),
         "name_colour_stops": entitlements["name_colour_stops"],
         "max_3d_pair_bytes": entitlements["max_3d_pair_bytes"],
+        "skin_token_cooldown_days": entitlements["skin_token_cooldown_days"],
+        "skin_kinds": entitlements["skin_kinds"],
+        "allow_armor_3d_helmet": entitlements["allow_armor_3d_helmet"],
     }
 
 
@@ -312,6 +341,74 @@ def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
         "code_id": row["id"],
         "scope": scope,
         "remember_me": remember,
+    }
+
+
+def redeem_drink_code(plaintext: str) -> dict:
+    """Consume a drink-scoped code and create a Bearer session."""
+    from .drinks import get_allow_drink_texture
+
+    code = (plaintext or "").strip()
+    if not code:
+        raise CodeError("code is required")
+
+    code_hash = hash_secret(code)
+    now = _utcnow()
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM codes WHERE code_hash = ?",
+            (code_hash,),
+        ).fetchone()
+
+        if row is None:
+            raise CodeError("Invalid code")
+        if row["revoked"]:
+            raise CodeError("Code has been revoked")
+        if row["redeemed_at"]:
+            raise CodeError("Code has already been redeemed")
+        if _parse_iso(row["expires_at"]) < now:
+            raise CodeError("Code has expired")
+        scope = _row_scope(row)
+        if scope != "drink":
+            if scope in REDEEMABLE_SKIN_SCOPES:
+                raise CodeError("This code is for skins, not drinks")
+            if scope == "character":
+                raise CodeError("This code is for character creation, not drinks")
+            raise CodeError("This code is not a drink token")
+
+        session_token = secrets.token_urlsafe(32)
+        session_expires = now + timedelta(hours=SESSION_TTL_HOURS)
+        session_expires_at = _iso(session_expires)
+        created_at = _iso(now)
+
+        conn.execute(
+            "UPDATE codes SET redeemed_at = ? WHERE id = ?",
+            (created_at, row["id"]),
+        )
+        conn.execute(
+            """
+            INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                hash_secret(session_token),
+                row["id"],
+                row["player_uuid"],
+                session_expires_at,
+                created_at,
+            ),
+        )
+        conn.commit()
+
+    allow_texture = get_allow_drink_texture(str(row["player_uuid"]))
+    return {
+        "session_token": session_token,
+        "player_uuid": row["player_uuid"],
+        "expires_at": session_expires_at,
+        "code_id": row["id"],
+        "scope": scope,
+        "allow_drink_texture": allow_texture,
     }
 
 

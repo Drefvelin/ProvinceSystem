@@ -92,6 +92,9 @@ Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
 
 1. Survival: `/linkdiscord` (TFMCWeb) → Discord `/linkdiscord code:<CODE>` → notices via TFMCWeb poller.
 2. `/token create skin` → click-copy → redeem + upload on `http://127.0.0.1:13001/skins`.
+   - Non-ranked / defaults: mint rejected (“cannot create skin tokens”).
+   - Ranked: KindPicker filtered by `skin_kinds`; armor 3D helmet only if `allow_armor_3d_helmet`.
+   - Second mint within cooldown → rejected with remaining wait.
 3. Approve/Deny in `#bot-feed` → outcome DMs (skinsreview).
 4. Optional: `/token create character` → redeem on `http://127.0.0.1:13001/character` (Remember me optional; see Step 19).
 5. `/armourshop token create` redirects to `/token create skin` (obsolete AS mint).
@@ -551,6 +554,53 @@ Checkpoint:
 web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank wipe
 ```
 
+## Step 31 — Drink Builder (BreweryX)
+
+**Playbook:** [Planning/15-drink-builder.md](./Planning/15-drink-builder.md) · batches [Planning/batches/step-31/00-index.md](./Planning/batches/step-31/00-index.md).
+
+**Code:** 31.02–31.08 done (shared cooldown, PS drink API, DrinkBuilder scaffold/pack/delete, `/drinks` UI, `drinksreview` bot). Docs/cutover 31.09 closed. Operator ticks below when live.
+
+### Deploy
+
+1. Staging PS up (`scripts/staging-up.sh` / curl `http://127.0.0.1:18001`).
+2. Deploy DrinkBuilder jar from `Builds/DrinkBuilder/`; config `api.base-url` / `api.plugin-key`, `paths.breweryx-folder`, `paths.itemsadder-tfmc-drinks`, CMD range, `ia-reload-delay-seconds`. Empty `tfmc_drinks` scaffold is created on enable.
+3. `/drinkbuilder catalog sync` (prune `ingredients.yml` as needed), then `/drinkbuilder pack pull [force]` after Discord approves.
+4. FE `/drinks` on staging UI (`13001`).
+5. Copy `tfmc_bot/drinksreview/` into Red cogs; `config.yml` (same `api_base_url` / `staff_key` / `#bot-feed` as skins); `-load drinksreview`; slash enable/sync; `/drinksreview ping`.
+6. TFMCWeb shared `token-cooldowns` already shipped (31.02) — confirm jar/config on staging.
+7. Retire ConditionalEvents `/tfmc drinks`: event file is `plugins/ConditionalEvents/events/drinkbuilder.yml.disabled` — reload ConditionalEvents (or restart). Players use `/token create drink` then redeem on `/drinks`.
+
+### Locked
+
+- Noble: color-only; Gilded+: texture upload or reuse (applied CMD only)
+- Shared skin↔drink mint cooldown on TFMCWeb only
+- Curated ingredient catalog → PS/web
+- IA `tfmc_drinks` potion + `model_id` / Brewery `customModelData`
+- Delete: recipe always; texture/CMD iff refcount 0
+
+### Operator checklist
+
+- [ ] Non-ranked cannot `/token create skin|drink`
+- [ ] Shared cooldown skin ↔ drink
+- [ ] Noble: color-only drink approve → Brewery recipe (`color`)
+- [ ] Gilded: textured drink → `tfmc_drinks` + CMD match
+- [ ] Ingredient picker shows draft list (pruned as needed)
+- [ ] Discord approve/deny + DMs (`drinksreview`)
+- [ ] Staff delete + shared texture refcount (`/drinkbuilder drink delete`)
+- [ ] `/tfmc drinks` disabled (CE event retired); players use token + website
+
+Checkpoint:
+
+```text
+/token create drink (ranked) → redeem /drinks
+  → submit color-only (Noble) or textured (Gilded+)
+  → Discord approve
+  → DrinkBuilder pack (if texture) + recipes.yml
+  → brewable in BreweryX with correct look
+/token create skin then drink blocked by shared cooldown
+staff delete drink; shared texture kept if still referenced
+```
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.
@@ -574,6 +624,14 @@ Live path today: TFMCWeb `/linkdiscord` → Discord complete → `/token create 
 2. Grant LP `tfmcweb.token.create` (or use `tfmcweb.admin`).
 3. `/linkdiscord` → Discord complete (**required before mint**).
 4. `/token create skin` → click the aqua code to copy.
+5. Redeem on `/skins` → KindPicker shows only entitled kinds.
+
+Checklist extras:
+
+- [ ] Non-ranked player cannot mint (even with LP if player-meta/defaults deny)
+- [ ] Noble mint works; KindPicker is 2D items only (no armor/3D/gun)
+- [ ] Second mint within cooldown fails with wait message
+- [ ] Staff mint bypasses cooldown and shows all kinds
 5. Open `http://127.0.0.1:13001/skins`, redeem, upload → `#bot-feed` / DMs as Step 5 (historical DM flow).
 
 Admin: `/armourshop listtokens` lists unused unexpired codes (issuer + red `[Delete]` → `/armourshop token delete <code>`).

@@ -133,6 +133,9 @@ CREATE TABLE IF NOT EXISTS armourshop_player_meta (
     player_uuid TEXT PRIMARY KEY,
     name_colour_stops INTEGER NOT NULL DEFAULT 0,
     max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+    skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
+    skin_kinds_json TEXT NOT NULL DEFAULT '[]',
+    allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
 
@@ -178,3 +181,63 @@ CREATE TABLE IF NOT EXISTS character_create_wardrobe (
     updated_at TEXT NOT NULL,
     PRIMARY KEY (create_id, slot)
 );
+
+CREATE TABLE IF NOT EXISTS drink_submissions (
+    id TEXT PRIMARY KEY,
+    player_uuid TEXT NOT NULL,
+    code_id INTEGER NOT NULL,
+    slug TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    recipe_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    deny_reason TEXT,
+    texture_id TEXT,
+    new_texture INTEGER NOT NULL DEFAULT 0,
+    dir_path TEXT NOT NULL,
+    discord_user_id TEXT,
+    created_at TEXT NOT NULL,
+    reviewed_at TEXT,
+    applied_at TEXT,
+    FOREIGN KEY (code_id) REFERENCES codes(id)
+);
+
+CREATE TABLE IF NOT EXISTS drink_textures (
+    id TEXT PRIMARY KEY,
+    owner_uuid TEXT NOT NULL,
+    cmd INTEGER,
+    ia_item_id TEXT,
+    png_path TEXT NOT NULL,
+    refcount INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS drink_catalog (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS drink_player_meta (
+    player_uuid TEXT PRIMARY KEY,
+    allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS drink_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    submission_id TEXT NOT NULL,
+    discord_user_id TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    delivered_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_drink_submissions_status
+    ON drink_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_drink_submissions_slug
+    ON drink_submissions(slug);
+CREATE INDEX IF NOT EXISTS idx_drink_textures_owner
+    ON drink_textures(owner_uuid);
+CREATE INDEX IF NOT EXISTS idx_drink_notifications_undelivered
+    ON drink_notifications(delivered_at, created_at);

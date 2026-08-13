@@ -68,6 +68,9 @@ export type RedeemResult = {
   staff?: boolean;
   name_colour_stops?: number;
   max_3d_pair_bytes?: number;
+  skin_token_cooldown_days?: number;
+  skin_kinds?: string[];
+  allow_armor_3d_helmet?: boolean;
 };
 
 export async function redeemCode(code: string): Promise<RedeemResult> {
@@ -111,6 +114,26 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
   const pair = Number(body.max_3d_pair_bytes);
   if (Number.isFinite(pair) && pair >= 0) {
     out.max_3d_pair_bytes = Math.floor(pair);
+  }
+  const cooldown = Number(body.skin_token_cooldown_days);
+  if (Number.isFinite(cooldown) && cooldown >= -1) {
+    out.skin_token_cooldown_days = Math.floor(cooldown);
+  }
+  if (Array.isArray(body.skin_kinds)) {
+    const kinds: string[] = [];
+    const seen = new Set<string>();
+    for (const item of body.skin_kinds) {
+      const kind = String(item || "")
+        .trim()
+        .toLowerCase();
+      if (!kind || seen.has(kind)) continue;
+      seen.add(kind);
+      kinds.push(kind);
+    }
+    out.skin_kinds = kinds;
+  }
+  if (typeof body.allow_armor_3d_helmet === "boolean") {
+    out.allow_armor_3d_helmet = body.allow_armor_3d_helmet;
   }
   return out;
 }

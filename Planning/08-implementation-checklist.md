@@ -182,7 +182,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 19. **Book skins + kit journal / Step 28** — **done** ([step-28](./batches/step-28/00-index.md); 28.07 docs closed)  
 20. **Kit customise visibility + claim AS gate / Step 29** — **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed)  
 21. **Character skin wardrobe / Step 30** — **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed)  
-22. Cropped overlays as capacity allows; tick [STAGING](../STAGING.md) Step 20–30 when ready  
+22. **Drink Builder / Step 31** — **done** ([15](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md); 31.09 docs closed)  
+23. Cropped overlays as capacity allows; tick [STAGING](../STAGING.md) Step 20–31 when ready  
 
 ---
 
@@ -192,9 +193,10 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 |------|----------|
 | Map | Live SF → API → web works; realm card shows size; usable on phone |
 | Skins | armor_set + item/handheld/large_handheld; exact sizes; naming; Discord PNG review; ArmourShop pack + LP |
-| Bot | Skins review with sheets; ban DM/log + banned role add/clear; guild leave/join grace |
-| TFMCWeb | Survival Discord gate; `/token create skin`; ArmourShop no longer owns link |
+| Drinks | Token → `/drinks` → Discord → DrinkBuilder → BreweryX + optional `tfmc_drinks` (**code done**; staging smoke [STAGING](../STAGING.md) Step 31) |
+| Bot | Skins + drinks review with sheets; ban DM/log + banned role add/clear; guild leave/join grace |
+| TFMCWeb | Survival Discord gate; `/token create skin|drink`; shared mint cooldown; ArmourShop no longer owns link |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, brewery module, SF via TFMCWeb.  
-Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** (staging verified). Step 20–21 kits **done**. Step 22 web character sheet **done**. Step 23 kit lore editor polish **done** ([step-23](./batches/step-23/00-index.md)). Step 24 sheet parity **done** ([step-24](./batches/step-24/00-index.md)). Step 25 kit submit/deny UX **done** ([step-25](./batches/step-25/00-index.md)). Step 26 kit asset sync + status **done** ([step-26](./batches/step-26/00-index.md)). Step 27 kit templates + `resetkit` **done** ([step-27](./batches/step-27/00-index.md)). Step 28 book skins + kit journal **done** ([step-28](./batches/step-28/00-index.md); 28.07 docs closed). Step 29 kit customise visibility + claim AS gate **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed). Step 30 wardrobe **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed). Next: operator [STAGING](../STAGING.md) Step 20–30 when ready.
+Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), full map overlay crop, SF via TFMCWeb.  
+Step 13–15 implemented — staging smoke in batch docs. Step 16 planned. Step 17 **17.01–17.08 done**. Step 18 **18.01–18.07 done**. Step 19 character creator Phase 1 **19.01–19.06 done** (staging verified). Step 20–21 kits **done**. Step 22 web character sheet **done**. Step 23 kit lore editor polish **done** ([step-23](./batches/step-23/00-index.md)). Step 24 sheet parity **done** ([step-24](./batches/step-24/00-index.md)). Step 25 kit submit/deny UX **done** ([step-25](./batches/step-25/00-index.md)). Step 26 kit asset sync + status **done** ([step-26](./batches/step-26/00-index.md)). Step 27 kit templates + `resetkit` **done** ([step-27](./batches/step-27/00-index.md)). Step 28 book skins + kit journal **done** ([step-28](./batches/step-28/00-index.md); 28.07 docs closed). Step 29 kit customise visibility + claim AS gate **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed). Step 30 wardrobe **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed). Step 31 Drink Builder **done** ([step-31](./batches/step-31/00-index.md); 31.09 docs closed). Next: operator [STAGING](../STAGING.md) Step 20–31 when ready.

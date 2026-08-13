@@ -7,6 +7,8 @@
 
 Upload and apply **`item_3d`**, **`shield`**, and **`helmet_3d`** (standalone + per-tier armor flag), with display autofill and shield blocking auto-clone.
 
+**Rank gate (later entitlements):** 3D kinds and armor `helmet_3d_tiers` require Ascended+ (`skin-kinds` / `allow-armor-3d-helmet` in ArmourShop `permission-groups.yml`). See [05-skins-system.md](../../05-skins-system.md).
+
 ## Locked rules
 
 | Kind | Files | `base_set` |

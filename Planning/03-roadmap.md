@@ -246,6 +246,23 @@ Quotas, retention, module template, optional brewery stub.
 
 ---
 
+## Track F — Drink Builder (BreweryX)
+
+**Status:** **Code done** ([15-drink-builder.md](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md); 31.09 docs closed). Operator staging smoke in [STAGING.md](../STAGING.md) Step 31.  
+**Repos:** DrinkBuilder · TFMCWeb · ProvinceSystem · tfmc_bot · ItemsAdder `tfmc_drinks` · BreweryX
+
+| Phase | Detail |
+|-------|--------|
+| F1 / 31.02 | **Done** — TFMCWeb shared skin↔drink mint cooldown; `/token create drink`; retire PS mint cooldown |
+| F2 / 31.03–04 | **Done** — PS drink API + DrinkBuilder scaffold + ingredient catalog |
+| F3 / 31.05–06 | **Done** — Website `/drinks` + Discord review |
+| F4 / 31.07–08 | **Done** — `tfmc_drinks` pack + BreweryX merge; delete/reuse |
+| F5 / 31.09 | **Done** — Docs + staging cutover (CE `/tfmc drinks` retired) |
+
+**Locked:** Noble color-only; Gilded+ texture; ingredients curated (draft in Planning assets); potion+CMD; shared cooldown on TFMCWeb only.
+
+---
+
 ## Priority for “finished product ASAP”
 
 1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
@@ -256,6 +273,5 @@ Quotas, retention, module template, optional brewery stub.
 6. **Step 18 / Track D** — **code done**; human staging verify on live  
 7. **Track E / step-19 Phase 1** — **done** (staging verified)  
 8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
-9. **Track E / step-22–30** — sheet + kit polish + wardrobe **done**; run [STAGING](../STAGING.md) Step 20–30 when ready
-
-Do not block skins MVP on cropped map overlays. Prefer Track C staging green before pre-launch donator character create.
+9. **Track E / step-22–30** — sheet + kit polish + wardrobe **done**; run [STAGING](../STAGING.md) Step 20–30 when ready  
+10. **Track F / step-31** — Drink Builder **code done**; run [STAGING](../STAGING.md) Step 31 when ready

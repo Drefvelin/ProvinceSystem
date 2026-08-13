@@ -129,10 +129,14 @@ Players must bind Minecraft ↔ Discord before a website upload is accepted. **T
 |---------|-------|-----|
 | `/linkdiscord` | In game (TFMCWeb) | `POST /skins/discord/link/start`; click-to-copy code |
 | `/linkdiscord <code>` | Discord (tfmc_bot) | `POST /skins/discord/link/complete` |
-| `/token create skin` | In game (TFMCWeb) | `POST /skins/codes` scope=skin; perm `tfmcweb.token.create` |
-| `/token create skin staff` | In game (TFMCWeb) | `POST /skins/codes` scope=skin_staff; perm `tfmcweb.token.create.staff` |
-| `/armourshop catalog sync` | In game (ArmourShop admin) | Push categories + scrolls → API |
+| `/token create skin` | In game (TFMCWeb) | `POST /skins/codes` scope=skin; perm `tfmcweb.token.create`; PS enforces rank cooldown / disallow from ArmourShop `permission-groups.yml` |
+| `/token create skin staff` | In game (TFMCWeb) | `POST /skins/codes` scope=skin_staff; perm `tfmcweb.token.create.staff` (bypasses cooldown/kinds) |
+| `/armourshop catalog sync` | In game (ArmourShop admin) | Push categories + scrolls + entitlements → API |
 | `/armourshop listtokens` / `token delete` | In game (ArmourShop admin) | List/revoke unused codes |
+
+### Skin-upload entitlements
+
+ArmourShop `permission-groups.yml` owns rank ladders for **upload** kinds / colours / 3D (synced to ProvinceSystem). **Mint cooldown** for skin+drink is owned by TFMCWeb `token-cooldowns` ([step-31.02](./batches/step-31/02-tfmcweb-shared-cooldown.md)); AS `skin-token-cooldown-days` is deprecated for mint (still synced, ignored by `issue_code`). Defaults deny upload kinds. Noble → flat 2D items; Gilded → + `armor_set` (no 3D helmet); Ascended/Legacy → all kinds + `allow-armor-3d-helmet`. See [05-skins-system.md](./05-skins-system.md) **Skin-upload entitlements**.
 
 Batches: [step-5](./batches/step-5/00-index.md) (link), [step-6](./batches/step-6/00-index.md) (token), [step-17](./batches/step-17/00-index.md) (TFMCWeb ownership), [step-18](./batches/step-18/00-index.md) (staff curated), [step-7](./batches/step-7/00-index.md) (pack writer), [step-8](./batches/step-8/00-index.md) (live apply).
 

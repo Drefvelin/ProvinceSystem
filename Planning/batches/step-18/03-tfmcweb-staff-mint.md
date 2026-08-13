@@ -34,6 +34,7 @@
 - Command YAML gate removed so staff-only LP can invoke `/token`; gates inside `TokenCommand`
 - `ProvinceSystemClient.issueFeatureCode` allows `skin_staff`
 - Player `/token create skin|character` unchanged (`tfmcweb.token.create`)
+- Staff mint **bypasses** per-rank skin-token cooldown, kind whitelist, and armor-3D-helmet entitlement (player mint does not)
 
 ## Out of scope
 

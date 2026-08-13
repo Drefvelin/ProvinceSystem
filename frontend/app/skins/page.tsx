@@ -65,6 +65,8 @@ export default function SkinsPage() {
             staff={session.staff === true}
             nameColourStops={session.name_colour_stops}
             max3dPairBytes={session.max_3d_pair_bytes}
+            skinKinds={session.skin_kinds ?? null}
+            allowArmor3dHelmet={session.allow_armor_3d_helmet === true}
           />
         </div>
       ) : (

@@ -38,11 +38,24 @@ type Props = {
   value: SkinKind;
   onChange: (kind: SkinKind) => void;
   disabled?: boolean;
+  /** When set, only these kinds are shown. Empty = none. Omit/undefined = all. */
+  allowedKinds?: string[] | null;
 };
 
-export default function KindPicker({ value, onChange, disabled }: Props) {
+export default function KindPicker({
+  value,
+  onChange,
+  disabled,
+  allowedKinds,
+}: Props) {
   const [helpOpen, setHelpOpen] = useState(false);
   const helpId = useKindHelpId();
+  const options =
+    allowedKinds == null
+      ? OPTIONS
+      : OPTIONS.filter((opt) =>
+          allowedKinds.map((k) => k.toLowerCase()).includes(opt.value)
+        );
 
   return (
     <fieldset className="flex flex-col gap-3 border-0 p-0">
@@ -57,12 +70,17 @@ export default function KindPicker({ value, onChange, disabled }: Props) {
         />
       </div>
 
+      {options.length === 0 ? (
+        <p className="text-sm text-[var(--tfmc-mist)]">
+          No upload kinds available for your rank.
+        </p>
+      ) : (
       <div
         role="radiogroup"
         aria-label="Skin kind"
         className="grid grid-cols-1 gap-2 sm:grid-cols-2"
       >
-        {OPTIONS.map((opt) => {
+        {options.map((opt) => {
           const selected = value === opt.value;
           return (
             <button
@@ -126,6 +144,7 @@ export default function KindPicker({ value, onChange, disabled }: Props) {
           );
         })}
       </div>
+      )}
 
       <KindHelpPanel kind={value} open={helpOpen} id={helpId} />
     </fieldset>
