@@ -176,7 +176,8 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
               next[s.slot] = await fetchWardrobeTextureBlob(
                 token,
                 characterId,
-                s.slot
+                s.slot,
+                s.updated_at ?? Date.now()
               );
             } catch {
               /* leave empty */

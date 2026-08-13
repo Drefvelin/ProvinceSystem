@@ -750,6 +750,8 @@ export type WardrobeSlot = {
   apply_pending?: boolean;
   has_signature?: boolean;
   signed?: boolean;
+  /** Used to bust browser cache on texture preview fetches. */
+  updated_at?: string | number | null;
   texture_url?: string | null;
 };
 
@@ -1003,13 +1005,18 @@ export async function clearPendingCreateWardrobe(
 export async function fetchWardrobeTextureBlob(
   sessionToken: string,
   characterId: string,
-  slot: string
+  slot: string,
+  /** Optional bust token (e.g. slot updated_at); defaults to now. */
+  cacheBust?: string | number | null
 ): Promise<string> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
+  const bust = encodeURIComponent(
+    String(cacheBust != null && cacheBust !== "" ? cacheBust : Date.now())
+  );
   const res = await apiFetch(
-    `${getApiBase()}/characters/${id}/wardrobe/${s}/texture`,
-    { headers: authHeaders(sessionToken) }
+    `${getApiBase()}/characters/${id}/wardrobe/${s}/texture?v=${bust}`,
+    { headers: authHeaders(sessionToken), cache: "no-store" }
   );
   if (!res.ok) {
     const data = await parseJson(res);

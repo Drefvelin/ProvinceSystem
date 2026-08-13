@@ -679,6 +679,7 @@ def _build_wardrobe_payload(
             "apply_pending": bool(row and int(row.get("apply_pending") or 0)),
             "has_signature": has_sig,
             "signed": has_sig,
+            "updated_at": (row.get("updated_at") if row else None),
             "texture_url": (
                 f"/characters/{cid}/wardrobe/{slot}/texture" if filled else None
             ),

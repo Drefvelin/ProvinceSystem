@@ -492,11 +492,17 @@ def get_character_wardrobe_texture(
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
-    return FileResponse(
+    response = FileResponse(
         path,
         media_type="image/png",
         filename=f"{slot}.png",
     )
+    # Same path is reused on re-upload; never let browsers keep an old PNG.
+    response.headers["Cache-Control"] = (
+        "no-store, no-cache, must-revalidate, max-age=0"
+    )
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 
 @characters_router.post("/{character_id}/wardrobe/{slot}")
