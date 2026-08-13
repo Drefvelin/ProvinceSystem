@@ -31,6 +31,78 @@ def _tables(conn: sqlite3.Connection) -> set[str]:
     return {row["name"] for row in rows}
 
 
+def _migrate_character_roster_realm(conn: sqlite3.Connection) -> None:
+    if "character_roster" not in _tables(conn):
+        return
+    roster_cols = _column_names(conn, "character_roster")
+    if "wardrobe_active_slot" not in roster_cols:
+        conn.execute(
+            "ALTER TABLE character_roster "
+            "ADD COLUMN wardrobe_active_slot TEXT"
+        )
+    roster_cols = _column_names(conn, "character_roster")
+    if "realm_id" not in roster_cols:
+        # SQLite cannot ALTER PRIMARY KEY — rebuild with realm_id.
+        conn.execute("ALTER TABLE character_roster RENAME TO character_roster_old")
+        conn.execute(
+            """
+            CREATE TABLE character_roster (
+                player_uuid TEXT NOT NULL,
+                realm_id TEXT NOT NULL DEFAULT 'main',
+                character_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL,
+                race TEXT,
+                class TEXT,
+                created_at TEXT,
+                updated_at TEXT NOT NULL,
+                kit_status TEXT,
+                kit_statuses_json TEXT,
+                sheet_json TEXT,
+                wardrobe_active_slot TEXT,
+                PRIMARY KEY (player_uuid, realm_id, character_id)
+            )
+            """
+        )
+        old_cols = _column_names(conn, "character_roster_old")
+        has_kit = "kit_status" in old_cols
+        has_statuses = "kit_statuses_json" in old_cols
+        has_sheet = "sheet_json" in old_cols
+        has_wardrobe = "wardrobe_active_slot" in old_cols
+        conn.execute(
+            f"""
+            INSERT INTO character_roster (
+                player_uuid, realm_id, character_id, name, status, race, class,
+                created_at, updated_at, kit_status, kit_statuses_json,
+                sheet_json, wardrobe_active_slot
+            )
+            SELECT
+                player_uuid,
+                'main',
+                character_id,
+                name,
+                status,
+                race,
+                class,
+                created_at,
+                updated_at,
+                {"kit_status" if has_kit else "NULL"},
+                {"kit_statuses_json" if has_statuses else "NULL"},
+                {"sheet_json" if has_sheet else "NULL"},
+                {"wardrobe_active_slot" if has_wardrobe else "NULL"}
+            FROM character_roster_old
+            """
+        )
+        conn.execute("DROP TABLE character_roster_old")
+    if "realm_id" in _column_names(conn, "character_roster"):
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
+            ON character_roster(player_uuid, realm_id)
+            """
+        )
+
+
 def migrate() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SKINS_DIR.mkdir(parents=True, exist_ok=True)
@@ -271,12 +343,6 @@ def migrate() -> None:
         )
         conn.execute(
             """
-            CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
-            ON character_roster(player_uuid, realm_id)
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE IF NOT EXISTS character_player_meta (
                 player_uuid TEXT PRIMARY KEY,
                 max_alive_characters INTEGER,
@@ -340,6 +406,7 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE character_roster ADD COLUMN sheet_json TEXT"
             )
+        _migrate_character_roster_realm(conn)
         # Legacy NOT NULL on max_alive_characters breaks age-only upserts.
         max_col = next(
             (
@@ -529,78 +596,6 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE character_create_wardrobe ADD COLUMN display_name TEXT"
             )
-        roster_cols = _column_names(conn, "character_roster")
-        if "wardrobe_active_slot" not in roster_cols:
-            conn.execute(
-                "ALTER TABLE character_roster "
-                "ADD COLUMN wardrobe_active_slot TEXT"
-            )
-        roster_cols = _column_names(conn, "character_roster")
-        if "realm_id" not in roster_cols:
-            # SQLite cannot ALTER PRIMARY KEY — rebuild with realm_id.
-            conn.execute("ALTER TABLE character_roster RENAME TO character_roster_old")
-            conn.execute(
-                """
-                CREATE TABLE character_roster (
-                    player_uuid TEXT NOT NULL,
-                    realm_id TEXT NOT NULL DEFAULT 'main',
-                    character_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    race TEXT,
-                    class TEXT,
-                    created_at TEXT,
-                    updated_at TEXT NOT NULL,
-                    kit_status TEXT,
-                    kit_statuses_json TEXT,
-                    sheet_json TEXT,
-                    wardrobe_active_slot TEXT,
-                    PRIMARY KEY (player_uuid, realm_id, character_id)
-                )
-                """
-            )
-            old_cols = _column_names(conn, "character_roster_old")
-            has_kit = "kit_status" in old_cols
-            has_statuses = "kit_statuses_json" in old_cols
-            has_sheet = "sheet_json" in old_cols
-            has_wardrobe = "wardrobe_active_slot" in old_cols
-            conn.execute(
-                f"""
-                INSERT INTO character_roster (
-                    player_uuid, realm_id, character_id, name, status, race, class,
-                    created_at, updated_at, kit_status, kit_statuses_json,
-                    sheet_json, wardrobe_active_slot
-                )
-                SELECT
-                    player_uuid,
-                    'main',
-                    character_id,
-                    name,
-                    status,
-                    race,
-                    class,
-                    created_at,
-                    updated_at,
-                    {"kit_status" if has_kit else "NULL"},
-                    {"kit_statuses_json" if has_statuses else "NULL"},
-                    {"sheet_json" if has_sheet else "NULL"},
-                    {"wardrobe_active_slot" if has_wardrobe else "NULL"}
-                FROM character_roster_old
-                """
-            )
-            conn.execute("DROP TABLE character_roster_old")
-            conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
-                ON character_roster(player_uuid, realm_id)
-                """
-            )
-        conn.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_character_roster_player
-            ON character_roster(player_uuid)
-            """
-        )
         meta_cols = _column_names(conn, "character_player_meta")
         if "wardrobe_skin_slots" not in meta_cols:
             conn.execute(

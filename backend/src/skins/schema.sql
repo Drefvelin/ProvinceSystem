@@ -159,9 +159,6 @@ CREATE TABLE IF NOT EXISTS lore_item_customisations (
     PRIMARY KEY (player_uuid, character_id, kit_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_lore_item_customisations_realm_state
-ON lore_item_customisations(realm_id, state);
-
 CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
     player_uuid TEXT NOT NULL,
     character_id TEXT NOT NULL,
