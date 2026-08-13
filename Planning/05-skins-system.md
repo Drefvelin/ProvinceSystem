@@ -23,10 +23,10 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 | `large_bow` | same four fields | **32×32** | Large bow thin models + locked display |
 | `crossbow` | bow four + `charged` | **16×16** | CROSSBOW + `generate: true` |
 | `item` | — | — | **Disabled** for upload (no use yet) |
-| `item_3d` | `texture` + `model` | PNG ≤ 2 MiB; JSON ≤ 512 KiB; required `display` after autofill | `generate: false` + `model_path` |
-| `shield` | `texture` + `model` (one mesh) | Same 3D caps | ArmourShop clones model + locked **round blocking** display Δ |
-| `helmet_3d` | `texture` + `model` | Same 3D caps; `head` required | `generate: false` + `model_path`; `set: helmets` |
-| `gun` | `texture` + `carry_model` + `reload_model` + `aim_model` | Same 3D caps; display as `item_3d` per model | IA STONE_HOE×2 + CROSSBOW; **GaG** `skins.yml` `ia.…`; shop `gunskin({id})` |
+| `item_3d` | `texture` + `model` | Combined **texture+model** ≤ ArmourShop `max-3d-pair-bytes` (default **30720** via catalog entitlements); absolute PNG ≤ 2 MiB / JSON ≤ 512 KiB still apply | `generate: false` + `model_path` |
+| `shield` | `texture` + `model` (one mesh) | Same pair budget (blocking clone is not a second budget) | ArmourShop clones model + locked **round blocking** display Δ |
+| `helmet_3d` | `texture` + `model` | Same pair budget; `head` required | `generate: false` + `model_path`; `set: helmets` |
+| `gun` | `texture` + `carry_model` + `reload_model` + `aim_model` | Shared texture checked **with each** model (three pair checks); same default budget | IA STONE_HOE×2 + CROSSBOW; **GaG** `skins.yml` `ia.…`; shop `gunskin({id})` |
 | `book` | `unsigned` + `signed` | Both **16×16** | Disk `{id}_unsigned.png` / `{id}_signed.png`; `base_set: books`; IA `{slug}` (`WRITABLE_BOOK`) + `{slug}_signed` (`WRITTEN_BOOK`); shop lists `{slug}` only; sign → `{slug}_signed` ([step-28](./batches/step-28/00-index.md), [10](./10-armourshop-itemsadder.md)) |
 
 **Enabled upload kinds:** `armor_set`, `handheld`, `large_handheld`, `bow`, `large_bow`, `crossbow`, `item_3d`, `shield`, `helmet_3d`, `gun`, **`book` (Step 28)**.  
@@ -185,7 +185,8 @@ Compose: mount `backend/src/data` like `input` / `output`.
 - `crossbow`: five fields (bow four + `charged`), all 16×16.
 - `book`: both `unsigned` + `signed` PNGs, each **16×16**; `base_set` must be `books`; no model; dup `texture_hash` from **unsigned** bytes ([step-28](./batches/step-28/00-index.md)).
 - `base_set`: required for enabled **non-armor** kinds; must match kind allowlist ([step-8](./batches/step-8/00-index.md) + [step-28](./batches/step-28/00-index.md) for `books`); reject `kind=item`. Armor uses `tiers` instead (`base_set` ignored/null).
-- `item_3d` / `shield` (later): PNG + JSON; JSON parseable; required `display` keys present; combined size capped (default &lt; 30KB json+texture unless tier raises it); no path traversal in strings.
+- `item_3d` / `shield` / `helmet_3d` / `gun` / armor 3D helmets: PNG + JSON; JSON parseable; required `display` keys present; **combined texture+one JSON ≤ `max-3d-pair-bytes`** from ArmourShop `permission-groups.yml` (synced on catalog; default **30720**; gun checks texture with each of carry/reload/aim); no path traversal in strings.
+- `name_colours`: length capped by player ArmourShop rank stops (same LP nodes as RPC), clamped to web hard cap 8; staff tokens get 8.
 - Never accept zip archives in MVP.
 
 ## Review preview (PNG sheets)

@@ -1,4 +1,5 @@
 import type { SkinsCatalog } from "./catalog";
+import { EMPTY_ENTITLEMENTS, parseEntitlements } from "./catalog";
 
 export type { CatalogCategory, CatalogScroll, SkinsCatalog } from "./catalog";
 
@@ -65,6 +66,8 @@ export type RedeemResult = {
   code_id: number;
   scope?: string;
   staff?: boolean;
+  name_colour_stops?: number;
+  max_3d_pair_bytes?: number;
 };
 
 export async function redeemCode(code: string): Promise<RedeemResult> {
@@ -100,6 +103,14 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
   const staffRaw = (data as Record<string, unknown> | null)?.staff;
   if (staffRaw === true || staffRaw === "true") {
     out.staff = true;
+  }
+  const stops = Number(body.name_colour_stops);
+  if (Number.isFinite(stops) && stops >= 0) {
+    out.name_colour_stops = Math.floor(stops);
+  }
+  const pair = Number(body.max_3d_pair_bytes);
+  if (Number.isFinite(pair) && pair >= 0) {
+    out.max_3d_pair_bytes = Math.floor(pair);
   }
   return out;
 }
@@ -253,6 +264,9 @@ export async function getCatalog(): Promise<SkinsCatalog> {
   return {
     categories: Array.isArray(body.categories) ? body.categories : [],
     scrolls: Array.isArray(body.scrolls) ? body.scrolls : [],
+    entitlements: body.entitlements
+      ? parseEntitlements(body.entitlements)
+      : EMPTY_ENTITLEMENTS,
     updated_at:
       typeof body.updated_at === "string" ? body.updated_at : null,
   };

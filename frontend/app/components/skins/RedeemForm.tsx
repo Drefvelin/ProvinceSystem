@@ -31,6 +31,12 @@ export default function RedeemForm({ onRedeemed }: Props) {
         expires_at: result.expires_at,
         ...(result.staff ? { staff: true as const } : {}),
         ...(result.scope ? { scope: result.scope } : {}),
+        ...(result.name_colour_stops !== undefined
+          ? { name_colour_stops: result.name_colour_stops }
+          : {}),
+        ...(result.max_3d_pair_bytes !== undefined
+          ? { max_3d_pair_bytes: result.max_3d_pair_bytes }
+          : {}),
       };
       setSession(session);
       onRedeemed(session);

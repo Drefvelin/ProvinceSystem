@@ -45,6 +45,7 @@ from src.skins.moderation import (
     record_warning,
 )
 from src.skins.catalog import CatalogError, get_catalog, replace_catalog
+from src.skins.entitlements import PlayerMetaError, upsert_player_meta
 from src.skins.naming import ARMOR_FIELDS, SlugError
 from src.skins.notifications import (
     NotificationError,
@@ -759,6 +760,13 @@ def plugin_applied(
 class CatalogBody(BaseModel):
     categories: list[dict] = Field(default_factory=list)
     scrolls: list[dict] = Field(default_factory=list)
+    entitlements: dict | None = None
+
+
+class PlayerMetaBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    name_colour_stops: int = 0
+    max_3d_pair_bytes: int = 0
 
 
 @skins_router.put("/plugin/catalog")
@@ -779,6 +787,19 @@ def plugin_put_catalog(
         "scrolls": result["scrolls_count"],
         "updated_at": result["updated_at"],
     }
+
+
+@skins_router.put("/plugin/player-meta")
+def plugin_put_player_meta(
+    body: PlayerMetaBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """ArmourShop upsert resolved skin-upload entitlements for a player."""
+    _require_plugin(x_plugin_key)
+    try:
+        return upsert_player_meta(body.model_dump())
+    except PlayerMetaError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @skins_router.get("/catalog")

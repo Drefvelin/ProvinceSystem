@@ -7,6 +7,10 @@ export type SkinsSession = {
   /** True when code scope is skin_staff. */
   staff?: boolean;
   scope?: string;
+  /** Rank colour stops for name picker (clamped by API to web hard cap). */
+  name_colour_stops?: number;
+  /** Combined texture+model byte budget for 3D kinds. */
+  max_3d_pair_bytes?: number;
 };
 
 type StoredSession = SkinsSession & {
@@ -15,6 +19,12 @@ type StoredSession = SkinsSession & {
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof sessionStorage !== "undefined";
+}
+
+function readNonNegInt(raw: unknown): number | undefined {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return Math.floor(n);
 }
 
 function readStored(): StoredSession | null {
@@ -37,6 +47,10 @@ function readStored(): StoredSession | null {
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
     }
+    const stops = readNonNegInt(parsed.name_colour_stops);
+    if (stops !== undefined) out.name_colour_stops = stops;
+    const pair = readNonNegInt(parsed.max_3d_pair_bytes);
+    if (pair !== undefined) out.max_3d_pair_bytes = pair;
     const lastId =
       typeof parsed.last_submission_id === "string"
         ? parsed.last_submission_id.trim()
@@ -65,6 +79,12 @@ export function getSession(): SkinsSession | null {
   };
   if (stored.staff) out.staff = true;
   if (stored.scope) out.scope = stored.scope;
+  if (stored.name_colour_stops !== undefined) {
+    out.name_colour_stops = stored.name_colour_stops;
+  }
+  if (stored.max_3d_pair_bytes !== undefined) {
+    out.max_3d_pair_bytes = stored.max_3d_pair_bytes;
+  }
   return out;
 }
 
@@ -96,6 +116,12 @@ export function setSession(session: SkinsSession): void {
   };
   if (session.staff) stored.staff = true;
   if (session.scope) stored.scope = session.scope;
+  if (session.name_colour_stops !== undefined) {
+    stored.name_colour_stops = session.name_colour_stops;
+  }
+  if (session.max_3d_pair_bytes !== undefined) {
+    stored.max_3d_pair_bytes = session.max_3d_pair_bytes;
+  }
   writeStored(stored);
 }
 

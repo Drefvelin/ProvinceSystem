@@ -95,6 +95,8 @@ function StageBody({
   wardrobeDraftNames,
   onWardrobeDraftNamesChange,
   wardrobeSkinSlots = 1,
+  sessionToken,
+  onWardrobeAutoMaskedChange,
 }: {
   stage: CatalogStage;
   draft: WizardDraft;
@@ -109,6 +111,8 @@ function StageBody({
   wardrobeDraftNames: WardrobeDraftNames;
   onWardrobeDraftNamesChange: (next: WardrobeDraftNames) => void;
   wardrobeSkinSlots?: number;
+  sessionToken: string;
+  onWardrobeAutoMaskedChange: (value: boolean) => void;
 }) {
   const type = String(stage.type || "").toLowerCase();
   const target = String(stage.target || "").toLowerCase();
@@ -130,10 +134,12 @@ function StageBody({
           mode="draft"
           slotLimits={catalog.slot_limits}
           swappableSlots={wardrobeSkinSlots}
+          sessionToken={sessionToken}
           draftFiles={wardrobeDraft}
           draftNames={wardrobeDraftNames}
           onDraftFilesChange={onWardrobeDraftChange}
           onDraftNamesChange={onWardrobeDraftNamesChange}
+          onAutoMaskedChange={onWardrobeAutoMaskedChange}
         />
       </div>
     );
@@ -672,6 +678,7 @@ export default function CreationWizard({
   const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraftFiles>({});
   const [wardrobeDraftNames, setWardrobeDraftNames] =
     useState<WardrobeDraftNames>({});
+  const [wardrobeAutoMasked, setWardrobeAutoMasked] = useState(false);
   const [pendingCreateId, setPendingCreateId] = useState<string | null>(null);
   const stages = useMemo(
     () =>
@@ -775,14 +782,28 @@ export default function CreationWizard({
       const slots = Object.entries(wardrobeDraft).filter(
         ([, file]) => file instanceof File
       ) as [string, File][];
+      const order = ["base", "extra_1", "extra_2", "masked"] as const;
+      slots.sort(
+        (a, b) =>
+          order.indexOf(a[0] as (typeof order)[number]) -
+          order.indexOf(b[0] as (typeof order)[number])
+      );
       for (const [slot, file] of slots) {
+        if (slot === "masked" && wardrobeAutoMasked) {
+          // Server composes masked from base when create_masked is set
+          continue;
+        }
         setError(`Signing skin (${slot})…`);
         await uploadPendingCreateWardrobe(
           sessionToken,
           createId,
           slot,
           file,
-          wardrobeDraftNames[slot as keyof WardrobeDraftNames] ?? null
+          wardrobeDraftNames[slot as keyof WardrobeDraftNames] ?? null,
+          {
+            createMasked:
+              slot === "base" && wardrobeAutoMasked,
+          }
         );
       }
       setError(null);
@@ -861,6 +882,8 @@ export default function CreationWizard({
               wardrobeDraftNames={wardrobeDraftNames}
               onWardrobeDraftNamesChange={setWardrobeDraftNames}
               wardrobeSkinSlots={wardrobeSkinSlots}
+              sessionToken={sessionToken}
+              onWardrobeAutoMaskedChange={setWardrobeAutoMasked}
             />
           </div>
         </div>

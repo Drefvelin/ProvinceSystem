@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CharactersApiError,
   clearWardrobeSlot,
+  fetchMaskedTemplateBlob,
   fetchWardrobeTextureBlob,
   getWardrobe,
   renameWardrobeSlot,
@@ -15,6 +16,7 @@ import {
   type WardrobeResponse,
   type WardrobeSlot,
 } from "../../../lib/characters/api";
+import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
 import { lockLabelForSlot } from "../../../lib/characters/wardrobeRanks";
 import WardrobeSlotFrame from "./WardrobeSlotFrame";
 import WardrobeSlotModal from "./WardrobeSlotModal";
@@ -45,10 +47,14 @@ type DraftProps = {
   slotLimits?: SlotLimits;
   /** Player swappable slot count (1–3). */
   swappableSlots?: number;
+  /** For fetching masked template during auto-compose. */
+  sessionToken?: string;
   draftFiles: WardrobeDraftFiles;
   draftNames: WardrobeDraftNames;
   onDraftFilesChange: (next: WardrobeDraftFiles) => void;
   onDraftNamesChange: (next: WardrobeDraftNames) => void;
+  /** True when last base save used create-masked (for pending upload flag). */
+  onAutoMaskedChange?: (value: boolean) => void;
 };
 
 export type WardrobeEditorProps = LiveProps | DraftProps;
@@ -58,6 +64,63 @@ function slotUnlocked(slot: string, swappable: number): boolean {
   if (slot === "extra_1") return swappable >= 2;
   if (slot === "extra_2") return swappable >= 3;
   return false;
+}
+
+/** Swappable fill order: Skin 2 needs Base, Skin 3 needs Skin 2. */
+function fillOrderOk(
+  slot: string,
+  filled: (id: string) => boolean
+): { ok: boolean; message?: string } {
+  if (slot === "extra_1" && !filled("base")) {
+    return { ok: false, message: "Upload Base before Skin 2" };
+  }
+  if (slot === "extra_2" && !filled("extra_1")) {
+    return { ok: false, message: "Upload Skin 2 before Skin 3" };
+  }
+  return { ok: true };
+}
+
+const SWAPPABLE_ORDER = ["base", "extra_1", "extra_2"] as const;
+
+function compactDraftSwappable(
+  files: WardrobeDraftFiles,
+  names: WardrobeDraftNames,
+  cleared: string
+): { files: WardrobeDraftFiles; names: WardrobeDraftNames } {
+  if (cleared === "masked") {
+    const nextFiles = { ...files, masked: null };
+    const nextNames = { ...names };
+    delete nextNames.masked;
+    return { files: nextFiles, names: nextNames };
+  }
+  const packed: { id: string; file: File; name?: string }[] = [];
+  for (const id of SWAPPABLE_ORDER) {
+    if (id === cleared) continue;
+    const f = files[id];
+    if (f instanceof File) {
+      packed.push({
+        id,
+        file: f,
+        name: names[id],
+      });
+    }
+  }
+  const nextFiles: WardrobeDraftFiles = {
+    ...files,
+    base: null,
+    extra_1: null,
+    extra_2: null,
+  };
+  const nextNames: WardrobeDraftNames = { ...names };
+  delete nextNames.base;
+  delete nextNames.extra_1;
+  delete nextNames.extra_2;
+  packed.forEach((entry, i) => {
+    const dest = SWAPPABLE_ORDER[i];
+    nextFiles[dest] = entry.file;
+    if (entry.name) nextNames[dest] = entry.name;
+  });
+  return { files: nextFiles, names: nextNames };
 }
 
 function emptySlots(swappable: number): WardrobeSlot[] {
@@ -285,15 +348,55 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     file: File | null;
     equip: boolean;
     displayName: string | null;
+    createMasked: boolean;
   }) {
     if (!modalSlot) return;
     if (isDraft) {
-      if (input.file) {
-        props.onDraftFilesChange({
-          ...props.draftFiles,
-          [modalSlot]: input.file,
-        });
+      const order = fillOrderOk(modalSlot, (id) =>
+        Boolean(props.draftFiles[id as keyof WardrobeDraftFiles])
+      );
+      if (input.file && !order.ok) {
+        setModalError(order.message || "Upload earlier skins first");
+        return;
       }
+      let nextFiles = { ...props.draftFiles };
+      if (input.file) {
+        nextFiles = { ...nextFiles, [modalSlot]: input.file };
+        if (modalSlot === "base" && input.createMasked) {
+          const token = props.sessionToken;
+          if (!token) {
+            setModalError("Session required to create masked skin");
+            return;
+          }
+          try {
+            setSaving(true);
+            const template = await fetchMaskedTemplateBlob(token);
+            const maskedFile = await composeMaskedFromBase(
+              input.file,
+              template
+            );
+            nextFiles = { ...nextFiles, masked: maskedFile };
+            props.onAutoMaskedChange?.(true);
+          } catch (err) {
+            setModalError(
+              err instanceof CharactersApiError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : "Could not create masked skin"
+            );
+            setSaving(false);
+            return;
+          } finally {
+            setSaving(false);
+          }
+        } else if (modalSlot === "base" && !input.createMasked) {
+          props.onAutoMaskedChange?.(false);
+        } else if (modalSlot === "masked") {
+          props.onAutoMaskedChange?.(false);
+        }
+      }
+      props.onDraftFilesChange(nextFiles);
       const nextNames = { ...props.draftNames };
       if (input.displayName) {
         nextNames[modalSlot as keyof WardrobeDraftNames] = input.displayName;
@@ -310,6 +413,13 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       setModalError("UI dev mode cannot upload.");
       return;
     }
+    const order = fillOrderOk(modalSlot, (id) =>
+      Boolean(slotsById.get(id)?.filled)
+    );
+    if (input.file && !order.ok) {
+      setModalError(order.message || "Upload earlier skins first");
+      return;
+    }
     setSaving(true);
     setModalError(null);
     try {
@@ -320,7 +430,8 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           characterId,
           modalSlot,
           input.file,
-          input.displayName
+          input.displayName,
+          { createMasked: input.createMasked }
         );
         if (input.equip && modalSlot !== "masked") {
           w = await setWardrobeActive(sessionToken, characterId, modalSlot);
@@ -354,13 +465,16 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
   async function handleClear() {
     if (!modalSlot) return;
     if (isDraft) {
-      props.onDraftFilesChange({
-        ...props.draftFiles,
-        [modalSlot]: null,
-      });
-      const nextNames = { ...props.draftNames };
-      delete nextNames[modalSlot as keyof WardrobeDraftNames];
-      props.onDraftNamesChange(nextNames);
+      const compacted = compactDraftSwappable(
+        props.draftFiles,
+        props.draftNames,
+        modalSlot
+      );
+      props.onDraftFilesChange(compacted.files);
+      props.onDraftNamesChange(compacted.names);
+      if (modalSlot === "base" || modalSlot === "masked") {
+        props.onAutoMaskedChange?.(false);
+      }
       setModalSlot(null);
       return;
     }
@@ -384,6 +498,28 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function tryOpenSlot(id: string) {
+    setModalError(null);
+    if (!slotUnlocked(id, isDraft ? swappable : liveSwappable)) {
+      setModalSlot(id);
+      return;
+    }
+    const filled = (sid: string) =>
+      isDraft
+        ? Boolean(props.draftFiles[sid as keyof WardrobeDraftFiles])
+        : Boolean(slotsById.get(sid)?.filled);
+    // Opening empty extra out of order → block; opening filled is ok (edit/clear)
+    if (!filled(id)) {
+      const order = fillOrderOk(id, filled);
+      if (!order.ok) {
+        setError(order.message || "Upload earlier skins first");
+        return;
+      }
+    }
+    setError(null);
+    setModalSlot(id);
   }
 
   async function handleEquip(slot: string) {
@@ -443,10 +579,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
                 textureSrc={textures[id] || null}
                 lockRuns={lock?.runs}
                 lockPlain={lock?.plain}
-                onOpen={() => {
-                  setModalError(null);
-                  setModalSlot(id);
-                }}
+                onOpen={() => tryOpenSlot(id)}
                 onEquip={
                   !isDraft &&
                   slot.filled &&
@@ -501,6 +634,17 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           !isDraft &&
           modalSlot !== "masked" &&
           (!activeSlot || activeSlot === modalSlot)
+        }
+        canCreateMasked={modalSlot === "base"}
+        defaultCreateMasked={
+          modalSlot === "base" && !Boolean(slotsById.get("masked")?.filled)
+        }
+        sessionToken={
+          isDraft
+            ? props.sessionToken
+            : props.mode === "live"
+              ? props.sessionToken
+              : null
         }
         existingTextureSrc={modalSlot ? textures[modalSlot] || null : null}
         initialDisplayName={

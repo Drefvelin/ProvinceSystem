@@ -65,7 +65,82 @@ def _normalize_payload(raw: dict[str, Any]) -> dict[str, Any]:
         label = str(row.get("label") or sid).strip() or sid
         scrolls.append({"id": sid, "label": label})
 
-    return {"categories": categories, "scrolls": scrolls}
+    entitlements = _normalize_entitlements(raw.get("entitlements"))
+    return {
+        "categories": categories,
+        "scrolls": scrolls,
+        "entitlements": entitlements,
+    }
+
+
+def _normalize_entitlements(raw: Any) -> dict[str, Any]:
+    """Optional entitlements block from ArmourShop permission-groups sync."""
+    empty = {
+        "defaults": {"name_colour_stops": 0, "max_3d_pair_bytes": 0},
+        "groups": [],
+    }
+    if raw is None:
+        return empty
+    if not isinstance(raw, dict):
+        raise CatalogError("entitlements must be an object")
+
+    defaults_in = raw.get("defaults")
+    if defaults_in is None:
+        defaults_in = {}
+    if not isinstance(defaults_in, dict):
+        raise CatalogError("entitlements.defaults must be an object")
+
+    def _int_field(obj: dict[str, Any], key: str, default: int = 0) -> int:
+        if key not in obj or obj[key] is None:
+            return default
+        try:
+            value = int(obj[key])
+        except (TypeError, ValueError) as e:
+            raise CatalogError(f"entitlements field '{key}' must be an integer") from e
+        if value < 0:
+            raise CatalogError(f"entitlements field '{key}' must be >= 0")
+        return value
+
+    defaults = {
+        "name_colour_stops": _int_field(defaults_in, "name_colour_stops"),
+        "max_3d_pair_bytes": _int_field(defaults_in, "max_3d_pair_bytes"),
+    }
+
+    groups_in = raw.get("groups")
+    if groups_in is None:
+        groups_in = []
+    if not isinstance(groups_in, list):
+        raise CatalogError("entitlements.groups must be a list")
+
+    groups: list[dict[str, Any]] = []
+    for i, row in enumerate(groups_in):
+        if not isinstance(row, dict):
+            raise CatalogError(f"entitlements.groups[{i}] must be an object")
+        gid = str(row.get("id") or "").strip()
+        if not gid:
+            raise CatalogError(f"entitlements.groups[{i}].id is required")
+        try:
+            tier = int(row.get("tier", i))
+        except (TypeError, ValueError) as e:
+            raise CatalogError(
+                f"entitlements.groups[{i}].tier must be an integer"
+            ) from e
+        groups.append(
+            {
+                "id": gid,
+                "tier": tier,
+                "permission": str(row.get("permission") or "").strip(),
+                "display_name": str(row.get("display_name") or gid).strip() or gid,
+                "name_colour_stops": _int_field(
+                    row, "name_colour_stops", defaults["name_colour_stops"]
+                ),
+                "max_3d_pair_bytes": _int_field(
+                    row, "max_3d_pair_bytes", defaults["max_3d_pair_bytes"]
+                ),
+            }
+        )
+
+    return {"defaults": defaults, "groups": groups}
 
 
 def replace_catalog(raw: dict[str, Any]) -> dict[str, Any]:
@@ -112,6 +187,10 @@ def get_catalog() -> dict[str, Any]:
         return {
             "categories": [],
             "scrolls": [],
+            "entitlements": {
+                "defaults": {"name_colour_stops": 0, "max_3d_pair_bytes": 0},
+                "groups": [],
+            },
             "updated_at": None,
         }
 
@@ -129,9 +208,18 @@ def get_catalog() -> dict[str, Any]:
     if not isinstance(scrolls, list):
         scrolls = []
 
+    try:
+        entitlements = _normalize_entitlements(data.get("entitlements"))
+    except CatalogError:
+        entitlements = {
+            "defaults": {"name_colour_stops": 0, "max_3d_pair_bytes": 0},
+            "groups": [],
+        }
+
     return {
         "categories": categories,
         "scrolls": scrolls,
+        "entitlements": entitlements,
         "updated_at": row["updated_at"],
     }
 

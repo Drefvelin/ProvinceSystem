@@ -232,6 +232,12 @@ def redeem_code(plaintext: str) -> dict:
         )
         conn.commit()
 
+    from .entitlements import resolve_skin_entitlements
+
+    entitlements = resolve_skin_entitlements(
+        row["player_uuid"],
+        staff=_is_staff_scope(scope),
+    )
     return {
         "session_token": session_token,
         "player_uuid": row["player_uuid"],
@@ -239,6 +245,8 @@ def redeem_code(plaintext: str) -> dict:
         "code_id": row["id"],
         "scope": scope,
         "staff": _is_staff_scope(scope),
+        "name_colour_stops": entitlements["name_colour_stops"],
+        "max_3d_pair_bytes": entitlements["max_3d_pair_bytes"],
     }
 
 

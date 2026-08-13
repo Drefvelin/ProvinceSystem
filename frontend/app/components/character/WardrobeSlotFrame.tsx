@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { LoreRun } from "../../../lib/characters/lorePreview";
 import type { WardrobeSlot } from "../../../lib/characters/api";
 import FormattedMcRuns from "../shared/FormattedMcRuns";
@@ -31,6 +32,7 @@ export default function WardrobeSlotFrame({
   const locked = !slot.unlocked;
   const pending = Boolean(slot.apply_pending) && slot.filled && !locked;
   const canOpen = slot.unlocked;
+  const [buzz, setBuzz] = useState(false);
   const showEquip =
     Boolean(onEquip) &&
     slot.unlocked &&
@@ -39,17 +41,28 @@ export default function WardrobeSlotFrame({
     !active &&
     !pending;
 
+  function onFrameClick() {
+    if (locked) {
+      setBuzz(true);
+      window.setTimeout(() => setBuzz(false), 360);
+      return;
+    }
+    if (canOpen) onOpen();
+  }
+
   return (
-    <div className="flex w-[7.5rem] flex-col gap-2 sm:w-36">
+    <div
+      className={`flex w-[7.5rem] flex-col gap-2 sm:w-36 ${
+        buzz ? "char-option-shake" : ""
+      }`}
+    >
       <button
         type="button"
-        disabled={!canOpen}
-        onClick={() => {
-          if (canOpen) onOpen();
-        }}
+        disabled={pending && !locked}
+        onClick={onFrameClick}
         className={`relative aspect-[3/5] w-full overflow-hidden rounded-sm border transition-colors ${
           locked
-            ? "cursor-not-allowed border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_78%,transparent)]"
+            ? "cursor-pointer border-[#c45c5c]/70 bg-[color-mix(in_srgb,#1a0c0c_78%,transparent)] hover:bg-[color-mix(in_srgb,#1a0c0c_88%,transparent)]"
             : pending
               ? "cursor-wait border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)]"
               : active

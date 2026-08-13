@@ -154,6 +154,16 @@ def migrate() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS armourshop_player_meta (
+                player_uuid TEXT PRIMARY KEY,
+                name_colour_stops INTEGER NOT NULL DEFAULT 0,
+                max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS creation_catalog (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 payload TEXT NOT NULL,

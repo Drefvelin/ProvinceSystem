@@ -129,6 +129,13 @@ CREATE TABLE IF NOT EXISTS armourshop_catalog (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS armourshop_player_meta (
+    player_uuid TEXT PRIMARY KEY,
+    name_colour_stops INTEGER NOT NULL DEFAULT 0,
+    max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS lore_item_customisations (
     player_uuid TEXT NOT NULL,
     character_id TEXT NOT NULL,

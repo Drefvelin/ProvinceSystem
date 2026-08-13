@@ -807,7 +807,8 @@ export async function uploadWardrobeSlot(
   characterId: string,
   slot: string,
   file: File,
-  displayName?: string | null
+  displayName?: string | null,
+  opts?: { createMasked?: boolean }
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -815,6 +816,9 @@ export async function uploadWardrobeSlot(
   form.append("texture", file, file.name || "skin.png");
   if (displayName !== undefined) {
     form.append("display_name", displayName == null ? "" : String(displayName));
+  }
+  if (opts?.createMasked) {
+    form.append("create_masked", "true");
   }
   const res = await apiFetch(
     `${getApiBase()}/characters/${id}/wardrobe/${s}`,
@@ -919,7 +923,8 @@ export async function uploadPendingCreateWardrobe(
   createId: string,
   slot: string,
   file: File,
-  displayName?: string | null
+  displayName?: string | null,
+  opts?: { createMasked?: boolean }
 ): Promise<{ ok: boolean; create_id: string; slot: string; signed?: boolean }> {
   const cid = encodeURIComponent(createId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -927,6 +932,9 @@ export async function uploadPendingCreateWardrobe(
   form.append("texture", file, file.name || "skin.png");
   if (displayName !== undefined) {
     form.append("display_name", displayName == null ? "" : String(displayName));
+  }
+  if (opts?.createMasked) {
+    form.append("create_masked", "true");
   }
   const res = await apiFetch(
     `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
@@ -949,6 +957,24 @@ export async function uploadPendingCreateWardrobe(
     slot: string;
     signed?: boolean;
   };
+}
+
+/** Fetch synced masked body template as a Blob (for client compose preview). */
+export async function fetchMaskedTemplateBlob(
+  sessionToken: string
+): Promise<Blob> {
+  const res = await apiFetch(
+    `${getApiBase()}/characters/wardrobe-template/masked`,
+    { headers: authHeaders(sessionToken) }
+  );
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new CharactersApiError(
+      detailMessage(data, `Masked template failed (${res.status})`),
+      res.status
+    );
+  }
+  return res.blob();
 }
 
 export async function clearPendingCreateWardrobe(

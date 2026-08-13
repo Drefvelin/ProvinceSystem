@@ -216,3 +216,72 @@ export async function assertFileSize(
     );
   }
 }
+
+function assertPairBytes(
+  texture: File | undefined,
+  model: File | undefined,
+  maxBytes: number,
+  label: string
+): void {
+  const total = (texture?.size ?? 0) + (model?.size ?? 0);
+  const cap = Math.max(0, Math.floor(maxBytes));
+  if (total > cap) {
+    throw new Error(
+      `${label}: texture + model is ${total} bytes (limit ${cap} bytes)`
+    );
+  }
+}
+
+/**
+ * Client check for ArmourShop max-3d-pair-bytes (mirror of BE size_limits).
+ */
+export function assert3dPairBudgets(
+  kind: SkinKind,
+  files: Record<string, File>,
+  maxBytes: number,
+  helmet3dTiers?: string[]
+): void {
+  const needsBudget =
+    isModel3dKind(kind) ||
+    isGunKind(kind) ||
+    (kind === "armor_set" && Boolean(helmet3dTiers?.length));
+  if (!needsBudget) {
+    return;
+  }
+
+  const cap = Math.max(0, Math.floor(maxBytes));
+  if (cap <= 0) {
+    throw new Error("3D size limit unavailable — wait for catalog sync");
+  }
+
+  if (isModel3dKind(kind)) {
+    assertPairBytes(files.texture, files.model, cap, kind);
+    return;
+  }
+
+  if (isGunKind(kind)) {
+    for (const stem of ["carry_model", "reload_model", "aim_model"] as const) {
+      assertPairBytes(files.texture, files[stem], cap, `gun/${stem}`);
+    }
+    return;
+  }
+
+  if (kind === "armor_set" && helmet3dTiers?.length) {
+    for (const tier of helmet3dTiers) {
+      const t = (tier || "").trim();
+      if (!t) continue;
+      assertPairBytes(
+        files[`${t}_helmet_texture`],
+        files[`${t}_helmet_model`],
+        cap,
+        `armor_set/${t}_helmet`
+      );
+    }
+  }
+}
+
+/** Hint text when a pair budget is known from catalog/session. */
+export function pairBudgetHint(maxBytes: number | undefined): string {
+  if (!maxBytes || maxBytes <= 0) return "";
+  return `Each texture + model pair must be ≤ ${maxBytes} bytes.`;
+}

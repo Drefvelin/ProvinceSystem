@@ -63,6 +63,8 @@ export default function SkinsPage() {
           <UploadForm
             sessionToken={session.session_token}
             staff={session.staff === true}
+            nameColourStops={session.name_colour_stops}
+            max3dPairBytes={session.max_3d_pair_bytes}
           />
         </div>
       ) : (

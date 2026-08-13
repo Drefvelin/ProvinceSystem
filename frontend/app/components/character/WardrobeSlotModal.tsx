@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import {
+  CharactersApiError,
+  fetchMaskedTemplateBlob,
+} from "../../../lib/characters/api";
+import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
+import FancyCheckbox from "../skins/FancyCheckbox";
 import SkinMannequinPreview from "./SkinMannequinPreview";
 
 type Props = {
@@ -11,6 +17,12 @@ type Props = {
   filled: boolean;
   canEquip: boolean;
   defaultEquipOnSave: boolean;
+  /** Base slot only: offer create-masked checkbox. */
+  canCreateMasked?: boolean;
+  /** Default for create-masked (true when masked empty). */
+  defaultCreateMasked?: boolean;
+  /** Needed to load masked template for live preview. */
+  sessionToken?: string | null;
   existingTextureSrc: string | null;
   /** Current custom/default name shown in the field */
   initialDisplayName: string;
@@ -23,6 +35,7 @@ type Props = {
     file: File | null;
     equip: boolean;
     displayName: string | null;
+    createMasked: boolean;
   }) => void;
   onClear?: () => void;
 };
@@ -61,6 +74,9 @@ export default function WardrobeSlotModal({
   filled,
   canEquip,
   defaultEquipOnSave,
+  canCreateMasked = false,
+  defaultCreateMasked = false,
+  sessionToken = null,
   existingTextureSrc,
   initialDisplayName,
   namePlaceholder,
@@ -71,12 +87,17 @@ export default function WardrobeSlotModal({
   onClear,
 }: Props) {
   const titleId = useId();
+  const switchId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [localErr, setLocalErr] = useState<string | null>(null);
   const [model, setModel] = useState<ArmModel | null>(null);
   const [equipOnSave, setEquipOnSave] = useState(defaultEquipOnSave);
+  const [createMasked, setCreateMasked] = useState(defaultCreateMasked);
+  const [previewMode, setPreviewMode] = useState<"base" | "masked">("base");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [maskedPreviewUrl, setMaskedPreviewUrl] = useState<string | null>(null);
+  const [maskedPreviewBusy, setMaskedPreviewBusy] = useState(false);
   const [displayName, setDisplayName] = useState(initialDisplayName);
 
   useEffect(() => {
@@ -85,11 +106,21 @@ export default function WardrobeSlotModal({
     setLocalErr(null);
     setModel(null);
     setEquipOnSave(defaultEquipOnSave);
+    setCreateMasked(defaultCreateMasked);
+    setPreviewMode("base");
     setPreviewUrl(null);
+    setMaskedPreviewUrl(null);
+    setMaskedPreviewBusy(false);
     setDisplayName(initialDisplayName);
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(t);
-  }, [open, defaultEquipOnSave, slotId, initialDisplayName]);
+  }, [
+    open,
+    defaultEquipOnSave,
+    defaultCreateMasked,
+    slotId,
+    initialDisplayName,
+  ]);
 
   useEffect(() => {
     if (!file) {
@@ -100,6 +131,49 @@ export default function WardrobeSlotModal({
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  // Live compose masked preview when checkbox + file are ready
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    async function run() {
+      if (!createMasked || !file || !canCreateMasked || !sessionToken) {
+        setMaskedPreviewUrl(null);
+        setMaskedPreviewBusy(false);
+        if (!createMasked) setPreviewMode("base");
+        return;
+      }
+      setMaskedPreviewBusy(true);
+      try {
+        const template = await fetchMaskedTemplateBlob(sessionToken);
+        if (cancelled) return;
+        const composed = await composeMaskedFromBase(file, template);
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(composed);
+        setMaskedPreviewUrl(objectUrl);
+      } catch (err) {
+        if (cancelled) return;
+        setMaskedPreviewUrl(null);
+        setPreviewMode("base");
+        const msg =
+          err instanceof CharactersApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Could not preview masked skin";
+        setLocalErr(msg);
+      } finally {
+        if (!cancelled) setMaskedPreviewBusy(false);
+      }
+    }
+
+    void run();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [createMasked, file, canCreateMasked, sessionToken]);
 
   useEffect(() => {
     if (!open) return;
@@ -115,7 +189,12 @@ export default function WardrobeSlotModal({
 
   if (!open) return null;
 
-  const previewSource = previewUrl || existingTextureSrc;
+  const showMaskedToggle =
+    canCreateMasked && createMasked && Boolean(file);
+  const previewSource =
+    showMaskedToggle && previewMode === "masked" && maskedPreviewUrl
+      ? maskedPreviewUrl
+      : previewUrl || existingTextureSrc;
   const trimmedName = displayName.trim();
   const nameChanged =
     trimmedName !== String(initialDisplayName || "").trim();
@@ -128,6 +207,7 @@ export default function WardrobeSlotModal({
     setLocalErr(null);
     setFile(null);
     setModel(null);
+    setPreviewMode("base");
     if (!f) return;
     const err = await validatePng64(f);
     if (err) {
@@ -161,16 +241,74 @@ export default function WardrobeSlotModal({
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
           Upload a 64×64 PNG. Save signs the skin for in-game use.
         </p>
+        {slotId === "masked" ? (
+          <p className="mt-2 text-sm text-[var(--tfmc-stone)]">
+            Tip: Prefer matching your Base head (TAB still shows it). Or upload
+            Base with &quot;Create masked version&quot; to paste your head onto
+            the shared masked body.
+          </p>
+        ) : null}
 
         <div className="mt-4 flex justify-center">
-          <div className="h-56 w-36 overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]">
+          <div className="relative h-56 w-36 overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]">
             <SkinMannequinPreview
               source={previewSource}
               className="h-full w-full"
               onModelDetected={setModel}
             />
+            {showMaskedToggle && maskedPreviewBusy ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50 text-xs text-[var(--tfmc-mist)]">
+                Building masked…
+              </div>
+            ) : null}
           </div>
         </div>
+        {showMaskedToggle ? (
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm">
+            <span
+              className={
+                previewMode === "base"
+                  ? "text-[var(--tfmc-cream)]"
+                  : "text-[var(--tfmc-stone)]"
+              }
+            >
+              Base
+            </span>
+            <button
+              type="button"
+              id={switchId}
+              role="switch"
+              aria-checked={previewMode === "masked"}
+              aria-label="Preview masked version"
+              disabled={maskedPreviewBusy || !maskedPreviewUrl}
+              onClick={() =>
+                setPreviewMode((m) => (m === "base" ? "masked" : "base"))
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
+                previewMode === "masked"
+                  ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)]"
+                  : "border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,black)]"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`absolute top-0.5 left-0.5 rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
+                  previewMode === "masked" ? "translate-x-5" : "translate-x-0"
+                }`}
+                style={{ height: "1.125rem", width: "1.125rem" }}
+              />
+            </button>
+            <span
+              className={
+                previewMode === "masked"
+                  ? "text-[var(--tfmc-cream)]"
+                  : "text-[var(--tfmc-stone)]"
+              }
+            >
+              Masked
+            </span>
+          </div>
+        ) : null}
         {model ? (
           <p className="mt-2 text-center text-xs text-[var(--tfmc-stone)]">
             Model: {model === "slim" ? "slim" : "classic"}
@@ -208,14 +346,36 @@ export default function WardrobeSlotModal({
         </label>
 
         {canEquip ? (
-          <label className="mt-3 flex items-center gap-2 text-sm text-[var(--tfmc-mist)]">
-            <input
-              type="checkbox"
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm text-[var(--tfmc-cream)]">
+            <FancyCheckbox
               checked={equipOnSave}
               disabled={saving || !file}
-              onChange={(e) => setEquipOnSave(e.target.checked)}
+              onChange={setEquipOnSave}
             />
-            Equip on save
+            <span>Equip on save</span>
+          </label>
+        ) : null}
+
+        {canCreateMasked ? (
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm text-[var(--tfmc-cream)]">
+            <FancyCheckbox
+              checked={createMasked}
+              disabled={saving || !file}
+              onChange={(checked) => {
+                setCreateMasked(checked);
+                if (!checked) setPreviewMode("base");
+              }}
+            />
+            <span>
+              Create masked version
+              <span className="mt-0.5 block text-xs text-[var(--tfmc-mist)]">
+                Pastes this head onto the shared masked body
+                {defaultCreateMasked
+                  ? ""
+                  : " (replaces your current Masked skin)"}
+                .
+              </span>
+            </span>
           </label>
         ) : null}
 
@@ -257,6 +417,7 @@ export default function WardrobeSlotModal({
                 file,
                 equip: Boolean(file) && canEquip && equipOnSave,
                 displayName: name,
+                createMasked: Boolean(file) && canCreateMasked && createMasked,
               });
             }}
             className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-sm bg-[var(--tfmc-accent)] px-3 py-2 text-sm font-medium text-[var(--tfmc-ink)] transition-opacity disabled:opacity-50"

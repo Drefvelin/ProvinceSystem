@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSubmission, checkSubmissionConflict, getCatalog, SkinsApiError } from "../../../lib/skins/api";
 import type { SkinsCatalog } from "../../../lib/skins/catalog";
 import { filterStaffCategories } from "../../../lib/skins/catalog";
+import { DEV_CATALOG_ENTITLEMENTS } from "../../../lib/skins/entitlementsDev";
 import { setLastSubmissionId } from "../../../lib/skins/session";
 import {
   ARMOR_TIERS,
@@ -14,6 +15,7 @@ import {
   defaultBaseSet,
 } from "../../../lib/skins/baseSets";
 import {
+  assert3dPairBudgets,
   assertFileSize,
   expectedSizeForField,
   fileFieldsForKind,
@@ -22,6 +24,7 @@ import {
   isLargeTextureKind,
   isModel3dKind,
   isGunKind,
+  pairBudgetHint,
   sizeHint,
   ARMOR_BODY_FIELDS,
   type SkinKind,
@@ -81,6 +84,9 @@ type Props = {
   sessionToken: string;
   /** Staff curated lane — category/scroll required. */
   staff?: boolean;
+  /** From redeem / player meta (fallback: catalog defaults). */
+  nameColourStops?: number;
+  max3dPairBytes?: number;
 };
 
 type TierEntry = {
@@ -148,7 +154,12 @@ function acceptForField(field: string): string {
   return "image/png,.png";
 }
 
-export default function UploadForm({ sessionToken, staff = false }: Props) {
+export default function UploadForm({
+  sessionToken,
+  staff = false,
+  nameColourStops,
+  max3dPairBytes,
+}: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<SkinKind>("armor_set");
   const [baseSet, setBaseSet] = useState(defaultBaseSet("armor_set"));
@@ -196,11 +207,6 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
   }, [files.unsigned, files.signed]);
 
   useEffect(() => {
-    if (!staff) {
-      setCatalog(null);
-      setCatalogError(null);
-      return;
-    }
     let cancelled = false;
     setCatalogError(null);
     void getCatalog()
@@ -221,7 +227,23 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [staff]);
+  }, []);
+
+  const catalogDefaults = catalog?.entitlements?.defaults;
+  const resolvedColourStops =
+    nameColourStops !== undefined
+      ? nameColourStops
+      : catalogDefaults?.name_colour_stops ?? 0;
+  const resolvedPairBytes =
+    max3dPairBytes !== undefined && max3dPairBytes > 0
+      ? max3dPairBytes
+      : catalogDefaults?.max_3d_pair_bytes &&
+          catalogDefaults.max_3d_pair_bytes > 0
+        ? catalogDefaults.max_3d_pair_bytes
+        : process.env.NEXT_PUBLIC_CHARACTER_UI_DEV === "1"
+          ? DEV_CATALOG_ENTITLEMENTS.defaults.max_3d_pair_bytes
+          : 0;
+  const pairHint = pairBudgetHint(resolvedPairBytes);
 
   const fileFields = fileFieldsForKind(kind);
   const baseOptions = baseSetsForKind(kind);
@@ -440,6 +462,8 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
             uploadFiles[`${entry.tier}_${field}`] = file;
           }
         }
+        const h3d = tiers.filter((t) => t.helmet3d).map((t) => t.tier);
+        assert3dPairBudgets(kind, uploadFiles, resolvedPairBytes, h3d);
       } catch (err) {
         setError(err instanceof Error ? err.message : "File validation failed");
         return;
@@ -457,6 +481,7 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
           }
           uploadFiles[field] = file;
         }
+        assert3dPairBudgets(kind, uploadFiles, resolvedPairBytes);
       } catch (err) {
         setError(err instanceof Error ? err.message : "File validation failed");
         return;
@@ -574,6 +599,10 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
 
       {sizeHint(kind) ? (
         <p className="text-sm text-[var(--tfmc-mist)]">{sizeHint(kind)}</p>
+      ) : null}
+      {pairHint &&
+      (isModel3dKind(kind) || isGunKind(kind) || kind === "armor_set") ? (
+        <p className="text-sm text-[var(--tfmc-mist)]">{pairHint}</p>
       ) : null}
 
       {staff ? (
@@ -722,7 +751,7 @@ export default function UploadForm({ sessionToken, staff = false }: Props) {
           colours={colours}
           onChange={setColours}
           previewText={itemName.trim() || "Preview"}
-          maxStops={8}
+          maxStops={resolvedColourStops}
           disabled={loading}
           previewStyles={styles}
           onError={setError}

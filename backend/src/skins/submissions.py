@@ -36,6 +36,8 @@ from .storage import (
     write_submission_files,
 )
 from src.name_colours import NameColourError, validate_name_colours
+from src.skins.entitlements import resolve_skin_entitlements
+from src.skins.size_limits import SizeLimitError, assert_3d_pair_budgets
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
@@ -181,10 +183,12 @@ def _row_add_name(row: sqlite3.Row) -> bool:
     return bool(row["add_name"])
 
 
-def _validate_name_colours(raw: list[str] | None) -> list[str]:
+def _validate_name_colours(
+    raw: list[str] | None, *, max_colours: int
+) -> list[str]:
     """Colours are independent of add_name (SkinSet display vs apply-name)."""
     try:
-        return validate_name_colours(raw)
+        return validate_name_colours(raw, max_colours=max_colours)
     except NameColourError as e:
         raise SubmissionError(str(e)) from e
 
@@ -582,8 +586,21 @@ def create_submission(
     else:
         grip = None
 
+    is_staff = False
+    try:
+        is_staff = bool(session_row["staff"])
+    except (KeyError, IndexError, TypeError):
+        is_staff = False
+
+    entitlements = resolve_skin_entitlements(
+        str(session_row["player_uuid"] or ""),
+        staff=is_staff,
+    )
+    colour_cap = int(entitlements["name_colour_stops"])
+    pair_cap = int(entitlements["max_3d_pair_bytes"])
+
     want_add_name = bool(add_name)
-    colours = _validate_name_colours(name_colours)
+    colours = _validate_name_colours(name_colours, max_colours=colour_cap)
     styles = _validate_name_styles(name_styles)
     colours_json = json.dumps(colours) if colours else None
     styles_json = json.dumps(styles) if styles else None
@@ -649,6 +666,16 @@ def create_submission(
         elif "texture" not in files_bytes:
             raise SubmissionError("Missing file: texture")
 
+    try:
+        assert_3d_pair_budgets(
+            kind,
+            files_bytes,
+            pair_cap,
+            helmet_3d_tiers=h3d_list if kind == "armor_set" else None,
+        )
+    except SizeLimitError as e:
+        raise SubmissionError(str(e)) from e
+
     _reject_duplicate_textures(files_bytes)
 
     player_uuid = session_row["player_uuid"]
@@ -662,12 +689,6 @@ def create_submission(
         raise SubmissionError(
             "Minecraft name missing — re-link Discord or wait for API migrate"
         )
-
-    is_staff = False
-    try:
-        is_staff = bool(session_row["staff"])
-    except (KeyError, IndexError, TypeError):
-        is_staff = False
 
     try:
         if is_staff:

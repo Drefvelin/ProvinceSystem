@@ -41,10 +41,12 @@ from src.characters.wardrobe import (
     clear_slot,
     get_wardrobe,
     get_wardrobe_for_plugin,
+    resolve_masked_template_path,
     resolve_slot_texture_path,
     set_active_slot,
     set_active_slot_for_plugin,
     set_slot_display_name,
+    store_masked_template,
     upload_pending_create_wardrobe,
     upload_slot,
 )
@@ -174,6 +176,35 @@ async def plugin_put_kit_skin(
         return store_plugin_kit_skin(name, data)
     except LoreItemError as e:
         raise _lore_http(e) from e
+
+
+@characters_router.put("/plugin/wardrobe-templates/masked")
+async def plugin_put_wardrobe_masked_template(
+    request: Request,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """RPCharacters uploads assets/masked.png for auto-masked compose."""
+    _require_plugin(x_plugin_key)
+    data = await request.body()
+    try:
+        return store_masked_template(data)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.get("/wardrobe-template/masked")
+def get_wardrobe_masked_template(
+    authorization: str | None = Header(default=None),
+):
+    """Session-gated masked body template for preview / client compose."""
+    from fastapi.responses import FileResponse
+
+    _character_session_from_auth(authorization)
+    try:
+        path = resolve_masked_template_path()
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+    return FileResponse(path, media_type="image/png", filename="masked.png")
 
 
 @characters_router.get("/creation-catalog")
@@ -488,6 +519,13 @@ async def post_character_wardrobe_slot(
     display_name = form.get("display_name")
     if display_name is not None and not isinstance(display_name, str):
         display_name = str(display_name)
+    create_masked_raw = form.get("create_masked")
+    create_masked = str(create_masked_raw or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
     try:
         return upload_slot(
             session["player_uuid"],
@@ -495,6 +533,7 @@ async def post_character_wardrobe_slot(
             slot,
             png_bytes,
             display_name=display_name,
+            create_masked=create_masked,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
@@ -591,6 +630,13 @@ async def post_pending_create_wardrobe(
     display_name = form.get("display_name")
     if display_name is not None and not isinstance(display_name, str):
         display_name = str(display_name)
+    create_masked_raw = form.get("create_masked")
+    create_masked = str(create_masked_raw or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
     try:
         return upload_pending_create_wardrobe(
             session["player_uuid"],
@@ -598,6 +644,7 @@ async def post_pending_create_wardrobe(
             slot,
             png_bytes,
             display_name=display_name,
+            create_masked=create_masked,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
