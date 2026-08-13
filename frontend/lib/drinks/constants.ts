@@ -20,6 +20,37 @@ export const COMMON_EFFECTS = [
   "glowing",
 ] as const;
 
+const EFFECT_LABELS: Record<string, string> = {
+  nausea: "Nausea",
+  blindness: "Blindness",
+  confusion: "Nausea (Confusion)",
+  hunger: "Hunger",
+  poison: "Poison",
+  wither: "Wither",
+  weakness: "Weakness",
+  slowness: "Slowness",
+  mining_fatigue: "Mining Fatigue",
+  levitation: "Levitation",
+  slow_falling: "Slow Falling",
+  darkness: "Darkness",
+  jump_boost: "Jump Boost",
+  night_vision: "Night Vision",
+  water_breathing: "Water Breathing",
+  luck: "Luck",
+  unluck: "Bad Luck",
+  glowing: "Glowing",
+};
+
+export function effectLabel(id: string): string {
+  const key = (id || "").trim().toLowerCase();
+  if (EFFECT_LABELS[key]) return EFFECT_LABELS[key];
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export const WOOD_OPTIONS: Array<{ id: string; label: string }> = [
   { id: "0", label: "Any" },
   { id: "oak", label: "Oak" },

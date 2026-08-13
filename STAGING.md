@@ -563,7 +563,7 @@ web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank w
 ### Deploy
 
 1. Staging PS up (`scripts/staging-up.sh` / curl `http://127.0.0.1:18001`).
-2. Deploy DrinkBuilder jar from `Builds/DrinkBuilder/`; config `api.base-url` / `api.plugin-key`, `paths.breweryx-folder`, `paths.itemsadder-tfmc-drinks`, CMD range, `ia-reload-delay-seconds`. Empty `tfmc_drinks` scaffold is created on enable.
+2. Deploy DrinkBuilder jar from `Builds/DrinkBuilder/`; config `api.base-url` / `api.plugin-key`, `paths.breweryx-folder`, `paths.itemsadder-tfmc-drinks`, CMD range, `ia-reload-delay-seconds`. Put `assets/glass_bottle.png` + `assets/potion_overlay.png` in the DrinkBuilder plugin folder (synced to PS on enable/reload/catalog sync). Empty `tfmc_drinks` scaffold is created on enable.
 3. `/drinkbuilder catalog sync` (prune `ingredients.yml` as needed), then `/drinkbuilder pack pull [force]` after Discord approves.
 4. FE `/drinks` on staging UI (`13001`).
 5. Copy `tfmc_bot/drinksreview/` into Red cogs; `config.yml` (same `api_base_url` / `staff_key` / `#bot-feed` as skins); `-load drinksreview`; slash enable/sync; `/drinksreview ping`.
@@ -574,7 +574,8 @@ web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank w
 
 - Noble: color-only; Gilded+: texture upload or reuse (applied CMD only)
 - Shared skin↔drink mint cooldown on TFMCWeb only
-- Curated ingredient catalog → PS/web
+- Curated ingredient catalog → PS/web (category labels from DrinkBuilder)
+- Drink colour stops + texture from DrinkBuilder `permission-groups.yml`
 - IA `tfmc_drinks` potion + `model_id` / Brewery `customModelData`
 - Delete: recipe always; texture/CMD iff refcount 0
 
@@ -584,9 +585,13 @@ web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank w
 - [ ] Shared cooldown skin ↔ drink
 - [ ] Noble: color-only drink approve → Brewery recipe (`color`)
 - [ ] Gilded: textured drink → `tfmc_drinks` + CMD match
-- [ ] Ingredient picker shows draft list (pruned as needed)
+- [ ] Ingredient modal shows labeled categories + search
+- [ ] Distill checkbox off by default; runs/time only when enabled
+- [ ] NameColourPicker respects rank stops (Noble 1, Gilded 2, Ascended/Legacy 8)
+- [ ] Tinted potion preview on color mode (after DrinkBuilder asset sync)
 - [ ] Discord approve/deny + DMs (`drinksreview`)
 - [ ] Staff delete + shared texture refcount (`/drinkbuilder drink delete`)
+- [ ] `/token resetcooldowns <player>` clears shared mint clock
 - [ ] `/tfmc drinks` disabled (CE event retired); players use token + website
 
 Checkpoint:

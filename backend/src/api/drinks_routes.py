@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
@@ -36,8 +36,10 @@ from src.skins.drinks import (
     list_undelivered_drink_notifications,
     mark_drinks_applied,
     replace_drink_catalog,
+    resolve_drink_asset,
     resolve_drink_submission_file,
     revoke_drink_submission,
+    save_drink_asset,
     upsert_drink_player_meta,
 )
 
@@ -57,6 +59,7 @@ class DenyBody(BaseModel):
 class DrinkMetaBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     allow_drink_texture: bool = False
+    name_colour_stops: int = 0
 
 
 class TextureCmdBody(BaseModel):
@@ -112,6 +115,24 @@ def post_redeem(body: RedeemBody):
 @drinks_router.get("/catalog")
 def get_catalog():
     return get_drink_catalog()
+
+
+@drinks_router.get("/assets/{filename}")
+def get_drink_creator_asset(filename: str):
+    """Public PNG assets synced from DrinkBuilder (glass_bottle / potion_overlay)."""
+    path = resolve_drink_asset(filename)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    response = FileResponse(
+        path,
+        media_type="image/png",
+        filename=path.name,
+        headers={"Cache-Control": "public, max-age=60"},
+    )
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    return response
 
 
 @drinks_router.get("/textures")
@@ -275,6 +296,21 @@ def plugin_put_meta(
     _require_plugin(x_plugin_key)
     try:
         return upsert_drink_player_meta(body.model_dump())
+    except DrinkError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@drinks_router.put("/plugin/assets/{filename}")
+async def plugin_put_asset(
+    filename: str,
+    request: Request,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """DrinkBuilder uploads glass_bottle.png / potion_overlay.png (raw PNG body)."""
+    _require_plugin(x_plugin_key)
+    data = await request.body()
+    try:
+        return save_drink_asset(filename, data)
     except DrinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

@@ -220,6 +220,7 @@ CREATE TABLE IF NOT EXISTS drink_catalog (
 CREATE TABLE IF NOT EXISTS drink_player_meta (
     player_uuid TEXT PRIMARY KEY,
     allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+    name_colour_stops INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
 

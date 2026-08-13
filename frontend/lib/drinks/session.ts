@@ -6,6 +6,7 @@ export type DrinksSession = {
   expires_at: string;
   scope?: string;
   allow_drink_texture?: boolean;
+  name_colour_stops?: number;
 };
 
 type StoredSession = DrinksSession & {
@@ -14,6 +15,17 @@ type StoredSession = DrinksSession & {
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof sessionStorage !== "undefined";
+}
+
+function readNonNegInt(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.floor(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+  }
+  return undefined;
 }
 
 function readStored(): StoredSession | null {
@@ -35,6 +47,10 @@ function readStored(): StoredSession | null {
     }
     if (typeof parsed.allow_drink_texture === "boolean") {
       out.allow_drink_texture = parsed.allow_drink_texture;
+    }
+    const stops = readNonNegInt(parsed.name_colour_stops);
+    if (stops !== undefined) {
+      out.name_colour_stops = stops;
     }
     const lastId =
       typeof parsed.last_submission_id === "string"
@@ -65,6 +81,9 @@ export function getSession(): DrinksSession | null {
   if (stored.scope) out.scope = stored.scope;
   if (stored.allow_drink_texture !== undefined) {
     out.allow_drink_texture = stored.allow_drink_texture;
+  }
+  if (stored.name_colour_stops !== undefined) {
+    out.name_colour_stops = stored.name_colour_stops;
   }
   return out;
 }
@@ -97,6 +116,9 @@ export function setSession(session: DrinksSession): void {
   if (session.scope) stored.scope = session.scope;
   if (session.allow_drink_texture !== undefined) {
     stored.allow_drink_texture = session.allow_drink_texture;
+  }
+  if (session.name_colour_stops !== undefined) {
+    stored.name_colour_stops = session.name_colour_stops;
   }
   writeStored(stored);
 }

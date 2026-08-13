@@ -10,6 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.name_colours import (
+    NameColourError,
+    effective_colour_cap,
+    validate_name_colours,
+)
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
 from . import db
@@ -47,6 +52,42 @@ def _textures_root() -> Path:
     return path
 
 
+def _assets_root() -> Path:
+    path = db.DRINKS_DIR / "assets"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+DRINK_ASSET_NAMES = frozenset({"glass_bottle.png", "potion_overlay.png"})
+
+
+def save_drink_asset(filename: str, data: bytes) -> dict[str, Any]:
+    name = (filename or "").strip().lower()
+    if name not in DRINK_ASSET_NAMES:
+        raise DrinkError(
+            "asset must be glass_bottle.png or potion_overlay.png"
+        )
+    if not data:
+        raise DrinkError("empty asset body")
+    if len(data) > MAX_PNG_BYTES:
+        raise DrinkError(f"asset must be under {MAX_PNG_BYTES} bytes")
+    if not data.startswith(PNG_MAGIC):
+        raise DrinkError("asset must be a PNG")
+    out = _assets_root() / name
+    out.write_bytes(data)
+    return {"ok": True, "filename": name, "bytes": len(data)}
+
+
+def resolve_drink_asset(filename: str) -> Path | None:
+    name = (filename or "").strip().lower()
+    if name not in DRINK_ASSET_NAMES:
+        return None
+    path = _assets_root() / name
+    if path.is_file() and path.stat().st_size > 0:
+        return path
+    return None
+
+
 # --- player meta ---
 
 
@@ -70,6 +111,26 @@ def get_allow_drink_texture(player_uuid: str) -> bool:
         return False
 
 
+def get_drink_name_colour_stops(player_uuid: str) -> int:
+    uuid = (player_uuid or "").strip().lower()
+    if not uuid:
+        return 0
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT name_colour_stops FROM drink_player_meta
+            WHERE LOWER(player_uuid) = ?
+            """,
+            (uuid,),
+        ).fetchone()
+    if row is None:
+        return 0
+    try:
+        return effective_colour_cap(int(row["name_colour_stops"] or 0))
+    except (TypeError, ValueError, KeyError):
+        return 0
+
+
 def upsert_drink_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise DrinkError("body must be a JSON object")
@@ -82,22 +143,30 @@ def upsert_drink_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
             allow = bool(int(raw.get("allow_drink_texture")))
         except (TypeError, ValueError):
             allow = bool(raw.get("allow_drink_texture"))
+    try:
+        stops = effective_colour_cap(int(raw.get("name_colour_stops") or 0))
+    except (TypeError, ValueError):
+        stops = 0
     updated_at = _iso_now()
     with connect() as conn:
         conn.execute(
             """
-            INSERT INTO drink_player_meta (player_uuid, allow_drink_texture, updated_at)
-            VALUES (?, ?, ?)
+            INSERT INTO drink_player_meta (
+                player_uuid, allow_drink_texture, name_colour_stops, updated_at
+            )
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(player_uuid) DO UPDATE SET
                 allow_drink_texture = excluded.allow_drink_texture,
+                name_colour_stops = excluded.name_colour_stops,
                 updated_at = excluded.updated_at
             """,
-            (uuid, 1 if allow else 0, updated_at),
+            (uuid, 1 if allow else 0, stops, updated_at),
         )
         conn.commit()
     return {
         "player_uuid": uuid,
         "allow_drink_texture": allow,
+        "name_colour_stops": stops,
         "updated_at": updated_at,
     }
 
@@ -106,7 +175,12 @@ def upsert_drink_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _empty_catalog() -> dict[str, Any]:
-    return {"ingredients": [], "effects_blacklist": [], "version": 0}
+    return {
+        "ingredients": [],
+        "categories": {},
+        "effects_blacklist": [],
+        "version": 0,
+    }
 
 
 def _normalize_catalog(raw: dict[str, Any]) -> dict[str, Any]:
@@ -140,6 +214,18 @@ def _normalize_catalog(raw: dict[str, Any]) -> dict[str, Any]:
                 "type": str(row.get("type") or "").strip().lower() or None,
             }
         )
+    categories_in = raw.get("categories")
+    if categories_in is None:
+        categories_in = {}
+    if not isinstance(categories_in, dict):
+        raise DrinkError("categories must be an object")
+    categories: dict[str, str] = {}
+    for key, label in categories_in.items():
+        cid = str(key or "").strip().lower()
+        if not cid:
+            continue
+        text = str(label or "").strip() or cid
+        categories[cid] = text
     blacklist_in = raw.get("effects_blacklist")
     if blacklist_in is None:
         blacklist_in = []
@@ -157,6 +243,7 @@ def _normalize_catalog(raw: dict[str, Any]) -> dict[str, Any]:
         raise DrinkError("version must be an integer") from e
     return {
         "ingredients": ingredients,
+        "categories": categories,
         "effects_blacklist": blacklist,
         "version": version,
     }
@@ -193,6 +280,10 @@ def get_drink_catalog() -> dict[str, Any]:
         payload = _empty_catalog()
     if not isinstance(payload, dict):
         payload = _empty_catalog()
+    if not isinstance(payload.get("categories"), dict):
+        payload = {**payload, "categories": {}}
+    if not isinstance(payload.get("ingredients"), list):
+        payload = {**payload, "ingredients": []}
     return {"catalog": payload, "updated_at": row["updated_at"]}
 
 
@@ -373,7 +464,56 @@ def _optional_prose(raw: dict[str, Any], key: str, *, max_len: int) -> str | Non
         raise DrinkError(str(e)) from e
 
 
-def _validate_recipe(raw: dict[str, Any]) -> dict[str, Any]:
+def _parse_colours(
+    raw: dict[str, Any], key: str, *, colour_cap: int
+) -> list[str]:
+    if key not in raw or raw.get(key) is None:
+        return []
+    try:
+        return validate_name_colours(raw.get(key), max_colours=colour_cap)
+    except NameColourError as e:
+        raise DrinkError(f"{key}: {e}") from e
+
+
+def _validate_lore(
+    raw: dict[str, Any], *, colour_cap: int
+) -> list[dict[str, Any]]:
+    lore_in = raw.get("lore")
+    if lore_in is None:
+        lore_in = []
+    if not isinstance(lore_in, list):
+        raise DrinkError("lore must be a list")
+    lore: list[dict[str, Any]] = []
+    for i, line in enumerate(lore_in):
+        if isinstance(line, str):
+            text = line.strip()
+            colours: list[str] = []
+        elif isinstance(line, dict):
+            text = str(line.get("text") or "").strip()
+            try:
+                colours = validate_name_colours(
+                    line.get("colours"), max_colours=colour_cap
+                )
+            except NameColourError as e:
+                raise DrinkError(f"lore[{i}].colours: {e}") from e
+        else:
+            raise DrinkError(f"lore[{i}] must be a string or object")
+        if not text:
+            continue
+        try:
+            text = assert_prose(text, min_len=1, max_len=120, field=f"lore[{i}]")
+        except TextValidationError as e:
+            raise DrinkError(str(e)) from e
+        entry: dict[str, Any] = {"text": text}
+        if colours:
+            entry["colours"] = colours
+        lore.append(entry)
+    return lore
+
+
+def _validate_recipe(
+    raw: dict[str, Any], *, colour_cap: int = 0
+) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise DrinkError("recipe must be a JSON object")
     for key in raw:
@@ -391,6 +531,13 @@ def _validate_recipe(raw: dict[str, Any]) -> dict[str, Any]:
         raise DrinkError(str(e)) from e
 
     names = _validate_names(raw)
+    name_colours = _parse_colours(raw, "name_colours", colour_cap=colour_cap)
+    name_bad_colours = _parse_colours(
+        raw, "name_bad_colours", colour_cap=colour_cap
+    )
+    name_good_colours = _parse_colours(
+        raw, "name_good_colours", colour_cap=colour_cap
+    )
 
     ingredients_in = raw.get("ingredients")
     if not isinstance(ingredients_in, list) or not ingredients_in:
@@ -461,21 +608,7 @@ def _validate_recipe(raw: dict[str, Any]) -> dict[str, Any]:
             raise DrinkError(f"{key} must be {lo}-{hi}")
         return n
 
-    lore_in = raw.get("lore")
-    if lore_in is None:
-        lore_in = []
-    if not isinstance(lore_in, list):
-        raise DrinkError("lore must be a list")
-    lore: list[str] = []
-    for i, line in enumerate(lore_in):
-        text = str(line or "").strip()
-        if not text:
-            continue
-        try:
-            lore.append(assert_prose(text, min_len=1, max_len=120, field=f"lore[{i}]"))
-        except TextValidationError as e:
-            raise DrinkError(str(e)) from e
-
+    lore = _validate_lore(raw, colour_cap=colour_cap)
     wood = _validate_wood(raw)
     glint_raw = raw.get("glint", False)
     if isinstance(glint_raw, str):
@@ -487,9 +620,21 @@ def _validate_recipe(raw: dict[str, Any]) -> dict[str, Any]:
     if raw.get("difficulty") not in (None, ""):
         difficulty = _clamped("difficulty", 1, 1, 10)
 
+    drink_message = _optional_prose(raw, "drink_message", max_len=120)
+    drink_title = _optional_prose(raw, "drink_title", max_len=48)
+    drink_message_colours = _parse_colours(
+        raw, "drink_message_colours", colour_cap=colour_cap
+    )
+    drink_title_colours = _parse_colours(
+        raw, "drink_title_colours", colour_cap=colour_cap
+    )
+
     out: dict[str, Any] = {
         "name": display,
         "names": names,
+        "name_colours": name_colours,
+        "name_bad_colours": name_bad_colours,
+        "name_good_colours": name_good_colours,
         "ingredients": ingredients,
         "cooking_time": _nonneg("cooking_time", 0),
         "distill_runs": _nonneg("distill_runs", 0),
@@ -502,8 +647,10 @@ def _validate_recipe(raw: dict[str, Any]) -> dict[str, Any]:
         "effects": effects,
         "color": color,
         "lore": lore,
-        "drink_message": _optional_prose(raw, "drink_message", max_len=120),
-        "drink_title": _optional_prose(raw, "drink_title", max_len=48),
+        "drink_message": drink_message,
+        "drink_title": drink_title,
+        "drink_message_colours": drink_message_colours,
+        "drink_title_colours": drink_title_colours,
         "glint": glint,
     }
     return out
@@ -574,7 +721,8 @@ def create_drink_submission(
 
     player_uuid = str(session_row.get("player_uuid") or "").strip()
     code_id = int(session_row["code_id"])
-    recipe = _validate_recipe(recipe_raw)
+    colour_cap = get_drink_name_colour_stops(player_uuid)
+    recipe = _validate_recipe(recipe_raw, colour_cap=colour_cap)
     display = recipe["name"]
     allow_texture = get_allow_drink_texture(player_uuid)
 

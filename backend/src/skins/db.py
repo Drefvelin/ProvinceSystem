@@ -38,6 +38,7 @@ def migrate() -> None:
     DRINKS_DIR.mkdir(parents=True, exist_ok=True)
     (DRINKS_DIR / "textures").mkdir(parents=True, exist_ok=True)
     (DRINKS_DIR / "submissions").mkdir(parents=True, exist_ok=True)
+    (DRINKS_DIR / "assets").mkdir(parents=True, exist_ok=True)
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
     denied_ids: list[str] = []
     with connect() as conn:
@@ -529,10 +530,16 @@ def migrate() -> None:
             CREATE TABLE IF NOT EXISTS drink_player_meta (
                 player_uuid TEXT PRIMARY KEY,
                 allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+                name_colour_stops INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        if "name_colour_stops" not in _column_names(conn, "drink_player_meta"):
+            conn.execute(
+                "ALTER TABLE drink_player_meta "
+                "ADD COLUMN name_colour_stops INTEGER NOT NULL DEFAULT 0"
+            )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS drink_notifications (

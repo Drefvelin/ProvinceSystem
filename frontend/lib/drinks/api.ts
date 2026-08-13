@@ -56,6 +56,7 @@ export type DrinkRedeemResult = {
   code_id: number;
   scope?: string;
   allow_drink_texture?: boolean;
+  name_colour_stops?: number;
 };
 
 export type DrinkIngredient = {
@@ -68,6 +69,7 @@ export type DrinkIngredient = {
 
 export type DrinkCatalog = {
   ingredients: DrinkIngredient[];
+  categories: Record<string, string>;
   effects_blacklist: string[];
   version: number;
 };
@@ -98,9 +100,17 @@ export type DrinkSubmissionPublic = {
   applied_at: string | null;
 };
 
+export type DrinkLoreLine = {
+  text: string;
+  colours?: string[];
+};
+
 export type DrinkRecipeInput = {
   name: string;
   names?: string[] | string;
+  name_colours?: string[];
+  name_bad_colours?: string[];
+  name_good_colours?: string[];
   ingredients: Array<{ id: string; amount: number }>;
   cooking_time?: number;
   distill_runs?: number;
@@ -111,9 +121,11 @@ export type DrinkRecipeInput = {
   alcohol?: number;
   effects?: Array<string | { type: string; level?: number; duration?: number }>;
   color?: string | null;
-  lore?: string[];
+  lore?: Array<string | DrinkLoreLine>;
   drink_message?: string | null;
   drink_title?: string | null;
+  drink_message_colours?: string[];
+  drink_title_colours?: string[];
   glint?: boolean;
 };
 
@@ -143,6 +155,9 @@ export async function redeemDrink(code: string): Promise<DrinkRedeemResult> {
     ...(typeof body.allow_drink_texture === "boolean"
       ? { allow_drink_texture: body.allow_drink_texture }
       : {}),
+    ...(typeof body.name_colour_stops === "number"
+      ? { name_colour_stops: Math.max(0, Math.floor(body.name_colour_stops)) }
+      : {}),
   };
 }
 
@@ -157,8 +172,18 @@ export async function getCatalog(): Promise<DrinkCatalog> {
   }
   const body = data as { catalog?: Partial<DrinkCatalog> };
   const catalog = body.catalog || {};
+  const categoriesRaw = catalog.categories;
+  const categories: Record<string, string> = {};
+  if (categoriesRaw && typeof categoriesRaw === "object") {
+    for (const [key, label] of Object.entries(categoriesRaw)) {
+      const id = String(key || "").trim().toLowerCase();
+      if (!id) continue;
+      categories[id] = String(label || id).trim() || id;
+    }
+  }
   return {
     ingredients: Array.isArray(catalog.ingredients) ? catalog.ingredients : [],
+    categories,
     effects_blacklist: Array.isArray(catalog.effects_blacklist)
       ? catalog.effects_blacklist.map((e) => String(e).toLowerCase())
       : [],

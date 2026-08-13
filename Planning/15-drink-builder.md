@@ -29,6 +29,8 @@ End-to-end design for donator **custom BreweryX recipes**: token → website bre
 | Ascended / Legacy | Same texture rights as Gilded; shorter shared cooldown |
 | Defaults / non-ranked | Cannot mint (cooldown deny) |
 | Ingredients | Allowlist in DrinkBuilder `ingredients.yml`; sync catalog to PS/web |
+| Category labels | `categories.yml` → human titles on website picker |
+| Name colours | DrinkBuilder `permission-groups.yml` → `name_colour_stops` on join meta (not ArmourShop) |
 | IA ingredients | BreweryX native: `itemsadder:namespace:id/amount` (IAOraxenAddon archived / integrated) |
 | MMOItems | `MMOItems:ID/amount` (matches live recipes) |
 | Texture base | Vanilla **potion** + CMD — never paper |
@@ -51,7 +53,7 @@ End-to-end design for donator **custom BreweryX recipes**: token → website bre
 | Ascended | 14 days | yes | yes |
 | Legacy | 7 days | yes | yes |
 
-Cooldown live in TFMCWeb token-cooldown config (LP nodes `rpchar.group.*`). ArmourShop keeps skins **upload** entitlements (kinds, colour stops, 3D bytes, armor 3D helmet) — **not** mint cooldown after cutover.
+Cooldown live in TFMCWeb token-cooldown config (LP nodes `rpchar.group.*`). DrinkBuilder `permission-groups.yml` owns drink **name colour stops** + **allow-drink-texture**. ArmourShop keeps skins **upload** entitlements (kinds, colour stops, 3D bytes, armor 3D helmet) — **not** mint cooldown or drink colours after cutover.
 
 ## High-level flow
 
@@ -95,7 +97,7 @@ Sources: vanilla brew staples · ItemsAdder **`tfmc_cooking`** (replaces old `fo
 2. Write IA item under `tfmc_drinks` with `material: POTION`, `model_id: <cmd>`, player PNG.
 3. Brewery recipe `customModelData: <cmd>` (optional quality `a/b/c` later).
 4. Reuse: new drink references `texture_id`; same CMD; refcount++.
-5. Color-only: Brewery `color:`; review sheet uses base potion + recolour (staff asset).
+5. Color-only: Brewery `color:`; review sheet uses tinted `potion_overlay` + `glass_bottle` (synced from DrinkBuilder).
 
 ## Data (ProvinceSystem)
 
@@ -103,8 +105,8 @@ Tables (step-31.03):
 
 - `drink_submissions` — recipe JSON, status (`pending` / `approved` / `pending_pack` / `applied`), player UUID, optional `texture_id`, `new_texture`
 - `drink_textures` — owner UUID, CMD, IA id, refcount, png path
-- `drink_catalog` — ingredients allowlist + effects blacklist (plugin sync)
-- `drink_player_meta` — `allow_drink_texture` (DrinkBuilder join push)
+- `drink_catalog` — ingredients allowlist + category labels + effects blacklist (plugin sync)
+- `drink_player_meta` — `allow_drink_texture` + `name_colour_stops` (DrinkBuilder join push)
 - `drink_notifications` — staff/bot outbox
 
 **API (`/drinks`):** redeem · submit · catalog · staff pending/approve/deny · plugin catalog/meta.
@@ -115,15 +117,15 @@ Tables (step-31.03):
 
 | Command | Role |
 |---------|------|
-| `/drinkbuilder reload` | Reload config + ingredients + blacklist; re-push catalog + online meta |
-| `/drinkbuilder catalog sync` | Push ingredients + effects blacklist to PS |
+| `/drinkbuilder reload` | Reload config + ingredients + categories + permission-groups + blacklist; re-push catalog + online meta |
+| `/drinkbuilder catalog sync` | Push ingredients + categories + effects blacklist to PS |
 | `/drinkbuilder pack pull [force]` | Pull approved / pending-pack → IA + Brewery merge + reload + ack applied |
 | `/drinkbuilder drink delete <id>` | Remove Brewery recipe; revoke PS; free IA/CMD iff texture refcount 0 |
 | `/drinkbuilder list` | Active player drinks (later) |
 
-Config: `ingredients.yml` · `effects-blacklist.yml` · CMD range · BreweryX / IA paths · API key · `ia-reload-delay-seconds`.  
-Join push: `allow_drink_texture` from `texture-permissions` (Gilded+).  
-CMD allocator + `tfmc_drinks` IA scaffold + pack writers (31.07) + delete reverse (31.08).
+Config: `ingredients.yml` · `categories.yml` · `permission-groups.yml` · `effects-blacklist.yml` · `assets/` (`glass_bottle.png` + `potion_overlay.png`, synced to PS on reload) · CMD range · BreweryX / IA paths · API key · `ia-reload-delay-seconds`.  
+Join push: `allow_drink_texture` + `name_colour_stops` from `permission-groups.yml`.  
+CMD allocator + `tfmc_drinks` IA scaffold + pack writers (31.07) + delete reverse (31.08). RecipesYmlMerger bakes `&#rrggbb` colour stops into name/lore/message/title.
 
 **PS plugin apply/delete:** `GET /drinks/plugin/pending-apply` · file GET · `POST …/textures/{id}/cmd` · `POST /drinks/plugin/applied` · `GET/POST /drinks/plugin/drinks/…` (deletable / get / revoke).  
 **Reuse:** `GET /drinks/textures` lists owned applied textures only; submit requires `cmd` set.
@@ -131,14 +133,15 @@ CMD allocator + `tfmc_drinks` IA scaffold + pack writers (31.07) + delete revers
 ## Website
 
 - `/drinks` redeem + brew editor + `/drinks/[id]` status (31.05)
-- Session key `tfmc_drinks_session`; gate texture UI on `allow_drink_texture`
-- Recipe fields: name / quality names, ingredients, cooking/distill/age/wood/difficulty/alcohol, lore, effects, drink message/title, glint, color **xor** PNG/reuse
+- Session key `tfmc_drinks_session`; gate texture UI on `allow_drink_texture`; `NameColourPicker` on names/lore/message/title gated by `name_colour_stops`
+- Recipe fields: name / quality names (+ colours), ingredients (modal picker), cooking/distill checkbox/age/wood/difficulty/alcohol, lore, effects (modal), drink message/title, glint, color **xor** PNG/reuse
+- Appearance KindPicker-style cards; file upload as real button; tinted potion preview via `GET /drinks/assets/{glass_bottle|potion_overlay}.png` + ModelPreview
 - PNG: 16×16 potion icon; empty catalog shows staff sync hint
-- Ingredient picker from `GET /drinks/catalog` (grouped by category)
+- Ingredient picker from `GET /drinks/catalog` (search + category labels)
 
 ## Discord
 
-**Done (31.06):** thin [`drinksreview`](../../tfmc_bot/drinksreview/) cog polls `/drinks/staff/pending`, posts recipe embed + review sheet (texture or tinted base potion), Approve/Deny once; player DMs via drink notifications outbox.
+**Done (31.06):** thin [`drinksreview`](../../tfmc_bot/drinksreview/) cog polls `/drinks/staff/pending`, posts recipe embed + review sheet (texture or tinted overlay+bottle), Approve/Deny once; player DMs via drink notifications outbox.
 
 ## Cutover
 

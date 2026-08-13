@@ -141,6 +141,36 @@ class DrinkApiTest(unittest.TestCase):
             )
         self.assertIn("cannot use custom drink textures", str(ctx.exception))
 
+    def test_name_colours_respect_cap(self) -> None:
+        from skins.drinks import (
+            DrinkError,
+            create_drink_submission,
+            upsert_drink_player_meta,
+        )
+
+        self._link_player()
+        self._seed_catalog()
+        upsert_drink_player_meta(
+            {
+                "player_uuid": "player-1",
+                "allow_drink_texture": False,
+                "name_colour_stops": 1,
+            }
+        )
+        session = self._issue_and_redeem()
+        self.assertEqual(session.get("name_colour_stops"), 1)
+        with self.assertRaises(DrinkError) as ctx:
+            create_drink_submission(
+                session,
+                {
+                    "name": "Too Many Colours",
+                    "name_colours": ["#ff0000", "#00ff00"],
+                    "ingredients": [{"id": "grape", "amount": 1}],
+                    "color": "#AABBCC",
+                },
+            )
+        self.assertIn("name_colours", str(ctx.exception).lower())
+
     def test_gilded_png_pending(self) -> None:
         from skins.drinks import create_drink_submission, upsert_drink_player_meta
 

@@ -31,6 +31,10 @@ export default function RedeemForm({ onRedeemed }: Props) {
         expires_at: result.expires_at,
         ...(result.scope ? { scope: result.scope } : {}),
         allow_drink_texture: result.allow_drink_texture === true,
+        name_colour_stops:
+          typeof result.name_colour_stops === "number"
+            ? Math.max(0, Math.floor(result.name_colour_stops))
+            : 0,
       };
       setSession(session);
       onRedeemed(session);

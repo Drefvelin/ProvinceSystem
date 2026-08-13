@@ -392,7 +392,7 @@ def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
 
 def redeem_drink_code(plaintext: str) -> dict:
     """Consume a drink-scoped code and create a Bearer session."""
-    from .drinks import get_allow_drink_texture
+    from .drinks import get_allow_drink_texture, get_drink_name_colour_stops
 
     code = (plaintext or "").strip()
     if not code:
@@ -448,6 +448,7 @@ def redeem_drink_code(plaintext: str) -> dict:
         conn.commit()
 
     allow_texture = get_allow_drink_texture(str(row["player_uuid"]))
+    colour_stops = get_drink_name_colour_stops(str(row["player_uuid"]))
     return {
         "session_token": session_token,
         "player_uuid": row["player_uuid"],
@@ -455,6 +456,7 @@ def redeem_drink_code(plaintext: str) -> dict:
         "code_id": row["id"],
         "scope": scope,
         "allow_drink_texture": allow_texture,
+        "name_colour_stops": colour_stops,
     }
 
 

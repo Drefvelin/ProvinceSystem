@@ -1,7 +1,8 @@
 """Compose staff review PNGs for drink submissions.
 
 Texture submissions: NN-upscaled texture.png.
-Color-only: tinted base potion silhouette + hex caption.
+Color-only: tinted potion_overlay + untinted glass_bottle + hex caption.
+Assets are synced from DrinkBuilder into data/drinks/assets/.
 """
 
 from __future__ import annotations
@@ -24,8 +25,10 @@ BG = (32, 32, 36, 255)
 CAPTION_COLOR = (220, 220, 220, 255)
 COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
-_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
-_BASE_POTION_NAME = "drink_base_potion.png"
+_OVERLAY_NAME = "potion_overlay.png"
+_BOTTLE_NAME = "glass_bottle.png"
+_LEGACY_BASE_NAME = "drink_base_potion.png"
+_PKG_ASSETS = Path(__file__).resolve().parent / "assets"
 
 
 class DrinkReviewSheetError(ValueError):
@@ -58,24 +61,40 @@ def _submissions_root() -> Path:
     return path
 
 
-def _load_base_potion() -> Image.Image:
-    path = _ASSETS_DIR / _BASE_POTION_NAME
-    if path.is_file():
+def _assets_dir() -> Path:
+    path = db.DRINKS_DIR / "assets"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _load_rgba(name: str) -> Image.Image | None:
+    for root in (_assets_dir(), _PKG_ASSETS):
+        path = root / name
+        if not path.is_file():
+            continue
         try:
             img = Image.open(path)
             img.load()
             return img.convert("RGBA")
         except OSError as e:
-            raise DrinkReviewSheetError(
-                f"Cannot read base potion asset: {path.name}"
-            ) from e
-    # Procedural fallback for tests / missing asset
+            raise DrinkReviewSheetError(f"Cannot read asset: {name}") from e
+    return None
+
+
+def _procedural_overlay() -> Image.Image:
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.rectangle((6, 1, 9, 3), fill=(255, 255, 255, 255))
-    draw.rectangle((5, 3, 10, 4), fill=(255, 255, 255, 255))
-    draw.ellipse((3, 4, 12, 15), fill=(255, 255, 255, 255))
-    draw.rectangle((4, 6, 11, 14), fill=(255, 255, 255, 255))
+    draw.ellipse((4, 5, 11, 14), fill=(180, 180, 180, 255))
+    draw.rectangle((5, 7, 10, 13), fill=(180, 180, 180, 255))
+    return img
+
+
+def _procedural_bottle() -> Image.Image:
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle((6, 1, 9, 3), fill=(220, 220, 230, 200))
+    draw.rectangle((5, 3, 10, 4), fill=(220, 220, 230, 220))
+    draw.ellipse((3, 4, 12, 15), outline=(200, 200, 210, 255))
     return img
 
 
@@ -86,24 +105,48 @@ def _parse_hex_color(color: str) -> tuple[int, int, int]:
     return int(text[1:3], 16), int(text[3:5], 16), int(text[5:7], 16)
 
 
-def _tint_base(color: str) -> Image.Image:
+def _tint_overlay(overlay: Image.Image, color: str) -> Image.Image:
     r, g, b = _parse_hex_color(color)
-    base = _load_base_potion()
-    pixels = base.load()
-    w, h = base.size
+    out = overlay.copy()
+    pixels = out.load()
+    w, h = out.size
     for y in range(h):
         for x in range(w):
             pr, pg, pb, pa = pixels[x, y]
             if pa == 0:
                 continue
-            # Multiply white silhouette by drink color
             pixels[x, y] = (
                 (pr * r) // 255,
                 (pg * g) // 255,
                 (pb * b) // 255,
                 pa,
             )
-    return base
+    return out
+
+
+def _compose_colored_potion(color: str) -> Image.Image:
+    """Tint overlay (liquid), composite glass bottle on top."""
+    overlay = _load_rgba(_OVERLAY_NAME)
+    bottle = _load_rgba(_BOTTLE_NAME)
+    if overlay is None and bottle is None:
+        legacy = _load_rgba(_LEGACY_BASE_NAME)
+        if legacy is not None:
+            return _tint_overlay(legacy, color)
+        overlay = _procedural_overlay()
+        bottle = _procedural_bottle()
+    if overlay is None:
+        overlay = _procedural_overlay()
+    if bottle is None:
+        bottle = _procedural_bottle()
+
+    if bottle.size != overlay.size:
+        bottle = bottle.resize(overlay.size, Image.Resampling.NEAREST)
+
+    tinted = _tint_overlay(overlay, color)
+    canvas = Image.new("RGBA", tinted.size, (0, 0, 0, 0))
+    canvas.paste(tinted, (0, 0), tinted)
+    canvas.paste(bottle, (0, 0), bottle)
+    return canvas
 
 
 def _compose_sheet(tile: Image.Image, caption: str) -> Image.Image:
@@ -140,7 +183,6 @@ def build_drink_review_sheet(submission_id: str) -> bytes | None:
 
     out_dir = _submissions_root() / submission_id
     if not out_dir.is_dir():
-        # Fall back to dir_path column if present
         dir_path = str(row["dir_path"] or "").strip()
         if dir_path:
             out_dir = Path(dir_path)
@@ -175,7 +217,7 @@ def build_drink_review_sheet(submission_id: str) -> bytes | None:
             caption = f"new texture {row['texture_id']}"
         canvas = _compose_sheet(tile, caption)
     elif color:
-        tile = _tint_base(color)
+        tile = _compose_colored_potion(color)
         canvas = _compose_sheet(tile, f"color {color.upper()}")
     else:
         raise DrinkReviewSheetError(
