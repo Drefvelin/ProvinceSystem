@@ -4,32 +4,34 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import FancyCheckbox from "../skins/FancyCheckbox";
 import ModelPreview from "../skins/ModelPreview";
 import NameColourPicker from "../shared/NameColourPicker";
+import LoreLinesEditor from "../shared/LoreLinesEditor";
+import FormattedMcRuns from "../shared/FormattedMcRuns";
 import {
   authHeaders,
   loreItemDefaultTextureUrl,
   loreItemSkinTextureUrl,
   type LoreItemRow,
 } from "../../../lib/characters/api";
-import { hasInlineFormatCodes, parseLoreRuns, parseNameRuns } from "../../../lib/characters/lorePreview";
+import {
+  hasInlineFormatCodes,
+  parseLoreRuns,
+  parseNameRuns,
+} from "../../../lib/characters/lorePreview";
 import {
   DISPLAY_NAME_HINT,
   displayNameError,
-  proseError,
 } from "../../../lib/textValidation";
 import {
   NAME_STYLES,
   previewColourStopRuns,
   type NameStyle,
 } from "../../../lib/skins/namePreview";
-import FormattedMcRuns from "../shared/FormattedMcRuns";
 import {
   assertFileSize,
   expectedSizeForField,
   type SkinKind,
 } from "../../../lib/skins/sizes";
 
-const LORE_MAX_LINES = 6;
-const LORE_LINE_MAX = 48;
 const DISPLAY_NAME_MAX = 80;
 
 const KNOWN_SKIN_KINDS = new Set<string>([
@@ -195,7 +197,6 @@ export default function LoreItemEditor({
   const [lore, setLore] = useState<string[]>(
     item.draft.lore.length > 0 ? [...item.draft.lore] : []
   );
-  const [loreDraft, setLoreDraft] = useState("");
   const [skinMode, setSkinMode] = useState<SkinMode>(
     item.draft.existing_skin_id ? "pick" : "upload"
   );
@@ -367,17 +368,6 @@ export default function LoreItemEditor({
       })
     : null;
 
-  const loreDraftTrimmed = loreDraft.trim();
-  const loreDraftErr =
-    loreDraftTrimmed.length > 0
-      ? proseError(loreDraftTrimmed, {
-          minLen: 1,
-          maxLen: LORE_LINE_MAX,
-          field: "lore line",
-          allowColourCodes: true,
-        })
-      : null;
-
   const previewName = displayName.trim() || item.base_preview.display_name || "Preview";
   const nameHasInline = useMemo(
     () => hasInlineFormatCodes(previewName),
@@ -412,11 +402,6 @@ export default function LoreItemEditor({
     // Match in-game: MI/base lore, blank spacer, then custom lines
     return [...base, " ", ...custom];
   }, [item.base_preview.lore, lore]);
-
-  const canAddLore =
-    lore.length < LORE_MAX_LINES &&
-    loreDraftTrimmed.length > 0 &&
-    loreDraftErr === null;
 
   function toggleStyle(style: NameStyle) {
     setStyles((prev) =>
@@ -473,16 +458,6 @@ export default function LoreItemEditor({
       else setSignedFile(null);
       setLocalError(err instanceof Error ? err.message : "Invalid cover");
     }
-  }
-
-  function addLoreLine() {
-    if (!canAddLore) return;
-    setLore((prev) => [...prev, loreDraftTrimmed]);
-    setLoreDraft("");
-  }
-
-  function removeLoreLine(index: number) {
-    setLore((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -605,62 +580,12 @@ export default function LoreItemEditor({
       </section>
 
       <section>
-        <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Lore
-        </h2>
-        <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-          Up to {LORE_MAX_LINES} custom lines ({LORE_LINE_MAX} characters each).
-          Use §c, &amp;c, or #RRGGBB mid-line. Lines without a leading colour
-          (including §l / &amp;l alone) get gray (§7) first so styles stay gray,
-          not purple italic.
-        </p>
-        {lore.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--tfmc-mist)]">No custom lore yet.</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {lore.map((line, i) => (
-              <li
-                key={`${i}-${line.slice(0, 12)}`}
-                className="flex items-start justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] py-2"
-              >
-                <p className="font-mono text-sm text-[var(--tfmc-cream)]">
-                  {line}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => removeLoreLine(i)}
-                  className="shrink-0 text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {lore.length < LORE_MAX_LINES ? (
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-start">
-            <input
-              type="text"
-              value={loreDraft}
-              onChange={(e) => setLoreDraft(e.target.value)}
-              maxLength={LORE_LINE_MAX}
-              className={`${inputClass} sm:flex-1`}
-              placeholder="Add a lore line (§c highlight)"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              onClick={addLoreLine}
-              disabled={!canAddLore}
-              className="rounded-sm bg-[var(--tfmc-moss)] px-3 py-2 text-sm text-[var(--tfmc-cream)] disabled:opacity-50"
-            >
-              Add line
-            </button>
-          </div>
-        ) : null}
-        {loreDraftErr ? (
-          <p className="mt-2 text-xs text-[#e8a0a0]">{loreDraftErr}</p>
-        ) : null}
+        <LoreLinesEditor
+          lines={lore}
+          onChange={setLore}
+          heading="section"
+          showPreview={false}
+        />
       </section>
 
       <section>

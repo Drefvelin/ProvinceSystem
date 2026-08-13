@@ -483,6 +483,8 @@ def _validate_lore(
         lore_in = []
     if not isinstance(lore_in, list):
         raise DrinkError("lore must be a list")
+    if len(lore_in) > 6:
+        raise DrinkError("lore must have at most 6 lines")
     lore: list[dict[str, Any]] = []
     for i, line in enumerate(lore_in):
         if isinstance(line, str):
@@ -501,14 +503,36 @@ def _validate_lore(
         if not text:
             continue
         try:
-            text = assert_prose(text, min_len=1, max_len=120, field=f"lore[{i}]")
+            text = assert_prose(
+                text,
+                min_len=1,
+                max_len=48,
+                field=f"lore[{i}]",
+                allow_colour_codes=True,
+            )
         except TextValidationError as e:
             raise DrinkError(str(e)) from e
+        if not _lore_line_has_leading_colour(text):
+            text = "§7" + text
         entry: dict[str, Any] = {"text": text}
         if colours:
             entry["colours"] = colours
         lore.append(entry)
     return lore
+
+
+def _lore_line_has_leading_colour(line: str) -> bool:
+    """Match kit lore: §/& hex digit or #RRGGBB counts as a leading colour."""
+    s = (line or "").lstrip()
+    if not s:
+        return False
+    if s[0] in ("§", "&") and len(s) >= 2:
+        return s[1].lower() in "0123456789abcdef"
+    if s[0] == "#" and len(s) >= 7 and all(
+        c in "0123456789abcdefABCDEF" for c in s[1:7]
+    ):
+        return True
+    return False
 
 
 def _validate_recipe(
@@ -538,6 +562,11 @@ def _validate_recipe(
     name_good_colours = _parse_colours(
         raw, "name_good_colours", colour_cap=colour_cap
     )
+    # One colour set applies to all qualities unless legacy per-quality lists are set.
+    if not name_bad_colours:
+        name_bad_colours = list(name_colours)
+    if not name_good_colours:
+        name_good_colours = list(name_colours)
 
     ingredients_in = raw.get("ingredients")
     if not isinstance(ingredients_in, list) or not ingredients_in:

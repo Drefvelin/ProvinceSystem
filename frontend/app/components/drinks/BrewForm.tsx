@@ -24,6 +24,7 @@ import {
   type DrinksSession,
 } from "../../../lib/drinks/session";
 import NameColourPicker from "../shared/NameColourPicker";
+import LoreLinesEditor from "../shared/LoreLinesEditor";
 import ModelPreview from "../skins/ModelPreview";
 import AppearancePicker, { type AppearanceMode } from "./AppearancePicker";
 import EffectPickerModal from "./EffectPickerModal";
@@ -32,7 +33,6 @@ import IngredientPickerModal from "./IngredientPickerModal";
 
 type IngredientRow = { id: string; amount: number };
 type EffectRow = { type: string; level: number; duration: number };
-type LoreLine = { text: string; colours: string[] };
 
 type Props = {
   session: DrinksSession;
@@ -58,9 +58,7 @@ export default function BrewForm({ session }: Props) {
   const [name, setName] = useState("");
   const [nameColours, setNameColours] = useState<string[]>([]);
   const [nameBad, setNameBad] = useState("");
-  const [nameBadColours, setNameBadColours] = useState<string[]>([]);
   const [nameGood, setNameGood] = useState("");
-  const [nameGoodColours, setNameGoodColours] = useState<string[]>([]);
   const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
   const [cookingTime, setCookingTime] = useState(5);
   const [distillEnabled, setDistillEnabled] = useState(false);
@@ -70,7 +68,7 @@ export default function BrewForm({ session }: Props) {
   const [age, setAge] = useState(0);
   const [difficulty, setDifficulty] = useState(3);
   const [alcohol, setAlcohol] = useState(0);
-  const [loreLines, setLoreLines] = useState<LoreLine[]>([]);
+  const [loreLines, setLoreLines] = useState<string[]>([]);
   const [drinkMessage, setDrinkMessage] = useState("");
   const [drinkMessageColours, setDrinkMessageColours] = useState<string[]>([]);
   const [drinkTitle, setDrinkTitle] = useState("");
@@ -215,8 +213,6 @@ export default function BrewForm({ session }: Props) {
       name: name.trim(),
       ...(names ? { names } : {}),
       ...(nameColours.length ? { name_colours: nameColours } : {}),
-      ...(nameBadColours.length ? { name_bad_colours: nameBadColours } : {}),
-      ...(nameGoodColours.length ? { name_good_colours: nameGoodColours } : {}),
       ingredients: ingredients.map((r) => ({
         id: r.id.trim(),
         amount: Math.floor(r.amount),
@@ -235,12 +231,7 @@ export default function BrewForm({ session }: Props) {
           level: Math.max(1, Math.floor(ef.level || 1)),
           duration: Math.max(1, Math.floor(ef.duration || 1)),
         })),
-      lore: loreLines
-        .map((line) => ({
-          text: line.text.trim(),
-          ...(line.colours.length ? { colours: line.colours } : {}),
-        }))
-        .filter((line) => line.text),
+      lore: loreLines.map((line) => line.trim()).filter(Boolean),
       drink_message: drinkMessage.trim() || null,
       drink_title: drinkTitle.trim() || null,
       ...(drinkMessageColours.length
@@ -340,6 +331,30 @@ export default function BrewForm({ session }: Props) {
             required
           />
         </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs text-[var(--tfmc-mist)]">
+              Bad quality name (optional)
+            </span>
+            <input
+              className={fieldClass}
+              value={nameBad}
+              onChange={(e) => setNameBad(e.target.value)}
+              maxLength={48}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs text-[var(--tfmc-mist)]">
+              Good quality name (optional)
+            </span>
+            <input
+              className={fieldClass}
+              value={nameGood}
+              onChange={(e) => setNameGood(e.target.value)}
+              maxLength={48}
+            />
+          </label>
+        </div>
         <NameColourPicker
           colours={nameColours}
           onChange={setNameColours}
@@ -347,48 +362,9 @@ export default function BrewForm({ session }: Props) {
           maxStops={colourStops}
           lockedMessage="Name colours require a donator rank"
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                Bad quality name (optional)
-              </span>
-              <input
-                className={fieldClass}
-                value={nameBad}
-                onChange={(e) => setNameBad(e.target.value)}
-                maxLength={48}
-              />
-            </label>
-            <NameColourPicker
-              colours={nameBadColours}
-              onChange={setNameBadColours}
-              previewText={nameBad.trim() || name.trim() || "Bad"}
-              maxStops={colourStops}
-              lockedMessage="Name colours require a donator rank"
-            />
-          </div>
-          <div className="space-y-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs text-[var(--tfmc-mist)]">
-                Good quality name (optional)
-              </span>
-              <input
-                className={fieldClass}
-                value={nameGood}
-                onChange={(e) => setNameGood(e.target.value)}
-                maxLength={48}
-              />
-            </label>
-            <NameColourPicker
-              colours={nameGoodColours}
-              onChange={setNameGoodColours}
-              previewText={nameGood.trim() || name.trim() || "Good"}
-              maxStops={colourStops}
-              lockedMessage="Name colours require a donator rank"
-            />
-          </div>
-        </div>
+        <p className="text-xs text-[var(--tfmc-mist)]">
+          Same colours apply to normal, bad, and good quality names.
+        </p>
       </section>
 
       <section className="space-y-3">
@@ -652,66 +628,16 @@ export default function BrewForm({ session }: Props) {
       </section>
 
       <section className="space-y-4">
+        <LoreLinesEditor
+          lines={loreLines}
+          onChange={setLoreLines}
+          heading="compact"
+          emptyMessage="No lore (optional)."
+        />
+      </section>
+
+      <section className="space-y-4">
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Extras</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--tfmc-mist)]">Lore lines</span>
-            <button
-              type="button"
-              className={btnGhost}
-              onClick={() =>
-                setLoreLines((rows) => [...rows, { text: "", colours: [] }])
-              }
-            >
-              Add lore line
-            </button>
-          </div>
-          {loreLines.length === 0 ? (
-            <p className="text-xs text-[var(--tfmc-mist)]">No lore (optional).</p>
-          ) : (
-            loreLines.map((line, idx) => (
-              <div
-                key={idx}
-                className="space-y-2 rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_14%,transparent)] p-3"
-              >
-                <div className="flex gap-2">
-                  <input
-                    className={`${fieldClass} flex-1`}
-                    value={line.text}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      setLoreLines((rows) =>
-                        rows.map((r, i) => (i === idx ? { ...r, text } : r))
-                      );
-                    }}
-                    maxLength={120}
-                    placeholder="Lore line"
-                  />
-                  <button
-                    type="button"
-                    className={btnDanger}
-                    onClick={() =>
-                      setLoreLines((rows) => rows.filter((_, i) => i !== idx))
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
-                <NameColourPicker
-                  colours={line.colours}
-                  onChange={(colours) =>
-                    setLoreLines((rows) =>
-                      rows.map((r, i) => (i === idx ? { ...r, colours } : r))
-                    )
-                  }
-                  previewText={line.text.trim() || "Lore"}
-                  maxStops={colourStops}
-                  lockedMessage="Lore colours require a donator rank"
-                />
-              </div>
-            ))
-          )}
-        </div>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-xs text-[var(--tfmc-mist)]">Drink message</span>
