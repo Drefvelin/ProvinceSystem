@@ -8,6 +8,7 @@ git checkout site-rework
 git reset --hard origin/site-rework
 chmod +x scripts/staging-*.sh
 ./scripts/staging-down.sh
+python3 scripts/retag-realm.py --from main --to dev
 ./scripts/staging-up.sh
 curl -s http://127.0.0.1:18001/ping
 ```

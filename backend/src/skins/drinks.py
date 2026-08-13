@@ -1373,6 +1373,12 @@ def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
             sid = (sid or "").strip()
             if not sid:
                 continue
+            row = conn.execute(
+                "SELECT * FROM drink_submissions WHERE id = ?",
+                (sid,),
+            ).fetchone()
+            if row is None:
+                continue
             cur = conn.execute(
                 """
                 UPDATE drink_submissions
@@ -1385,5 +1391,17 @@ def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
             )
             if cur.rowcount:
                 applied.append(sid)
+                discord_user_id = row["discord_user_id"]
+                if discord_user_id:
+                    enqueue_drink_notification(
+                        "applied",
+                        sid,
+                        str(discord_user_id),
+                        {
+                            "submission_id": sid,
+                            "display_name": row["display_name"],
+                            "slug": row["slug"],
+                        },
+                    )
         conn.commit()
     return applied
