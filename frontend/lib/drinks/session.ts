@@ -5,6 +5,7 @@ export type DrinksSession = {
   player_uuid: string;
   expires_at: string;
   scope?: string;
+  realm_id?: string;
   allow_drink_texture?: boolean;
   name_colour_stops?: number;
 };
@@ -45,6 +46,9 @@ function readStored(): StoredSession | null {
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
     }
+    if (typeof parsed.realm_id === "string" && parsed.realm_id.trim()) {
+      out.realm_id = parsed.realm_id.trim().toLowerCase();
+    }
     if (typeof parsed.allow_drink_texture === "boolean") {
       out.allow_drink_texture = parsed.allow_drink_texture;
     }
@@ -79,6 +83,7 @@ export function getSession(): DrinksSession | null {
     expires_at: stored.expires_at,
   };
   if (stored.scope) out.scope = stored.scope;
+  if (stored.realm_id) out.realm_id = stored.realm_id;
   if (stored.allow_drink_texture !== undefined) {
     out.allow_drink_texture = stored.allow_drink_texture;
   }
@@ -114,6 +119,7 @@ export function setSession(session: DrinksSession): void {
     expires_at: session.expires_at,
   };
   if (session.scope) stored.scope = session.scope;
+  if (session.realm_id) stored.realm_id = session.realm_id;
   if (session.allow_drink_texture !== undefined) {
     stored.allow_drink_texture = session.allow_drink_texture;
   }

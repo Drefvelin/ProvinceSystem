@@ -39,11 +39,13 @@ ArmourShop historically owned Discord link (`/linkdiscord`), skins token mint, p
 
 | Concern | Owner |
 |---------|--------|
-| Base URL, `X-Plugin-Key`, timeouts, async HTTP | TFMCWeb |
+| Base URL, `X-Plugin-Key`, timeouts, async HTTP | TFMCWeb (`ProvinceSystemGateway`) |
 | UUID ↔ Discord link + guild membership + grace | ProvinceSystem identity + TFMCWeb cache + bot leave/join |
 | Scoped feature codes (`skin`, `drink`, `character`, …) | ProvinceSystem + TFMCWeb `/token create <scope>` |
 | Survival Discord gate freeze | TFMCWeb → RPCharacters API |
-| Skin pack apply | ArmourShop (transport via TFMCWeb later) |
+| Skin pack apply | ArmourShop (HTTP via TFMCWeb gateway) |
+| Drink pack apply | DrinkBuilder (HTTP via TFMCWeb gateway) |
+| Character ingest / roster | RPCharacters (HTTP via TFMCWeb gateway) |
 | Essentials ban/unban | Essentials executes; TFMCWeb mirrors |
 | In-game warnings | TFMCWeb |
 | Discord DMs / banned role / leave events | `tfmc_bot` |

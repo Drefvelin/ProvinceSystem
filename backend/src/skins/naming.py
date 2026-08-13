@@ -119,12 +119,62 @@ def build_submission_id(minecraft_name: str | None, display_name: str) -> str:
         ) from e
 
 
-def build_staff_submission_id(display_name: str) -> str:
+def _realm_id_slug_fragment(realm_id: str | None) -> str:
+    """Normalize realm for submission-id prefix (hyphens → underscores)."""
+    raw = (realm_id or "").strip().lower()
+    if not raw or raw == "main":
+        return ""
+    frag = re.sub(r"[^a-z0-9_]+", "_", raw.replace("-", "_"))
+    frag = re.sub(r"_+", "_", frag).strip("_")
+    if not frag:
+        return ""
+    if frag[0].isdigit():
+        frag = f"r_{frag}"
+    return frag
+
+
+def build_submission_id_for_realm(
+    minecraft_name: str | None,
+    display_name: str,
+    realm_id: str | None = None,
+) -> str:
+    """
+    Like build_submission_id, but prefixes `{realm}_` when realm is not main.
+    """
+    realm_frag = _realm_id_slug_fragment(realm_id)
+    if not realm_frag:
+        return build_submission_id(minecraft_name, display_name)
+    ign = sanitize_ign(minecraft_name)
+    prefix = f"{realm_frag}_"
+    # Reserve room for prefix + ign + underscore within 48 chars
+    max_name = max(4, 48 - len(prefix) - len(ign) - 1)
+    name_part = slugify_display_name(display_name, max_len=max_name)
+    full = f"{prefix}{ign}_{name_part}"
+    try:
+        return assert_slug(full)
+    except SlugError as e:
+        raise SlugError(
+            "Could not build a valid skin id from your Minecraft name "
+            "and item name. Shorten the item name and try again."
+        ) from e
+
+
+def build_staff_submission_id(
+    display_name: str,
+    realm_id: str | None = None,
+) -> str:
     """
     Display-slug only — staff curated skins land in real shop categories without an IGN prefix.
+    Prefixes `{realm}_` when realm is not main.
     """
+    realm_frag = _realm_id_slug_fragment(realm_id)
     try:
-        return assert_slug(slugify_display_name(display_name))
+        if not realm_frag:
+            return assert_slug(slugify_display_name(display_name))
+        prefix = f"{realm_frag}_"
+        max_name = max(4, 48 - len(prefix))
+        name_part = slugify_display_name(display_name, max_len=max_name)
+        return assert_slug(f"{prefix}{name_part}")
     except SlugError as e:
         raise SlugError(
             "Could not build a valid skin set key from the item name. "

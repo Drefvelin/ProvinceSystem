@@ -22,6 +22,11 @@ def load_constants() -> dict[str, Any]:
 
 
 def namespace() -> str:
+    """IA namespace for main-realm pack regen (tfmc_submissions).
+
+    Non-main realms may use separate pack namespaces later; this helper stays
+    on the shared main namespace until realm pack namespaces are wired.
+    """
     return str(load_constants()["namespace"])
 
 

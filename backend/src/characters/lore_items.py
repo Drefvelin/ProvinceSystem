@@ -1137,11 +1137,16 @@ def customise_lore_item(
     kit_id: str | None = None,
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
     player_uuid = str(session_row.get("player_uuid") or "").strip()
     if not player_uuid:
         raise LoreItemError("Invalid session", status_code=401)
+    try:
+        lore_realm = normalize_realm_id(session_row.get("realm_id"))
+    except Exception:
+        lore_realm = "main"
     cid = _require_character_id(character_id)
     kit = (kit_id or "starter").strip().lower() or "starter"
     _require_customise_allowed(player_uuid, cid, kit)
@@ -1475,6 +1480,15 @@ def customise_lore_item(
                 """,
                 (player_uuid, cid, kit_key_norm),
             )
+        if "realm_id" in cols:
+            conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET realm_id = ?
+                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                """,
+                (lore_realm, player_uuid, cid, kit_key_norm),
+            )
         conn.commit()
 
     item = _build_item(player_uuid, cid, editable)
@@ -1692,19 +1706,22 @@ def clear_pending_submission(
     return cleared
 
 
-def list_pending_for_plugin() -> list[dict[str, Any]]:
-    """Rows with state=ready for RPCharacters pull."""
+def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]:
+    """Rows with state=ready for RPCharacters pull (filtered by realm)."""
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         rows = conn.execute(
             """
             SELECT *
             FROM lore_item_customisations
             WHERE LOWER(COALESCE(state, '')) = ?
+              AND realm_id = ?
             ORDER BY ready_at ASC, updated_at ASC
             """,
-            (STATE_READY,),
+            (STATE_READY, realm),
         ).fetchall()
     out: list[dict[str, Any]] = []
     for row in rows:
@@ -1730,6 +1747,7 @@ def list_pending_for_plugin() -> list[dict[str, Any]]:
             "ia_path": _ia_path(slug, ns),
             "ready_at": row["ready_at"],
             "updated_at": row["updated_at"],
+            "realm_id": realm,
         }
         if colours:
             entry["name_colours"] = colours

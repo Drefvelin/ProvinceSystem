@@ -21,6 +21,7 @@ from .naming import (
     SlugError,
     build_staff_submission_id,
     build_submission_id,
+    build_submission_id_for_realm,
     sanitize_ign,
     slugify_display_name,
 )
@@ -36,7 +37,7 @@ from .storage import (
     write_submission_files,
 )
 from src.name_colours import NameColourError, validate_name_colours
-from src.skins.entitlements import resolve_skin_entitlements
+from src.characters.rpc_player_meta import resolve_web_entitlements
 from src.skins.size_limits import SizeLimitError, assert_3d_pair_budgets
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
@@ -416,15 +417,18 @@ def find_duplicate_texture(
     return str(row["id"] or "") or None
 
 
-def slug_taken(slug: str) -> bool:
+def slug_taken(slug: str, realm_id: str | None = None) -> bool:
+    from src.skins.codes import normalize_realm_id
+
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         row = conn.execute(
             """
             SELECT 1 FROM submissions
-            WHERE id = ? AND status IN (?, ?, ?)
+            WHERE id = ? AND realm_id = ? AND status IN (?, ?, ?)
             LIMIT 1
             """,
-            (slug, *ACTIVE_STATUSES),
+            (slug, realm, *ACTIVE_STATUSES),
         ).fetchone()
     return row is not None
 
@@ -592,9 +596,17 @@ def create_submission(
     except (KeyError, IndexError, TypeError):
         is_staff = False
 
-    entitlements = resolve_skin_entitlements(
+    from src.skins.codes import normalize_realm_id
+
+    try:
+        realm = normalize_realm_id(session_row.get("realm_id"))
+    except Exception:
+        realm = "main"
+
+    entitlements = resolve_web_entitlements(
         str(session_row["player_uuid"] or ""),
         staff=is_staff,
+        realm_id=realm,
     )
     colour_cap = int(entitlements["name_colour_stops"])
     pair_cap = int(entitlements["max_3d_pair_bytes"])
@@ -707,9 +719,11 @@ def create_submission(
 
     try:
         if is_staff:
-            submission_id = build_staff_submission_id(display)
+            submission_id = build_staff_submission_id(display, realm)
         else:
-            submission_id = build_submission_id(minecraft_name, display)
+            submission_id = build_submission_id_for_realm(
+                minecraft_name, display, realm
+            )
     except SlugError:
         raise
 
@@ -741,7 +755,7 @@ def create_submission(
                 )
             raise SubmissionError(msg)
 
-        if slug_taken(submission_id):
+        if slug_taken(submission_id, realm):
             raise SlugConflictError(
                 f"A skin with id '{submission_id}' is already in use. "
                 "Choose a different item name and try again."
@@ -818,7 +832,51 @@ def create_submission(
                         status, deny_reason, dir_path,
                         created_at, reviewed_at, applied_at, discord_message_id,
                         discord_user_id, staff, category, scroll, tier_scrolls,
-                        texture_hash
+                        texture_hash, realm_id
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
+                        ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?
+                    )
+                    """,
+                    (
+                        submission_id,
+                        player_uuid,
+                        code_id,
+                        kind,
+                        slug,
+                        display,
+                        grip,
+                        base,
+                        tiers_json,
+                        h3d_json,
+                        aliases_json,
+                        1 if want_add_name else 0,
+                        colours_json,
+                        styles_json,
+                        status,
+                        dir_path,
+                        created_at,
+                        reviewed_at,
+                        discord_id,
+                        1 if is_staff else 0,
+                        staff_category,
+                        staff_scroll,
+                        staff_tier_scrolls_json,
+                        tex_hash,
+                        realm,
+                    ),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO submissions (
+                        id, player_uuid, code_id, kind, slug, display_name,
+                        grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
+                        add_name, name_colours, name_styles,
+                        status, deny_reason, dir_path,
+                        created_at, reviewed_at, applied_at, discord_message_id,
+                        discord_user_id, staff, category, scroll, tier_scrolls,
+                        realm_id
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
                         ?, NULL, NULL, ?, ?, ?, ?, ?, ?
@@ -848,48 +906,7 @@ def create_submission(
                         staff_category,
                         staff_scroll,
                         staff_tier_scrolls_json,
-                        tex_hash,
-                    ),
-                )
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO submissions (
-                        id, player_uuid, code_id, kind, slug, display_name,
-                        grip_preset, base_set, tiers, helmet_3d_tiers, tier_aliases,
-                        add_name, name_colours, name_styles,
-                        status, deny_reason, dir_path,
-                        created_at, reviewed_at, applied_at, discord_message_id,
-                        discord_user_id, staff, category, scroll, tier_scrolls
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?,
-                        ?, NULL, NULL, ?, ?, ?, ?, ?
-                    )
-                    """,
-                    (
-                        submission_id,
-                        player_uuid,
-                        code_id,
-                        kind,
-                        slug,
-                        display,
-                        grip,
-                        base,
-                        tiers_json,
-                        h3d_json,
-                        aliases_json,
-                        1 if want_add_name else 0,
-                        colours_json,
-                        styles_json,
-                        status,
-                        dir_path,
-                        created_at,
-                        reviewed_at,
-                        discord_id,
-                        1 if is_staff else 0,
-                        staff_category,
-                        staff_scroll,
-                        staff_tier_scrolls_json,
+                        realm,
                     ),
                 )
             conn.commit()
@@ -1118,12 +1135,18 @@ def list_pending() -> list[dict]:
     return result
 
 
-def list_approved_pending_apply(since: str | None = None) -> list[dict]:
+def list_approved_pending_apply(
+    since: str | None = None,
+    realm_id: str | None = None,
+) -> list[dict]:
+    from src.skins.codes import normalize_realm_id
+
+    realm = normalize_realm_id(realm_id)
     sql = """
         SELECT * FROM submissions
-        WHERE status = 'approved' AND applied_at IS NULL
+        WHERE status = 'approved' AND applied_at IS NULL AND realm_id = ?
     """
-    params: list = []
+    params: list = [realm]
     if since:
         sql += " AND reviewed_at >= ?"
         params.append(since.strip())
@@ -1157,6 +1180,7 @@ def list_approved_pending_apply(since: str | None = None) -> list[dict]:
             "discord_username": names.get("discord_username"),
             "files": _list_asset_files(row["id"]),
             "staff": is_staff,
+            "realm_id": realm,
         }
         if is_staff:
             from .catalog import IA_NAMESPACE_ARMOURSHOP

@@ -7,6 +7,8 @@ export type SkinsSession = {
   /** True when code scope is skin_staff. */
   staff?: boolean;
   scope?: string;
+  /** Server realm stamped on the mint code (Plan 2). */
+  realm_id?: string;
   /** Rank colour stops for name picker (clamped by API to web hard cap). */
   name_colour_stops?: number;
   /** Combined texture+model byte budget for 3D kinds. */
@@ -74,6 +76,9 @@ function readStored(): StoredSession | null {
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
     }
+    if (typeof parsed.realm_id === "string" && parsed.realm_id.trim()) {
+      out.realm_id = parsed.realm_id.trim().toLowerCase();
+    }
     const stops = readNonNegInt(parsed.name_colour_stops);
     if (stops !== undefined) out.name_colour_stops = stops;
     const pair = readNonNegInt(parsed.max_3d_pair_bytes);
@@ -107,6 +112,9 @@ function copyEntitlements(
   from: SkinsSession,
   to: SkinsSession | StoredSession
 ): void {
+  if (from.realm_id !== undefined) {
+    to.realm_id = from.realm_id;
+  }
   if (from.name_colour_stops !== undefined) {
     to.name_colour_stops = from.name_colour_stops;
   }

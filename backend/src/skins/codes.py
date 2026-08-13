@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -13,6 +14,8 @@ SESSION_TTL_HOURS = 1
 CHARACTER_REMEMBER_TTL_DAYS = 30
 ALLOWED_SCOPES = frozenset({"skin", "drink", "character", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
+DEFAULT_REALM_ID = "main"
+_REALM_ID_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
 
 
 class CodeError(ValueError):
@@ -56,6 +59,29 @@ def _normalize_scope(scope: str | None) -> str:
     if raw not in ALLOWED_SCOPES:
         raise CodeError("scope must be 'skin', 'drink', 'skin_staff', or 'character'")
     return raw
+
+
+def normalize_realm_id(realm_id: str | None) -> str:
+    """Trim/lower realm; empty/None → main. Reject invalid charset."""
+    raw = (realm_id or "").strip().lower()
+    if not raw:
+        return DEFAULT_REALM_ID
+    if not _REALM_ID_RE.match(raw):
+        raise CodeError(
+            "realm_id must be 1–32 chars of a-z, 0-9, underscore, or hyphen"
+        )
+    return raw
+
+
+def _row_realm_id(row) -> str:
+    try:
+        value = row["realm_id"]
+    except (KeyError, IndexError, TypeError):
+        return DEFAULT_REALM_ID
+    if value is None:
+        return DEFAULT_REALM_ID
+    text = str(value).strip().lower()
+    return text if text else DEFAULT_REALM_ID
 
 
 def _row_scope(row) -> str:
@@ -140,13 +166,18 @@ def reset_cosmetic_mint_cooldowns(
     return {"ok": True, "player_uuid": uuid, "reset_at": reset_at}
 
 
-def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
+def issue_code(
+    player_uuid: str,
+    scope: str | None = "skin",
+    realm_id: str | None = None,
+) -> dict:
     from .discord_link import get_identity_status
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise CodeError("player_uuid is required")
     normalized = _normalize_scope(scope)
+    realm = normalize_realm_id(realm_id)
 
     status = get_identity_status(uuid)
     if not status.get("eligible"):
@@ -164,23 +195,29 @@ def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:
         conn.execute(
             """
             INSERT INTO codes (
-                code_hash, code_plaintext, player_uuid, scope, created_at, expires_at,
-                redeemed_at, revoked
+                code_hash, code_plaintext, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
             )
-            VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0)
             """,
             (
                 hash_secret(plaintext),
                 plaintext,
                 uuid,
                 normalized,
+                realm,
                 _iso(now),
                 expires_at,
             ),
         )
         conn.commit()
 
-    return {"code": plaintext, "expires_at": expires_at, "scope": normalized}
+    return {
+        "code": plaintext,
+        "expires_at": expires_at,
+        "scope": normalized,
+        "realm_id": realm,
+    }
 
 
 def list_active_codes() -> list[dict]:
@@ -304,11 +341,12 @@ def redeem_code(plaintext: str) -> dict:
         )
         conn.commit()
 
-    from .entitlements import resolve_skin_entitlements
+    from src.characters.rpc_player_meta import resolve_web_entitlements
 
-    entitlements = resolve_skin_entitlements(
+    entitlements = resolve_web_entitlements(
         row["player_uuid"],
         staff=_is_staff_scope(scope),
+        realm_id=_row_realm_id(row),
     )
     return {
         "session_token": session_token,
@@ -316,12 +354,14 @@ def redeem_code(plaintext: str) -> dict:
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
+        "realm_id": _row_realm_id(row),
         "staff": _is_staff_scope(scope),
         "name_colour_stops": entitlements["name_colour_stops"],
         "max_3d_pair_bytes": entitlements["max_3d_pair_bytes"],
         "skin_token_cooldown_days": entitlements["skin_token_cooldown_days"],
         "skin_kinds": entitlements["skin_kinds"],
         "allow_armor_3d_helmet": entitlements["allow_armor_3d_helmet"],
+        "meta_synced": entitlements.get("meta_synced", False),
     }
 
 
@@ -386,13 +426,14 @@ def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
+        "realm_id": _row_realm_id(row),
         "remember_me": remember,
     }
 
 
 def redeem_drink_code(plaintext: str) -> dict:
     """Consume a drink-scoped code and create a Bearer session."""
-    from .drinks import get_allow_drink_texture, get_drink_name_colour_stops
+    from src.characters.rpc_player_meta import resolve_web_entitlements
 
     code = (plaintext or "").strip()
     if not code:
@@ -447,16 +488,20 @@ def redeem_drink_code(plaintext: str) -> dict:
         )
         conn.commit()
 
-    allow_texture = get_allow_drink_texture(str(row["player_uuid"]))
-    colour_stops = get_drink_name_colour_stops(str(row["player_uuid"]))
+    entitlements = resolve_web_entitlements(
+        str(row["player_uuid"]),
+        realm_id=_row_realm_id(row),
+    )
     return {
         "session_token": session_token,
         "player_uuid": row["player_uuid"],
         "expires_at": session_expires_at,
         "code_id": row["id"],
         "scope": scope,
-        "allow_drink_texture": allow_texture,
-        "name_colour_stops": colour_stops,
+        "realm_id": _row_realm_id(row),
+        "allow_drink_texture": entitlements["allow_drink_texture"],
+        "name_colour_stops": entitlements["name_colour_stops"],
+        "meta_synced": entitlements.get("meta_synced", False),
     }
 
 
@@ -493,7 +538,8 @@ def get_session(token: str) -> dict | None:
                 s.player_uuid AS player_uuid,
                 s.expires_at AS expires_at,
                 s.created_at AS created_at,
-                c.scope AS scope
+                c.scope AS scope,
+                c.realm_id AS realm_id
             FROM sessions s
             JOIN codes c ON c.id = s.code_id
             WHERE s.token_hash = ?
@@ -514,6 +560,7 @@ def get_session(token: str) -> dict | None:
         "expires_at": row["expires_at"],
         "created_at": row["created_at"],
         "scope": scope,
+        "realm_id": _row_realm_id(row),
         "staff": _is_staff_scope(scope),
     }
 

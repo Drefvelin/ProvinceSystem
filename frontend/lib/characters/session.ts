@@ -5,6 +5,7 @@ export type CharacterSession = {
   player_uuid: string;
   expires_at: string;
   scope?: string;
+  realm_id?: string;
   remember_me?: boolean;
 };
 
@@ -28,6 +29,9 @@ function parseStored(raw: string | null): StoredSession | null {
     };
     if (typeof parsed.scope === "string" && parsed.scope.trim()) {
       out.scope = parsed.scope.trim();
+    }
+    if (typeof parsed.realm_id === "string" && parsed.realm_id.trim()) {
+      out.realm_id = parsed.realm_id.trim().toLowerCase();
     }
     if (parsed.remember_me === true) {
       out.remember_me = true;
@@ -76,6 +80,7 @@ export function setSession(
     expires_at: session.expires_at,
   };
   if (session.scope) stored.scope = session.scope;
+  if (session.realm_id) stored.realm_id = session.realm_id;
   if (rememberMe) stored.remember_me = true;
   writeStored(stored, rememberMe);
 }

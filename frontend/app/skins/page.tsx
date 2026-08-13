@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RedeemForm from "../components/skins/RedeemForm";
 import UploadForm from "../components/skins/UploadForm";
+import { getPlayerMeta } from "../../lib/skins/api";
 import {
   clearSession,
   getLastSubmissionId,
   getSession,
   isSessionValid,
+  setSession,
   type SkinsSession,
 } from "../../lib/skins/session";
 import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
@@ -17,6 +19,7 @@ export default function SkinsPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<SkinsSession | null>(null);
+  const [metaSynced, setMetaSynced] = useState(true);
 
   useEffect(() => {
     const existing = getSession();
@@ -32,6 +35,34 @@ export default function SkinsPage() {
     }
     setReady(true);
   }, [router]);
+
+  useEffect(() => {
+    if (!session || !isSessionValid(session)) return;
+    let cancelled = false;
+    async function refreshMeta() {
+      try {
+        const meta = await getPlayerMeta(session!.session_token);
+        if (cancelled) return;
+        const next: SkinsSession = {
+          ...session!,
+          name_colour_stops: meta.name_colour_stops,
+          max_3d_pair_bytes: meta.max_3d_pair_bytes,
+          skin_token_cooldown_days: meta.skin_token_cooldown_days,
+          skin_kinds: meta.skin_kinds,
+          allow_armor_3d_helmet: meta.allow_armor_3d_helmet,
+        };
+        setSession(next);
+        setSessionState(next);
+        setMetaSynced(meta.meta_synced !== false);
+      } catch {
+        // Keep redeem-time session snapshot if refresh fails.
+      }
+    }
+    void refreshMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.session_token]);
 
   function onRedeemed(next: SkinsSession) {
     setSessionState(next);
@@ -67,6 +98,11 @@ export default function SkinsPage() {
             max3dPairBytes={session.max_3d_pair_bytes}
             skinKinds={session.skin_kinds ?? null}
             allowArmor3dHelmet={session.allow_armor_3d_helmet === true}
+            colourLockedMessage={
+              !metaSynced && (session.name_colour_stops ?? 0) <= 0
+                ? "Join the server once to sync rank perks"
+                : undefined
+            }
           />
         </div>
       ) : (

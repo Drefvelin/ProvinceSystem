@@ -82,6 +82,7 @@ skins_router = APIRouter(prefix="/skins", tags=["skins"])
 class IssueCodeBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
     scope: str | None = "skin"
+    realm_id: str | None = None
 
 
 class RedeemBody(BaseModel):
@@ -191,7 +192,7 @@ def post_codes(
 ):
     _require_plugin(x_plugin_key)
     try:
-        return issue_code(body.player_uuid, body.scope)
+        return issue_code(body.player_uuid, body.scope, body.realm_id)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -711,10 +712,11 @@ def staff_file(
 @skins_router.get("/plugin/approved")
 def plugin_approved(
     since: str | None = None,
+    realm_id: str | None = None,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    return {"submissions": list_approved_pending_apply(since)}
+    return {"submissions": list_approved_pending_apply(since, realm_id)}
 
 
 @skins_router.get("/plugin/submissions/deletable")
@@ -830,7 +832,12 @@ def plugin_put_player_meta(
     body: PlayerMetaBody,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
-    """ArmourShop upsert resolved skin-upload entitlements for a player."""
+    """Deprecated: prefer TFMCWeb PUT /characters/plugin/rpc-player-meta."""
+    import logging
+
+    logging.getLogger("uvicorn.error").warning(
+        "DEPRECATED PUT /skins/plugin/player-meta — use TFMCWeb rpc-player-meta"
+    )
     _require_plugin(x_plugin_key)
     try:
         return upsert_player_meta(body.model_dump())

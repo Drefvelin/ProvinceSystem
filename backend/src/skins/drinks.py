@@ -20,7 +20,7 @@ from src.text_validation import TextValidationError, assert_display_name, assert
 from . import db
 from .db import connect
 from .discord_link import get_identity_status
-from .naming import SlugError, build_submission_id, slugify_display_name
+from .naming import SlugError, build_submission_id_for_realm, slugify_display_name
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 MAX_PNG_BYTES = 512 * 1024
@@ -750,10 +750,18 @@ def create_drink_submission(
 
     player_uuid = str(session_row.get("player_uuid") or "").strip()
     code_id = int(session_row["code_id"])
-    colour_cap = get_drink_name_colour_stops(player_uuid)
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.skins.codes import normalize_realm_id
+
+    try:
+        realm = normalize_realm_id(session_row.get("realm_id"))
+    except Exception:
+        realm = "main"
+    entitlements = resolve_web_entitlements(player_uuid, realm_id=realm)
+    colour_cap = int(entitlements["name_colour_stops"])
     recipe = _validate_recipe(recipe_raw, colour_cap=colour_cap)
     display = recipe["name"]
-    allow_texture = get_allow_drink_texture(player_uuid)
+    allow_texture = bool(entitlements["allow_drink_texture"])
 
     has_color = recipe.get("color") is not None
     has_png = png_bytes is not None and len(png_bytes) > 0
@@ -774,7 +782,9 @@ def create_drink_submission(
     discord_user_id = identity.get("discord_user_id")
 
     try:
-        submission_id = build_submission_id(minecraft_name, display)
+        submission_id = build_submission_id_for_realm(
+            minecraft_name, display, realm
+        )
         slug = slugify_display_name(display)
     except SlugError as e:
         raise DrinkError(str(e)) from e
@@ -783,10 +793,17 @@ def create_drink_submission(
         clash = conn.execute(
             """
             SELECT id FROM drink_submissions
-            WHERE id = ? OR (LOWER(player_uuid) = LOWER(?) AND LOWER(slug) = LOWER(?)
-              AND status IN ('pending', 'approved', 'pending_pack', 'applied'))
+            WHERE realm_id = ?
+              AND (
+                id = ?
+                OR (
+                  LOWER(player_uuid) = LOWER(?)
+                  AND LOWER(slug) = LOWER(?)
+                  AND status IN ('pending', 'approved', 'pending_pack', 'applied')
+                )
+              )
             """,
-            (submission_id, player_uuid, slug),
+            (realm, submission_id, player_uuid, slug),
         ).fetchone()
         if clash is not None:
             raise DrinkError(
@@ -866,8 +883,8 @@ def create_drink_submission(
                 INSERT INTO drink_submissions (
                     id, player_uuid, code_id, slug, display_name, recipe_json,
                     status, deny_reason, texture_id, new_texture, dir_path,
-                    discord_user_id, created_at, reviewed_at, applied_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?, ?, NULL, NULL)
+                    discord_user_id, created_at, reviewed_at, applied_at, realm_id
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?, ?, NULL, NULL, ?)
                 """,
                 (
                     submission_id,
@@ -881,6 +898,7 @@ def create_drink_submission(
                     dir_path,
                     discord_user_id,
                     created_at,
+                    realm,
                 ),
             )
             conn.commit()
@@ -1254,16 +1272,23 @@ def _texture_public(row) -> dict[str, Any]:
     }
 
 
-def list_drinks_pending_apply() -> list[dict[str, Any]]:
+def list_drinks_pending_apply(
+    realm_id: str | None = None,
+) -> list[dict[str, Any]]:
     """Approved / pending_pack drinks not yet applied by DrinkBuilder."""
+    from src.skins.codes import normalize_realm_id
+
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM drink_submissions
             WHERE status IN ('approved', 'pending_pack')
               AND applied_at IS NULL
+              AND realm_id = ?
             ORDER BY reviewed_at ASC, created_at ASC
-            """
+            """,
+            (realm,),
         ).fetchall()
         textures: dict[str, Any] = {}
         tex_ids = [
@@ -1286,6 +1311,7 @@ def list_drinks_pending_apply() -> list[dict[str, Any]]:
         public["minecraft_name"] = names.get("minecraft_name")
         public["discord_username"] = names.get("discord_username")
         public["files"] = _list_files(row["id"])
+        public["realm_id"] = realm
         tid = str(row["texture_id"] or "").strip()
         if tid and tid in textures:
             public["texture"] = _texture_public(textures[tid])

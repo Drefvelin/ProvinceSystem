@@ -83,6 +83,7 @@ Enable slash if needed: `!slash enable skinsreview` then `!slash sync`.
 2. `Builds/TFMCWeb/tfmcweb-*.jar` with `plugins/TFMCWeb/config.yml`:
    - `api.base-url`: `http://127.0.0.1:18001`
    - `api.plugin-key`: same as API `PLUGIN_API_KEY`
+   - **`player-meta`** ladders synced with donator groups (see Step 32) — required on **lobby** as well as survival
 3. ArmourShop cutover jar (pack apply only; `skins-api` still for approved packs).
 4. RPCharacters with Discord gate freeze API.
 5. Bot: skinsreview `guild_id` + leave/join; minecraftban `config.yml` (`api_base_url`, `staff_key`, `banned_role_id` — role id required for role checks).
@@ -575,7 +576,7 @@ web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank w
 - Noble: color-only; Gilded+: texture upload or reuse (applied CMD only)
 - Shared skin↔drink mint cooldown on TFMCWeb only
 - Curated ingredient catalog → PS/web (category labels from DrinkBuilder)
-- Drink colour stops + texture from DrinkBuilder `permission-groups.yml`
+- Drink colour stops + texture from DrinkBuilder `permission-groups.yml` (in-game); website gates prefer TFMCWeb `rpc_player_meta` after lobby join (Step 32)
 - IA `tfmc_drinks` potion + `model_id` / Brewery `customModelData`
 - Delete: recipe always; texture/CMD iff refcount 0
 
@@ -593,6 +594,7 @@ web upload → MineSkin → switch/join apply → mask · wardrobe cmd · rank w
 - [ ] Staff delete + shared texture refcount (`/drinkbuilder drink delete`)
 - [ ] `/token resetcooldowns <player>` clears shared mint clock
 - [ ] `/tfmc drinks` disabled (CE event retired); players use token + website
+- [ ] After lobby join (TFMCWeb only): `/drinks` colour picker unlocked for ranked players without DrinkBuilder on lobby
 
 Checkpoint:
 
@@ -605,6 +607,110 @@ Checkpoint:
 /token create skin then drink blocked by shared cooldown
 staff delete drink; shared texture kept if still referenced
 ```
+
+## Step 32 — `rpc_player_meta` + TFMCWeb join sync
+
+**Batch:** [Planning/batches/step-32/00-rpc-player-meta.md](./Planning/batches/step-32/00-rpc-player-meta.md).
+
+Web entitlements (`name_colour_stops`, `allow_drink_texture`, skin kinds, character slots, LP flag snapshots) are pushed by **TFMCWeb on player join** to ProvinceSystem `rpc_player_meta`. Lobby with TFMCWeb only is enough; DrinkBuilder / ArmourShop / RPCharacters are not required on that box for website gates.
+
+### Deploy
+
+1. Staging PS up (DB migrate creates `rpc_player_meta`).
+2. Deploy TFMCWeb jar with `player-meta` section in `config.yml` (duplicated ladders — keep in sync with plugin `permission-groups.yml` files). **Lobby must have this jar/config.**
+3. Join lobby once as a ranked/staff player (or `/web syncmeta [player]`).
+4. Confirm `GET /characters/player-meta` (Bearer skin/drink/character session) shows expected stops / texture / `permission_flags`.
+
+### Operator checklist
+
+- [ ] Lobby join as gilded → `name_colour_stops >= 2`, `allow_drink_texture: true`
+- [ ] Staff `*` → colour stops capped at 8 for web
+- [ ] `/drinks` and `/character/create` colours correct after lobby join without DrinkBuilder/RPC on lobby
+- [ ] Skin redeem + `skin_staff` bypass still works
+- [ ] Never-joined-since-deploy players still work via legacy meta fallback
+- [ ] `rulequiz.completed` present in `permission_flags` when configured
+
+## Step 33 — Realm + token policy
+
+**Batch:** [Planning/batches/step-33/00-realm-token-policy.md](./Planning/batches/step-33/00-realm-token-policy.md).
+
+TFMCWeb stamps `realm_id` on minted codes and gates which scopes `/token create` allows per box. Character creates inherit `realm_id` from the Bearer session. Lists/ingests are **not** filtered by realm yet (Plan 3).
+
+### Deploy
+
+1. Staging PS up (migrate adds `codes.realm_id` + `character_creates.realm_id`, default `main`).
+2. Deploy TFMCWeb jar with:
+
+```yaml
+realm:
+  id: main   # lobby+main share; use tutorial / dev on those boxes
+
+tokens:
+  enabled-scopes:
+    - character   # lobby example — skin/drink rejected locally
+  # main / survival: skin, drink, character, skin_staff
+  # tutorial: []  (tokens disabled)
+```
+
+3. `/web reload` after editing live config (or restart).
+
+### Operator checklist
+
+- [ ] Lobby: `/token create skin` fails; `/token create character` works; code/create tagged `main`
+- [ ] Main: skin/drink/character still mint; shared cooldown unchanged
+- [ ] Dev box: mint tags `dev`; character create row has `dev`
+- [ ] Tutorial: any `/token create` rejected (“disabled on this server”)
+- [ ] Old codes after migrate behave as `realm_id=main`
+
+## Step 34 — Realm-scoped game data
+
+**Batch:** [Planning/batches/step-34/00-realm-scoped-data.md](./Planning/batches/step-34/00-realm-scoped-data.md).
+
+Pending character ingest, roster mirrors, and skin/drink apply queues are filtered by `realm_id` from TFMCWeb. Plugins soft-depend TFMCWeb; boxes without it fall back to `main`.
+
+### Deploy
+
+1. Staging PS up (migrate: roster PK includes `realm_id`; stamp/backfill `submissions.realm_id` / `drink_submissions.realm_id`).
+2. Deploy TFMCWeb + RPCharacters + ArmourShop + DrinkBuilder jars together.
+3. Confirm each box’s TFMCWeb `realm.id`:
+
+| Box | `realm.id` |
+|-----|------------|
+| Lobby | `main` |
+| Main / Survival | `main` |
+| Tutorial | `tutorial` |
+| Dev | `dev` |
+
+### Operator checklist
+
+- [ ] Lobby character create (`main`) appears only on main RPC ingest, not tutorial/dev
+- [ ] Tutorial create never applied on main
+- [ ] Dev skin approve → only dev ArmourShop pulls it
+- [ ] Dev drink approve → only dev DrinkBuilder pulls it
+- [ ] Box without TFMCWeb still uses `main` fallback
+- [ ] Website character list for a `dev` session shows only that realm’s pending + roster
+
+## Step 35 — TFMCWeb HTTP gateway + per-realm isolation
+
+**Batch:** [Planning/batches/step-35/00-http-gateway-per-realm.md](./Planning/batches/step-35/00-http-gateway-per-realm.md).
+
+All plugin ProvinceSystem HTTP goes through TFMCWeb. `rpc_player_meta`, lore-items, and cosmetic/character uniqueness are realm-scoped. **RPC / ArmourShop / DrinkBuilder require TFMCWeb** on the box.
+
+### Deploy
+
+1. Staging PS up (migrate: `rpc_player_meta` PK includes `realm_id`; lore `realm_id`; submission id prefix rules for non-main).
+2. Deploy TFMCWeb jar **first**, then RPC / ArmourShop / DrinkBuilder.
+3. Remove live `characters-api` / `skins-api` / DrinkBuilder `api` config blocks (URL + key live only in TFMCWeb).
+4. Confirm TFMCWeb `realm.id` per box (same table as Step 34).
+
+### Operator checklist
+
+- [ ] Box without per-plugin API config still reaches PS (TW only)
+- [ ] Dev skin id is `dev_…` and lands in `tfmc_submissions_dev` on the dev box only
+- [ ] Tutorial character name can match a main character name
+- [ ] Lobby join sync writes `rpc_player_meta` for `main`; dev box writes `dev`
+- [ ] Lore-item ready on tutorial never pulled by main RPC
+- [ ] ArmourShop / DrinkBuilder no longer push player-meta on join
 
 ## Step 5 — Discord link + player DMs (historical)
 

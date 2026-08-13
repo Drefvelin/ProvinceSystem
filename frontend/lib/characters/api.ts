@@ -63,6 +63,7 @@ export type RedeemResult = {
   player_uuid: string;
   expires_at: string;
   scope?: string;
+  realm_id?: string;
   remember_me?: boolean;
 };
 
@@ -94,6 +95,9 @@ export async function redeemCharacter(
     player_uuid: body.player_uuid,
     expires_at: body.expires_at,
     scope: typeof body.scope === "string" ? body.scope : "character",
+    ...(typeof body.realm_id === "string" && body.realm_id.trim()
+      ? { realm_id: body.realm_id.trim().toLowerCase() }
+      : {}),
     remember_me: body.remember_me === true || rememberMe,
   };
 }

@@ -75,6 +75,14 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE codes ADD COLUMN scope TEXT NOT NULL DEFAULT 'skin'"
             )
+        if "realm_id" not in _column_names(conn, "codes"):
+            conn.execute(
+                "ALTER TABLE codes ADD COLUMN realm_id TEXT NOT NULL DEFAULT 'main'"
+            )
+        conn.execute(
+            "UPDATE codes SET realm_id = 'main' "
+            "WHERE realm_id IS NULL OR TRIM(realm_id) = ''"
+        )
         conn.execute(
             "UPDATE codes SET scope = 'skin' WHERE scope IS NULL OR TRIM(scope) = ''"
         )
@@ -206,8 +214,24 @@ def migrate() -> None:
                 character_id TEXT,
                 error TEXT,
                 created_at TEXT NOT NULL,
-                applied_at TEXT
+                applied_at TEXT,
+                realm_id TEXT NOT NULL DEFAULT 'main'
             )
+            """
+        )
+        if "realm_id" not in _column_names(conn, "character_creates"):
+            conn.execute(
+                "ALTER TABLE character_creates "
+                "ADD COLUMN realm_id TEXT NOT NULL DEFAULT 'main'"
+            )
+        conn.execute(
+            "UPDATE character_creates SET realm_id = 'main' "
+            "WHERE realm_id IS NULL OR TRIM(realm_id) = ''"
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_creates_realm_status
+            ON character_creates(realm_id, status)
             """
         )
         conn.execute(
@@ -227,6 +251,7 @@ def migrate() -> None:
             """
             CREATE TABLE IF NOT EXISTS character_roster (
                 player_uuid TEXT NOT NULL,
+                realm_id TEXT NOT NULL DEFAULT 'main',
                 character_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 status TEXT NOT NULL,
@@ -234,7 +259,7 @@ def migrate() -> None:
                 class TEXT,
                 created_at TEXT,
                 updated_at TEXT NOT NULL,
-                PRIMARY KEY (player_uuid, character_id)
+                PRIMARY KEY (player_uuid, realm_id, character_id)
             )
             """
         )
@@ -242,6 +267,12 @@ def migrate() -> None:
             """
             CREATE INDEX IF NOT EXISTS idx_character_roster_player
             ON character_roster(player_uuid)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
+            ON character_roster(player_uuid, realm_id)
             """
         )
         conn.execute(
@@ -379,6 +410,7 @@ def migrate() -> None:
                 ready_at TEXT,
                 applied_at TEXT,
                 updated_at TEXT NOT NULL,
+                realm_id TEXT NOT NULL DEFAULT 'main',
                 PRIMARY KEY (player_uuid, character_id, kit_key)
             )
             """
@@ -421,6 +453,34 @@ def migrate() -> None:
             conn.execute(
                 "ALTER TABLE lore_item_customisations ADD COLUMN deny_reason TEXT"
             )
+        lore_cols = _column_names(conn, "lore_item_customisations")
+        if "realm_id" not in lore_cols:
+            conn.execute(
+                "ALTER TABLE lore_item_customisations "
+                "ADD COLUMN realm_id TEXT NOT NULL DEFAULT 'main'"
+            )
+            conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET realm_id = (
+                    SELECT cr.realm_id FROM character_roster cr
+                    WHERE cr.player_uuid = lore_item_customisations.player_uuid
+                      AND cr.character_id = lore_item_customisations.character_id
+                    LIMIT 1
+                )
+                WHERE EXISTS (
+                    SELECT 1 FROM character_roster cr
+                    WHERE cr.player_uuid = lore_item_customisations.player_uuid
+                      AND cr.character_id = lore_item_customisations.character_id
+                )
+                """
+            )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_lore_item_customisations_realm_state
+            ON lore_item_customisations(realm_id, state)
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
@@ -475,6 +535,72 @@ def migrate() -> None:
                 "ALTER TABLE character_roster "
                 "ADD COLUMN wardrobe_active_slot TEXT"
             )
+        roster_cols = _column_names(conn, "character_roster")
+        if "realm_id" not in roster_cols:
+            # SQLite cannot ALTER PRIMARY KEY — rebuild with realm_id.
+            conn.execute("ALTER TABLE character_roster RENAME TO character_roster_old")
+            conn.execute(
+                """
+                CREATE TABLE character_roster (
+                    player_uuid TEXT NOT NULL,
+                    realm_id TEXT NOT NULL DEFAULT 'main',
+                    character_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    race TEXT,
+                    class TEXT,
+                    created_at TEXT,
+                    updated_at TEXT NOT NULL,
+                    kit_status TEXT,
+                    kit_statuses_json TEXT,
+                    sheet_json TEXT,
+                    wardrobe_active_slot TEXT,
+                    PRIMARY KEY (player_uuid, realm_id, character_id)
+                )
+                """
+            )
+            old_cols = _column_names(conn, "character_roster_old")
+            has_kit = "kit_status" in old_cols
+            has_statuses = "kit_statuses_json" in old_cols
+            has_sheet = "sheet_json" in old_cols
+            has_wardrobe = "wardrobe_active_slot" in old_cols
+            conn.execute(
+                f"""
+                INSERT INTO character_roster (
+                    player_uuid, realm_id, character_id, name, status, race, class,
+                    created_at, updated_at, kit_status, kit_statuses_json,
+                    sheet_json, wardrobe_active_slot
+                )
+                SELECT
+                    player_uuid,
+                    'main',
+                    character_id,
+                    name,
+                    status,
+                    race,
+                    class,
+                    created_at,
+                    updated_at,
+                    {"kit_status" if has_kit else "NULL"},
+                    {"kit_statuses_json" if has_statuses else "NULL"},
+                    {"sheet_json" if has_sheet else "NULL"},
+                    {"wardrobe_active_slot" if has_wardrobe else "NULL"}
+                FROM character_roster_old
+                """
+            )
+            conn.execute("DROP TABLE character_roster_old")
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_character_roster_player_realm
+                ON character_roster(player_uuid, realm_id)
+                """
+            )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_character_roster_player
+            ON character_roster(player_uuid)
+            """
+        )
         meta_cols = _column_names(conn, "character_player_meta")
         if "wardrobe_skin_slots" not in meta_cols:
             conn.execute(
@@ -499,6 +625,7 @@ def migrate() -> None:
                 created_at TEXT NOT NULL,
                 reviewed_at TEXT,
                 applied_at TEXT,
+                realm_id TEXT NOT NULL DEFAULT 'main',
                 FOREIGN KEY (code_id) REFERENCES codes(id)
             )
             """
@@ -540,6 +667,147 @@ def migrate() -> None:
                 "ALTER TABLE drink_player_meta "
                 "ADD COLUMN name_colour_stops INTEGER NOT NULL DEFAULT 0"
             )
+        if "realm_id" not in _column_names(conn, "submissions"):
+            conn.execute(
+                "ALTER TABLE submissions "
+                "ADD COLUMN realm_id TEXT NOT NULL DEFAULT 'main'"
+            )
+            conn.execute(
+                """
+                UPDATE submissions
+                SET realm_id = COALESCE(
+                    (
+                        SELECT c.realm_id FROM codes c
+                        WHERE c.id = submissions.code_id
+                    ),
+                    'main'
+                )
+                WHERE realm_id IS NULL OR TRIM(realm_id) = '' OR realm_id = 'main'
+                """
+            )
+            # Prefer code realm when present (overwrite default for rows that have codes).
+            conn.execute(
+                """
+                UPDATE submissions
+                SET realm_id = (
+                    SELECT c.realm_id FROM codes c WHERE c.id = submissions.code_id
+                )
+                WHERE EXISTS (
+                    SELECT 1 FROM codes c
+                    WHERE c.id = submissions.code_id
+                      AND c.realm_id IS NOT NULL
+                      AND TRIM(c.realm_id) != ''
+                )
+                """
+            )
+        if "realm_id" not in _column_names(conn, "drink_submissions"):
+            conn.execute(
+                "ALTER TABLE drink_submissions "
+                "ADD COLUMN realm_id TEXT NOT NULL DEFAULT 'main'"
+            )
+            conn.execute(
+                """
+                UPDATE drink_submissions
+                SET realm_id = (
+                    SELECT c.realm_id FROM codes c
+                    WHERE c.id = drink_submissions.code_id
+                )
+                WHERE EXISTS (
+                    SELECT 1 FROM codes c
+                    WHERE c.id = drink_submissions.code_id
+                      AND c.realm_id IS NOT NULL
+                      AND TRIM(c.realm_id) != ''
+                )
+                """
+            )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_submissions_realm_apply
+            ON submissions(realm_id, status, applied_at)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_drink_submissions_realm_apply
+            ON drink_submissions(realm_id, status, applied_at)
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS rpc_player_meta (
+                player_uuid TEXT NOT NULL,
+                realm_id TEXT NOT NULL DEFAULT 'main',
+                name_colour_stops INTEGER NOT NULL DEFAULT 0,
+                allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+                max_alive_characters INTEGER,
+                wardrobe_skin_slots INTEGER NOT NULL DEFAULT 1,
+                max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+                skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
+                skin_kinds_json TEXT NOT NULL DEFAULT '[]',
+                allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
+                permission_flags_json TEXT NOT NULL DEFAULT '{}',
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (player_uuid, realm_id)
+            )
+            """
+        )
+        rpc_meta_cols = _column_names(conn, "rpc_player_meta")
+        if "realm_id" not in rpc_meta_cols:
+            # SQLite cannot ALTER PRIMARY KEY — rebuild with realm_id.
+            conn.execute(
+                "ALTER TABLE rpc_player_meta RENAME TO rpc_player_meta_old"
+            )
+            conn.execute(
+                """
+                CREATE TABLE rpc_player_meta (
+                    player_uuid TEXT NOT NULL,
+                    realm_id TEXT NOT NULL DEFAULT 'main',
+                    name_colour_stops INTEGER NOT NULL DEFAULT 0,
+                    allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+                    max_alive_characters INTEGER,
+                    wardrobe_skin_slots INTEGER NOT NULL DEFAULT 1,
+                    max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+                    skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
+                    skin_kinds_json TEXT NOT NULL DEFAULT '[]',
+                    allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
+                    permission_flags_json TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (player_uuid, realm_id)
+                )
+                """
+            )
+            old_cols = _column_names(conn, "rpc_player_meta_old")
+            has_wardrobe = "wardrobe_skin_slots" in old_cols
+            has_pair = "max_3d_pair_bytes" in old_cols
+            has_cooldown = "skin_token_cooldown_days" in old_cols
+            has_kinds = "skin_kinds_json" in old_cols
+            has_helmet = "allow_armor_3d_helmet" in old_cols
+            has_flags = "permission_flags_json" in old_cols
+            conn.execute(
+                f"""
+                INSERT INTO rpc_player_meta (
+                    player_uuid, realm_id, name_colour_stops, allow_drink_texture,
+                    max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
+                    skin_token_cooldown_days, skin_kinds_json,
+                    allow_armor_3d_helmet, permission_flags_json, updated_at
+                )
+                SELECT
+                    player_uuid,
+                    'main',
+                    name_colour_stops,
+                    allow_drink_texture,
+                    max_alive_characters,
+                    {"wardrobe_skin_slots" if has_wardrobe else "1"},
+                    {"max_3d_pair_bytes" if has_pair else "0"},
+                    {"skin_token_cooldown_days" if has_cooldown else "-1"},
+                    {"skin_kinds_json" if has_kinds else "'[]'"},
+                    {"allow_armor_3d_helmet" if has_helmet else "0"},
+                    {"permission_flags_json" if has_flags else "'{}'"},
+                    updated_at
+                FROM rpc_player_meta_old
+                """
+            )
+            conn.execute("DROP TABLE rpc_player_meta_old")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS drink_notifications (

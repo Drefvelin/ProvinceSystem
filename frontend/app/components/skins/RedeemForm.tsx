@@ -31,6 +31,7 @@ export default function RedeemForm({ onRedeemed }: Props) {
         expires_at: result.expires_at,
         ...(result.staff ? { staff: true as const } : {}),
         ...(result.scope ? { scope: result.scope } : {}),
+        ...(result.realm_id ? { realm_id: result.realm_id } : {}),
         ...(result.name_colour_stops !== undefined
           ? { name_colour_stops: result.name_colour_stops }
           : {}),

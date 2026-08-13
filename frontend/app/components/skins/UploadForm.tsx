@@ -89,6 +89,8 @@ type Props = {
   max3dPairBytes?: number;
   skinKinds?: string[] | null;
   allowArmor3dHelmet?: boolean;
+  /** Override locked colour picker message (e.g. meta not synced yet). */
+  colourLockedMessage?: string;
 };
 
 type TierEntry = {
@@ -163,6 +165,7 @@ export default function UploadForm({
   max3dPairBytes,
   skinKinds,
   allowArmor3dHelmet = false,
+  colourLockedMessage,
 }: Props) {
   const router = useRouter();
   const resolvedKinds =
@@ -792,6 +795,9 @@ export default function UploadForm({
           disabled={loading}
           previewStyles={styles}
           onError={setError}
+          lockedMessage={
+            colourLockedMessage || "Name colours require a donator rank"
+          }
         />
 
         <div className="flex flex-col gap-2">

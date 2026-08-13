@@ -293,6 +293,12 @@ def plugin_put_meta(
     body: DrinkMetaBody,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
+    """Deprecated: prefer TFMCWeb PUT /characters/plugin/rpc-player-meta."""
+    import logging
+
+    logging.getLogger("uvicorn.error").warning(
+        "DEPRECATED PUT /drinks/plugin/player-meta — use TFMCWeb rpc-player-meta"
+    )
     _require_plugin(x_plugin_key)
     try:
         return upsert_drink_player_meta(body.model_dump())
@@ -317,10 +323,11 @@ async def plugin_put_asset(
 
 @drinks_router.get("/plugin/pending-apply")
 def plugin_pending_apply(
+    realm_id: str | None = None,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    return {"submissions": list_drinks_pending_apply()}
+    return {"submissions": list_drinks_pending_apply(realm_id)}
 
 
 @drinks_router.get("/plugin/submissions/{submission_id}/files/{filename}")

@@ -38,6 +38,7 @@ export default function CharacterRedeemForm({ onRedeemed }: Props) {
         player_uuid: result.player_uuid,
         expires_at: result.expires_at,
         scope: result.scope || "character",
+        ...(result.realm_id ? { realm_id: result.realm_id } : {}),
         remember_me: rememberMe,
       };
       setSession(session, rememberMe);

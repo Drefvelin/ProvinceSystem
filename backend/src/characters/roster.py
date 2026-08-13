@@ -15,19 +15,23 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def count_alive(player_uuid: str) -> int:
+def count_alive(player_uuid: str, realm_id: str | None = None) -> int:
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         return 0
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         row = conn.execute(
             """
             SELECT COUNT(*) AS n FROM character_roster
-            WHERE player_uuid = ? AND LOWER(status) = 'alive'
+            WHERE player_uuid = ?
+              AND realm_id = ?
+              AND LOWER(status) = 'alive'
             """,
-            (uuid,),
+            (uuid, realm),
         ).fetchone()
     return int(row["n"] if row else 0)
 
@@ -303,22 +307,27 @@ def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
     return sheet if sheet else None
 
 
-def list_roster(player_uuid: str) -> list[dict[str, Any]]:
+def list_roster(
+    player_uuid: str,
+    realm_id: str | None = None,
+) -> list[dict[str, Any]]:
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         return []
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         rows = conn.execute(
             """
             SELECT character_id, name, status, race, class, created_at, updated_at,
-                   kit_status, kit_statuses_json, sheet_json
+                   kit_status, kit_statuses_json, sheet_json, realm_id
             FROM character_roster
-            WHERE player_uuid = ?
+            WHERE player_uuid = ? AND realm_id = ?
             ORDER BY created_at ASC, character_id ASC
             """,
-            (uuid,),
+            (uuid, realm),
         ).fetchall()
     out: list[dict[str, Any]] = []
     for row in rows:
@@ -330,6 +339,7 @@ def list_roster(player_uuid: str) -> list[dict[str, Any]]:
             "class": row["class"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
+            "realm_id": realm,
             "source": "roster",
         }
         kit_status = row["kit_status"]
@@ -379,7 +389,9 @@ def replace_roster(
     kit_cooldown_seconds_remaining: int | None = None,
     kit_cooldown_hours: int | None = None,
     kit_cooldowns: dict | None = None,
+    realm_id: str | None = None,
 ) -> dict[str, Any]:
+    from src.skins.codes import CodeError, normalize_realm_id
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -387,6 +399,10 @@ def replace_roster(
         raise RosterError("player_uuid is required")
     if not isinstance(characters, list):
         raise RosterError("characters must be a list")
+    try:
+        realm = normalize_realm_id(realm_id)
+    except CodeError as e:
+        raise RosterError(str(e)) from e
 
     max_alive: int | None = None
     if max_alive_characters is not None:
@@ -505,6 +521,7 @@ def replace_roster(
         normalized.append(
             (
                 uuid,
+                realm,
                 cid,
                 name,
                 status,
@@ -520,16 +537,16 @@ def replace_roster(
 
     with connect() as conn:
         conn.execute(
-            "DELETE FROM character_roster WHERE player_uuid = ?",
-            (uuid,),
+            "DELETE FROM character_roster WHERE player_uuid = ? AND realm_id = ?",
+            (uuid, realm),
         )
         conn.executemany(
             """
             INSERT INTO character_roster (
-                player_uuid, character_id, name, status, race, class,
+                player_uuid, realm_id, character_id, name, status, race, class,
                 created_at, kit_status, kit_statuses_json, sheet_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             normalized,
         )
@@ -638,6 +655,7 @@ def replace_roster(
     out: dict[str, Any] = {
         "ok": True,
         "player_uuid": uuid,
+        "realm_id": realm,
         "count": len(normalized),
     }
     if max_alive is not None:

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   createSubmission,
   getCatalog,
+  getPlayerMeta,
   getTextures,
   DrinksApiError,
   type DrinkCatalog,
@@ -21,6 +22,7 @@ import {
 import { composeTintedPotionFile } from "../../../lib/drinks/potionTint";
 import {
   setLastSubmissionId,
+  setSession,
   type DrinksSession,
 } from "../../../lib/drinks/session";
 import NameColourPicker from "../shared/NameColourPicker";
@@ -47,8 +49,13 @@ const btnDanger = "text-xs text-[#e8a0a0] hover:underline";
 
 export default function BrewForm({ session }: Props) {
   const router = useRouter();
-  const allowTexture = session.allow_drink_texture === true;
-  const colourStops = Math.max(0, Math.floor(session.name_colour_stops ?? 0));
+  const [allowTexture, setAllowTexture] = useState(
+    session.allow_drink_texture === true
+  );
+  const [colourStops, setColourStops] = useState(
+    Math.max(0, Math.floor(session.name_colour_stops ?? 0))
+  );
+  const [metaSynced, setMetaSynced] = useState(true);
 
   const [catalog, setCatalog] = useState<DrinkCatalog | null>(null);
   const [textures, setTextures] = useState<DrinkTexture[]>([]);
@@ -91,6 +98,30 @@ export default function BrewForm({ session }: Props) {
     open: boolean;
     editIndex: number | null;
   }>({ open: false, editIndex: null });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function refreshMeta() {
+      try {
+        const meta = await getPlayerMeta(session.session_token);
+        if (cancelled) return;
+        setAllowTexture(meta.allow_drink_texture === true);
+        setColourStops(Math.max(0, Math.floor(meta.name_colour_stops)));
+        setMetaSynced(meta.meta_synced !== false);
+        setSession({
+          ...session,
+          allow_drink_texture: meta.allow_drink_texture === true,
+          name_colour_stops: Math.max(0, Math.floor(meta.name_colour_stops)),
+        });
+      } catch {
+        // Keep redeem-time session snapshot if refresh fails.
+      }
+    }
+    void refreshMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [session.session_token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -360,7 +391,11 @@ export default function BrewForm({ session }: Props) {
           onChange={setNameColours}
           previewText={name.trim() || "Preview"}
           maxStops={colourStops}
-          lockedMessage="Name colours require a donator rank"
+          lockedMessage={
+            !metaSynced && colourStops <= 0
+              ? "Join the server once to sync rank perks"
+              : "Name colours require a donator rank"
+          }
         />
         <p className="text-xs text-[var(--tfmc-mist)]">
           Same colours apply to normal, bad, and good quality names.
@@ -653,7 +688,11 @@ export default function BrewForm({ session }: Props) {
           onChange={setDrinkMessageColours}
           previewText={drinkMessage.trim() || "Drink message"}
           maxStops={colourStops}
-          lockedMessage="Message colours require a donator rank"
+          lockedMessage={
+            !metaSynced && colourStops <= 0
+              ? "Join the server once to sync rank perks"
+              : "Message colours require a donator rank"
+          }
         />
 
         <label className="flex flex-col gap-1.5">
@@ -673,7 +712,11 @@ export default function BrewForm({ session }: Props) {
           onChange={setDrinkTitleColours}
           previewText={drinkTitle.trim() || "Drink title"}
           maxStops={colourStops}
-          lockedMessage="Title colours require a donator rank"
+          lockedMessage={
+            !metaSynced && colourStops <= 0
+              ? "Join the server once to sync rank perks"
+              : "Title colours require a donator rank"
+          }
         />
 
         <FancyCheckbox

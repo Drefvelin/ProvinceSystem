@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS codes (
     code_plaintext TEXT,
     player_uuid TEXT NOT NULL,
     scope TEXT NOT NULL DEFAULT 'skin',
+    realm_id TEXT NOT NULL DEFAULT 'main',
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     redeemed_at TEXT,
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     category TEXT,
     scroll TEXT,
     tier_scrolls TEXT,
+    realm_id TEXT NOT NULL DEFAULT 'main',
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
@@ -153,8 +155,12 @@ CREATE TABLE IF NOT EXISTS lore_item_customisations (
     applied_at TEXT,
     deny_reason TEXT,
     updated_at TEXT NOT NULL,
+    realm_id TEXT NOT NULL DEFAULT 'main',
     PRIMARY KEY (player_uuid, character_id, kit_key)
 );
+
+CREATE INDEX IF NOT EXISTS idx_lore_item_customisations_realm_state
+ON lore_item_customisations(realm_id, state);
 
 CREATE TABLE IF NOT EXISTS character_wardrobe_slots (
     player_uuid TEXT NOT NULL,
@@ -198,6 +204,7 @@ CREATE TABLE IF NOT EXISTS drink_submissions (
     created_at TEXT NOT NULL,
     reviewed_at TEXT,
     applied_at TEXT,
+    realm_id TEXT NOT NULL DEFAULT 'main',
     FOREIGN KEY (code_id) REFERENCES codes(id)
 );
 
@@ -222,6 +229,22 @@ CREATE TABLE IF NOT EXISTS drink_player_meta (
     allow_drink_texture INTEGER NOT NULL DEFAULT 0,
     name_colour_stops INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rpc_player_meta (
+    player_uuid TEXT NOT NULL,
+    realm_id TEXT NOT NULL DEFAULT 'main',
+    name_colour_stops INTEGER NOT NULL DEFAULT 0,
+    allow_drink_texture INTEGER NOT NULL DEFAULT 0,
+    max_alive_characters INTEGER,
+    wardrobe_skin_slots INTEGER NOT NULL DEFAULT 1,
+    max_3d_pair_bytes INTEGER NOT NULL DEFAULT 0,
+    skin_token_cooldown_days INTEGER NOT NULL DEFAULT -1,
+    skin_kinds_json TEXT NOT NULL DEFAULT '[]',
+    allow_armor_3d_helmet INTEGER NOT NULL DEFAULT 0,
+    permission_flags_json TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (player_uuid, realm_id)
 );
 
 CREATE TABLE IF NOT EXISTS drink_notifications (

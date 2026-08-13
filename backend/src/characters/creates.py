@@ -15,7 +15,6 @@ from src.characters.creation_catalog import (
 from src.characters.roster import (
     count_alive,
     get_max_alive,
-    get_name_colour_stops,
     get_player_meta,
     set_real_age,
 )
@@ -104,7 +103,12 @@ def expand_attribute_traits(
     return out
 
 
-def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
+def _validate_and_normalize(
+    player_uuid: str,
+    body: dict[str, Any],
+    *,
+    realm_id: str | None = None,
+) -> dict[str, Any]:
     catalog = require_synced_creation_catalog()
     validation = _as_dict(catalog.get("validation"), "validation")
     apb = _as_dict(catalog.get("attribute_point_buy"), "attribute_point_buy")
@@ -121,6 +125,41 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
         )
     except TextValidationError as e:
         raise CreateError(str(e)) from e
+
+    from src.skins.codes import CodeError, normalize_realm_id
+    from src.skins.db import connect
+
+    try:
+        realm = normalize_realm_id(realm_id)
+    except CodeError as e:
+        raise CreateError(str(e)) from e
+
+    with connect() as conn:
+        roster_clash = conn.execute(
+            """
+            SELECT 1 FROM character_roster
+            WHERE realm_id = ? AND LOWER(name) = LOWER(?)
+            LIMIT 1
+            """,
+            (realm, name),
+        ).fetchone()
+        if roster_clash is not None:
+            raise CreateError("name already in use on this realm")
+        pending_rows = conn.execute(
+            """
+            SELECT payload FROM character_creates
+            WHERE realm_id = ? AND status = 'pending'
+            """,
+            (realm,),
+        ).fetchall()
+    for prow in pending_rows:
+        try:
+            pending_payload = json.loads(prow["payload"] or "{}")
+        except (TypeError, json.JSONDecodeError):
+            continue
+        pending_name = str(pending_payload.get("name") or "").strip()
+        if pending_name and pending_name.lower() == name.lower():
+            raise CreateError("name already in use on this realm")
 
     try:
         age = int(body.get("age"))
@@ -302,8 +341,17 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
             raise CreateError(f"attribute trait missing from catalog: {tid}")
 
     # Soft slot check (per-player entitlement if synced, else catalog default)
-    max_alive = get_max_alive(player_uuid, slot_limits)
-    alive = count_alive(player_uuid)
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+
+    entitlements = resolve_web_entitlements(player_uuid, realm_id=realm)
+    if entitlements.get("max_alive_characters") is not None:
+        try:
+            max_alive = max(1, int(entitlements["max_alive_characters"]))
+        except (TypeError, ValueError):
+            max_alive = get_max_alive(player_uuid, slot_limits)
+    else:
+        max_alive = get_max_alive(player_uuid, slot_limits)
+    alive = count_alive(player_uuid, realm)
     if alive >= max_alive:
         raise CreateError("no free character slot")
 
@@ -316,7 +364,14 @@ def _validate_and_normalize(player_uuid: str, body: dict[str, Any]) -> dict[str,
     raw_colours = body.get("name_colours")
     name_colours: list[str] = []
     if raw_colours is not None and raw_colours != []:
-        stops = effective_colour_cap(get_name_colour_stops(player_uuid))
+        stops = effective_colour_cap(
+            int(
+                resolve_web_entitlements(player_uuid, realm_id=realm)[
+                    "name_colour_stops"
+                ]
+                or 0
+            )
+        )
         if stops <= 0:
             raise CreateError("name colours are only available to donators")
         try:
@@ -351,6 +406,13 @@ def _row_to_dict(row) -> dict[str, Any]:
         payload = json.loads(row["payload"] or "{}")
     except json.JSONDecodeError:
         payload = {}
+    realm = "main"
+    try:
+        raw_realm = row["realm_id"]
+        if raw_realm is not None and str(raw_realm).strip():
+            realm = str(raw_realm).strip().lower()
+    except (KeyError, IndexError, TypeError):
+        pass
     return {
         "id": row["id"],
         "player_uuid": row["player_uuid"],
@@ -360,11 +422,18 @@ def _row_to_dict(row) -> dict[str, Any]:
         "error": row["error"],
         "created_at": row["created_at"],
         "applied_at": row["applied_at"],
+        "realm_id": realm,
         "payload": payload,
     }
 
 
-def create_character(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
+def create_character(
+    player_uuid: str,
+    body: dict[str, Any],
+    *,
+    realm_id: str | None = None,
+) -> dict[str, Any]:
+    from src.skins.codes import CodeError, normalize_realm_id
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -374,7 +443,12 @@ def create_character(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
         raise CreateError("body must be a JSON object")
 
     try:
-        normalized = _validate_and_normalize(uuid, body)
+        realm = normalize_realm_id(realm_id)
+    except CodeError as e:
+        raise CreateError(str(e)) from e
+
+    try:
+        normalized = _validate_and_normalize(uuid, body, realm_id=realm)
     except CreationCatalogError as e:
         raise CreateError(str(e)) from e
 
@@ -401,11 +475,11 @@ def create_character(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
             """
             INSERT INTO character_creates (
                 id, player_uuid, client_request_id, payload, status,
-                character_id, error, created_at, applied_at
+                character_id, error, created_at, applied_at, realm_id
             )
-            VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL)
+            VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL, ?)
             """,
-            (create_id, uuid, client_request_id, payload, now),
+            (create_id, uuid, client_request_id, payload, now, realm),
         )
         conn.commit()
         row = conn.execute(
@@ -415,21 +489,27 @@ def create_character(player_uuid: str, body: dict[str, Any]) -> dict[str, Any]:
     return _row_to_dict(row)
 
 
-def list_pending() -> list[dict[str, Any]]:
+def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
+    realm = normalize_realm_id(realm_id)
     with connect() as conn:
         rows = conn.execute(
             """
             SELECT * FROM character_creates
-            WHERE status = 'pending'
+            WHERE status = 'pending' AND realm_id = ?
             ORDER BY created_at ASC
-            """
+            """,
+            (realm,),
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
 
 
-def list_for_player(player_uuid: str) -> dict[str, Any]:
+def list_for_player(
+    player_uuid: str,
+    realm_id: str | None = None,
+) -> dict[str, Any]:
     from src.characters.creation_catalog import get_catalog
     from src.characters.roster import (
         count_alive,
@@ -437,19 +517,23 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
         get_player_meta,
         list_roster,
     )
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+    from src.skins.codes import normalize_realm_id
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
-    roster = list_roster(uuid)
+    realm = normalize_realm_id(realm_id)
+    roster = list_roster(uuid, realm)
     meta = get_player_meta(uuid)
+    entitlements = resolve_web_entitlements(uuid, realm_id=realm)
     with connect() as conn:
         pending_rows = conn.execute(
             """
             SELECT * FROM character_creates
-            WHERE player_uuid = ? AND status = 'pending'
+            WHERE player_uuid = ? AND status = 'pending' AND realm_id = ?
             ORDER BY created_at ASC
             """,
-            (uuid,),
+            (uuid, realm),
         ).fetchall()
         # Recent rejects (slot full, etc.) so the website can show why a create failed.
         rejected_rows = conn.execute(
@@ -457,10 +541,11 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
             SELECT * FROM character_creates
             WHERE player_uuid = ?
               AND status = 'rejected'
+              AND realm_id = ?
             ORDER BY COALESCE(applied_at, created_at) DESC
             LIMIT 20
             """,
-            (uuid,),
+            (uuid, realm),
         ).fetchall()
 
     characters: list[dict[str, Any]] = list(roster)
@@ -477,6 +562,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
                 "created_at": data["created_at"],
                 "source": "create",
                 "create_id": data["id"],
+                "realm_id": realm,
             }
         )
     for row in rejected_rows:
@@ -494,6 +580,7 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
                 "source": "create",
                 "create_id": data["id"],
                 "error": err if err else "rejected",
+                "realm_id": realm,
             }
         )
 
@@ -501,8 +588,14 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
     raw_limits = catalog.get("slot_limits")
     slot_limits = raw_limits if isinstance(raw_limits, dict) else {}
 
-    max_alive = get_max_alive(uuid, slot_limits)
-    alive_count = count_alive(uuid)
+    if entitlements.get("max_alive_characters") is not None:
+        try:
+            max_alive = max(1, int(entitlements["max_alive_characters"]))
+        except (TypeError, ValueError):
+            max_alive = get_max_alive(uuid, slot_limits)
+    else:
+        max_alive = get_max_alive(uuid, slot_limits)
+    alive_count = count_alive(uuid, realm)
 
     account_age_seconds = 0
     epoch = meta.get("account_created_at_epoch")
@@ -531,13 +624,16 @@ def list_for_player(player_uuid: str) -> dict[str, Any]:
     out: dict[str, Any] = {
         "characters": characters,
         "player_uuid": uuid,
+        "realm_id": realm,
         "max_alive_characters": max_alive,
         "alive_count": alive_count,
         "real_age_set": bool(meta.get("real_age_set")),
         "account_age_seconds": account_age_seconds,
         "evil_unlocked": evil_unlocked,
-        "name_colour_stops": int(meta.get("name_colour_stops") or 0),
-        "wardrobe_skin_slots": int(meta.get("wardrobe_skin_slots") or 1),
+        "name_colour_stops": int(entitlements.get("name_colour_stops") or 0),
+        "wardrobe_skin_slots": int(entitlements.get("wardrobe_skin_slots") or 1),
+        "meta_synced": bool(entitlements.get("meta_synced")),
+        "permission_flags": dict(entitlements.get("permission_flags") or {}),
         "kit_cooldown_seconds_remaining": int(
             meta.get("kit_cooldown_seconds_remaining") or 0
         ),

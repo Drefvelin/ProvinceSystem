@@ -7,6 +7,11 @@ import json
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from src.characters.rpc_player_meta import (
+    RpcPlayerMetaError,
+    resolve_web_entitlements,
+    upsert_rpc_player_meta,
+)
 from src.characters.creation_catalog import (
     CreationCatalogError,
     get_catalog,
@@ -72,6 +77,7 @@ class RosterBody(BaseModel):
     kit_cooldown_seconds_remaining: int | None = None
     kit_cooldown_hours: int | None = None
     kit_cooldowns: dict | None = None
+    realm_id: str | None = None
 
 
 class WardrobeActiveBody(BaseModel):
@@ -127,6 +133,34 @@ def _character_session_from_auth(authorization: str | None) -> dict:
         )
     return row
 
+
+_FEATURE_SCOPES = frozenset({"skin", "skin_staff", "drink", "character"})
+
+
+def _feature_session_from_auth(authorization: str | None) -> dict:
+    """Any skins/drinks/character Bearer session (for shared player-meta)."""
+    token = _bearer_token(authorization)
+    row = get_session(token)
+    if row is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    scope = str(row.get("scope") or "").strip().lower()
+    if scope not in _FEATURE_SCOPES:
+        raise HTTPException(status_code=401, detail="Feature session required")
+    return row
+
+
+class RpcPlayerMetaBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    realm_id: str | None = None
+    name_colour_stops: int = 0
+    allow_drink_texture: bool = False
+    max_alive_characters: int | None = None
+    wardrobe_skin_slots: int = 1
+    max_3d_pair_bytes: int = 0
+    skin_token_cooldown_days: int = -1
+    skin_kinds: list[str] = Field(default_factory=list)
+    allow_armor_3d_helmet: bool = False
+    permission_flags: dict[str, bool] = Field(default_factory=dict)
 
 def _lore_http(exc: LoreItemError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))
@@ -216,6 +250,31 @@ def get_creation_catalog(
     return get_catalog()
 
 
+@characters_router.get("/player-meta")
+def get_player_meta_for_session(
+    authorization: str | None = Header(default=None),
+):
+    """Web entitlements for the session player (skin/drink/character Bearer)."""
+    session = _feature_session_from_auth(authorization)
+    return resolve_web_entitlements(
+        session["player_uuid"],
+        realm_id=session.get("realm_id"),
+    )
+
+
+@characters_router.put("/plugin/rpc-player-meta")
+def plugin_put_rpc_player_meta(
+    body: RpcPlayerMetaBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """TFMCWeb upsert of resolved web entitlements for a player."""
+    _require_plugin(x_plugin_key)
+    try:
+        return upsert_rpc_player_meta(body.model_dump())
+    except RpcPlayerMetaError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @characters_router.get("/kits")
 def get_character_kits(
     character_id: str | None = None,
@@ -227,7 +286,6 @@ def get_character_kits(
         return list_character_kits(session["player_uuid"], character_id)
     except LoreItemError as e:
         raise _lore_http(e) from e
-
 
 @characters_router.get("/lore-items")
 def get_lore_items(
@@ -603,7 +661,11 @@ async def post_character(
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="body must be a JSON object")
     try:
-        row = create_character(session["player_uuid"], body)
+        row = create_character(
+            session["player_uuid"],
+            body,
+            realm_id=session.get("realm_id"),
+        )
     except CreateError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return {
@@ -612,6 +674,7 @@ async def post_character(
         "status": row["status"],
         "client_request_id": row["client_request_id"],
         "created_at": row["created_at"],
+        "realm_id": row.get("realm_id"),
         "payload": row["payload"],
     }
 
@@ -679,23 +742,25 @@ def get_characters(
 ):
     """List roster mirror + pending creates for the session player."""
     session = _character_session_from_auth(authorization)
-    return list_for_player(session["player_uuid"])
+    return list_for_player(session["player_uuid"], session.get("realm_id"))
 
 
 @characters_router.get("/plugin/pending")
 def plugin_pending_creates(
+    realm_id: str | None = None,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    return {"creates": list_pending()}
+    return {"creates": list_pending(realm_id)}
 
 
 @characters_router.get("/plugin/lore-items/pending")
 def plugin_pending_lore_items(
+    realm_id: str | None = None,
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    return {"items": list_pending_for_plugin()}
+    return {"items": list_pending_for_plugin(realm_id)}
 
 
 @characters_router.get("/plugin/lore-items/claim-status")
@@ -778,6 +843,7 @@ def plugin_put_roster(
             body.kit_cooldown_seconds_remaining,
             body.kit_cooldown_hours,
             body.kit_cooldowns,
+            body.realm_id,
         )
     except RosterError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

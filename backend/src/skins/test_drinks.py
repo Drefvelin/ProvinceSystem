@@ -34,6 +34,7 @@ class DrinkApiTest(unittest.TestCase):
         import skins.db as db_mod
 
         self._db_mod = db_mod
+        sys.modules["src.skins.db"] = db_mod
         self._orig_db = db_mod.DB_PATH
         self._orig_drinks = db_mod.DRINKS_DIR
         self._orig_data = db_mod.DATA_DIR
