@@ -241,7 +241,10 @@ class MintCooldownTest(unittest.TestCase):
         with mock.patch("skins.codes.connect") as connect_mock:
             conn = mock.MagicMock()
             connect_mock.return_value.__enter__.return_value = conn
-            conn.execute.return_value.fetchone.return_value = {"last_at": None}
+            conn.execute.return_value.fetchone.side_effect = [
+                {"reset_at": None},
+                {"last_at": None},
+            ]
             out = get_cosmetic_mint_status("player-1")
         self.assertIsNone(out["last_mint_at"])
         self.assertEqual(out["player_uuid"], "player-1")
@@ -252,14 +255,46 @@ class MintCooldownTest(unittest.TestCase):
         with mock.patch("skins.codes.connect") as connect_mock:
             conn = mock.MagicMock()
             connect_mock.return_value.__enter__.return_value = conn
-            conn.execute.return_value.fetchone.return_value = {
-                "last_at": "2026-01-15T12:00:00Z"
-            }
+            conn.execute.return_value.fetchone.side_effect = [
+                {"reset_at": None},
+                {"last_at": "2026-01-15T12:00:00Z"},
+            ]
             out = get_cosmetic_mint_status("player-1")
         self.assertEqual(out["last_mint_at"], "2026-01-15T12:00:00Z")
-        sql = conn.execute.call_args[0][0]
+        sql = conn.execute.call_args_list[1][0][0]
         self.assertIn("skin", sql.lower())
         self.assertIn("drink", sql.lower())
+
+    def test_cosmetic_mint_status_respects_reset(self) -> None:
+        from skins.codes import get_cosmetic_mint_status
+
+        with mock.patch("skins.codes.connect") as connect_mock:
+            conn = mock.MagicMock()
+            connect_mock.return_value.__enter__.return_value = conn
+            conn.execute.return_value.fetchone.side_effect = [
+                {"reset_at": "2026-02-01T00:00:00Z"},
+                {"last_at": None},
+            ]
+            out = get_cosmetic_mint_status("player-1")
+        self.assertIsNone(out["last_mint_at"])
+        sql = conn.execute.call_args_list[1][0][0]
+        self.assertIn("created_at >", sql.lower())
+
+    def test_reset_cosmetic_mint_cooldowns(self) -> None:
+        from skins.codes import reset_cosmetic_mint_cooldowns
+
+        with mock.patch("skins.codes.connect") as connect_mock:
+            conn = mock.MagicMock()
+            connect_mock.return_value.__enter__.return_value = conn
+            out = reset_cosmetic_mint_cooldowns("player-1", "staff-9")
+        self.assertTrue(out["ok"])
+        self.assertEqual(out["player_uuid"], "player-1")
+        self.assertIn("reset_at", out)
+        args = conn.execute.call_args[0]
+        self.assertIn("cosmetic_mint_resets", args[0])
+        self.assertEqual(args[1][0], "player-1")
+        self.assertEqual(args[1][2], "staff-9")
+        conn.commit.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -215,6 +215,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 | `/token create skin` | skins donator / default as today | Scoped skins code |
 | `/token create drink` | donator ranks (shared cooldown) | Scoped drink code ([step-31](./batches/step-31/00-index.md)) |
 | `/token create character` | when character web ships | Scoped character code |
+| `/token resetcooldowns <player>` | `tfmcweb.token.resetcooldowns` (op default) | Clear shared skin+drink mint cooldown |
 | `/token` | — | Usage |
 
 ### Staff

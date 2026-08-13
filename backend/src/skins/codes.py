@@ -74,24 +74,70 @@ def _is_staff_scope(scope: str) -> bool:
 
 
 def get_cosmetic_mint_status(player_uuid: str) -> dict:
-    """Last mint across shared cosmetic scopes (skin + drink) for TFMCWeb cooldown."""
+    """Last mint across shared cosmetic scopes (skin + drink) for TFMCWeb cooldown.
+
+    Staff resets (``cosmetic_mint_resets``) clear the clock: only mints after the
+    latest reset count toward cooldown.
+    """
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise CodeError("player_uuid is required")
     with connect() as conn:
-        row = conn.execute(
+        reset_row = conn.execute(
             """
-            SELECT MAX(created_at) AS last_at
-            FROM codes
+            SELECT MAX(reset_at) AS reset_at
+            FROM cosmetic_mint_resets
             WHERE LOWER(player_uuid) = LOWER(?)
-              AND LOWER(scope) IN ('skin', 'drink')
             """,
             (uuid,),
         ).fetchone()
+        reset_at = reset_row["reset_at"] if reset_row else None
+        if reset_at:
+            row = conn.execute(
+                """
+                SELECT MAX(created_at) AS last_at
+                FROM codes
+                WHERE LOWER(player_uuid) = LOWER(?)
+                  AND LOWER(scope) IN ('skin', 'drink')
+                  AND created_at > ?
+                """,
+                (uuid, str(reset_at)),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """
+                SELECT MAX(created_at) AS last_at
+                FROM codes
+                WHERE LOWER(player_uuid) = LOWER(?)
+                  AND LOWER(scope) IN ('skin', 'drink')
+                """,
+                (uuid,),
+            ).fetchone()
     last_at = row["last_at"] if row else None
     if last_at is None:
         return {"last_mint_at": None, "player_uuid": uuid}
     return {"last_mint_at": str(last_at), "player_uuid": uuid}
+
+
+def reset_cosmetic_mint_cooldowns(
+    player_uuid: str, staff_uuid: str | None = None
+) -> dict:
+    """Staff clear of shared skin+drink mint cooldown for a player."""
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise CodeError("player_uuid is required")
+    staff = (staff_uuid or "").strip() or None
+    reset_at = _iso(_utcnow())
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO cosmetic_mint_resets (player_uuid, reset_at, staff_uuid)
+            VALUES (?, ?, ?)
+            """,
+            (uuid, reset_at, staff),
+        )
+        conn.commit()
+    return {"ok": True, "player_uuid": uuid, "reset_at": reset_at}
 
 
 def issue_code(player_uuid: str, scope: str | None = "skin") -> dict:

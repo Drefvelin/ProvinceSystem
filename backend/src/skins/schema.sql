@@ -233,6 +233,13 @@ CREATE TABLE IF NOT EXISTS drink_notifications (
     delivered_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS cosmetic_mint_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_uuid TEXT NOT NULL,
+    reset_at TEXT NOT NULL,
+    staff_uuid TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_drink_submissions_status
     ON drink_submissions(status);
 CREATE INDEX IF NOT EXISTS idx_drink_submissions_slug
@@ -241,3 +248,5 @@ CREATE INDEX IF NOT EXISTS idx_drink_textures_owner
     ON drink_textures(owner_uuid);
 CREATE INDEX IF NOT EXISTS idx_drink_notifications_undelivered
     ON drink_notifications(delivered_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_cosmetic_mint_resets_player
+    ON cosmetic_mint_resets(player_uuid);

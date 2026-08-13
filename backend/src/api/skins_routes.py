@@ -22,6 +22,7 @@ from src.skins.codes import (
     list_active_codes,
     redeem_character_code,
     redeem_code,
+    reset_cosmetic_mint_cooldowns,
     revoke_code,
 )
 from src.skins.discord_link import (
@@ -102,6 +103,11 @@ class AppliedBody(BaseModel):
 
 class RevokeCodeBody(BaseModel):
     code: str = Field(..., min_length=1)
+
+
+class CosmeticMintResetBody(BaseModel):
+    player_uuid: str = Field(..., min_length=1)
+    staff_uuid: str | None = None
 
 
 class LinkStartBody(BaseModel):
@@ -199,6 +205,19 @@ def plugin_cosmetic_mint_status(
     _require_plugin(x_plugin_key)
     try:
         return get_cosmetic_mint_status(player_uuid)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/plugin/cosmetic-mint-reset")
+def plugin_cosmetic_mint_reset(
+    body: CosmeticMintResetBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Staff clear of shared skin+drink mint cooldown (TFMCWeb /token resetcooldowns)."""
+    _require_plugin(x_plugin_key)
+    try:
+        return reset_cosmetic_mint_cooldowns(body.player_uuid, body.staff_uuid)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

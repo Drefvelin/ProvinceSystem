@@ -22,6 +22,7 @@ End-to-end design for donator **custom BreweryX recipes**: token → website bre
 |------|--------|
 | Token | `/token create drink` → scope `drink`; redeem on `/drinks` |
 | Shared cooldown | Skin + drink share one clock; config **only on TFMCWeb**; PS no longer enforces mint cooldown days |
+| Staff cooldown reset | `/token resetcooldowns <player>` (`tfmcweb.token.resetcooldowns`) — clears shared clock without deleting codes |
 | Staff mint | Optional later; staff bypass cooldown (like `skin_staff`) |
 | Noble | Can mint drink; **color-only** (no custom texture upload/reuse) |
 | Gilded+ | Can upload texture **or** reuse an existing owned drink texture |
