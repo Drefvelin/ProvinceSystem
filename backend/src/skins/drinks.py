@@ -1367,6 +1367,7 @@ def assign_drink_texture_cmd(
 
 def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
     applied: list[str] = []
+    pending_notifications: list[tuple[str, str, dict[str, Any]]] = []
     now = _iso_now()
     with connect() as conn:
         for sid in submission_ids:
@@ -1393,15 +1394,20 @@ def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
                 applied.append(sid)
                 discord_user_id = row["discord_user_id"]
                 if discord_user_id:
-                    enqueue_drink_notification(
-                        "applied",
-                        sid,
-                        str(discord_user_id),
-                        {
-                            "submission_id": sid,
-                            "display_name": row["display_name"],
-                            "slug": row["slug"],
-                        },
+                    pending_notifications.append(
+                        (
+                            sid,
+                            str(discord_user_id),
+                            {
+                                "submission_id": sid,
+                                "display_name": row["display_name"],
+                                "slug": row["slug"],
+                            },
+                        )
                     )
         conn.commit()
+    # Notify after commit — nested connect() inside the update transaction
+    # can sqlite-lock and roll back the status change on busy hosts.
+    for sid, discord_user_id, payload in pending_notifications:
+        enqueue_drink_notification("applied", sid, discord_user_id, payload)
     return applied
