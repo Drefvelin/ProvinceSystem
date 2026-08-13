@@ -255,6 +255,13 @@ export default function WardrobeSlotModal({
               source={previewSource}
               className="h-full w-full"
               onModelDetected={setModel}
+              downloadFilename={
+                previewSource
+                  ? showMaskedToggle && previewMode === "masked"
+                    ? `wardrobe-${slotId}-masked.png`
+                    : `wardrobe-${slotId}.png`
+                  : null
+              }
             />
             {showMaskedToggle && maskedPreviewBusy ? (
               <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]/50 text-xs text-[var(--tfmc-mist)]">

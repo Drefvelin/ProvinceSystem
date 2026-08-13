@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import * as THREE from "three";
 import { disposeObject3D, loadTextureFromFile } from "../../../lib/skins/javaModel";
 import {
@@ -17,7 +17,38 @@ type Props = {
   source: File | string | null;
   className?: string;
   onModelDetected?: (model: ArmModel) => void;
+  /**
+   * When set and a source is available, show a bottom-right download control
+   * that saves the current skin PNG (e.g. auto-masked preview for editing).
+   */
+  downloadFilename?: string | null;
 };
+
+async function downloadSkinSource(
+  source: File | string,
+  filename: string
+): Promise<void> {
+  let blob: Blob;
+  if (source instanceof File) {
+    blob = source;
+  } else {
+    const res = await fetch(source);
+    if (!res.ok) throw new Error("Could not download skin");
+    blob = await res.blob();
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename.endsWith(".png") ? filename : `${filename}.png`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 /**
  * Standing Steve mannequin textured with a player skin (wardrobe / creation).
@@ -26,9 +57,11 @@ export default function SkinMannequinPreview({
   source,
   className = "",
   onModelDetected,
+  downloadFilename = null,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const onModelRef = useRef(onModelDetected);
   onModelRef.current = onModelDetected;
 
@@ -143,6 +176,22 @@ export default function SkinMannequinPreview({
     };
   }, [source]);
 
+  const canDownload = Boolean(source && downloadFilename);
+
+  async function onDownload(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!source || !downloadFilename || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadSkinSource(source, downloadFilename);
+    } catch {
+      setError("Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div
       className={`relative overflow-hidden bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] ${className}`}
@@ -157,6 +206,31 @@ export default function SkinMannequinPreview({
         <p className="absolute inset-x-0 bottom-1 px-2 text-center text-[10px] text-red-300">
           {error}
         </p>
+      ) : null}
+      {canDownload ? (
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={downloading}
+          title="Download skin PNG"
+          aria-label="Download skin PNG"
+          className="absolute bottom-1.5 right-1.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_28%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_88%,black)] text-[var(--tfmc-cream)] shadow-sm transition hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tfmc-accent)] disabled:opacity-50 pointer-events-auto"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M12 3v12" />
+            <path d="m7 11 5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+        </button>
       ) : null}
     </div>
   );

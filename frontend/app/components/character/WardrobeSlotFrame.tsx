@@ -96,7 +96,7 @@ export default function WardrobeSlotFrame({
             {slot.filled && textureSrc ? (
               <SkinMannequinPreview
                 source={textureSrc}
-                className="absolute inset-0 h-full w-full"
+                className="absolute inset-0 h-full w-full pointer-events-none"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_55%,black)]">
