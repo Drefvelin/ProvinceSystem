@@ -21,6 +21,7 @@ def create_map(
     # IMPORTANT:
     # For frontend picking/canvas reference this MUST stay False,
     # otherwise vassals get overwritten by overlord colours and become un-pickable.
+    # Pick maps must also keep raw nation rgb — never call display_colour.display_rgb here.
     apply_overrides: bool = False,
 ):
     """
@@ -28,6 +29,7 @@ def create_map(
 
     - When apply_overrides=False (default): produces a *pick-safe* map where each region’s own RGB exists.
     - When apply_overrides=True: vassal pixels are replaced by their overlord colour.
+    - Display muting for hover/drill overlays lives in regiongen.py only.
     """
     start_time = time.perf_counter()
     validate_map(map_name)

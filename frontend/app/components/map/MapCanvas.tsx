@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 import type {
   CursorTooltip,
@@ -7,11 +7,18 @@ import type {
   MapMode,
   MapObject,
 } from "./types";
-import { MAP_BOUNDS, apiBase } from "./types";
-import { overlayStyle } from "./overlayStyle";
+import { MAP_BOUNDS, apiBase, mapBaseImageUrl } from "./types";
+import { overlayPathFromHoverUrl, overlayStyle } from "./overlayStyle";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
+
+const HOVER_OVERLAY_OPACITY = 0.72;
+const HOVER_OVERLAY_EXPAND = 0.01;
+const DRILL_STACK_OVERLAY_OPACITY = 0.88;
+const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
+const OVERLAY_TRANSITION_CLASS =
+  "pointer-events-none absolute transition-[left,top,width,height,opacity] duration-150 ease-out";
 
 function HoverOverlayImage({
   overlay,
@@ -27,8 +34,11 @@ function HoverOverlayImage({
 
   const markLoaded = () => setLoadedUrl(url);
 
-  const positioned = overlayStyle(overlay.overlay, mapW, mapH);
-  const ready = loadedUrl === url && positioned.visibility !== "hidden";
+  const ready = loadedUrl === url;
+  const positioned = overlayStyle(overlay.overlay, mapW, mapH, {
+    expand: ready ? HOVER_OVERLAY_EXPAND : 0,
+  });
+  const visible = ready && positioned.visibility !== "hidden";
 
   return (
     <img
@@ -38,10 +48,10 @@ function HoverOverlayImage({
       ref={(node) => {
         if (node?.complete) markLoaded();
       }}
-      className="pointer-events-none absolute transition-opacity duration-75"
+      className={OVERLAY_TRANSITION_CLASS}
       style={{
         ...positioned,
-        opacity: ready ? 1 : 0,
+        opacity: visible ? HOVER_OVERLAY_OPACITY : 0,
       }}
       onLoad={markLoaded}
     />
@@ -77,6 +87,12 @@ export default function MapCanvas({
     h: MAP_BOUNDS[mapId],
   });
 
+  useEffect(() => {
+    setMapSize({ w: MAP_BOUNDS[mapId], h: MAP_BOUNDS[mapId] });
+  }, [mapId]);
+
+  const baseMapSrc = mapBaseImageUrl(mapId);
+
   const showProvinceOverlay =
     mapType === "terrain" || mapType === "fertility" || mapType === "prosperity";
 
@@ -86,6 +102,10 @@ export default function MapCanvas({
       setMapSize({ w: img.naturalWidth, h: img.naturalHeight });
     }
   };
+
+  const hoveredPath = hoveredOverlay
+    ? overlayPathFromHoverUrl(hoveredOverlay.url)
+    : null;
 
   return (
     <div
@@ -113,8 +133,9 @@ export default function MapCanvas({
         </div>
       )}
       <img
-        src={`${base}/${mapId}/map`}
-        alt="Base map"
+        key={baseMapSrc}
+        src={baseMapSrc}
+        alt="Map"
         className="h-auto w-full"
         onLoad={handleBaseMapLoad}
       />
@@ -126,7 +147,8 @@ export default function MapCanvas({
         <img
           src={`${base}/${mapId}/mapdata/${mapType}`}
           alt={`${mapType} overlay`}
-          className="pointer-events-none absolute left-0 top-0 h-auto w-full opacity-80"
+          className="pointer-events-none absolute left-0 top-0 h-auto w-full"
+          style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
         />
       )}
       {hoveredOverlay && (
@@ -144,8 +166,16 @@ export default function MapCanvas({
             crossOrigin="anonymous"
             src={`${base}/${mapId}/regions/${mapType}/${obj.path}`}
             alt={`Overlay ${obj.id}`}
-            className="pointer-events-none absolute opacity-80"
-            style={overlayStyle(obj.overlay, mapSize.w, mapSize.h)}
+            className={OVERLAY_TRANSITION_CLASS}
+            style={{
+              ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                expand:
+                  hoveredPath && obj.path === hoveredPath
+                    ? HOVER_OVERLAY_EXPAND
+                    : 0,
+              }),
+              opacity: DRILL_STACK_OVERLAY_OPACITY,
+            }}
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse, JSONResponse
 import os, time
 
-from ..scripts.util.dirs import input_file, validate_map
+from ..scripts.util.dirs import input_file, parchment_image, validate_map
 from ..scripts.util.imagechecker import find_province
 
 map_router = APIRouter()
@@ -43,13 +43,41 @@ def add_no_cache(r: Response):
     r.headers["Expires"] = "0"
     return r
 
+def _resolve_base_map_path(map_name: str, base: str) -> str | None:
+    use_satellite = base.lower() in ("satellite", "colour", "color")
+    if use_satellite:
+        path = input_file(map_name, "map.png")
+    else:
+        parchment_path = parchment_image(map_name)
+        path = (
+            parchment_path
+            if os.path.exists(parchment_path)
+            else input_file(map_name, "map.png")
+        )
+    return path if os.path.exists(path) else None
+
+@map_router.get("/{map_name}/map/parchment")
+async def get_parchment_map(map_name: str):
+    validate_map(map_name)
+    path = _resolve_base_map_path(map_name, "parchment")
+    if not path:
+        return JSONResponse({"error": "Map not found"}, 404)
+    r = FileResponse(path, media_type="image/png")
+    r.headers["X-Map-Base"] = "parchment"
+    return add_no_cache(add_cors(r))
+
+@map_router.get("/{map_name}/map/original")
+async def get_original_map(map_name: str):
+    return await get_base_map(map_name)
+
 @map_router.get("/{map_name}/map")
 async def get_base_map(map_name: str):
     validate_map(map_name)
-    path = input_file(map_name, "map.png")
-    if not os.path.exists(path):
+    path = _resolve_base_map_path(map_name, "satellite")
+    if not path:
         return JSONResponse({"error": "Map not found"}, 404)
     r = FileResponse(path, media_type="image/png")
+    r.headers["X-Map-Base"] = "original"
     return add_no_cache(add_cors(r))
 
 @map_router.get("/{map_name}/map/province/{coords}")

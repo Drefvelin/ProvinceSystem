@@ -1,4 +1,4 @@
-import type { RegionRecord } from "./types";
+import type { MapObject, RegionRecord } from "./types";
 
 export type DrillLayer = {
   regionId: string;
@@ -35,10 +35,27 @@ export function getAncestryChain(
   return chain;
 }
 
-export function getNextDrillTarget(
+/** Realms whose subject layout is currently open (main hidden, nested visible). */
+export function getDrilledRealmIds(mapObjects: MapObject[]): Set<string> {
+  const ids = new Set<string>();
+
+  for (const obj of mapObjects) {
+    if (obj.id.endsWith("_nested")) continue;
+    if (obj.visible) continue;
+
+    const nested = mapObjects.find((entry) => entry.id === `${obj.id}_nested`);
+    if (nested?.visible) {
+      ids.add(obj.id);
+    }
+  }
+
+  return ids;
+}
+
+function resolveNextDrillTarget(
   regionId: string,
   regionData: RegionRecord,
-  drillStack: string[]
+  drilledIds: Set<string>
 ): string | null {
   let currentId: string | null = regionId;
 
@@ -46,15 +63,11 @@ export function getNextDrillTarget(
     const region: RegionRecord[string] | undefined = regionData[currentId];
     if (!region) return null;
 
-    const name = region.name || currentId;
-
     if (region.overlord) {
-      const overlord = regionData[region.overlord];
-      const overlordName = overlord?.name || currentId;
-      if (drillStack.includes(overlordName)) {
+      if (drilledIds.has(region.overlord)) {
         return currentId;
       }
-    } else if (!drillStack.includes(name)) {
+    } else if (!drilledIds.has(currentId)) {
       return currentId;
     }
 
@@ -62,6 +75,27 @@ export function getNextDrillTarget(
   }
 
   return null;
+}
+
+export function getNextDrillTarget(
+  regionId: string,
+  regionData: RegionRecord,
+  drillStack: DrillLayer[]
+): string | null {
+  const drilledIds = new Set(drillStack.map((layer) => layer.regionId));
+  return resolveNextDrillTarget(regionId, regionData, drilledIds);
+}
+
+export function getNextDrillTargetFromMap(
+  regionId: string,
+  regionData: RegionRecord,
+  mapObjects: MapObject[]
+): string | null {
+  return resolveNextDrillTarget(
+    regionId,
+    regionData,
+    getDrilledRealmIds(mapObjects)
+  );
 }
 
 export function hasLandSubjects(
@@ -77,10 +111,17 @@ export function hasLandSubjects(
 export function canDrillIntoRegion(
   regionId: string,
   regionData: RegionRecord,
-  drillStack: string[]
+  mapObjects: MapObject[]
 ): boolean {
-  const targetId = getNextDrillTarget(regionId, regionData, drillStack);
-  if (!targetId) return false;
+  const drilledIds = getDrilledRealmIds(mapObjects);
+  const targetId = resolveNextDrillTarget(regionId, regionData, drilledIds);
+  if (!targetId || !hasLandSubjects(targetId, regionData)) {
+    return false;
+  }
 
-  return hasLandSubjects(targetId, regionData);
+  if (drilledIds.has(targetId)) {
+    return false;
+  }
+
+  return true;
 }

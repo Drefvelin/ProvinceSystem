@@ -7,6 +7,7 @@ import time
 from ..compile.nation_compiler import process_nations
 from ..compile.trade_compiler import process_trade
 from ..mapgen.mapgen import create_map
+from ..mapgen.parchmentgen import create_parchment_base
 from ..mapgen.prosperitygen import create_prosperity_map
 from ..mapgen.regiongen import generate_regions
 from .queue import load_queue, compile_queue
@@ -66,6 +67,8 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
     # 3. Generate maps + regions
     if regen_type.lower() != "textonly":
+        create_parchment_base(map_name)
+
         for mode in modes:
             if map_name != "dev" and mode == "trade":
                 print(f"⚠️ Skipping {mode}: Incompatible Map")

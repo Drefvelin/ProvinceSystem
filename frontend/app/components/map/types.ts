@@ -72,3 +72,7 @@ export const MAP_DISPLAY_NAMES: Record<MapId, string> = {
 export function apiBase(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "";
 }
+
+export function mapBaseImageUrl(mapId: MapId): string {
+  return `${apiBase()}/${mapId}/map`;
+}

@@ -1,7 +1,30 @@
 # Now, after all provinces are painted, paint the borders
-border_color = (0, 0, 0, 255)  # Solid black for kingdom borders
+border_color = (0, 0, 0, 255)  # Solid black for kingdom borders (legacy paint_borders)
 duchy_border_color = (255, 255, 255, 255)  # White for duchy borders
 border_thickness = 5  # Adjustable thickness
+
+# Step 39.04 adaptive ink borders
+INK_DARK = (42, 31, 20, 255)
+INK_LIGHT = (232, 220, 200, 255)
+LUMINANCE_THRESHOLD = 0.55
+
+
+def relative_luminance(rgb: tuple[int, int, int]) -> float:
+    r, g, b = rgb
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+
+
+def border_color_for_fill(
+    fill_rgb: tuple[int, int, int],
+    threshold: float = LUMINANCE_THRESHOLD,
+) -> tuple[int, int, int, int]:
+    """Uniform ink-dark stroke for washed fills.
+
+    Per-fill adaptation (cream on dark, dark on light) clashes at shared
+    nation edges after parchment_wash_rgb normalises fills to a mid band.
+    """
+    del fill_rgb, threshold
+    return INK_DARK
 
 def compute_border_owners(img_data, width, height, include_outer=True):
     """
@@ -42,7 +65,8 @@ def apply_region_borders(
     width,
     height,
     color=(0, 0, 0, 255),
-    thickness=2
+    thickness=2,
+    soften: bool = False,
 ):
     """
     Paints borders for a given region_color.

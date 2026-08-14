@@ -1,29 +1,31 @@
-# Step 40 — Staff map access control
+# Step 40 — Paradox curved labels
 
-**Repos:** `ProvinceSystem` · `Workspace/tfmcweb` (LP permission)  
-**Depends on:** [step-37](../step-37/00-index.md)  
-**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 6
+**Repos:** `ProvinceSystem` backend  
+**Depends on:** [step-39](../step-39/00-index.md) (ink cartography base)  
+**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 4
 
 ## Goal
 
-Configurable public vs staff-only maps: regular players see `main` only; staff with map permission can access dev/other maps.
+Backend-generated curved nation names across each contiguous territory blob (Paradox / GSG style), composited as a label layer with zoom-tier visibility.
 
 ## Locked rules
 
 | Piece | Choice |
 |-------|--------|
-| Permission | TFMCWeb/LP e.g. `tfmc.map.staff` |
-| Config | PS map registry: `{ mapId, public, staff_permission? }`; SF `mapRef` must match |
-| API | 403 on map assets/data routes for unauthorized `mapId` |
-| Frontend | Hide non-public map links in nav; direct URL still gated by API |
+| Components | One label per connected province component per nation |
+| Placement | Curve along medial axis / longest internal chord of blob |
+| Renderer | Spike Cairo/Skia or SVG→raster (Pillow alone insufficient) |
+| Collisions | Tier priority (Kingdom > Duchy > …); hide small blobs at low zoom |
+| Output | `labels_{mode}.png` or per-blob crops with bbox metadata |
 
 ## Batches (when step starts)
 
 1. **01-planning-lock**  
-2. **02-ps-map-registry** — Config + route guards  
-3. **03-staff-session** — Auth check (TFMCWeb staff session or equivalent)  
-4. **04-frontend-gate** — Nav + error states  
-5. **05-docs-verify** — STAGING Step 40  
+2. **02-label-spike** — Single nation proof of curved text  
+3. **03-component-graph** — Connected components per nation  
+4. **04-full-pipeline** — All nations + collision rules  
+5. **05-frontend-layer** — Label layer + zoom thresholds  
+6. **06-docs-verify** — STAGING Step 40  
 
 ## Status
 

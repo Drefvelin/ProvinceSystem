@@ -748,17 +748,52 @@ Docs-only step: north-star playbook, export schema draft, hub roadmap/checklist 
 
 ## Step 38 — Parchment visual pipeline
 
-**Batch:** [Planning/batches/step-38/00-index.md](./Planning/batches/step-38/00-index.md).
+**Batch:** [Planning/batches/step-38/00-index.md](./Planning/batches/step-38/00-index.md) · Lock: [01-planning-lock](./Planning/batches/step-38/01-planning-lock.md).
 
-Xaero → parchment base; desaturated fantasy nation layers.
+Xaero `map.png` → parchment base; desaturated fantasy nation layers; pick map unchanged.
+
+**Batches:** [02-parchment-base](./Planning/batches/step-38/02-parchment-base.md) · [03-muted-political](./Planning/batches/step-38/03-muted-political.md) · [04-frontend-composite](./Planning/batches/step-38/04-frontend-composite.md) · [05-docs-verify](./Planning/batches/step-38/05-docs-verify.md).
+
+**Operator:** ensure `input/{map}/map.png` is the plain Xaero export (same grid as `provinces.png`); run **fullregen** after deploy. Code shipped in 38.02–38.04.
 
 ### Operator checklist
 
-- [ ] TBD when batch files land
+- [ ] `input/{map}/map.png` present and aligned to `provinces.png`
+- [ ] `fullregen` produces `output/{map}/maps/parchment_base.png`
+- [ ] `/map/main` visual base is parchment (warm, desaturated terrain)
+- [ ] Nation hover overlays use muted colours (not neon RGB)
+- [ ] Borders visible on desktop and phone
+- [ ] Click nation → modal still correct
+- [ ] Ctrl+click drill still correct; vassal edge pick unchanged
+- [ ] `/map/dev` province modes still usable when `dev` has Xaero asset
+- [ ] Fallback: map without parchment output still loads (raw `map.png`)
 
-## Step 39 — Paradox curved labels
+## Step 39 — Ink cartography visual pass
 
-**Batch:** [Planning/batches/step-39/00-index.md](./Planning/batches/step-39/00-index.md).
+**Batch:** [Planning/batches/step-39/00-index.md](./Planning/batches/step-39/00-index.md) · Lock: [01-planning-lock](./Planning/batches/step-39/01-planning-lock.md).
+
+Faithful-hue parchment nation washes, uniform ink borders, colour satellite as default map base. Ink parchment still generated on regen (`/map/parchment`).
+
+**Batches:** [02-ink-base](./Planning/batches/step-39/02-ink-base.md) · [03-earth-tone-fills](./Planning/batches/step-39/03-earth-tone-fills.md) · [04-adaptive-borders](./Planning/batches/step-39/04-adaptive-borders.md) · [05-frontend-opacity](./Planning/batches/step-39/05-frontend-opacity.md) · [06-docs-verify](./Planning/batches/step-39/06-docs-verify.md).
+
+**Operator:** run **fullregen** after deploy. No new input files. Restart backend if not on `--reload` after API route changes.
+
+### Operator checklist
+
+- [ ] `fullregen` rewrites `output/{map}/maps/parchment_base.png` with ink grade
+- [ ] `/map/main` default base: colour satellite (`map.png`), not parchment
+- [ ] `GET /main/map/parchment`: cream paper + brown coastlines (when regen run)
+- [ ] Nation hover: faithful-hue parchment wash (not neon); tooltip matches visible overlay
+- [ ] Uniform dark ink borders on all realms (Drakhanate + Nimbus spot-check)
+- [ ] Drill stack overlays stronger than hover-only
+- [ ] Hover cropped overlay ~1% expand
+- [ ] Click modal + Ctrl+drill pick unchanged
+- [ ] No map base toggle in toolbar
+- [ ] `/map/dev` province modes still usable when `dev` has Xaero asset
+
+## Step 40 — Paradox curved labels
+
+**Batch:** [Planning/batches/step-40/00-index.md](./Planning/batches/step-40/00-index.md).
 
 Backend curved nation labels per contiguous territory.
 
@@ -766,9 +801,9 @@ Backend curved nation labels per contiguous territory.
 
 - [ ] TBD when batch files land
 
-## Step 40 — Staff map access control
+## Step 41 — Staff map access control
 
-**Batch:** [Planning/batches/step-40/00-index.md](./Planning/batches/step-40/00-index.md).
+**Batch:** [Planning/batches/step-41/00-index.md](./Planning/batches/step-41/00-index.md).
 
 Public `main` only for players; staff maps gated by LP permission.
 
@@ -776,9 +811,9 @@ Public `main` only for players; staff maps gated by LP permission.
 
 - [ ] TBD when batch files land
 
-## Step 41 — Capitals and settlements
+## Step 42 — Capitals and settlements
 
-**Batch:** [Planning/batches/step-41/00-index.md](./Planning/batches/step-41/00-index.md).
+**Batch:** [Planning/batches/step-42/00-index.md](./Planning/batches/step-42/00-index.md).
 
 SF named capitals / guild settlements export + map markers.
 
@@ -786,9 +821,9 @@ SF named capitals / guild settlements export + map markers.
 
 - [ ] TBD when batch files land
 
-## Step 42 — Forts and zone of control
+## Step 43 — Forts and zone of control
 
-**Batch:** [Planning/batches/step-42/00-index.md](./Planning/batches/step-42/00-index.md).
+**Batch:** [Planning/batches/step-43/00-index.md](./Planning/batches/step-43/00-index.md).
 
 Forts + ZOC overlay (requires SF forts).
 
@@ -796,9 +831,9 @@ Forts + ZOC overlay (requires SF forts).
 
 - [ ] TBD when batch files land
 
-## Step 43 — War map layer
+## Step 44 — War map layer
 
-**Batch:** [Planning/batches/step-43/00-index.md](./Planning/batches/step-43/00-index.md).
+**Batch:** [Planning/batches/step-44/00-index.md](./Planning/batches/step-44/00-index.md).
 
 War frontlines (**blocked on SF war rework**).
 
@@ -806,9 +841,9 @@ War frontlines (**blocked on SF war rework**).
 
 - [ ] TBD when batch files land
 
-## Step 44 — Map chronicle
+## Step 45 — Map chronicle
 
-**Batch:** [Planning/batches/step-44/00-index.md](./Planning/batches/step-44/00-index.md).
+**Batch:** [Planning/batches/step-45/00-index.md](./Planning/batches/step-45/00-index.md).
 
 Daily snapshots + event changelog.
 
@@ -816,9 +851,9 @@ Daily snapshots + event changelog.
 
 - [ ] TBD when batch files land
 
-## Step 45 — Wealth history and charts
+## Step 46 — Wealth history and charts
 
-**Batch:** [Planning/batches/step-45/00-index.md](./Planning/batches/step-45/00-index.md).
+**Batch:** [Planning/batches/step-46/00-index.md](./Planning/batches/step-46/00-index.md).
 
 Nation / global wealth time series + charts.
 

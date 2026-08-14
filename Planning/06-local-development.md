@@ -18,9 +18,9 @@ Most day-to-day UI work is **website only**. Do not require Paper to start Sprin
 
 | Path | Role |
 |------|------|
-| `backend/src/input/{main,dev}/` | Sample worlds (nation JSON, provinces.png, …) |
+| `backend/src/input/{main,dev}/` | Sample worlds (nation JSON, `map.png` Xaero plain export, `provinces.png`, …) |
 | `backend/src/defines/{main,dev}/` | Compiled / static defines |
-| `backend/src/output/` | **Generated** maps/regions/banners — gitignored, often empty until regen |
+| `backend/src/output/` | **Generated** maps/regions/banners — gitignored, often empty until regen; `fullregen` also writes `maps/parchment_base.png` from `map.png` |
 | `docker-compose.yml` | Backend + frontend prod images; volumes for input/defines/output |
 
 The live Minecraft plugins are **not** required to view maps or develop the skins web/API. SimpleFactions refreshes live faction data; ArmourShop later mints codes and applies packs.

@@ -54,7 +54,7 @@ Map full width on small screens; mode in toolbar; nation detail in bottom sheet/
 ## Out of scope (step 37)
 
 - Parchment / Xaero ([step-38](../step-38/00-index.md))
-- Curved labels ([step-39](../step-39/00-index.md))
+- Curved labels ([step-40](../step-40/00-index.md))
 - Staff map gating ([step-40](../step-40/00-index.md))
 - Pan/zoom library
 - New vote page (future site task)

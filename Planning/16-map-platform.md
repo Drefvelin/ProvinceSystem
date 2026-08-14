@@ -1,8 +1,8 @@
 # 16 — Map platform
 
-**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–45 planned**.  
+**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–39 code done**; **step-40 next**. Steps 41–46 planned.  
 **Repos:** `ProvinceSystem` (FE + BE mapgen) · `Workspace/simplefactions` (export + upload) · `Workspace/tfmcweb` (staff map gate)  
-**Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-45](./batches/step-45/00-index.md)  
+**Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-46](./batches/step-46/00-index.md)  
 **Technical refs:** [09-map-system.md](./09-map-system.md) · [04-map-performance.md](./04-map-performance.md)  
 **Related:** flows [12](./12-end-to-end-flows.md) · TFMCWeb [13](./13-tfmcweb.md)
 
@@ -15,24 +15,24 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | # | Requirement | Step |
 |---|-------------|------|
 | 1 | Fast refined layout | [37](./batches/step-37/00-index.md) |
-| 2 | Xaero world map → parchment base | [38](./batches/step-38/00-index.md) |
-| 3 | Fantasy muted nation overlays (not flat blobs) | [38](./batches/step-38/00-index.md) |
-| 4 | Paradox-style arched names on continuous territory | [39](./batches/step-39/00-index.md) |
+| 2 | Xaero world map → colour base + optional ink parchment | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
+| 3 | Fantasy muted nation overlays (faithful-hue parchment washes) | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
+| 4 | Paradox-style arched names on continuous territory | [40](./batches/step-40/00-index.md) |
 | 5 | Visual parity with site hub / shell | [37](./batches/step-37/00-index.md) |
-| 6 | Staff-only maps (configurable per `mapId`) | [40](./batches/step-40/00-index.md) |
+| 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) |
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
-| 8 | Named capitals / guild settlements on map | [41](./batches/step-41/00-index.md) |
-| 9 | Forts + zone of control | [42](./batches/step-42/00-index.md) |
-| 10 | Wars / frontlines / campaigns | [43](./batches/step-43/00-index.md) (blocked on SF war rework) |
-| 11 | Daily map snapshots + changelog | [44](./batches/step-44/00-index.md) |
-| 12 | Nation / global wealth charts over time | [45](./batches/step-45/00-index.md) |
+| 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) |
+| 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) |
+| 10 | Wars / frontlines / campaigns | [44](./batches/step-44/00-index.md) (blocked on SF war rework) |
+| 11 | Daily map snapshots + changelog | [45](./batches/step-45/00-index.md) |
+| 12 | Nation / global wealth charts over time | [46](./batches/step-46/00-index.md) |
 
 ## Architecture
 
 ```mermaid
 flowchart TD
   subgraph inputs [Inputs]
-    Xaero[xaero_world.png]
+    Xaero[map.png Xaero plain background]
     Prov[provinces.png]
     SF[SimpleFactions JSON upload]
   end
@@ -68,7 +68,7 @@ flowchart TD
 
 | Layer | Source | Purpose |
 |-------|--------|---------|
-| `parchment_base` | `input/{map}/xaero_world.png` + grade/texture | Terrain backdrop |
+| `parchment_base` | `input/{map}/map.png` + grade/texture → `output/.../parchment_base.png` | Terrain backdrop |
 | `political_{mode}` | `provinces.png` + nation defines | Desaturated fills, borders, hover |
 | `labels_{mode}` | Province graph + nation names | Curved text per contiguous blob |
 | `markers` | SF export (`capitals`, `forts`, …) | Town/fort icons |
@@ -81,7 +81,7 @@ Pick layer must stay separate from display (see [`mapgen.py`](../backend/src/scr
 
 | Rule | Choice |
 |------|--------|
-| Grid alignment | `xaero_world.png` and `provinces.png` share the same pixel grid per `mapId` |
+| Grid alignment | `map.png` and `provinces.png` share the same pixel grid per `mapId` |
 | Nation colour | Desaturated/dulled vs raw `rgb` in nation.json; parchment masked interior optional |
 | Interaction | **Click** → nation detail modal; **Ctrl+click** (Cmd on Mac) → drill into subjects; mobile: tap + explicit drill |
 | Staff maps | Gated by TFMCWeb/LP permission (e.g. `tfmc.map.staff`); `public` vs `staff` per map in PS config + SF `mapRef` |
@@ -107,14 +107,15 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 
 1. **[36](./batches/step-36/00-index.md)** — Planning lock (this playbook + hub docs) **done**
 2. **[37](./batches/step-37/00-index.md)** — Site UX, interaction, perf (crop overlays, mobile). Vote links removed from map; restore later on dedicated vote page. **done**
-3. **[38](./batches/step-38/00-index.md)** — Parchment pipeline + muted political layers
-4. **[39](./batches/step-39/00-index.md)** — Curved Paradox labels
-5. **[40](./batches/step-40/00-index.md)** — Staff map access
-6. **[41](./batches/step-41/00-index.md)** — Capitals / settlements (SF + PS)
-7. **[42](./batches/step-42/00-index.md)** — Forts + ZOC (SF + PS)
-8. **[43](./batches/step-43/00-index.md)** — War layer (**blocked on SF war rework**)
-9. **[44](./batches/step-44/00-index.md)** — Map chronicle (snapshots + log)
-10. **[45](./batches/step-45/00-index.md)** — Wealth history + charts
+3. **[38](./batches/step-38/00-index.md)** — Parchment pipeline + muted political layers **done**
+4. **[39](./batches/step-39/00-index.md)** — Ink cartography (colour base default, parchment washes, uniform borders) **done**
+5. **[40](./batches/step-40/00-index.md)** — Curved Paradox labels **next**
+6. **[41](./batches/step-41/00-index.md)** — Staff map access
+7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS)
+8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS)
+9. **[44](./batches/step-44/00-index.md)** — War layer (**blocked on SF war rework**)
+10. **[45](./batches/step-45/00-index.md)** — Map chronicle (snapshots + log)
+11. **[46](./batches/step-46/00-index.md)** — Wealth history + charts
 
 **Later:** [step-46](./batches/README.md) — SimpleFactions REST via TFMCWeb gateway (post map platform).
 

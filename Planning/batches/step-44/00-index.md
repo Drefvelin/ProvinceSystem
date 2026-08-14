@@ -1,30 +1,30 @@
-# Step 44 — Map chronicle
+# Step 44 — War map layer
 
-**Repos:** `ProvinceSystem` (+ SF event emission)  
-**Depends on:** [step-38](../step-38/00-index.md)  
-**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 11
+**Repos:** `Workspace/simplefactions` · `ProvinceSystem`  
+**Depends on:** SF war rework · [step-38](../step-38/00-index.md)  
+**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 10
 
 ## Goal
 
-Daily composited map snapshot plus structured changelog (events since previous day) for season recap, slideshow, and future animation tooling.
+Display active wars: frontlines, contested provinces, optional campaign markers. **Do not infer wars from territory diffs alone.**
 
 ## Locked rules
 
 | Piece | Choice |
 |-------|--------|
-| Snapshot | Daily copy of composited master (base + political); retention policy TBD |
-| Events | Prefer SF `events[]` emission; supplement with nation.json diffs |
-| Storage | `snapshots/{map}/{YYYY-MM-DD}/` + `chronicle/{map}/events.jsonl` |
-| Slideshow | Frame URLs + event log sufficient for v1; video gen out of scope |
+| Blocker | SimpleFactions war rework must export structured `wars` payload |
+| Data | `wars[]` per [map-export-schema.json](../../assets/map-export-schema.json) |
+| Render | War mode overlay: frontline edges, crosshatch, belligerent tint |
+| Events | War start/end feed map chronicle ([step-45](../step-45/00-index.md)) |
 
 ## Batches (when step starts)
 
-1. **01-planning-lock**  
-2. **02-snapshot-job** — Cron/post-regen hook  
-3. **03-event-log** — SF events + diff fallback  
-4. **04-chronicle-api** — List snapshots + events for frontend  
+1. **01-planning-lock** — Confirm SF war API  
+2. **02-sf-war-export**  
+3. **03-ps-war-compile**  
+4. **04-frontend-war-mode**  
 5. **05-docs-verify** — STAGING Step 44  
 
 ## Status
 
-**Planned.**
+**Planned.** **Blocked on SF war rework.**

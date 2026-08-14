@@ -6,6 +6,7 @@ import type { MapObject, OverlayBBox } from "../components/map/types";
 import { apiBase } from "../components/map/types";
 
 type HoverRegionResult = {
+  regionId: string | null;
   imagePath: string | null;
   region: Record<string, unknown> | null;
   overlay?: OverlayBBox;
@@ -84,11 +85,12 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
 
     while (currentRegionId) {
       const region = regionData[currentRegionId] as Record<string, unknown>;
-      if (!region) return { imagePath: null, region: null };
+      if (!region) return { regionId: null, imagePath: null, region: null };
 
       const main = mapObjects.find((obj) => obj.id === currentRegionId);
       if (main?.visible) {
         return {
+          regionId: currentRegionId,
           imagePath: `${base}/${mapId}/regions/${mapType}/${main.path}_hover`,
           region,
           overlay: main.overlay,
@@ -99,6 +101,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
       const nested = mapObjects.find((obj) => obj.id === nestedId);
       if (nested?.visible) {
         return {
+          regionId: currentRegionId,
           imagePath: `${base}/${mapId}/regions/${mapType}/${nested.path}_hover`,
           region,
           overlay: nested.overlay,
@@ -108,7 +111,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
       currentRegionId = (region.overlord as string) || null;
     }
 
-    return { imagePath: null, region: null };
+    return { regionId: null, imagePath: null, region: null };
   };
 
   const drillDownRegion = (

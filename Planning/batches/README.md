@@ -70,15 +70,16 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-34/00-realm-scoped-data](./step-34/00-realm-scoped-data.md) | 34 | Realm-scoped game data | **done** (staging Step 34) |
 | [step-35/00-http-gateway-per-realm](./step-35/00-http-gateway-per-realm.md) | 35 | TFMCWeb HTTP gateway + per-realm isolation | **done** (staging Step 35) |
 | [step-36/00-index](./step-36/00-index.md) | 36 | Map platform planning lock | **done** |
-| [step-37/00-index](./step-37/00-index.md) | 37 | Map site UX and interaction | **done** (code); next [38](./step-38/00-index.md) |
-| [step-38/00-index](./step-38/00-index.md) | 38 | Parchment visual pipeline | planned |
-| [step-39/00-index](./step-39/00-index.md) | 39 | Paradox curved labels | planned |
-| [step-40/00-index](./step-40/00-index.md) | 40 | Staff map access control | planned |
-| [step-41/00-index](./step-41/00-index.md) | 41 | Capitals and settlements | planned |
-| [step-42/00-index](./step-42/00-index.md) | 42 | Forts and zone of control | planned |
-| [step-43/00-index](./step-43/00-index.md) | 43 | War map layer | planned (blocked on SF war rework) |
-| [step-44/00-index](./step-44/00-index.md) | 44 | Map chronicle | planned |
-| [step-45/00-index](./step-45/00-index.md) | 45 | Wealth history and charts | planned |
+| [step-37/00-index](./step-37/00-index.md) | 37 | Map site UX and interaction | **done** (code) |
+| [step-38/00-index](./step-38/00-index.md) | 38 | Parchment visual pipeline | **done** (code) |
+| [step-39/00-index](./step-39/00-index.md) | 39 | Ink cartography visual pass | **done** (code) |
+| [step-40/00-index](./step-40/00-index.md) | 40 | Paradox curved labels | planned — **next build** |
+| [step-41/00-index](./step-41/00-index.md) | 41 | Staff map access control | planned |
+| [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | planned |
+| [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | planned |
+| [step-44/00-index](./step-44/00-index.md) | 44 | War map layer | planned (blocked on SF war rework) |
+| [step-45/00-index](./step-45/00-index.md) | 45 | Map chronicle | planned |
+| [step-46/00-index](./step-46/00-index.md) | 46 | Wealth history and charts | planned |
 
 **Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX; Step 26 = kit asset sync + status; Step 27 = kit templates + resetkit; Step 28 = book skins + kit journal; Step 29 = kit customise visibility + claim AS gate; Step 30 = character skin wardrobe; Step 31 = Drink Builder; Steps 32–35 = realm + TFMCWeb gateway; Steps 36–45 = map platform.
 

@@ -1,28 +1,28 @@
-# Step 45 — Wealth history and charts
+# Step 45 — Map chronicle
 
-**Repos:** `ProvinceSystem` (+ SF `balance` / `global_wealth` upload)  
-**Depends on:** [step-44](../step-44/00-index.md) or parallel once nation upload stable  
-**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 12
+**Repos:** `ProvinceSystem` (+ SF event emission)  
+**Depends on:** [step-38](../step-38/00-index.md)  
+**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 11
 
 ## Goal
 
-Time-series nation and global wealth from daily snapshots of upload data; charts on map site showing richest realms and progression over the season.
+Daily composited map snapshot plus structured changelog (events since previous day) for season recap, slideshow, and future animation tooling.
 
 ## Locked rules
 
 | Piece | Choice |
 |-------|--------|
-| Source | Nation `balance` on each upload; optional `global_wealth` in map export |
-| Store | Append-only table: `(date, map_id, nation_id, balance)` + global row |
-| UI | Chart panel or `/map/{id}/economy` route; top-N nations + global line |
-| Cadence | Daily sample aligned with chronicle job ([step-44](../step-44/00-index.md)) |
+| Snapshot | Daily copy of composited master (base + political); retention policy TBD |
+| Events | Prefer SF `events[]` emission; supplement with nation.json diffs |
+| Storage | `snapshots/{map}/{YYYY-MM-DD}/` + `chronicle/{map}/events.jsonl` |
+| Slideshow | Frame URLs + event log sufficient for v1; video gen out of scope |
 
 ## Batches (when step starts)
 
 1. **01-planning-lock**  
-2. **02-wealth-schema** — SQLite migration + ingest on upload  
-3. **03-wealth-api** — Query endpoints for charts  
-4. **04-frontend-charts** — Recharts (or equivalent) panel  
+2. **02-snapshot-job** — Cron/post-regen hook  
+3. **03-event-log** — SF events + diff fallback  
+4. **04-chronicle-api** — List snapshots + events for frontend  
 5. **05-docs-verify** — STAGING Step 45  
 
 ## Status

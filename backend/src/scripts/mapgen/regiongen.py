@@ -5,10 +5,12 @@ import time
 
 from ..util.border_paint import (
     apply_region_borders,
+    border_color_for_fill,
     border_thickness as default_border_thickness,
     compute_border_owners,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
+from ..util.display_colour import display_rgb, hover_rgb
 from ..util.overlay_metadata import (
     merge_overlay_metadata,
     rgb_tuple_to_str,
@@ -25,18 +27,6 @@ def log_progress(message: str):
 
 def sanitize_filename(color):
     return "_".join(map(str, color))
-
-
-def lighten_color(rgb):
-    r, g, b = rgb
-    r = min(255, int(r * 1.25))
-    g = min(255, int(g * 1.25))
-    b = min(255, int(b * 1.25))
-
-    def contrast(c):
-        return min(255, max(0, int((c - 128) * 1.12 + 128)))
-
-    return contrast(r), contrast(g), contrast(b)
 
 
 def build_overlord_chains(overrides):
@@ -192,10 +182,10 @@ def generate_regions(
         ensure_region(owner)
 
         if owner not in light_cache:
-            light_cache[owner] = lighten_color(owner)
+            light_cache[owner] = hover_rgb(owner)
 
         paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
-        pr, pg, pb = paint_rgb
+        pr, pg, pb = display_rgb(paint_rgb)
         lr, lg, lb = light_cache[owner]
 
         base_px, hover_px, nested_px, nested_hover_px = region_px[owner]
@@ -211,9 +201,9 @@ def generate_regions(
         for anc in overlord_chains.get(owner, []):
             ensure_region(anc)
             if anc not in light_cache:
-                light_cache[anc] = lighten_color(anc)
+                light_cache[anc] = hover_rgb(anc)
 
-            ar, ag, ab = anc
+            ar, ag, ab = display_rgb(anc)
             alr, alg, alb = light_cache[anc]
             anc_base, anc_hover, _, _ = region_px[anc]
 
@@ -240,13 +230,17 @@ def generate_regions(
                     f"({i / total * 100:5.1f}%)"
                 )
 
+                display_color = display_rgb(color)
+                base_stroke = border_color_for_fill(display_color)
+                hover_stroke = border_color_for_fill(hover_rgb(color))
+
                 apply_region_borders(
                     base.load(), color, border_owners,
-                    width, height, border_color, border_thickness
+                    width, height, base_stroke, border_thickness
                 )
                 apply_region_borders(
                     hover.load(), color, border_owners,
-                    width, height, border_color, border_thickness
+                    width, height, hover_stroke, border_thickness
                 )
         else:
             # SAFE PATH
@@ -256,25 +250,28 @@ def generate_regions(
                     f"({i / total * 100:5.1f}%)"
                 )
 
+                display_color = display_rgb(color)
+                base_stroke = border_color_for_fill(display_color)
+                hover_stroke = border_color_for_fill(hover_rgb(color))
                 base_bo = compute_border_owners(base.load(), width, height, include_outer=True)
                 apply_region_borders(
-                    base.load(), color, base_bo,
-                    width, height, border_color, border_thickness
+                    base.load(), display_color, base_bo,
+                    width, height, base_stroke, border_thickness
                 )
                 apply_region_borders(
-                    hover.load(), color, base_bo,
-                    width, height, border_color, border_thickness
+                    hover.load(), display_color, base_bo,
+                    width, height, hover_stroke, border_thickness
                 )
 
                 if nested:
                     nested_bo = compute_border_owners(nested.load(), width, height, include_outer=True)
                     apply_region_borders(
-                        nested.load(), color, nested_bo,
-                        width, height, border_color, border_thickness
+                        nested.load(), display_color, nested_bo,
+                        width, height, base_stroke, border_thickness
                     )
                     apply_region_borders(
-                        nested_hover.load(), color, nested_bo,
-                        width, height, border_color, border_thickness
+                        nested_hover.load(), display_color, nested_bo,
+                        width, height, hover_stroke, border_thickness
                     )
 
     print()

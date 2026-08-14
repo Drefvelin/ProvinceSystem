@@ -153,36 +153,48 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] Mobile layout
 - [x] Hover perf (rAF, RGB→id map); wire realm size/subjects
 
-### M2 — Parchment visual pipeline ([step-38](./batches/step-38/00-index.md))
+### M2 — Parchment visual pipeline ([step-38](./batches/step-38/00-index.md)) — **done**
 
-- [ ] `xaero_world.png` → parchment base
-- [ ] Desaturated fantasy nation fills + borders
+- [x] [38.01](./batches/step-38/01-planning-lock.md) planning lock
+- [x] [38.02](./batches/step-38/02-parchment-base.md) `map.png` → parchment base + `/map` serve
+- [x] [38.03](./batches/step-38/03-muted-political.md) desaturated region overlays + borders
+- [x] [38.04](./batches/step-38/04-frontend-composite.md) frontend layer tuning
+- [x] [38.05](./batches/step-38/05-docs-verify.md) docs + STAGING
 
-### M3 — Labels ([step-39](./batches/step-39/00-index.md))
+### M2b — Ink cartography ([step-39](./batches/step-39/00-index.md)) — **done**
+
+- [x] [39.01](./batches/step-39/01-planning-lock.md) planning lock
+- [x] [39.02](./batches/step-39/02-ink-base.md) luminance remap + ink edge overlay
+- [x] [39.03](./batches/step-39/03-earth-tone-fills.md) faithful-hue parchment washes
+- [x] [39.04](./batches/step-39/04-adaptive-borders.md) uniform INK_DARK borders
+- [x] [39.05](./batches/step-39/05-frontend-opacity.md) hover vs drill opacity split
+- [x] [39.06](./batches/step-39/06-docs-verify.md) docs + STAGING
+
+### M3 — Labels ([step-40](./batches/step-40/00-index.md)) — **next**
 
 - [ ] Paradox-style curved nation labels (backend)
 
-### M4 — Access ([step-40](./batches/step-40/00-index.md))
+### M4 — Access ([step-41](./batches/step-41/00-index.md))
 
 - [ ] Staff-only maps (configurable per `mapId`)
 
-### M5 — Settlements ([step-41](./batches/step-41/00-index.md))
+### M5 — Settlements ([step-42](./batches/step-42/00-index.md))
 
 - [ ] SF named capitals / guild settlements export + map markers
 
-### M6 — Forts ([step-42](./batches/step-42/00-index.md))
+### M6 — Forts ([step-43](./batches/step-43/00-index.md))
 
 - [ ] Forts + zone of control (SF forts required)
 
-### M7 — Wars ([step-43](./batches/step-43/00-index.md))
+### M7 — Wars ([step-44](./batches/step-44/00-index.md))
 
 - [ ] War frontlines layer (**blocked on SF war rework**)
 
-### M8 — Chronicle ([step-44](./batches/step-44/00-index.md))
+### M8 — Chronicle ([step-45](./batches/step-45/00-index.md))
 
 - [ ] Daily snapshots + event changelog
 
-### M9 — Wealth analytics ([step-45](./batches/step-45/00-index.md))
+### M9 — Wealth analytics ([step-46](./batches/step-46/00-index.md))
 
 - [ ] Nation / global wealth time series + charts
 
@@ -223,11 +235,13 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 22. **Drink Builder / Step 31** — **done** ([15](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md); 31.09 docs closed)  
 23. **Realm + TFMCWeb gateway / Steps 32–35** — **done** (code; staging [STAGING](../STAGING.md) Steps 32–35)  
 24. **Map platform planning lock / Step 36** — **done** ([16-map-platform.md](./16-map-platform.md))  
-25. **Map site UX / Step 37** — **next build**  
-26. **Map parchment + labels / Steps 38–39**  
-27. **Staff maps, settlements, forts, wars, chronicle, wealth / Steps 40–45**  
-28. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
-29. **SimpleFactions via TFMCWeb / Step 46** — later (post map platform)  
+25. **Map site UX / Step 37** — **done** ([step-37](./batches/step-37/00-index.md))  
+26. **Map parchment pipeline / Step 38** — **done** ([step-38](./batches/step-38/00-index.md); tick [STAGING](../STAGING.md) Step 38 when ready)  
+27. **Ink cartography / Step 39** — **done** ([step-39](./batches/step-39/00-index.md); tick [STAGING](../STAGING.md) Step 39 when ready)  
+28. **Curved labels / Step 40** — **next build**  
+29. **Staff maps, settlements, forts, wars, chronicle, wealth / Steps 41–46**  
+30. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
+31. **SimpleFactions via TFMCWeb / Step 47** — later (post map platform)  
 
 ---
 
@@ -235,7 +249,7 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 
 | Area | Criteria |
 |------|----------|
-| Map | Parchment political map; nation modals; staff map gates; settlements; daily chronicle + wealth charts ([16](./16-map-platform.md) / steps 37–45) |
+| Map | Ink political map; nation modals; staff map gates; settlements; daily chronicle + wealth charts ([16](./16-map-platform.md) / steps 37–46) |
 | Skins | armor_set + item/handheld/large_handheld; exact sizes; naming; Discord PNG review; ArmourShop pack + LP |
 | Drinks | Token → `/drinks` → Discord → DrinkBuilder → BreweryX + optional `tfmc_drinks` (**code done**; staging [STAGING](../STAGING.md) Step 31) |
 | Bot | Skins + drinks review; ban DM/log + **banned role add/clear done**; guild leave/join grace |
@@ -243,4 +257,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), SimpleFactions via TFMCWeb ([step-46](./batches/README.md)).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** Next build: [step-38 parchment pipeline](./batches/step-38/00-index.md). Steps 38–45 **planned** ([16-map-platform.md](./16-map-platform.md)). Tick operator [STAGING](../STAGING.md) Step 37 when ready.
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** Next build: [step-40 curved labels](./batches/step-40/00-index.md). Steps 41–46 **planned** ([16-map-platform.md](./16-map-platform.md)). Tick operator [STAGING](../STAGING.md) Steps 37–39 when ready.

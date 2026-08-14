@@ -1,28 +1,28 @@
-# Step 41 — Capitals and settlements on map
+# Step 41 — Staff map access control
 
-**Repos:** `Workspace/simplefactions` · `ProvinceSystem`  
-**Depends on:** [step-38](../step-38/00-index.md) · [map-export-schema.json](../../assets/map-export-schema.json)  
-**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 8
+**Repos:** `ProvinceSystem` · `Workspace/tfmcweb` (LP permission)  
+**Depends on:** [step-37](../step-37/00-index.md)  
+**Playbook:** [16-map-platform.md](../../16-map-platform.md) — requirement 6
 
 ## Goal
 
-Faction and guild capitals (and distant guild settlements) must be **named in-game** in SimpleFactions, exported to PS, and rendered as town markers + labels on the map.
+Configurable public vs staff-only maps: regular players see `main` only; staff with map permission can access dev/other maps.
 
 ## Locked rules
 
 | Piece | Choice |
 |-------|--------|
-| SF | `setcapital` + guild capital rules; settlement when guild capital > X blocks from faction capital |
-| Export | `capitals` + `settlements` arrays per [map-export-schema.json](../../assets/map-export-schema.json) |
-| Render | Icon + label at province centroid or `map_x`/`map_y` |
-| Unnamed | No marker until named in-game |
+| Permission | TFMCWeb/LP e.g. `tfmc.map.staff` |
+| Config | PS map registry: `{ mapId, public, staff_permission? }`; SF `mapRef` must match |
+| API | 403 on map assets/data routes for unauthorized `mapId` |
+| Frontend | Hide non-public map links in nav; direct URL still gated by API |
 
 ## Batches (when step starts)
 
 1. **01-planning-lock**  
-2. **02-sf-export** — Capitals/settlements in upload payload  
-3. **03-ps-compile** — Store in defines / serve via API  
-4. **04-frontend-markers** — Town layer on map  
+2. **02-ps-map-registry** — Config + route guards  
+3. **03-staff-session** — Auth check (TFMCWeb staff session or equivalent)  
+4. **04-frontend-gate** — Nav + error states  
 5. **05-docs-verify** — STAGING Step 41  
 
 ## Status

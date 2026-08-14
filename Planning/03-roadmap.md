@@ -57,7 +57,7 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 
 ## Track H — Map platform
 
-**Status:** **H1 / Step 37 code done.** Next: **step-38.** Steps 38–45 planned.  
+**Status:** **H2b / Step 39 code done.** Next: **step-40 curved labels.** Steps 41–46 planned.  
 **Repos:** ProvinceSystem · SimpleFactions · TFMCWeb (staff map gate)  
 **Playbook:** [16-map-platform.md](./16-map-platform.md)
 
@@ -65,14 +65,15 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 |-------|------|--------|
 | H0 | [36](./batches/step-36/00-index.md) | Planning lock + export schema — **done** |
 | H1 | [37](./batches/step-37/00-index.md) | Site UX, click modal, drill, cropped overlays, mobile — **done (code)** |
-| H2 | [38](./batches/step-38/00-index.md) | Xaero → parchment base; muted fantasy nation layers |
-| H3 | [39](./batches/step-39/00-index.md) | Paradox curved labels (backend) |
-| H4 | [40](./batches/step-40/00-index.md) | Staff-only maps (configurable) |
-| H5 | [41](./batches/step-41/00-index.md) | Named capitals / guild settlements (SF export) |
-| H6 | [42](./batches/step-42/00-index.md) | Forts + zone of control (SF forts) |
-| H7 | [43](./batches/step-43/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
-| H8 | [44](./batches/step-44/00-index.md) | Daily snapshots + chronicle log |
-| H9 | [45](./batches/step-45/00-index.md) | Wealth history + charts |
+| H2 | [38](./batches/step-38/00-index.md) | Xaero → parchment base; muted fantasy nation layers — **done (code)** |
+| H2b | [39](./batches/step-39/00-index.md) | Ink cartography: colour base default, parchment washes, uniform borders — **done (code)** |
+| H3 | [40](./batches/step-40/00-index.md) | Paradox curved labels (backend) — **next** |
+| H4 | [41](./batches/step-41/00-index.md) | Staff-only maps (configurable) |
+| H5 | [42](./batches/step-42/00-index.md) | Named capitals / guild settlements (SF export) |
+| H6 | [43](./batches/step-43/00-index.md) | Forts + zone of control (SF forts) |
+| H7 | [44](./batches/step-44/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
+| H8 | [45](./batches/step-45/00-index.md) | Daily snapshots + chronicle log |
+| H9 | [46](./batches/step-46/00-index.md) | Wealth history + charts |
 
 **Done when:** Parchment political map, nation modals, staff map gates, settlements, chronicle + wealth charts; wars when SF ships.
 
@@ -286,10 +287,9 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Priority for “finished product ASAP”
 
-1. **Track H / step-38** — Parchment pipeline (next build)  
-2. **Track H / step-39** — Curved Paradox labels  
-3. **Track H / steps 40–45** — Staff maps, settlements, forts, wars, chronicle, wealth  
-4. Tick operator [STAGING](../STAGING.md) Step 37 when ready; Steps 17–35, 31 when ready  
-5. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
-6. **Step 16** — 3D upload preview polish (02–03 done; variants optional)  
-7. **Step 46** — SimpleFactions via TFMCWeb (post map platform)
+1. **Track H / step-40** — Paradox curved labels (next build)  
+2. **Track H / steps 41–45** — Staff maps, settlements, forts, wars, chronicle, wealth  
+3. Tick operator [STAGING](../STAGING.md) Steps 37–39 when ready; Steps 17–35, 31 when ready  
+4. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
+5. **Step 16** — 3D upload preview polish (02–03 done; variants optional)  
+6. **Step 46** — SimpleFactions via TFMCWeb (post map platform)

@@ -22,13 +22,14 @@ See [16-map-platform.md](../../16-map-platform.md). This step creates that playb
 |------|--------|
 | [37](../step-37/00-index.md) | Map site UX and interaction |
 | [38](../step-38/00-index.md) | Parchment visual pipeline |
-| [39](../step-39/00-index.md) | Paradox curved labels |
-| [40](../step-40/00-index.md) | Staff map access control |
-| [41](../step-41/00-index.md) | Capitals and settlements |
-| [42](../step-42/00-index.md) | Forts and zone of control |
-| [43](../step-43/00-index.md) | War map layer |
-| [44](../step-44/00-index.md) | Map chronicle |
-| [45](../step-45/00-index.md) | Wealth history and charts |
+| [39](../step-39/00-index.md) | Ink cartography visual pass |
+| [40](../step-40/00-index.md) | Paradox curved labels |
+| [41](../step-41/00-index.md) | Staff map access control |
+| [42](../step-42/00-index.md) | Capitals and settlements |
+| [43](../step-43/00-index.md) | Forts and zone of control |
+| [44](../step-44/00-index.md) | War map layer |
+| [45](../step-45/00-index.md) | Map chronicle |
+| [46](../step-46/00-index.md) | Wealth history and charts |
 
 **Later:** SimpleFactions REST via TFMCWeb (step 46 — docs mention only).
 

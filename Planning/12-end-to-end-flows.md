@@ -172,7 +172,7 @@ sequenceDiagram
 - Naming enforced on Flow 2.  
 - Local testing possible for API/UI without Paper ([06](./06-local-development.md)).  
 
-Build order: [08-implementation-checklist.md](./08-implementation-checklist.md). **Next build:** [step-38](./batches/step-38/00-index.md).
+Build order: [08-implementation-checklist.md](./08-implementation-checklist.md). **Next build:** [step-40 curved labels](./batches/step-40/00-index.md).
 
 ---
 

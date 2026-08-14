@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
-import type { HoverOverlay, MapMode, RegionInfo, RegionRecord } from "../components/map/types";
+import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
 
 export function useRegionHover({
   mapId,
@@ -13,7 +13,7 @@ export function useRegionHover({
   setRegionInfo,
   setSelectedRegionId,
   mapDisplayName,
-  drillStack,
+  mapObjects,
 }: {
   mapId: string;
   mapType: MapMode;
@@ -25,6 +25,7 @@ export function useRegionHover({
     regionId: string,
     regionData: RegionRecord
   ) => {
+    regionId: string | null;
     imagePath: string | null;
     region: Record<string, unknown> | null;
     overlay?: HoverOverlay["overlay"];
@@ -33,7 +34,7 @@ export function useRegionHover({
   setRegionInfo: (info: RegionInfo | null) => void;
   setSelectedRegionId: (id: string | null) => void;
   mapDisplayName: string;
-  drillStack: string[];
+  mapObjects: MapObject[];
 }) {
   const lastRgbRef = useRef<string | null>(null);
 
@@ -49,9 +50,9 @@ export function useRegionHover({
 
     const pixel = ctx.getImageData(x, y, 1, 1).data;
     const rgb = `${pixel[0]},${pixel[1]},${pixel[2]}`;
-    const id = rgbToId[rgb];
+    const pickId = rgbToId[rgb];
 
-    if (!id) {
+    if (!pickId) {
       lastRgbRef.current = null;
       setHoveredOverlay(null);
       setRegionInfo(null);
@@ -59,12 +60,26 @@ export function useRegionHover({
       return;
     }
 
-    setSelectedRegionId(id);
+    const { regionId, imagePath, overlay, region } = getHoverRegion(
+      mapType,
+      mapId,
+      pickId,
+      regionData
+    );
 
-    const region = regionData[id];
+    if (!regionId || !region) {
+      lastRgbRef.current = null;
+      setHoveredOverlay(null);
+      setRegionInfo(null);
+      setCursorTooltip(null);
+      return;
+    }
+
+    setSelectedRegionId(regionId);
+
     const info = buildRegionInfo(
-      id,
-      region,
+      regionId,
+      regionData[regionId],
       mapType,
       mapDisplayName,
       regionData
@@ -76,7 +91,7 @@ export function useRegionHover({
         : `${info.title} · ${info.tier}`;
 
     const hintLines = ["Click to view"];
-    if (canDrillIntoRegion(id, regionData, drillStack)) {
+    if (canDrillIntoRegion(regionId, regionData, mapObjects)) {
       hintLines.push("CTRL+Click to see subjects");
     }
 
@@ -89,13 +104,6 @@ export function useRegionHover({
 
     if (rgb !== lastRgbRef.current) {
       lastRgbRef.current = rgb;
-
-      const { imagePath, overlay } = getHoverRegion(
-        mapType,
-        mapId,
-        id,
-        regionData
-      );
 
       setHoveredOverlay(imagePath ? { url: imagePath, overlay } : null);
       setRegionInfo(info);

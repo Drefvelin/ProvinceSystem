@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import { getMapCoords } from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
-import type { MapId, MapMode, RegionInfo, RegionRecord } from "../components/map/types";
+import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 
 type UseMapHoverProps = {
@@ -22,12 +22,13 @@ type UseMapHoverProps = {
     regionId: string,
     regionData: RegionRecord
   ) => {
+    regionId: string | null;
     imagePath: string | null;
     region: Record<string, unknown> | null;
     overlay?: HoverOverlay["overlay"];
   };
   mapDisplayName: string;
-  drillStack: string[];
+  mapObjects: MapObject[];
 };
 
 export function useMapHover(props: UseMapHoverProps) {

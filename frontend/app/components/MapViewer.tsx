@@ -131,7 +131,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setSelectedRegionId,
     getHoverRegion,
     mapDisplayName,
-    drillStack: drillStackNames(drillStack),
+    mapObjects,
   });
 
   function handleMapTypeChange(mode: MapMode) {
@@ -160,7 +160,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const nextTargetId = getNextDrillTarget(
       selectedRegionId,
       regionData,
-      drillStackNames(drillStack)
+      drillStack
     );
     if (!nextTargetId) return;
 
