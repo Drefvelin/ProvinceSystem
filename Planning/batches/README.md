@@ -73,8 +73,8 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-37/00-index](./step-37/00-index.md) | 37 | Map site UX and interaction | **done** (code) |
 | [step-38/00-index](./step-38/00-index.md) | 38 | Parchment visual pipeline | **done** (code) |
 | [step-39/00-index](./step-39/00-index.md) | 39 | Ink cartography visual pass | **done** (code) |
-| [step-40/00-index](./step-40/00-index.md) | 40 | Paradox curved labels | planned — **next build** |
-| [step-41/00-index](./step-41/00-index.md) | 41 | Staff map access control | planned |
+| [step-40/00-index](./step-40/00-index.md) | 40 | Nation labels (frontend SVG) | **done** (code) |
+| [step-41/00-index](./step-41/00-index.md) | 41 | Staff map access control | planned — **next build** |
 | [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | planned |
 | [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | planned |
 | [step-44/00-index](./step-44/00-index.md) | 44 | War map layer | planned (blocked on SF war rework) |

@@ -170,11 +170,15 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] [39.05](./batches/step-39/05-frontend-opacity.md) hover vs drill opacity split
 - [x] [39.06](./batches/step-39/06-docs-verify.md) docs + STAGING
 
-### M3 — Labels ([step-40](./batches/step-40/00-index.md)) — **next**
+### M3 — Labels ([step-40](./batches/step-40/00-index.md)) — **done**
 
-- [ ] Paradox-style curved nation labels (backend)
+- [x] [40.02](./batches/step-40/02-map-geometry.md) province neighbors + centroids JSON for `main`
+- [x] [40.03](./batches/step-40/03-layout-lib.md) `computeNationLabels()` + unit tests
+- [x] [40.04](./batches/step-40/04-frontend-layer.md) `LabelLayer` in `MapCanvas`; nation mode only
+- [x] [40.05](./batches/step-40/05-label-polish.md) ink + halo styling; zoom-hide stub
+- [x] [40.06](./batches/step-40/06-docs-verify.md) docs + STAGING
 
-### M4 — Access ([step-41](./batches/step-41/00-index.md))
+### M4 — Access ([step-41](./batches/step-41/00-index.md)) — **next**
 
 - [ ] Staff-only maps (configurable per `mapId`)
 
@@ -238,10 +242,11 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 25. **Map site UX / Step 37** — **done** ([step-37](./batches/step-37/00-index.md))  
 26. **Map parchment pipeline / Step 38** — **done** ([step-38](./batches/step-38/00-index.md); tick [STAGING](../STAGING.md) Step 38 when ready)  
 27. **Ink cartography / Step 39** — **done** ([step-39](./batches/step-39/00-index.md); tick [STAGING](../STAGING.md) Step 39 when ready)  
-28. **Curved labels / Step 40** — **next build**  
-29. **Staff maps, settlements, forts, wars, chronicle, wealth / Steps 41–46**  
-30. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
-31. **SimpleFactions via TFMCWeb / Step 47** — later (post map platform)  
+28. **Nation labels / Step 40** — **done** ([step-40](./batches/step-40/00-index.md); tick [STAGING](../STAGING.md) Step 40 when ready)  
+29. **Staff maps / Step 41** — **next build**  
+30. **Settlements, forts, wars, chronicle, wealth / Steps 42–46**  
+31. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
+32. **SimpleFactions via TFMCWeb / Step 47** — later (post map platform)  
 
 ---
 
@@ -257,4 +262,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), SimpleFactions via TFMCWeb ([step-46](./batches/README.md)).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** Next build: [step-40 curved labels](./batches/step-40/00-index.md). Steps 41–46 **planned** ([16-map-platform.md](./16-map-platform.md)). Tick operator [STAGING](../STAGING.md) Steps 37–39 when ready.
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.06).** Next build: [step-41 staff map access](./batches/step-41/00-index.md). Steps 42–46 **planned** ([16-map-platform.md](./16-map-platform.md)). Tick operator [STAGING](../STAGING.md) Steps 37–40 when ready.

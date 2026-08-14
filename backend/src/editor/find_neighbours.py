@@ -1,3 +1,4 @@
+# Prefer: python -m scripts.map_tools.build_province_geometry <map> (from backend/src)
 from PIL import Image
 import numpy as np
 from collections import defaultdict

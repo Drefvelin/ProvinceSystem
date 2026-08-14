@@ -57,7 +57,7 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 
 ## Track H — Map platform
 
-**Status:** **H2b / Step 39 code done.** Next: **step-40 curved labels.** Steps 41–46 planned.  
+**Status:** **H3 / Step 40 code done.** Next: **step-41 staff map access.** Steps 42–46 planned.  
 **Repos:** ProvinceSystem · SimpleFactions · TFMCWeb (staff map gate)  
 **Playbook:** [16-map-platform.md](./16-map-platform.md)
 
@@ -67,8 +67,8 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 | H1 | [37](./batches/step-37/00-index.md) | Site UX, click modal, drill, cropped overlays, mobile — **done (code)** |
 | H2 | [38](./batches/step-38/00-index.md) | Xaero → parchment base; muted fantasy nation layers — **done (code)** |
 | H2b | [39](./batches/step-39/00-index.md) | Ink cartography: colour base default, parchment washes, uniform borders — **done (code)** |
-| H3 | [40](./batches/step-40/00-index.md) | Paradox curved labels (backend) — **next** |
-| H4 | [41](./batches/step-41/00-index.md) | Staff-only maps (configurable) |
+| H3 | [40](./batches/step-40/00-index.md) | Nation labels (frontend SVG, straight text v1) — **done (code)** |
+| H4 | [41](./batches/step-41/00-index.md) | Staff-only maps (configurable) — **next** |
 | H5 | [42](./batches/step-42/00-index.md) | Named capitals / guild settlements (SF export) |
 | H6 | [43](./batches/step-43/00-index.md) | Forts + zone of control (SF forts) |
 | H7 | [44](./batches/step-44/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
@@ -287,9 +287,9 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Priority for “finished product ASAP”
 
-1. **Track H / step-40** — Paradox curved labels (next build)  
-2. **Track H / steps 41–45** — Staff maps, settlements, forts, wars, chronicle, wealth  
-3. Tick operator [STAGING](../STAGING.md) Steps 37–39 when ready; Steps 17–35, 31 when ready  
+1. **Track H / step-41** — Staff map access (next build)  
+2. **Track H / steps 42–46** — Settlements, forts, wars, chronicle, wealth  
+3. Tick operator [STAGING](../STAGING.md) Steps 37–40 when ready; Steps 17–35, 31 when ready  
 4. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
 5. **Step 16** — 3D upload preview polish (02–03 done; variants optional)  
 6. **Step 46** — SimpleFactions via TFMCWeb (post map platform)

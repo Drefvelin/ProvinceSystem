@@ -64,10 +64,10 @@ Map regen auth: hashed key on claim/regen routes. Cosmetic routes use session to
 
 ## Known issues (map — primary remaining site work)
 
-Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-40](./batches/step-40/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–39 (site UX + parchment + ink cartography) **code done**.
+Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-41](./batches/step-41/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**.
 
-1. **Visual** — Curved nation labels next ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays shipped ([step-39](./batches/step-39/00-index.md)).
-2. **Staff maps** — no per-mapId access gate ([step-41](./batches/step-41/00-index.md)).
+1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Next map layers: settlements, forts, wars, chronicle, wealth ([steps 42–46](./batches/step-46/00-index.md)).
+2. **Staff maps** — no per-mapId access gate ([step-41](./batches/step-41/00-index.md)) — **next build**.
 3. **Settlements / forts / wars / chronicle / wealth** — not on map yet ([steps 42–46](./batches/step-46/00-index.md)).
 4. **Cropped overlays** — require **fullregen** after deploy for bbox metadata ([03-cropped-overlays](./batches/step-37/03-cropped-overlays.md)).
 

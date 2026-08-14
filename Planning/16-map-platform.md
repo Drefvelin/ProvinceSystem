@@ -1,6 +1,6 @@
 # 16 — Map platform
 
-**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–39 code done**; **step-40 next**. Steps 41–46 planned.  
+**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–40 code done**; **step-41 next**. Steps 42–46 planned.  
 **Repos:** `ProvinceSystem` (FE + BE mapgen) · `Workspace/simplefactions` (export + upload) · `Workspace/tfmcweb` (staff map gate)  
 **Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-46](./batches/step-46/00-index.md)  
 **Technical refs:** [09-map-system.md](./09-map-system.md) · [04-map-performance.md](./04-map-performance.md)  
@@ -8,7 +8,7 @@
 
 ## Goals
 
-Turn the live political map from flat colour blobs into a **fantasy cartography product**: parchment terrain, muted realm overlays, Paradox-style curved labels, rich nation popups, settlements and forts, war layers, daily chronicle snapshots, and wealth analytics — while staying fast on desktop and mobile.
+Turn the live political map from flat colour blobs into a **fantasy cartography product**: parchment terrain, muted realm overlays, nation labels (straight text v1; curved `textPath` deferred), rich nation popups, settlements and forts, war layers, daily chronicle snapshots, and wealth analytics — while staying fast on desktop and mobile.
 
 ## Requirement → step
 
@@ -17,7 +17,7 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | 1 | Fast refined layout | [37](./batches/step-37/00-index.md) |
 | 2 | Xaero world map → colour base + optional ink parchment | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
 | 3 | Fantasy muted nation overlays (faithful-hue parchment washes) | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
-| 4 | Paradox-style arched names on continuous territory | [40](./batches/step-40/00-index.md) |
+| 4 | Nation names on continuous territory (frontend SVG, graph diameter) | [40](./batches/step-40/00-index.md) — **done** |
 | 5 | Visual parity with site hub / shell | [37](./batches/step-37/00-index.md) |
 | 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) |
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
@@ -39,7 +39,7 @@ flowchart TD
   subgraph backend [ProvinceSystem backend]
     Parch[parchment_base generator]
     Political[political layers muted fills borders]
-    Labels[curved label layer]
+    Labels[label layer frontend SVG]
     Markers[capitals forts war overlays]
     Pick[pick-safe reference layer]
     Chronicle[daily snapshot plus event log]
@@ -70,7 +70,7 @@ flowchart TD
 |-------|--------|---------|
 | `parchment_base` | `input/{map}/map.png` + grade/texture → `output/.../parchment_base.png` | Terrain backdrop |
 | `political_{mode}` | `provinces.png` + nation defines | Desaturated fills, borders, hover |
-| `labels_{mode}` | Province graph + nation names | Curved text per contiguous blob |
+| `labels_{mode}` | Province graph + nation names (frontend SVG) | Straight text per contiguous blob; curved `textPath` deferred |
 | `markers` | SF export (`capitals`, `forts`, …) | Town/fort icons |
 | `war_{id}` | SF war export | Frontlines, contested tint |
 | `pick_{mode}` | Raw RGB map (`apply_overrides=False`) | Hit-testing only; never styled away |
@@ -109,8 +109,8 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 2. **[37](./batches/step-37/00-index.md)** — Site UX, interaction, perf (crop overlays, mobile). Vote links removed from map; restore later on dedicated vote page. **done**
 3. **[38](./batches/step-38/00-index.md)** — Parchment pipeline + muted political layers **done**
 4. **[39](./batches/step-39/00-index.md)** — Ink cartography (colour base default, parchment washes, uniform borders) **done**
-5. **[40](./batches/step-40/00-index.md)** — Curved Paradox labels **next**
-6. **[41](./batches/step-41/00-index.md)** — Staff map access
+5. **[40](./batches/step-40/00-index.md)** — Nation labels (frontend SVG, province graph) **done**
+6. **[41](./batches/step-41/00-index.md)** — Staff map access **next**
 7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS)
 8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS)
 9. **[44](./batches/step-44/00-index.md)** — War layer (**blocked on SF war rework**)

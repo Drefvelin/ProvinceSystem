@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
 import { useMapModeData } from "../hooks/useMapModeData";
+import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useGuildCache } from "../hooks/useGuildCache";
+import { computeVisibleNationLabels, DEFAULT_MAP_ZOOM } from "../lib/mapLabels";
 import {
   applyDrillStack,
   drillStackNames,
@@ -70,6 +72,18 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     mapType,
     loadData,
   });
+  const { neighbors, centroids, ready: geometryReady } = useMapGeometry(mapId);
+
+  const nationLabels = useMemo(() => {
+    if (mapId !== "main" || mapType !== "nation") return [];
+    if (!regionData || !neighbors || !centroids) return [];
+    return computeVisibleNationLabels(
+      regionData,
+      neighbors,
+      centroids,
+      mapObjects
+    );
+  }, [mapId, mapType, regionData, neighbors, centroids, mapObjects]);
 
   useEffect(() => {
     if (!pendingDrillId || !regionData) return;
@@ -224,7 +238,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     lastProvinceIdRef.current = null;
   };
 
-  if (loading) {
+  if (loading || (mapId === "main" && !geometryReady)) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
         <p className="text-lg font-medium text-[var(--tfmc-cream)]">
@@ -269,6 +283,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           mapObjects={mapObjects}
           hoveredOverlay={hoveredOverlay}
           cursorTooltip={cursorTooltip}
+          labels={nationLabels}
+          mapZoom={DEFAULT_MAP_ZOOM}
           onMouseMove={onMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleMapClick}

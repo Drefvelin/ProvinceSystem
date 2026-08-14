@@ -17,6 +17,8 @@ Daily composited map snapshot plus structured changelog (events since previous d
 | Storage | `snapshots/{map}/{YYYY-MM-DD}/` + `chronicle/{map}/events.jsonl` |
 | Slideshow | Frame URLs + event log sufficient for v1; video gen out of scope |
 
+**Related:** Chronicle stores **political state JSON** per date; client reuses the same map compositor + `LabelLayer` ([step-40](../step-40/00-index.md)) — see [40.01 planning lock](../step-40/01-planning-lock.md#locked--chronicle-cross-reference-step-45).
+
 ## Batches (when step starts)
 
 1. **01-planning-lock**  

@@ -55,4 +55,4 @@ click / Ctrl+click / pick still work (mapdata unchanged)
 
 ## Status
 
-**Step 39 done (39.01–39.06).** Next build: [step-40 curved labels](../step-40/00-index.md).
+**Step 39 done (39.01–39.06).** Step 40 nation labels shipped (frontend SVG on nation mode). Next build: [step-41 staff map access](../step-41/00-index.md).

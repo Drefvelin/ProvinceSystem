@@ -791,15 +791,26 @@ Faithful-hue parchment nation washes, uniform ink borders, colour satellite as d
 - [ ] No map base toggle in toolbar
 - [ ] `/map/dev` province modes still usable when `dev` has Xaero asset
 
-## Step 40 — Paradox curved labels
+## Step 40 — Nation labels (province graph)
 
 **Batch:** [Planning/batches/step-40/00-index.md](./Planning/batches/step-40/00-index.md).
 
-Backend curved nation labels per contiguous territory.
+Frontend SVG nation labels on `/map/main` nation mode: province graph + centroids + `LabelLayer`.
 
 ### Operator checklist
 
-- [ ] TBD when batch files land
+- [ ] `defines/main/province_neighbors.json` and `province_centroids.json` present on staging
+- [ ] `/map/main` nation mode: nation names along territory long axis (straight text)
+- [ ] Exclaves get separate labels; small nations below threshold have no label
+- [ ] Labels hidden when `mapType !== "nation"` (switch to kingdom/duchy/etc. — no labels)
+- [ ] Labels render **above** political overlay PNGs (not hidden underneath)
+- [ ] Overview: Grand Drakhanate full-border label; Verdant City **not** labeled
+- [ ] Ctrl+drill into Drakhanate: subject nations (e.g. Verdant City) labeled; Drakhanate label scoped to direct holdings (not empire-spanning)
+- [ ] Other visible independent nations still labeled while drilled into an empire
+- [ ] Large nations (e.g. Nimbus) have visibly larger label text than small nations (e.g. House Tenceur)
+- [ ] Each province blob uses farthest pixel pair; Drakhanate exclaves get one sized label per blob
+- [ ] Optional dev check: temporarily set `mapZoom={2}` in `MapViewer` — labels hidden
+- [ ] Regen when `provinces.png` changes: `python -m scripts.map_tools.build_province_geometry main`
 
 ## Step 41 — Staff map access control
 

@@ -9,6 +9,12 @@ import type {
 } from "./types";
 import { MAP_BOUNDS, apiBase, mapBaseImageUrl } from "./types";
 import { overlayPathFromHoverUrl, overlayStyle } from "./overlayStyle";
+import LabelLayer from "./LabelLayer";
+import {
+  DEFAULT_MAP_ZOOM,
+  shouldShowLabelsAtZoom,
+  type NationLabelSpec,
+} from "../../lib/mapLabels";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
@@ -65,6 +71,8 @@ type MapCanvasProps = {
   mapObjects: MapObject[];
   hoveredOverlay: HoverOverlay | null;
   cursorTooltip: CursorTooltip | null;
+  labels?: NationLabelSpec[];
+  mapZoom?: number;
   onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   onMouseLeave: () => void;
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -77,6 +85,8 @@ export default function MapCanvas({
   mapObjects,
   hoveredOverlay,
   cursorTooltip,
+  labels = [],
+  mapZoom = DEFAULT_MAP_ZOOM,
   onMouseMove,
   onMouseLeave,
   onClick,
@@ -151,13 +161,6 @@ export default function MapCanvas({
           style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
         />
       )}
-      {hoveredOverlay && (
-        <HoverOverlayImage
-          overlay={hoveredOverlay}
-          mapW={mapSize.w}
-          mapH={mapSize.h}
-        />
-      )}
       {mapObjects
         .filter((obj) => obj.visible)
         .map((obj) => (
@@ -181,6 +184,19 @@ export default function MapCanvas({
             }}
           />
         ))}
+      <LabelLayer
+        labels={labels}
+        mapW={mapSize.w}
+        mapH={mapSize.h}
+        visible={shouldShowLabelsAtZoom(mapZoom)}
+      />
+      {hoveredOverlay && (
+        <HoverOverlayImage
+          overlay={hoveredOverlay}
+          mapW={mapSize.w}
+          mapH={mapSize.h}
+        />
+      )}
     </div>
   );
 }
