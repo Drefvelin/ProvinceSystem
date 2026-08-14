@@ -21,7 +21,7 @@ function statusMessage(row: DrinkSubmissionPublic): string {
     case "approved":
       return "Approved. Your drink will be brewable after the next server apply.";
     case "applied":
-      return "Live on the server — brewable in BreweryX.";
+      return "Live on the server. Brewable in BreweryX.";
     default:
       return row.status;
   }

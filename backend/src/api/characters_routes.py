@@ -154,6 +154,7 @@ class RpcPlayerMetaBody(BaseModel):
     realm_id: str | None = None
     name_colour_stops: int = 0
     allow_drink_texture: bool = False
+    allow_drink_message: bool = False
     max_alive_characters: int | None = None
     wardrobe_skin_slots: int = 1
     max_3d_pair_bytes: int = 0

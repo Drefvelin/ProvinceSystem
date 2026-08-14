@@ -96,6 +96,7 @@ function isGunKind(kind?: DisplayKind): boolean {
 function isFlatKind(kind?: DisplayKind): boolean {
   return (
     kind === "handheld" ||
+    kind === "generated" ||
     kind === "large_handheld" ||
     kind === "bow" ||
     kind === "large_bow" ||

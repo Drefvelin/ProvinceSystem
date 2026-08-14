@@ -127,6 +127,7 @@ def _empty_entitlements(*, realm_id: str = "main") -> dict[str, Any]:
     return {
         "name_colour_stops": 0,
         "allow_drink_texture": False,
+        "allow_drink_message": False,
         "max_alive_characters": None,
         "wardrobe_skin_slots": 1,
         "max_3d_pair_bytes": EMERGENCY_MAX_3D_PAIR_BYTES,
@@ -153,7 +154,7 @@ def get_rpc_player_meta(
         row = conn.execute(
             """
             SELECT player_uuid, realm_id, name_colour_stops, allow_drink_texture,
-                   max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
+                   allow_drink_message, max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
                    skin_token_cooldown_days, skin_kinds_json,
                    allow_armor_3d_helmet, permission_flags_json, updated_at
             FROM rpc_player_meta
@@ -178,6 +179,11 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         allow_texture = bool(int(row["allow_drink_texture"] or 0))
     except (TypeError, ValueError):
         allow_texture = False
+    allow_message = False
+    try:
+        allow_message = bool(int(row["allow_drink_message"] or 0))
+    except (TypeError, ValueError, KeyError):
+        allow_message = False
     max_alive = None
     if row["max_alive_characters"] is not None:
         try:
@@ -226,6 +232,7 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         "realm_id": realm,
         "name_colour_stops": effective_colour_cap(stops),
         "allow_drink_texture": allow_texture,
+        "allow_drink_message": allow_message,
         "max_alive_characters": max_alive,
         "wardrobe_skin_slots": wardrobe_slots,
         "max_3d_pair_bytes": pair,
@@ -255,6 +262,9 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
     allow_texture = _as_bool(
         raw.get("allow_drink_texture", False), "allow_drink_texture"
     )
+    allow_message = _as_bool(
+        raw.get("allow_drink_message", False), "allow_drink_message"
+    )
     max_alive_raw = raw.get("max_alive_characters")
     max_alive: int | None
     if max_alive_raw is None:
@@ -283,14 +293,15 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
             """
             INSERT INTO rpc_player_meta (
                 player_uuid, realm_id, name_colour_stops, allow_drink_texture,
-                max_alive_characters, wardrobe_skin_slots, max_3d_pair_bytes,
-                skin_token_cooldown_days, skin_kinds_json,
+                allow_drink_message, max_alive_characters, wardrobe_skin_slots,
+                max_3d_pair_bytes, skin_token_cooldown_days, skin_kinds_json,
                 allow_armor_3d_helmet, permission_flags_json, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(player_uuid, realm_id) DO UPDATE SET
                 name_colour_stops = excluded.name_colour_stops,
                 allow_drink_texture = excluded.allow_drink_texture,
+                allow_drink_message = excluded.allow_drink_message,
                 max_alive_characters = excluded.max_alive_characters,
                 wardrobe_skin_slots = excluded.wardrobe_skin_slots,
                 max_3d_pair_bytes = excluded.max_3d_pair_bytes,
@@ -305,6 +316,7 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
                 realm,
                 stops,
                 1 if allow_texture else 0,
+                1 if allow_message else 0,
                 max_alive,
                 wardrobe_slots,
                 pair,
@@ -323,6 +335,7 @@ def upsert_rpc_player_meta(raw: dict[str, Any]) -> dict[str, Any]:
         "realm_id": realm,
         "name_colour_stops": stops,
         "allow_drink_texture": allow_texture,
+        "allow_drink_message": allow_message,
         "max_alive_characters": max_alive,
         "wardrobe_skin_slots": wardrobe_slots,
         "max_3d_pair_bytes": pair,
@@ -416,6 +429,7 @@ def resolve_web_entitlements(
             out = {
                 "name_colour_stops": int(row["name_colour_stops"]),
                 "allow_drink_texture": bool(row["allow_drink_texture"]),
+                "allow_drink_message": bool(row.get("allow_drink_message", False)),
                 "max_alive_characters": row["max_alive_characters"],
                 "wardrobe_skin_slots": int(row["wardrobe_skin_slots"]),
                 "max_3d_pair_bytes": int(row["max_3d_pair_bytes"]),

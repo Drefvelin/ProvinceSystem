@@ -803,6 +803,12 @@ def migrate() -> None:
                 """
             )
             conn.execute("DROP TABLE rpc_player_meta_old")
+        rpc_meta_cols = _column_names(conn, "rpc_player_meta")
+        if "allow_drink_message" not in rpc_meta_cols:
+            conn.execute(
+                "ALTER TABLE rpc_player_meta "
+                "ADD COLUMN allow_drink_message INTEGER NOT NULL DEFAULT 0"
+            )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS drink_notifications (

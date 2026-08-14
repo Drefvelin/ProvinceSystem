@@ -7,6 +7,7 @@ export type DrinksSession = {
   scope?: string;
   realm_id?: string;
   allow_drink_texture?: boolean;
+  allow_drink_message?: boolean;
   name_colour_stops?: number;
 };
 
@@ -52,6 +53,9 @@ function readStored(): StoredSession | null {
     if (typeof parsed.allow_drink_texture === "boolean") {
       out.allow_drink_texture = parsed.allow_drink_texture;
     }
+    if (typeof parsed.allow_drink_message === "boolean") {
+      out.allow_drink_message = parsed.allow_drink_message;
+    }
     const stops = readNonNegInt(parsed.name_colour_stops);
     if (stops !== undefined) {
       out.name_colour_stops = stops;
@@ -86,6 +90,9 @@ export function getSession(): DrinksSession | null {
   if (stored.realm_id) out.realm_id = stored.realm_id;
   if (stored.allow_drink_texture !== undefined) {
     out.allow_drink_texture = stored.allow_drink_texture;
+  }
+  if (stored.allow_drink_message !== undefined) {
+    out.allow_drink_message = stored.allow_drink_message;
   }
   if (stored.name_colour_stops !== undefined) {
     out.name_colour_stops = stored.name_colour_stops;
@@ -122,6 +129,9 @@ export function setSession(session: DrinksSession): void {
   if (session.realm_id) stored.realm_id = session.realm_id;
   if (session.allow_drink_texture !== undefined) {
     stored.allow_drink_texture = session.allow_drink_texture;
+  }
+  if (session.allow_drink_message !== undefined) {
+    stored.allow_drink_message = session.allow_drink_message;
   }
   if (session.name_colour_stops !== undefined) {
     stored.name_colour_stops = session.name_colour_stops;

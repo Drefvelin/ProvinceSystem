@@ -52,6 +52,9 @@ export default function BrewForm({ session }: Props) {
   const [allowTexture, setAllowTexture] = useState(
     session.allow_drink_texture === true
   );
+  const [allowDrinkMessage, setAllowDrinkMessage] = useState(
+    session.allow_drink_message === true
+  );
   const [colourStops, setColourStops] = useState(
     Math.max(0, Math.floor(session.name_colour_stops ?? 0))
   );
@@ -78,8 +81,7 @@ export default function BrewForm({ session }: Props) {
   const [loreLines, setLoreLines] = useState<string[]>([]);
   const [drinkMessage, setDrinkMessage] = useState("");
   const [drinkMessageColours, setDrinkMessageColours] = useState<string[]>([]);
-  const [drinkTitle, setDrinkTitle] = useState("");
-  const [drinkTitleColours, setDrinkTitleColours] = useState<string[]>([]);
+  const [messageEnabled, setMessageEnabled] = useState(false);
   const [glint, setGlint] = useState(false);
   const [effects, setEffects] = useState<EffectRow[]>([]);
   const [appearance, setAppearance] = useState<AppearanceMode>("color");
@@ -106,11 +108,13 @@ export default function BrewForm({ session }: Props) {
         const meta = await getPlayerMeta(session.session_token);
         if (cancelled) return;
         setAllowTexture(meta.allow_drink_texture === true);
+        setAllowDrinkMessage(meta.allow_drink_message === true);
         setColourStops(Math.max(0, Math.floor(meta.name_colour_stops)));
         setMetaSynced(meta.meta_synced !== false);
         setSession({
           ...session,
           allow_drink_texture: meta.allow_drink_texture === true,
+          allow_drink_message: meta.allow_drink_message === true,
           name_colour_stops: Math.max(0, Math.floor(meta.name_colour_stops)),
         });
       } catch {
@@ -263,13 +267,13 @@ export default function BrewForm({ session }: Props) {
           duration: Math.max(1, Math.floor(ef.duration || 1)),
         })),
       lore: loreLines.map((line) => line.trim()).filter(Boolean),
-      drink_message: drinkMessage.trim() || null,
-      drink_title: drinkTitle.trim() || null,
-      ...(drinkMessageColours.length
-        ? { drink_message_colours: drinkMessageColours }
-        : {}),
-      ...(drinkTitleColours.length
-        ? { drink_title_colours: drinkTitleColours }
+      ...(messageEnabled && allowDrinkMessage
+        ? {
+            drink_message: drinkMessage.trim() || null,
+            ...(drinkMessageColours.length
+              ? { drink_message_colours: drinkMessageColours }
+              : {}),
+          }
         : {}),
       glint,
       color: appearance === "color" ? color.trim() : null,
@@ -642,7 +646,7 @@ export default function BrewForm({ session }: Props) {
                     tex.id.slice(0, 12);
                   return (
                     <option key={tex.id} value={tex.id}>
-                      {label} — CMD {tex.cmd}
+                      {label} (CMD {tex.cmd})
                     </option>
                   );
                 })}
@@ -654,7 +658,7 @@ export default function BrewForm({ session }: Props) {
           <div className="space-y-2">
             <span className="text-xs text-[var(--tfmc-mist)]">Preview</span>
             <ModelPreview
-              kind="handheld"
+              kind="generated"
               flatTextureFile={previewFile}
               textureFile={previewFile}
             />
@@ -674,50 +678,38 @@ export default function BrewForm({ session }: Props) {
       <section className="space-y-4">
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">Extras</h2>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs text-[var(--tfmc-mist)]">Drink message</span>
-          <input
-            className={fieldClass}
-            value={drinkMessage}
-            onChange={(e) => setDrinkMessage(e.target.value)}
-            maxLength={120}
-          />
-        </label>
-        <NameColourPicker
-          colours={drinkMessageColours}
-          onChange={setDrinkMessageColours}
-          previewText={drinkMessage.trim() || "Drink message"}
-          maxStops={colourStops}
-          lockedMessage={
-            !metaSynced && colourStops <= 0
-              ? "Join the server once to sync rank perks"
-              : "Message colours require a donator rank"
-          }
+        <FancyCheckbox
+          checked={messageEnabled}
+          onChange={setMessageEnabled}
+          locked={!allowDrinkMessage}
+          label="Drink message"
+          description="Show a short message when someone drinks your brew"
+          lockedDescription="Requires Ascended rank"
         />
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs text-[var(--tfmc-mist)]">Drink title</span>
-          <input
-            className={fieldClass}
-            value={drinkTitle}
-            onChange={(e) => setDrinkTitle(e.target.value)}
-            maxLength={48}
-          />
-          <span className="text-xs text-[var(--tfmc-mist)]">
-            Title flash when drinking (not the item name).
-          </span>
-        </label>
-        <NameColourPicker
-          colours={drinkTitleColours}
-          onChange={setDrinkTitleColours}
-          previewText={drinkTitle.trim() || "Drink title"}
-          maxStops={colourStops}
-          lockedMessage={
-            !metaSynced && colourStops <= 0
-              ? "Join the server once to sync rank perks"
-              : "Title colours require a donator rank"
-          }
-        />
+        {messageEnabled && allowDrinkMessage ? (
+          <>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs text-[var(--tfmc-mist)]">Message text</span>
+              <input
+                className={fieldClass}
+                value={drinkMessage}
+                onChange={(e) => setDrinkMessage(e.target.value)}
+                maxLength={120}
+              />
+            </label>
+            <NameColourPicker
+              colours={drinkMessageColours}
+              onChange={setDrinkMessageColours}
+              previewText={drinkMessage.trim() || "Drink message"}
+              maxStops={colourStops}
+              lockedMessage={
+                !metaSynced && colourStops <= 0
+                  ? "Join the server once to sync rank perks"
+                  : "Message colours require a donator rank"
+              }
+            />
+          </>
+        ) : null}
 
         <FancyCheckbox
           checked={glint}

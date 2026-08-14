@@ -12,6 +12,7 @@ type HandTabs = Record<
 >;
 
 const HANDHELD_TP = constants.preview.handheld_tp as unknown as HandTabs;
+const GENERATED_TP = constants.preview.generated_tp as unknown as HandTabs;
 const BOW_TP = constants.preview.bow_tp as unknown as HandTabs;
 const CROSSBOW_TP = constants.preview.crossbow_tp as unknown as HandTabs;
 const LARGE_BOW_TP = constants.large_bow.display as unknown as HandTabs;
@@ -42,6 +43,7 @@ function gripTp(gripY: number): HandTabs {
 
 export type FlatDisplayKind =
   | "handheld"
+  | "generated"
   | "large_handheld"
   | "bow"
   | "large_bow"
@@ -62,6 +64,9 @@ export function resolveFlatDisplayTab(
 ): Required<DisplayTab> {
   if (kind === "large_handheld") {
     return { ...gripTp(gripY ?? GRIP_Y_DEFAULT)[tabName] };
+  }
+  if (kind === "generated") {
+    return { ...GENERATED_TP[tabName] };
   }
   if (kind === "large_bow") {
     return { ...LARGE_BOW_TP[tabName] };

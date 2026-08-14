@@ -59,6 +59,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
                 "player_uuid": "Player-1",
                 "name_colour_stops": 20,
                 "allow_drink_texture": True,
+                "allow_drink_message": True,
                 "max_alive_characters": 5,
                 "wardrobe_skin_slots": 3,
                 "max_3d_pair_bytes": 40960,
@@ -72,6 +73,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(out["realm_id"], "main")
         self.assertEqual(out["name_colour_stops"], 8)
         self.assertTrue(out["allow_drink_texture"])
+        self.assertTrue(out["allow_drink_message"])
         self.assertEqual(out["permission_flags"]["rulequiz.completed"], True)
 
         row = get_rpc_player_meta("player-1")
@@ -79,6 +81,7 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(row["realm_id"], "main")
         self.assertEqual(row["name_colour_stops"], 8)
         self.assertEqual(row["skin_kinds"], ["armor_set", "handheld"])
+        self.assertTrue(row["allow_drink_message"])
         self.assertTrue(row["meta_synced"])
 
     def test_realm_scoped_get_upsert(self) -> None:
@@ -217,12 +220,14 @@ class RpcPlayerMetaTest(unittest.TestCase):
                     "player_uuid": "legacy-player",
                     "name_colour_stops": 2,
                     "allow_drink_texture": True,
+                    "allow_drink_message": True,
                 }
             )
             issued = issue_code("legacy-player", "drink")
             session = redeem_drink_code(issued["code"])
         self.assertEqual(session["name_colour_stops"], 2)
         self.assertTrue(session["allow_drink_texture"])
+        self.assertTrue(session["allow_drink_message"])
 
 
 if __name__ == "__main__":

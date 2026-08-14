@@ -297,7 +297,7 @@ def plugin_put_meta(
     import logging
 
     logging.getLogger("uvicorn.error").warning(
-        "DEPRECATED PUT /drinks/plugin/player-meta — use TFMCWeb rpc-player-meta"
+        "DEPRECATED PUT /drinks/plugin/player-meta: use TFMCWeb rpc-player-meta"
     )
     _require_plugin(x_plugin_key)
     try:

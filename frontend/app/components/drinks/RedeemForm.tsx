@@ -32,6 +32,7 @@ export default function RedeemForm({ onRedeemed }: Props) {
         ...(result.scope ? { scope: result.scope } : {}),
         ...(result.realm_id ? { realm_id: result.realm_id } : {}),
         allow_drink_texture: result.allow_drink_texture === true,
+        allow_drink_message: result.allow_drink_message === true,
         name_colour_stops:
           typeof result.name_colour_stops === "number"
             ? Math.max(0, Math.floor(result.name_colour_stops))

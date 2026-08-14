@@ -72,6 +72,7 @@ def main() -> None:
             "player_uuid": PLAYER,
             "name_colour_stops": 20,
             "allow_drink_texture": True,
+            "allow_drink_message": True,
             "max_alive_characters": 4,
             "wardrobe_skin_slots": 2,
             "max_3d_pair_bytes": 40960,
@@ -116,6 +117,8 @@ def main() -> None:
         fail(f"GET stops: {row.get('name_colour_stops')}")
     if row.get("allow_drink_texture") is not True:
         fail(f"GET allow_drink_texture: {row.get('allow_drink_texture')}")
+    if row.get("allow_drink_message") is not True:
+        fail(f"GET allow_drink_message: {row.get('allow_drink_message')}")
     if row.get("meta_synced") is not True:
         fail(f"GET meta_synced: {row.get('meta_synced')}")
     flags = row.get("permission_flags") or {}
@@ -124,7 +127,7 @@ def main() -> None:
 
     print("OK rpc_player_meta smoke")
     print(f"  player={PLAYER}")
-    print(f"  stops={row.get('name_colour_stops')} texture={row.get('allow_drink_texture')}")
+    print(f"  stops={row.get('name_colour_stops')} texture={row.get('allow_drink_texture')} message={row.get('allow_drink_message')}")
 
 
 if __name__ == "__main__":

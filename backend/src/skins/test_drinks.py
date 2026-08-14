@@ -142,6 +142,59 @@ class DrinkApiTest(unittest.TestCase):
             )
         self.assertIn("cannot use custom drink textures", str(ctx.exception))
 
+    def test_drink_message_rejected_without_entitlement(self) -> None:
+        from characters.rpc_player_meta import upsert_rpc_player_meta
+        from skins.drinks import DrinkError, create_drink_submission
+
+        self._link_player()
+        self._seed_catalog()
+        upsert_rpc_player_meta(
+            {
+                "player_uuid": "player-1",
+                "allow_drink_message": False,
+            }
+        )
+        session = self._issue_and_redeem()
+        with self.assertRaises(DrinkError) as ctx:
+            create_drink_submission(
+                session,
+                {
+                    "name": "Chatter Wine",
+                    "ingredients": [{"id": "grape", "amount": 1}],
+                    "color": "#AA0000",
+                    "drink_message": "Cheers!",
+                    "effects": [],
+                },
+            )
+        self.assertIn("cannot use drink messages", str(ctx.exception))
+
+    def test_drink_message_allowed_with_entitlement(self) -> None:
+        from characters.rpc_player_meta import upsert_rpc_player_meta
+        from skins.drinks import create_drink_submission
+
+        self._link_player()
+        self._seed_catalog()
+        upsert_rpc_player_meta(
+            {
+                "player_uuid": "player-1",
+                "allow_drink_message": True,
+            }
+        )
+        session = self._issue_and_redeem()
+        out = create_drink_submission(
+            session,
+            {
+                "name": "Ascended Ale",
+                "ingredients": [{"id": "grape", "amount": 1}],
+                "color": "#AA0000",
+                "drink_message": "To the stars!",
+                "effects": [],
+            },
+        )
+        self.assertEqual(out["status"], "pending")
+        recipe = out.get("recipe") or {}
+        self.assertEqual(recipe.get("drink_message"), "To the stars!")
+
     def test_name_colours_respect_cap(self) -> None:
         from skins.drinks import (
             DrinkError,

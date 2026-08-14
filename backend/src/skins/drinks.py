@@ -762,6 +762,10 @@ def create_drink_submission(
     recipe = _validate_recipe(recipe_raw, colour_cap=colour_cap)
     display = recipe["name"]
     allow_texture = bool(entitlements["allow_drink_texture"])
+    allow_message = bool(entitlements.get("allow_drink_message"))
+
+    if (recipe.get("drink_message") or recipe.get("drink_message_colours")) and not allow_message:
+        raise DrinkError("Your rank cannot use drink messages")
 
     has_color = recipe.get("color") is not None
     has_png = png_bytes is not None and len(png_bytes) > 0

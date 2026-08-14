@@ -500,6 +500,7 @@ def redeem_drink_code(plaintext: str) -> dict:
         "scope": scope,
         "realm_id": _row_realm_id(row),
         "allow_drink_texture": entitlements["allow_drink_texture"],
+        "allow_drink_message": entitlements["allow_drink_message"],
         "name_colour_stops": entitlements["name_colour_stops"],
         "meta_synced": entitlements.get("meta_synced", False),
     }
