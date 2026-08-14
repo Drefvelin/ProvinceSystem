@@ -26,8 +26,9 @@ const GENERATED_TP_FALLBACK: HandTabs = {
 };
 
 const GENERATED_TP =
-  (constants.preview as { generated_tp?: HandTabs }).generated_tp ??
-  GENERATED_TP_FALLBACK;
+  ((constants.preview as { generated_tp?: unknown }).generated_tp as unknown as
+    | HandTabs
+    | undefined) ?? GENERATED_TP_FALLBACK;
 const BOW_TP = constants.preview.bow_tp as unknown as HandTabs;
 const CROSSBOW_TP = constants.preview.crossbow_tp as unknown as HandTabs;
 const LARGE_BOW_TP = constants.large_bow.display as unknown as HandTabs;
