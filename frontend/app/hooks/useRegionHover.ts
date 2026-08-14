@@ -1,15 +1,41 @@
-// hooks/mapHover/useRegionHover.ts
+import { useRef } from "react";
+import { buildRegionInfo } from "../components/map/regionInfo";
+import { canDrillIntoRegion } from "../components/map/drillUtils";
+import type { HoverOverlay, MapMode, RegionInfo, RegionRecord } from "../components/map/types";
+
 export function useRegionHover({
   mapId,
   mapType,
   regionData,
+  rgbToId,
   getHoverRegion,
-  setHoveredColor,
+  setHoveredOverlay,
   setRegionInfo,
   setSelectedRegionId,
   mapDisplayName,
-}: any) {
-  const capitalize = (v: string) => v[0].toUpperCase() + v.slice(1);
+  drillStack,
+}: {
+  mapId: string;
+  mapType: MapMode;
+  regionData: RegionRecord | null;
+  rgbToId: Record<string, string>;
+  getHoverRegion: (
+    mapType: string,
+    mapId: string,
+    regionId: string,
+    regionData: RegionRecord
+  ) => {
+    imagePath: string | null;
+    region: Record<string, unknown> | null;
+    overlay?: HoverOverlay["overlay"];
+  };
+  setHoveredOverlay: (overlay: HoverOverlay | null) => void;
+  setRegionInfo: (info: RegionInfo | null) => void;
+  setSelectedRegionId: (id: string | null) => void;
+  mapDisplayName: string;
+  drillStack: string[];
+}) {
+  const lastRgbRef = useRef<string | null>(null);
 
   const handleRegionHover = (
     ctx: CanvasRenderingContext2D,
@@ -17,51 +43,63 @@ export function useRegionHover({
     y: number,
     screenX: number,
     screenY: number,
-    setCursorTooltip: Function
+    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
   ) => {
     if (!regionData) return;
 
     const pixel = ctx.getImageData(x, y, 1, 1).data;
     const rgb = `${pixel[0]},${pixel[1]},${pixel[2]}`;
-
-    const id = Object.keys(regionData).find(
-      k => regionData[k].rgb === rgb
-    );
+    const id = rgbToId[rgb];
 
     if (!id) {
-      setHoveredColor(null);
+      lastRgbRef.current = null;
+      setHoveredOverlay(null);
       setRegionInfo(null);
+      setCursorTooltip(null);
       return;
     }
 
     setSelectedRegionId(id);
 
-    const { imagePath, region } = getHoverRegion(
-      mapType,
-      mapId,
+    const region = regionData[id];
+    const info = buildRegionInfo(
       id,
+      region,
+      mapType,
+      mapDisplayName,
       regionData
     );
 
-    setHoveredColor(imagePath);
+    const tooltipText =
+      mapType === "nation"
+        ? info.title
+        : `${info.title} · ${info.tier}`;
 
-    if (region) {
-      setRegionInfo({
-        title: region.name,
-        tier: region.tier ?? capitalize(mapType),
-        banner: region.banner,
-        description:
-            mapType === "trade"
-            ? `The area of ${mapDisplayName} where ${region.name} dominates trade`
-            : `A ${mapType === "nation" ? "Nation" : region.tier ?? capitalize(mapType)} in ${mapDisplayName}`,
-      });
+    const hintLines = ["Click to view"];
+    if (canDrillIntoRegion(id, regionData, drillStack)) {
+      hintLines.push("CTRL+Click to see subjects");
     }
 
     setCursorTooltip({
       x: screenX,
       y: screenY,
-      text: `x: ${x}  z: ${y}`,
+      text: tooltipText,
+      hint: hintLines.join("\n"),
     });
+
+    if (rgb !== lastRgbRef.current) {
+      lastRgbRef.current = rgb;
+
+      const { imagePath, overlay } = getHoverRegion(
+        mapType,
+        mapId,
+        id,
+        regionData
+      );
+
+      setHoveredOverlay(imagePath ? { url: imagePath, overlay } : null);
+      setRegionInfo(info);
+    }
   };
 
   return { handleRegionHover };

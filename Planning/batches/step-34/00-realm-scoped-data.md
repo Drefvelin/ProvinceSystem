@@ -27,3 +27,7 @@ Characters (and skin/drink apply queues) created in one realm do not land on ano
 ## Operator notes
 
 See [STAGING.md](../../../STAGING.md) **Step 34**. Main RPC must share TFMCWeb `realm.id: main` with lobby; tutorial/dev boxes must run TFMCWeb with matching realm.
+
+## Status
+
+**Done** (code). Operator ticks: [STAGING.md](../../../STAGING.md) Step 34.

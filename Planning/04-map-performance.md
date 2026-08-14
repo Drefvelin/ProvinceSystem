@@ -1,6 +1,8 @@
 # 04 — Map performance and mobile
 
-Making the map **feel fast and responsive** is a top priority. Generators on `dev` are already much faster; the remaining pain is mostly **runtime in the browser** (and a small hover-card wiring bug).
+> **Product truth:** [16-map-platform.md](./16-map-platform.md). This doc is technical detail for overlay perf and mobile layout (implemented in [step-37](./batches/step-37/00-index.md)+).
+
+Making the map **feel fast and responsive** is a top priority.
 
 ## Problems
 

@@ -1,13 +1,11 @@
 // hooks/mapHover/useMapCoords.ts
-const MAP_BOUNDS: Record<string, number> = {
-  main: 4096,
-  dev: 6400,
-};
+import type { MapId } from "../components/map/types";
+import { MAP_BOUNDS } from "../components/map/types";
 
 export function getMapCoords(
   event: React.MouseEvent,
   canvas: HTMLCanvasElement,
-  mapId: "main" | "dev"
+  mapId: MapId
 ) {
   const rect = canvas.getBoundingClientRect();
   const mapSize = MAP_BOUNDS[mapId] ?? 6400;

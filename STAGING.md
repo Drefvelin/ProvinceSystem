@@ -712,6 +712,120 @@ All plugin ProvinceSystem HTTP goes through TFMCWeb. `rpc_player_meta`, lore-ite
 - [ ] Lore-item ready on tutorial never pulled by main RPC
 - [ ] ArmourShop / DrinkBuilder no longer push player-meta on join
 
+## Step 36 — Map platform planning lock
+
+**Batch:** [Planning/batches/step-36/01-planning-lock.md](./Planning/batches/step-36/01-planning-lock.md) · Playbook: [16-map-platform.md](./Planning/16-map-platform.md).
+
+Docs-only step: north-star playbook, export schema draft, hub roadmap/checklist updates, steps 37–45 indexes.
+
+### Operator checklist
+
+- [x] `Planning/16-map-platform.md` exists
+- [x] `Planning/assets/map-export-schema.json` drafted
+- [x] `batches/step-36` through `step-45/00-index.md` present
+- [x] `03-roadmap.md` Track H + Track G done
+- [x] `08-implementation-checklist.md` map platform sequence
+
+## Step 37 — Map site UX and interaction
+
+**Batch:** [Planning/batches/step-37/00-index.md](./Planning/batches/step-37/00-index.md) · Lock: [01-planning-lock](./Planning/batches/step-37/01-planning-lock.md).
+
+**Code done (37.02–37.05):** split `MapViewer` into `components/map/*`; TFMC hub styling; cropped region overlays + bbox; click nation modal + Ctrl/Cmd drill; rAF hover + RGB lookup; mobile toolbar + bottom sheet.
+
+**Operator:** run **fullregen** after deploy so cropped PNGs and `overlay` bbox fields exist ([03-cropped-overlays](./Planning/batches/step-37/03-cropped-overlays.md)).
+
+### Operator checklist
+
+- [ ] `/map/main` uses site `SiteHeader` only (no duplicate map header or hero banner)
+- [ ] No vote-links panel on map page
+- [ ] Page styling matches hub (`--tfmc-*` forest theme)
+- [ ] Click nation → modal with banner, tier, realm size, subjects, description
+- [ ] Ctrl+click (Cmd on Mac) drills into subjects
+- [ ] Hover tooltip shows nation name
+- [ ] Cropped overlays align after backend regen
+- [ ] Mobile: tap opens modal; mode selector usable; no broken sidebar squeeze
+- [ ] `/map/dev` still works (URL-only)
+
+## Step 38 — Parchment visual pipeline
+
+**Batch:** [Planning/batches/step-38/00-index.md](./Planning/batches/step-38/00-index.md).
+
+Xaero → parchment base; desaturated fantasy nation layers.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 39 — Paradox curved labels
+
+**Batch:** [Planning/batches/step-39/00-index.md](./Planning/batches/step-39/00-index.md).
+
+Backend curved nation labels per contiguous territory.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 40 — Staff map access control
+
+**Batch:** [Planning/batches/step-40/00-index.md](./Planning/batches/step-40/00-index.md).
+
+Public `main` only for players; staff maps gated by LP permission.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 41 — Capitals and settlements
+
+**Batch:** [Planning/batches/step-41/00-index.md](./Planning/batches/step-41/00-index.md).
+
+SF named capitals / guild settlements export + map markers.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 42 — Forts and zone of control
+
+**Batch:** [Planning/batches/step-42/00-index.md](./Planning/batches/step-42/00-index.md).
+
+Forts + ZOC overlay (requires SF forts).
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 43 — War map layer
+
+**Batch:** [Planning/batches/step-43/00-index.md](./Planning/batches/step-43/00-index.md).
+
+War frontlines (**blocked on SF war rework**).
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 44 — Map chronicle
+
+**Batch:** [Planning/batches/step-44/00-index.md](./Planning/batches/step-44/00-index.md).
+
+Daily snapshots + event changelog.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
+## Step 45 — Wealth history and charts
+
+**Batch:** [Planning/batches/step-45/00-index.md](./Planning/batches/step-45/00-index.md).
+
+Nation / global wealth time series + charts.
+
+### Operator checklist
+
+- [ ] TBD when batch files land
+
 ## Step 5 — Discord link + player DMs (historical)
 
 > **Obsolete path notes:** Step 5 used ArmourShop for `/linkdiscord` and `/armourshop token create`. **Current owner is TFMCWeb** (Step 17). Curl snippets below remain for API smoke without the plugin.

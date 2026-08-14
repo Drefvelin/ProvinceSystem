@@ -2,16 +2,30 @@
 
 Branch: **`dev`**.
 
-Work proceeds on **two parallel tracks** so skins can ship end-to-end without waiting for every map perf polish, while map UX still improves.
+Cosmetics and character tracks (B–F, G) are **code complete**; **Track H — Map platform** (steps 36–45) is the primary remaining site work.
 
 ```mermaid
 flowchart TD
-  subgraph trackA [TrackA_Map]
-    A1[A1_MapUX]
-    A2[A2_ShellShared]
-    A3[A3_LocalDemo]
-    A1 --> A2
-    A2 --> A3
+  subgraph trackH [TrackH_MapPlatform]
+    H36[H36_PlanningLock]
+    H37[H37_SiteUX]
+    H38[H38_Parchment]
+    H39[H39_Labels]
+    H40[H40_StaffMaps]
+    H41[H41_Settlements]
+    H42[H42_Forts]
+    H43[H43_Wars]
+    H44[H44_Chronicle]
+    H45[H45_WealthCharts]
+    H36 --> H37
+    H37 --> H38
+    H38 --> H39
+    H37 --> H40
+    H38 --> H41
+    H41 --> H42
+    H38 --> H43
+    H38 --> H44
+    H44 --> H45
   end
   subgraph trackB [TrackB_Skins]
     B0[B0_ShellPlusLocal]
@@ -30,50 +44,41 @@ flowchart TD
     B4 --> B45
     B45 --> B5
   end
-  A2 -.-> B0
-  A3 -.-> B0
 ```
 
-**Track A** = map feel + shared shell (**repos:** `ProvinceSystem`; SimpleFactions only if touching REST config/secrets — see [09](./09-map-system.md)).  
-**Track B** = skins E2E (**repos:** `ProvinceSystem` → `tfmc_bot` → `Workspace/armourshop` + ItemsAdder `tfmc_submissions` — see [05](./05-skins-system.md), [10](./10-armourshop-itemsadder.md), [11](./11-discord-bot.md)).
+**Track H** = map platform (**repos:** `ProvinceSystem` + `Workspace/simplefactions`; playbook [16-map-platform.md](./16-map-platform.md)).  
+**Track B** = skins E2E (**repos:** `ProvinceSystem` → `tfmc_bot` → `Workspace/armourshop` + ItemsAdder `tfmc_submissions` — see [05](./05-skins-system.md), [10](./10-armourshop-itemsadder.md), [11](./11-discord-bot.md)) — **done**.
 
-Shell + local demo (A2/A3) unblock skins UI; cropped overlays can continue in parallel with B1+.
+Site shell (step 3) shipped; map platform replaces the old thin Track A polish list.
 
 See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cross-repo) and [12-end-to-end-flows.md](./12-end-to-end-flows.md).
 
 ---
 
-## Track A — Map
+## Track H — Map platform
 
-### A1 — Stabilize map UX
+**Status:** **H1 / Step 37 code done.** Next: **step-38.** Steps 38–45 planned.  
+**Repos:** ProvinceSystem · SimpleFactions · TFMCWeb (staff map gate)  
+**Playbook:** [16-map-platform.md](./16-map-platform.md)
 
-**Repo:** `ProvinceSystem` (map pipeline overview: [09-map-system.md](./09-map-system.md))
+| Phase | Step | Detail |
+|-------|------|--------|
+| H0 | [36](./batches/step-36/00-index.md) | Planning lock + export schema — **done** |
+| H1 | [37](./batches/step-37/00-index.md) | Site UX, click modal, drill, cropped overlays, mobile — **done (code)** |
+| H2 | [38](./batches/step-38/00-index.md) | Xaero → parchment base; muted fantasy nation layers |
+| H3 | [39](./batches/step-39/00-index.md) | Paradox curved labels (backend) |
+| H4 | [40](./batches/step-40/00-index.md) | Staff-only maps (configurable) |
+| H5 | [41](./batches/step-41/00-index.md) | Named capitals / guild settlements (SF export) |
+| H6 | [42](./batches/step-42/00-index.md) | Forts + zone of control (SF forts) |
+| H7 | [43](./batches/step-43/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
+| H8 | [44](./batches/step-44/00-index.md) | Daily snapshots + chronicle log |
+| H9 | [45](./batches/step-45/00-index.md) | Wealth history + charts |
 
-| Work | Detail |
-|------|--------|
-| Restore realm card fields | Wire size/subjects in [`useRegionHover.ts`](../frontend/app/hooks/useRegionHover.ts) |
-| Cropped region PNGs | [04-map-performance.md](./04-map-performance.md) |
-| Hover perf | rAF throttle, RGB→id map, optional pixel buffer |
-| Basic mobile | Stack panels; shorter hero; tap-friendly |
+**Done when:** Parchment political map, nation modals, staff map gates, settlements, chronicle + wealth charts; wars when SF ships.
 
-**Done when:** Realm size shows; map usable on phone; overlays lighter.
+**Later:** SimpleFactions REST via TFMCWeb (step 46 — not part of map platform).
 
-### A2 — Site shell
-
-| Work | Detail |
-|------|--------|
-| Shared layout | Nav: Home, Map, Skins, Discord/Patreon |
-| Hub page | Brand-forward landing |
-| Visual tune-up | TFMC earthy palette; gradients on hub |
-| Split MapViewer | Extract header/panels so skins does not inherit the mess |
-
-**Done when:** `/` is a hub; `/map/...` works; `/skins` route exists (stub or real).
-
-### A3 — Local / demo path
-
-See [06-local-development.md](./06-local-development.md).
-
-**Done when:** Fresh clone + short steps → map visible with sample worlds.
+Technical detail: [09-map-system.md](./09-map-system.md), [04-map-performance.md](./04-map-performance.md).
 
 ---
 
@@ -104,10 +109,10 @@ See [05-skins-system.md](./05-skins-system.md).
 | Work | Detail |
 |------|--------|
 | Skins cog | Pending notify → `#bot-feed`, **attach raw PNGs**, Approve / Deny + reason → staff API (review-sheet later) |
-| Ban cog update | **After** skins Discord MVP: on `/minecraftban` add Discord **banned** role; `/minecraftunban` to remove |
+| Ban cog update | Done — Essentials ban/unban → Discord **Banned** role add/clear ([step-17.07](./batches/step-17/07-warn-and-ban-mirror.md)) |
 | Scope | Discord mute/notify only — **in-game bans stay in-game commands** |
 
-**Done when:** Submission review works in Discord with raw images in `#bot-feed` (ban role is a follow-on).
+**Done when:** Submission review works in Discord with raw images in `#bot-feed`; ban role mirror works.
 
 ### B2.5 — Discord link + player DMs
 
@@ -237,7 +242,7 @@ Quotas, retention, module template, optional brewery stub.
 | E3i / Step 29 | Kit customise visibility (Custom tag, dirty submit, delete) + in-game claim AS gate — **done** ([step-29](./batches/step-29/00-index.md); 29.06 docs closed) |
 | E4 / Step 30 | Character skin wardrobe (MineSkin + web frames + `/rpcharacterwardrobe`) — **done** ([step-30](./batches/step-30/00-index.md); 30.08 docs closed) |
 
-**Locked (Phase 1):** Session 1h / Remember me 30d. Attribute formula lives in catalog / `stages.yml` (shipped values).  
+**Locked (Phase 1):** Session **8h** default / Remember me 30d. Codes consumed on submit (reusable until submit for skin/drink). Attribute formula lives in catalog / `stages.yml` (shipped values).  
 **Locked (Phase 2–3):** See [14-character-creator.md](./14-character-creator.md) (generic kits; character kits UI; Discord owns player messaging).  
 **Locked (Phase 4):** See [14-character-creator.md](./14-character-creator.md) / [step-30](./batches/step-30/00-index.md).
 
@@ -263,15 +268,28 @@ Quotas, retention, module template, optional brewery stub.
 
 ---
 
+## Track G — Realm + TFMCWeb gateway
+
+**Status:** **Done** (steps 32–35 code; staging ticks in [STAGING.md](../STAGING.md)).  
+**Repos:** TFMCWeb · ProvinceSystem · RPCharacters · ArmourShop · DrinkBuilder
+
+| Phase | Step | Detail |
+|-------|------|--------|
+| G1 | [32](./batches/step-32/00-rpc-player-meta.md) | `rpc_player_meta` + TFMCWeb join sync — **done** |
+| G2 | [33](./batches/step-33/00-realm-token-policy.md) | Realm + token policy per server — **done** |
+| G3 | [34](./batches/step-34/00-realm-scoped-data.md) | Realm-scoped create/apply queues — **done** |
+| G4 | [35](./batches/step-35/00-http-gateway-per-realm.md) | TFMCWeb HTTP gateway + per-realm isolation — **done** |
+
+**Later:** SimpleFactions map upload via TFMCWeb (step 46).
+
+---
+
 ## Priority for “finished product ASAP”
 
-1. **B0 + B1** — API and `/skins` with naming + sizes (unblocks everything)  
-2. **B2 skins cog** — staff can review with PNG sheets without curl  
-3. **B3 ArmourShop** — pack writer (step-7) then live apply (step-8)  
-4. **A1 realm card + mobile** in parallel whenever free  
-5. **Track C / step-17** — **done** (staging checklist for humans)  
-6. **Step 18 / Track D** — **code done**; human staging verify on live  
-7. **Track E / step-19 Phase 1** — **done** (staging verified)  
-8. **Track E / kits** — claim + multi-kit **21.08** + web kits UI **21.09** + docs **21.05 done**  
-9. **Track E / step-22–30** — sheet + kit polish + wardrobe **done**; run [STAGING](../STAGING.md) Step 20–30 when ready  
-10. **Track F / step-31** — Drink Builder **code done**; run [STAGING](../STAGING.md) Step 31 when ready
+1. **Track H / step-38** — Parchment pipeline (next build)  
+2. **Track H / step-39** — Curved Paradox labels  
+3. **Track H / steps 40–45** — Staff maps, settlements, forts, wars, chronicle, wealth  
+4. Tick operator [STAGING](../STAGING.md) Step 37 when ready; Steps 17–35, 31 when ready  
+5. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
+6. **Step 16** — 3D upload preview polish (02–03 done; variants optional)  
+7. **Step 46** — SimpleFactions via TFMCWeb (post map platform)

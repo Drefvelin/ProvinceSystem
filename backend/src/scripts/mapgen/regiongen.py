@@ -3,8 +3,17 @@ import os
 import sys
 import time
 
-from ..util.border_paint import compute_border_owners, apply_region_borders
+from ..util.border_paint import (
+    apply_region_borders,
+    border_thickness as default_border_thickness,
+    compute_border_owners,
+)
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
+from ..util.overlay_metadata import (
+    merge_overlay_metadata,
+    rgb_tuple_to_str,
+    save_cropped,
+)
 from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map, map_image
 
@@ -59,7 +68,7 @@ def generate_regions(
     mode: str,
     borders: bool,
     queued_regen: bool = False,
-    border_thickness: int = 2,
+    border_thickness: int = default_border_thickness,
     border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
 ):
     start_time = time.perf_counter()
@@ -271,8 +280,9 @@ def generate_regions(
     print()
 
     # ------------------------------------------------------------
-    # Save outputs
+    # Save outputs (cropped) + collect bbox metadata
     # ------------------------------------------------------------
+    metadata_by_rgb: dict[str, dict] = {}
     total_outputs = len(region_imgs)
     for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
         name = sanitize_filename(color)
@@ -284,12 +294,26 @@ def generate_regions(
             f"({i / total_outputs * 100:5.1f}%) → {name}"
         )
 
-        base.save(os.path.join(output_dir, f"{name}.png"), "PNG")
-        hover.save(os.path.join(output_dir, f"{name}_hover.png"), "PNG")
+        overlay_meta = save_cropped(base, os.path.join(output_dir, f"{name}.png"))
+        save_cropped(hover, os.path.join(output_dir, f"{name}_hover.png"))
+
+        region_meta: dict = {}
+        if overlay_meta:
+            region_meta["overlay"] = overlay_meta
 
         if nested:
-            nested.save(os.path.join(output_dir, f"{name}_nested.png"), "PNG")
-            nested_hover.save(os.path.join(output_dir, f"{name}_nested_hover.png"), "PNG")
+            nested_meta = save_cropped(
+                nested, os.path.join(output_dir, f"{name}_nested.png")
+            )
+            save_cropped(
+                nested_hover,
+                os.path.join(output_dir, f"{name}_nested_hover.png"),
+            )
+            if nested_meta:
+                region_meta["overlay_nested"] = nested_meta
+
+        if region_meta:
+            metadata_by_rgb[rgb_tuple_to_str(color)] = region_meta
 
         base.close()
         hover.close()
@@ -298,6 +322,8 @@ def generate_regions(
             nested_hover.close()
 
     print()
+
+    merge_overlay_metadata(map_name, mode, metadata_by_rgb)
 
     if queued_regen:
         clear_mode(map_name, mode)

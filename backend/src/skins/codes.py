@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from .db import connect
 
-SESSION_TTL_HOURS = 1
+SESSION_TTL_HOURS = 8
 CHARACTER_REMEMBER_TTL_DAYS = 30
 ALLOWED_SCOPES = frozenset({"skin", "drink", "character", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
@@ -97,6 +97,48 @@ def _row_scope(row) -> str:
 
 def _is_staff_scope(scope: str) -> bool:
     return (scope or "").strip().lower() == "skin_staff"
+
+
+def _code_is_consumed(conn, code_id: int, scope: str) -> bool:
+    """True when the token was used for a submission (skin/drink) or redeemed (character)."""
+    normalized = (scope or "").strip().lower()
+    if normalized == "drink":
+        row = conn.execute(
+            "SELECT 1 FROM drink_submissions WHERE code_id = ? LIMIT 1",
+            (code_id,),
+        ).fetchone()
+        return row is not None
+    if normalized in REDEEMABLE_SKIN_SCOPES:
+        row = conn.execute(
+            "SELECT 1 FROM submissions WHERE code_id = ? LIMIT 1",
+            (code_id,),
+        ).fetchone()
+        return row is not None
+    row = conn.execute(
+        "SELECT redeemed_at FROM codes WHERE id = ?",
+        (code_id,),
+    ).fetchone()
+    return row is not None and row["redeemed_at"] is not None
+
+
+def mark_code_consumed(code_id: int, consumed_at: str | None = None) -> None:
+    """Mark a skin/drink code used after a successful submission."""
+    when = consumed_at or _iso(_utcnow())
+    with connect() as conn:
+        conn.execute(
+            "UPDATE codes SET redeemed_at = ? WHERE id = ?",
+            (when, int(code_id)),
+        )
+        conn.commit()
+
+
+def _prepare_skin_drink_redeem(conn, code_id: int) -> None:
+    """Drop stale sessions; clear legacy redeemed_at when no submission exists."""
+    conn.execute("DELETE FROM sessions WHERE code_id = ?", (code_id,))
+    conn.execute(
+        "UPDATE codes SET redeemed_at = NULL WHERE id = ?",
+        (code_id,),
+    )
 
 
 def get_cosmetic_mint_status(player_uuid: str) -> dict:
@@ -236,10 +278,27 @@ def list_active_codes() -> list[dict]:
             FROM codes c
             LEFT JOIN discord_links d ON d.player_uuid = c.player_uuid
             WHERE c.revoked = 0
-              AND c.redeemed_at IS NULL
               AND c.expires_at > ?
               AND c.code_plaintext IS NOT NULL
               AND TRIM(c.code_plaintext) != ''
+              AND (
+                (
+                  LOWER(c.scope) IN ('skin', 'skin_staff')
+                  AND NOT EXISTS (
+                    SELECT 1 FROM submissions s WHERE s.code_id = c.id
+                  )
+                )
+                OR (
+                  LOWER(c.scope) = 'drink'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM drink_submissions d WHERE d.code_id = c.id
+                  )
+                )
+                OR (
+                  LOWER(c.scope) = 'character'
+                  AND c.redeemed_at IS NULL
+                )
+              )
             ORDER BY c.created_at ASC
             """,
             (now,),
@@ -275,7 +334,8 @@ def revoke_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has already been revoked")
-        if row["redeemed_at"]:
+        scope = _row_scope(row)
+        if _code_is_consumed(conn, row["id"], scope):
             raise CodeError("Code has already been redeemed")
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
@@ -307,25 +367,23 @@ def redeem_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has been revoked")
-        if row["redeemed_at"]:
-            raise CodeError("Code has already been redeemed")
+        scope = _row_scope(row)
+        if _code_is_consumed(conn, row["id"], scope):
+            raise CodeError("Code has already been used")
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
-        scope = _row_scope(row)
         if scope not in REDEEMABLE_SKIN_SCOPES:
             if scope == "drink":
                 raise CodeError("This code is for drinks, not skins")
             raise CodeError("This code is for character creation, not skins")
+
+        _prepare_skin_drink_redeem(conn, row["id"])
 
         session_token = secrets.token_urlsafe(32)
         session_expires = now + timedelta(hours=SESSION_TTL_HOURS)
         session_expires_at = _iso(session_expires)
         created_at = _iso(now)
 
-        conn.execute(
-            "UPDATE codes SET redeemed_at = ? WHERE id = ?",
-            (created_at, row["id"]),
-        )
         conn.execute(
             """
             INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
@@ -452,10 +510,6 @@ def redeem_drink_code(plaintext: str) -> dict:
             raise CodeError("Invalid code")
         if row["revoked"]:
             raise CodeError("Code has been revoked")
-        if row["redeemed_at"]:
-            raise CodeError("Code has already been redeemed")
-        if _parse_iso(row["expires_at"]) < now:
-            raise CodeError("Code has expired")
         scope = _row_scope(row)
         if scope != "drink":
             if scope in REDEEMABLE_SKIN_SCOPES:
@@ -463,16 +517,18 @@ def redeem_drink_code(plaintext: str) -> dict:
             if scope == "character":
                 raise CodeError("This code is for character creation, not drinks")
             raise CodeError("This code is not a drink token")
+        if _code_is_consumed(conn, row["id"], scope):
+            raise CodeError("Code has already been used")
+        if _parse_iso(row["expires_at"]) < now:
+            raise CodeError("Code has expired")
+
+        _prepare_skin_drink_redeem(conn, row["id"])
 
         session_token = secrets.token_urlsafe(32)
         session_expires = now + timedelta(hours=SESSION_TTL_HOURS)
         session_expires_at = _iso(session_expires)
         created_at = _iso(now)
 
-        conn.execute(
-            "UPDATE codes SET redeemed_at = ? WHERE id = ?",
-            (created_at, row["id"]),
-        )
         conn.execute(
             """
             INSERT INTO sessions (token_hash, code_id, player_uuid, expires_at, created_at)
@@ -607,7 +663,7 @@ def _self_test() -> None:
     assert char_session.get("remember_me") is False
     assert get_session(char_session["session_token"]) is not None
     exp1 = _parse_iso(char_session["expires_at"])
-    assert timedelta(minutes=50) < (exp1 - _utcnow()) < timedelta(hours=2)
+    assert timedelta(hours=7) < (exp1 - _utcnow()) < timedelta(hours=9)
 
     try:
         redeem_character_code(char["code"])

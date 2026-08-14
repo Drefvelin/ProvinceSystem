@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tfmc.local/planning/map-export-schema.json",
+  "title": "TFMC map export extensions",
+  "description": "Draft contract for SimpleFactions → ProvinceSystem map payloads. Nation upload remains the primary nation.json object; optional top-level keys extend the upload or ship as sidecar map_meta.json.",
+  "type": "object",
+  "properties": {
+    "map_id": {
+      "type": "string",
+      "description": "Must match website mapId and SF mapRef (e.g. main, dev)"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "global_wealth": {
+      "type": "number",
+      "description": "Optional server-wide wealth aggregate for charts"
+    },
+    "capitals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/settlement" }
+    },
+    "settlements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/settlement" }
+    },
+    "forts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fort" }
+    },
+    "wars": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/war" }
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/chronicle_event" }
+    }
+  },
+  "$defs": {
+    "settlement": {
+      "type": "object",
+      "required": ["id", "name", "province_id", "faction_id", "kind"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Display name set in-game" },
+        "province_id": { "type": "integer" },
+        "faction_id": { "type": "string" },
+        "guild_id": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["faction_capital", "guild_capital", "settlement"]
+        },
+        "map_x": { "type": "integer", "description": "Pixel X on shared map grid" },
+        "map_y": { "type": "integer", "description": "Pixel Y on shared map grid" }
+      }
+    },
+    "fort": {
+      "type": "object",
+      "required": ["id", "name", "province_id", "faction_id", "zoc_provinces"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "province_id": { "type": "integer" },
+        "faction_id": { "type": "string" },
+        "zoc_provinces": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Fort province plus one-ring neighbors"
+        },
+        "map_x": { "type": "integer" },
+        "map_y": { "type": "integer" }
+      }
+    },
+    "war": {
+      "type": "object",
+      "required": ["id", "belligerents", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "ended"] },
+        "belligerents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2
+        },
+        "frontline_provinces": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "campaign_markers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "map_x", "map_y"],
+            "properties": {
+              "label": { "type": "string" },
+              "map_x": { "type": "integer" },
+              "map_y": { "type": "integer" }
+            }
+          }
+        },
+        "started_at": { "type": "string", "format": "date-time" },
+        "ended_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "chronicle_event": {
+      "type": "object",
+      "required": ["at", "type"],
+      "properties": {
+        "at": { "type": "string", "format": "date-time" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "province_gained",
+            "province_lost",
+            "war_declared",
+            "war_ended",
+            "capital_moved",
+            "fort_built",
+            "fort_lost",
+            "vassal_changed",
+            "other"
+          ]
+        },
+        "faction_id": { "type": "string" },
+        "other_faction_id": { "type": "string" },
+        "province_id": { "type": "integer" },
+        "summary": { "type": "string", "description": "Human-readable one-liner for chronicle log" }
+      }
+    }
+  }
+}

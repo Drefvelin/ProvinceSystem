@@ -2,6 +2,13 @@
 
 import { getApiBase } from "./api";
 
+export type DrinkAssetImages = {
+  overlay: HTMLImageElement;
+  bottle: HTMLImageElement;
+  width: number;
+  height: number;
+};
+
 function parseHex(color: string): { r: number; g: number; b: number } | null {
   const text = (color || "").trim();
   if (!/^#[0-9A-Fa-f]{6}$/.test(text)) return null;
@@ -35,37 +42,59 @@ async function loadDrinkAsset(filename: string): Promise<HTMLImageElement> {
   }
 }
 
+let cachedAssets: DrinkAssetImages | null = null;
+
+/** Load overlay + bottle once (cached for preview tint updates). */
+export async function loadDrinkAssetImages(): Promise<DrinkAssetImages> {
+  if (cachedAssets) return cachedAssets;
+  const [overlay, bottle] = await Promise.all([
+    loadDrinkAsset("potion_overlay.png"),
+    loadDrinkAsset("glass_bottle.png"),
+  ]);
+  const width = Math.max(overlay.naturalWidth || 16, bottle.naturalWidth || 16);
+  const height = Math.max(
+    overlay.naturalHeight || 16,
+    bottle.naturalHeight || 16
+  );
+  cachedAssets = { overlay, bottle, width, height };
+  return cachedAssets;
+}
+
+export function composeTintedPotionCanvas(
+  color: string,
+  assets: DrinkAssetImages
+): HTMLCanvasElement | null {
+  const rgb = parseHex(color);
+  if (!rgb) return null;
+  const { overlay, bottle, width, height } = assets;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.drawImage(overlay, 0, 0, width, height);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3]!;
+    if (a === 0) continue;
+    data[i] = Math.floor((data[i]! * rgb.r) / 255);
+    data[i + 1] = Math.floor((data[i + 1]! * rgb.g) / 255);
+    data[i + 2] = Math.floor((data[i + 2]! * rgb.b) / 255);
+  }
+  ctx.putImageData(imageData, 0, 0);
+  ctx.drawImage(bottle, 0, 0, width, height);
+  return canvas;
+}
+
 export async function composeTintedPotionFile(
   color: string
 ): Promise<File | null> {
-  const rgb = parseHex(color);
-  if (!rgb) return null;
   try {
-    const [overlayImg, bottleImg] = await Promise.all([
-      loadDrinkAsset("potion_overlay.png"),
-      loadDrinkAsset("glass_bottle.png"),
-    ]);
-    const w = Math.max(overlayImg.naturalWidth || 16, bottleImg.naturalWidth || 16);
-    const h = Math.max(overlayImg.naturalHeight || 16, bottleImg.naturalHeight || 16);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-
-    ctx.drawImage(overlayImg, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3]!;
-      if (a === 0) continue;
-      data[i] = Math.floor((data[i]! * rgb.r) / 255);
-      data[i + 1] = Math.floor((data[i + 1]! * rgb.g) / 255);
-      data[i + 2] = Math.floor((data[i + 2]! * rgb.b) / 255);
-    }
-    ctx.putImageData(imageData, 0, 0);
-    ctx.drawImage(bottleImg, 0, 0, w, h);
-
+    const assets = await loadDrinkAssetImages();
+    const canvas = composeTintedPotionCanvas(color, assets);
+    if (!canvas) return null;
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/png")
     );

@@ -10,7 +10,7 @@ export function useProvinceHover({
   mapId: "main" | "dev";
   mapType: string;
   setCursorTooltip: (v: any) => void;
-  guildNameCacheRef: React.MutableRefObject<Record<string, string>>;
+  guildNameCacheRef: React.MutableRefObject<Record<string, string>> | null;
 }) {
   const provinceCache = useRef<Record<number, any>>({});
 
@@ -65,7 +65,7 @@ export function useProvinceHover({
                 used += ratio;
 
                 const name =
-                guildNameCacheRef.current[guild] ??
+                guildNameCacheRef?.current[guild] ??
                 guild.replace(/_/g, " ");
 
                 lines.push(`• ${name}: ${(ratio * 100).toFixed(1)}%`);

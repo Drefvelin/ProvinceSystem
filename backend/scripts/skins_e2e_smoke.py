@@ -266,10 +266,12 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"link complete 2: {r.status_code} {r.text}")
 
-    # One-time skins code: second redeem must fail
+    # Skins code can be re-entered until a submission is created
     r = client.post("/skins/redeem", json={"code": code})
-    if r.status_code != 400:
-        fail(f"second redeem expected 400, got {r.status_code} {r.text}")
+    if r.status_code != 200:
+        fail(f"second redeem before submit expected 200, got {r.status_code} {r.text}")
+    token = r.json()["session_token"]
+    auth = {"Authorization": f"Bearer {token}"}
 
     icon = make_png(16, 16)
     layer = make_png(64, 32)
@@ -385,6 +387,12 @@ def main() -> None:
             f"armor discord_user_id expected {DISCORD_ID}, "
             f"got {armor.get('discord_user_id')}"
         )
+    r = client.post("/skins/redeem", json={"code": code})
+    if r.status_code != 400:
+        fail(
+            f"redeem after submit expected 400, got {r.status_code} {r.text}"
+        )
+    print(f"armor {armor_id} ok; code locked after submit")
     print(
         f"armor submission {armor_id} tiers={armor['tiers']} "
         f"colours without add_name ok"

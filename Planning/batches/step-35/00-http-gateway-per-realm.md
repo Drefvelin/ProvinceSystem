@@ -32,3 +32,7 @@ Domain plugins stop opening their own HTTP to ProvinceSystem. TFMCWeb is the onl
 ## Operator notes
 
 See [STAGING.md](../../../STAGING.md) **Step 35**. Every game box that runs RPC/AS/DB **must** run TFMCWeb (no soft fallback for HTTP). Remove stale `characters-api` / `skins-api` / DrinkBuilder `api` blocks from live configs.
+
+## Status
+
+**Done** (code). Operator ticks: [STAGING.md](../../../STAGING.md) Step 35.

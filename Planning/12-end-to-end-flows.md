@@ -166,10 +166,23 @@ sequenceDiagram
 
 ## Definition of done (platform MVP)
 
-- Flow 1 works on live map (existing; UX polish ongoing).  
-- Flow 2 works for armor_set + handheld/large_handheld with Discord approve (PNG sheet) and ArmourShop apply; bow kinds after [8.07](./batches/step-8/07-bow-crossbow-writers.md).  
-- Flow 3 DM/log works today; role add/clear ships with bot track.  
+- Flow 1 works on live map; **map platform** (steps 37–45) delivers parchment UX, modals, chronicle, and wealth charts — see [16-map-platform.md](./16-map-platform.md).  
+- Flow 2 works for armor_set + handheld/large_handheld with Discord approve and ArmourShop apply; bow kinds after [8.07](./batches/step-8/07-bow-crossbow-writers.md).  
+- Flow 3 DM/log + **Banned role add/clear done** ([step-17.07](./batches/step-17/07-warn-and-ban-mirror.md)).  
 - Naming enforced on Flow 2.  
 - Local testing possible for API/UI without Paper ([06](./06-local-development.md)).  
 
-Build order: [08-implementation-checklist.md](./08-implementation-checklist.md).
+Build order: [08-implementation-checklist.md](./08-implementation-checklist.md). **Next build:** [step-38](./batches/step-38/00-index.md).
+
+---
+
+## Flow 4 — Map chronicle (planned)
+
+After [step-44](./batches/step-44/00-index.md):
+
+```text
+SF claim change → upload + regen → daily snapshot job
+  → composited map frame stored
+  → events.jsonl (SF events + diffs)
+  → optional slideshow / season recap UI
+```

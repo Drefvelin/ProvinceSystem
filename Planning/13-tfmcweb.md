@@ -123,7 +123,7 @@ Rules:
 
 - Must be Discord-linked and not past grace (Survival players).
 - Codes bound to UUID (same threat model as skins — no shareable account takeover).
-- Session TTL: skins/drinks ~1h after redeem; character default **1h**, Remember me **30d** ([14-character-creator.md](./14-character-creator.md)).
+- Session TTL: skins/drinks/character default **8h** after redeem; Remember me **30d** ([14-character-creator.md](./14-character-creator.md)). Codes consumed on submit (skin/drink) or create (character).
 - **Shared mint cooldown (`skin` + `drink`):** owned by **TFMCWeb** only (rank days in TW config). ProvinceSystem does **not** enforce mint cooldown days after Step 31.02. Character is not in the shared family.
 - **Command gate:** LP `tfmcweb.token.create` (and drink uses same unless split later).
 - **Staff mint (`skin_staff`):** bypasses shared cooldown (perm `tfmcweb.token.create.staff`). Drink staff mint optional later.
@@ -237,7 +237,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 
 Completed in step-17: TFMCWeb owns link, notices, and `/token create`; ArmourShop keeps pack apply + admin token list/delete. Staging LP: migrate `armourshop.token.create` → `tfmcweb.token.create`.
 
-Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 + Phase 2 kit plumbing shipped ([14](./14-character-creator.md) / [step-19](./batches/step-19/00-index.md) / [step-20](./batches/step-20/00-index.md)); Phase 3 claim cutover + lore-item in [step-21](./batches/step-21/00-index.md); Phase 4 later.
+Still later: SimpleFactions REST through TFMCWeb ([step-46](./batches/README.md)). Character creator **done** through Phase 4 ([step-30](./batches/step-30/00-index.md)). Realm gateway **done** (steps 32–35).
 
 ---
 
@@ -249,9 +249,9 @@ Still later: SimpleFactions REST through TFMCWeb. Character creator Phase 1 + Ph
 | Guild leave/join + 1h grace | Done ([17.02](./batches/step-17/02-identity-api.md), [17.03](./batches/step-17/03-bot-guild-events.md)) |
 | RPC Discord freeze | Done ([17.01](./batches/step-17/01-rpc-discord-freeze.md)) |
 | `/warning` + Essentials ban mirror + Banned role | Done ([17.07](./batches/step-17/07-warn-and-ban-mirror.md)) |
+| `rpc_player_meta` + realm gateway | Done (steps [32](./batches/step-32/00-rpc-player-meta.md)–[35](./batches/step-35/00-http-gateway-per-realm.md)) |
 | Identity routes outside `/skins` path prefix | Remaining (tables still under skins API) |
-| Character creator UI | Out of scope (token stub only) |
-| SimpleFactions via TFMCWeb | Remaining |
+| SimpleFactions via TFMCWeb | Remaining (step 46) |
 
 ---
 
@@ -272,4 +272,4 @@ Staging verify script: [08-docs-verify.md](./batches/step-17/08-docs-verify.md).
 
 ## Next step
 
-Character creator Phase 1 is **done** (staging verified). Phase 2 kit plumbing **done** ([step-20](./batches/step-20/00-index.md) 20.01–20.03); claim + lore-item cutover in [step-21](./batches/step-21/00-index.md) (**21.06 → 21.07 → 21.05**). Phase 4 wardrobe **planned** ([step-30](./batches/step-30/00-index.md)).
+Character creator **done** (through step-30). Drink Builder **done** (step-31). Realm gateway **done** (steps 32–35). Map site UX **done** (step-37, code). **Next product work:** [step-38 parchment pipeline](./batches/step-38/00-index.md) ([16-map-platform.md](./16-map-platform.md)).

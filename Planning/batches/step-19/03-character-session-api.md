@@ -10,10 +10,10 @@
 
 | Mode | Session TTL |
 |------|-------------|
-| Default (Remember me off) | **1 hour** |
+| Default (Remember me off) | **8 hours** |
 | Remember me on | **30 days** |
 
-Code remains **single-use**. Remember me only affects the **session** created at redeem.
+Code consumed on **successful character create** (not on redeem). May re-redeem until consumed within session TTL.
 
 ## Plan
 
@@ -21,11 +21,11 @@ Code remains **single-use**. Remember me only affects the **session** created at
 2. **Remove 501** stub; TFMCWeb mint message can say redeem is available once UI ships (update copy in 05/06).
 3. **Auth dependency** — Bearer session required for character catalog GET (02) and create/list (04).
 4. **`POST /characters/logout`** — delete current session row (idempotent).
-5. **Skins sessions unchanged** — `POST /skins/redeem` still 1h only; character codes still rejected there.
+5. **Skins sessions** — `POST /skins/redeem` **8h** session; codes consumed on submit.
 
 ## Verify
 
-- [x] Redeem without remember_me → expires ~1h  
+- [x] Redeem without remember_me → expires ~8h  
 - [x] Redeem with remember_me → expires ~30d  
 - [x] Second redeem of same code fails  
 - [x] Logout → subsequent Bearer calls 401  

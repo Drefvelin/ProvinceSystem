@@ -1,243 +1,387 @@
 {
-  "DUCHY_1": {
-    "name": "Valoris",
-    "titles": [
-      "COUNTY_1",
-      "COUNTY_2",
-      "COUNTY_3"
-    ],
-    "rgb": "150,80,80"
-  },
-  "DUCHY_2": {
-    "name": "Ivrium",
-    "titles": [
-      "COUNTY_4",
-      "COUNTY_5",
-      "COUNTY_6"
-    ],
-    "rgb": "170,30,30"
-  },
-  "DUCHY_3": {
-    "name": "Baldria",
-    "titles": [
-      "COUNTY_7",
-      "COUNTY_8",
-      "COUNTY_9"
-    ],
-    "rgb": "140,50,50"
-  },
-  "DUCHY_4": {
-    "name": "Doulons",
-    "titles": [
-      "COUNTY_10",
-      "COUNTY_11",
-      "COUNTY_12"
-    ],
-    "rgb": "60,60,100"
-  },
-  "DUCHY_5": {
-    "name": "Justinia",
-    "titles": [
-      "COUNTY_13",
-      "COUNTY_14",
-      "COUNTY_15"
-    ],
-    "rgb": "80,80,170"
-  },
-  "DUCHY_6": {
-    "name": "Arves",
-    "titles": [
-      "COUNTY_16",
-      "COUNTY_17",
-      "COUNTY_18"
-    ],
-    "rgb": "90,90,140"
-  },
-  "DUCHY_7": {
-    "name": "Histom",
-    "titles": [
-      "COUNTY_19",
-      "COUNTY_20",
-      "COUNTY_21"
-    ],
-    "rgb": "90,120,90"
-  },
-  "DUCHY_8": {
-    "name": "Faunon",
-    "titles": [
-      "COUNTY_22",
-      "COUNTY_23",
-      "COUNTY_27"
-    ],
-    "rgb": "50,135,50"
-  },
-  "DUCHY_9": {
-    "name": "Nerresia",
-    "titles": [
-      "COUNTY_24",
-      "COUNTY_25",
-      "COUNTY_26"
-    ],
-    "rgb": "40,190,40"
-  },
-  "Ashfall_Hollow": {
-    "name": "Ashfall Hollow",
-    "rgb": "116,33,4",
-    "title-complete": "false",
-    "titles": [
-      "Ashfall",
-      "Emberdune",
-      "Brimspire"
-    ]
-  },
-  "Mandate_01": {
-    "name": "Mandate 01",
-    "rgb": "57,215,167",
-    "title-complete": "false",
-    "provinces": [
-      297
-    ],
-    "titles": [
-      "Directive_01",
-      "Directive_04"
-    ]
-  },
-  "Mandate_02": {
-    "name": "Mandate 02",
-    "rgb": "183,24,17",
-    "title-complete": "false",
-    "titles": [
-      "Directive_02",
-      "Directive_03"
-    ]
-  },
-  "Bockfiels": {
-    "name": "Bockfiels",
-    "rgb": "202,92,228",
-    "title-complete": "false",
-    "titles": [
-      "Lucilinburhuc",
-      "Echternach"
-    ]
-  },
-  "Huelmes": {
-    "name": "Huelmes",
-    "rgb": "191,106,229",
-    "title-complete": "false",
-    "titles": [
-      "Waasserbuerg",
-      "Aischdall"
-    ]
-  },
-  "Dumayu": {
-    "name": "Dumayu",
-    "rgb": "231,108,61",
-    "title-complete": "false",
-    "titles": [
-      "Severboden",
-      "Vizhuvso",
-      "Etopravda",
-      "Malazvook"
-    ]
-  },
-  "Raven_Home": {
-    "name": "Raven Home",
-    "rgb": "226,49,92",
-    "title-complete": "false",
-    "titles": [
-      "Ravenbreak",
-      "Raven's_Reach"
-    ]
-  },
-  "Kravenmoor": {
-    "name": "Kravenmoor",
-    "rgb": "85,228,85",
-    "title-complete": "false",
-    "provinces": [
-      175,
-      168,
-      165,
-      197,
-      198,
-      187,
-      199,
-      190
-    ],
-    "titles": [
-      "SHLF_Cheerios",
-      "Corvid's_Heaven"
-    ]
-  },
-  "Schneedorf": {
-    "name": "Schneedorf",
-    "rgb": "167,110,175",
-    "title-complete": "false",
-    "provinces": [
-      281
-    ],
-    "titles": [
-      "Neo-Norbaum",
-      "Kayadiristan"
-    ]
-  },
-  "The_Communion_of_Flame": {
-    "name": "The Communion Of Flame",
-    "rgb": "249,171,142",
-    "title-complete": "false",
-    "titles": [
-      "Ra's_eye",
-      "Ra's_Arm"
-    ]
-  },
-  "Ra's_Land": {
-    "name": "Ra's Land",
-    "rgb": "252,233,184",
-    "title-complete": "false",
-    "titles": [
-      "The_Rivers_upon_Dunes",
-      "The_Outer_Dunes"
-    ]
-  },
-  "Wyvern_Pass": {
-    "name": "Wyvern Pass",
-    "rgb": "150,68,220",
-    "title-complete": "false",
-    "provinces": [
-      213,
-      212
-    ],
-    "titles": [
-      "Nimbus",
-      "Aldroth"
-    ]
-  },
-  "Emberfall": {
-    "name": "Emberfall",
-    "rgb": "131,67,214",
-    "title-complete": "false",
-    "titles": [
-      "Emberfall_Gorge",
-      "Savine_Valley"
-    ]
-  },
-  "Duskvale": {
-    "name": "Duskvale",
-    "rgb": "6,65,50",
-    "title-complete": "false",
-    "titles": [
-      "Janfort",
-      "Eschoadin",
-      "Verchnidom",
-      "Péitruss"
-    ]
-  },
-  "Trunk_of_The_Tree": {
-    "name": "Trunk Of The Tree",
-    "rgb": "159,112,169",
-    "title-complete": "false",
-    "titles": [
-      "Roots_of_The_Tree",
-      "Directive_5"
-    ]
-  }
+    "DUCHY_1": {
+        "name": "Valoris",
+        "titles": [
+            "COUNTY_1",
+            "COUNTY_2",
+            "COUNTY_3"
+        ],
+        "rgb": "150,80,80",
+        "overlay": {
+            "x": 1437,
+            "y": 908,
+            "w": 2352,
+            "h": 1244
+        }
+    },
+    "DUCHY_2": {
+        "name": "Ivrium",
+        "titles": [
+            "COUNTY_4",
+            "COUNTY_5",
+            "COUNTY_6"
+        ],
+        "rgb": "170,30,30",
+        "overlay": {
+            "x": 703,
+            "y": 529,
+            "w": 1074,
+            "h": 924
+        }
+    },
+    "DUCHY_3": {
+        "name": "Baldria",
+        "titles": [
+            "COUNTY_7",
+            "COUNTY_8",
+            "COUNTY_9"
+        ],
+        "rgb": "140,50,50",
+        "overlay": {
+            "x": 115,
+            "y": 641,
+            "w": 894,
+            "h": 1090
+        }
+    },
+    "DUCHY_4": {
+        "name": "Doulons",
+        "titles": [
+            "COUNTY_10",
+            "COUNTY_11",
+            "COUNTY_12"
+        ],
+        "rgb": "60,60,100",
+        "overlay": {
+            "x": 1034,
+            "y": 1314,
+            "w": 1507,
+            "h": 628
+        }
+    },
+    "DUCHY_5": {
+        "name": "Justinia",
+        "titles": [
+            "COUNTY_13",
+            "COUNTY_14",
+            "COUNTY_15"
+        ],
+        "rgb": "80,80,170",
+        "overlay": {
+            "x": 301,
+            "y": 1421,
+            "w": 1375,
+            "h": 990
+        }
+    },
+    "DUCHY_6": {
+        "name": "Arves",
+        "titles": [
+            "COUNTY_16",
+            "COUNTY_17",
+            "COUNTY_18"
+        ],
+        "rgb": "90,90,140",
+        "overlay": {
+            "x": 1413,
+            "y": 1713,
+            "w": 2340,
+            "h": 1514
+        }
+    },
+    "DUCHY_7": {
+        "name": "Histom",
+        "titles": [
+            "COUNTY_19",
+            "COUNTY_20",
+            "COUNTY_21"
+        ],
+        "rgb": "90,120,90",
+        "overlay": {
+            "x": 956,
+            "y": 2307,
+            "w": 1354,
+            "h": 812
+        }
+    },
+    "DUCHY_8": {
+        "name": "Faunon",
+        "titles": [
+            "COUNTY_22",
+            "COUNTY_23",
+            "COUNTY_27"
+        ],
+        "rgb": "50,135,50",
+        "overlay": {
+            "x": 2055,
+            "y": 2378,
+            "w": 1998,
+            "h": 1591
+        }
+    },
+    "DUCHY_9": {
+        "name": "Nerresia",
+        "titles": [
+            "COUNTY_24",
+            "COUNTY_25",
+            "COUNTY_26"
+        ],
+        "rgb": "40,190,40",
+        "overlay": {
+            "x": 1460,
+            "y": 3014,
+            "w": 1150,
+            "h": 947
+        }
+    },
+    "Ashfall_Hollow": {
+        "name": "Ashfall Hollow",
+        "rgb": "116,33,4",
+        "title-complete": "false",
+        "titles": [
+            "Ashfall",
+            "Emberdune",
+            "Brimspire"
+        ],
+        "overlay": {
+            "x": 1821,
+            "y": 3681,
+            "w": 1307,
+            "h": 415
+        }
+    },
+    "Mandate_01": {
+        "name": "Mandate 01",
+        "rgb": "57,215,167",
+        "title-complete": "false",
+        "provinces": [
+            297
+        ],
+        "titles": [
+            "Directive_01",
+            "Directive_04"
+        ],
+        "overlay": {
+            "x": 2432,
+            "y": 385,
+            "w": 888,
+            "h": 762
+        }
+    },
+    "Mandate_02": {
+        "name": "Mandate 02",
+        "rgb": "183,24,17",
+        "title-complete": "false",
+        "titles": [
+            "Directive_02",
+            "Directive_03"
+        ],
+        "overlay": {
+            "x": 3132,
+            "y": 141,
+            "w": 556,
+            "h": 580
+        }
+    },
+    "Bockfiels": {
+        "name": "Bockfiels",
+        "rgb": "202,92,228",
+        "title-complete": "false",
+        "titles": [
+            "Lucilinburhuc",
+            "Echternach"
+        ],
+        "overlay": {
+            "x": 999,
+            "y": 88,
+            "w": 619,
+            "h": 748
+        }
+    },
+    "Huelmes": {
+        "name": "Huelmes",
+        "rgb": "191,106,229",
+        "title-complete": "false",
+        "titles": [
+            "Waasserbuerg",
+            "Aischdall"
+        ],
+        "overlay": {
+            "x": 841,
+            "y": 0,
+            "w": 1221,
+            "h": 756
+        }
+    },
+    "Dumayu": {
+        "name": "Dumayu",
+        "rgb": "231,108,61",
+        "title-complete": "false",
+        "titles": [
+            "Severboden",
+            "Vizhuvso",
+            "Etopravda",
+            "Malazvook"
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 238,
+            "w": 2494,
+            "h": 910
+        }
+    },
+    "Raven_Home": {
+        "name": "Raven Home",
+        "rgb": "226,49,92",
+        "title-complete": "false",
+        "titles": [
+            "Ravenbreak",
+            "Raven's_Reach"
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 2199,
+            "w": 1100,
+            "h": 1846
+        }
+    },
+    "Kravenmoor": {
+        "name": "Kravenmoor",
+        "rgb": "85,228,85",
+        "title-complete": "false",
+        "provinces": [
+            175,
+            168,
+            165,
+            197,
+            198,
+            187,
+            199,
+            190
+        ],
+        "titles": [
+            "SHLF_Cheerios",
+            "Corvid's_Heaven"
+        ],
+        "overlay": {
+            "x": 1069,
+            "y": 2478,
+            "w": 691,
+            "h": 1278
+        }
+    },
+    "Schneedorf": {
+        "name": "Schneedorf",
+        "rgb": "167,110,175",
+        "title-complete": "false",
+        "provinces": [
+            281
+        ],
+        "titles": [
+            "Neo-Norbaum",
+            "Kayadiristan"
+        ],
+        "overlay": {
+            "x": 2255,
+            "y": 0,
+            "w": 1379,
+            "h": 403
+        }
+    },
+    "The_Communion_of_Flame": {
+        "name": "The Communion Of Flame",
+        "rgb": "249,171,142",
+        "title-complete": "false",
+        "titles": [
+            "Ra's_eye",
+            "Ra's_Arm"
+        ],
+        "overlay": {
+            "x": 1928,
+            "y": 357,
+            "w": 764,
+            "h": 759
+        }
+    },
+    "Ra's_Land": {
+        "name": "Ra's Land",
+        "rgb": "252,233,184",
+        "title-complete": "false",
+        "titles": [
+            "The_Rivers_upon_Dunes",
+            "The_Outer_Dunes"
+        ],
+        "overlay": {
+            "x": 1699,
+            "y": 149,
+            "w": 817,
+            "h": 912
+        }
+    },
+    "Wyvern_Pass": {
+        "name": "Wyvern Pass",
+        "rgb": "150,68,220",
+        "title-complete": "false",
+        "provinces": [
+            213,
+            212
+        ],
+        "titles": [
+            "Nimbus",
+            "Aldroth"
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 1797,
+            "w": 655,
+            "h": 1134
+        }
+    },
+    "Emberfall": {
+        "name": "Emberfall",
+        "rgb": "131,67,214",
+        "title-complete": "false",
+        "titles": [
+            "Emberfall_Gorge",
+            "Savine_Valley"
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 2220,
+            "w": 645,
+            "h": 1153
+        }
+    },
+    "Duskvale": {
+        "name": "Duskvale",
+        "rgb": "6,65,50",
+        "title-complete": "false",
+        "titles": [
+            "Janfort",
+            "Eschoadin",
+            "Verchnidom",
+            "Péitruss"
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 0,
+            "w": 1092,
+            "h": 506
+        }
+    },
+    "Trunk_of_The_Tree": {
+        "name": "Trunk Of The Tree",
+        "rgb": "159,112,169",
+        "title-complete": "false",
+        "titles": [
+            "Roots_of_The_Tree",
+            "Directive_5"
+        ],
+        "overlay": {
+            "x": 2012,
+            "y": 205,
+            "w": 1143,
+            "h": 752
+        }
+    }
 }

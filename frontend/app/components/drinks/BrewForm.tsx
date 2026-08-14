@@ -19,7 +19,6 @@ import {
   WOOD_OPTIONS,
   effectLabel,
 } from "../../../lib/drinks/constants";
-import { composeTintedPotionFile } from "../../../lib/drinks/potionTint";
 import {
   setLastSubmissionId,
   setSession,
@@ -161,37 +160,16 @@ export default function BrewForm({ session }: Props) {
   }, [allowTexture, session.session_token]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function updatePreview() {
-      if (appearance === "color") {
-        const file = await composeTintedPotionFile(color);
-        if (!cancelled) {
-          setPreviewFile(file);
-          setPreviewError(
-            file
-              ? null
-              : "Could not build potion preview. Drink assets may be missing on the server."
-          );
-        }
-        return;
-      }
-      if (appearance === "upload" && textureFile) {
-        if (!cancelled) {
-          setPreviewFile(textureFile);
-          setPreviewError(null);
-        }
-        return;
-      }
-      if (!cancelled) {
-        setPreviewFile(null);
-        setPreviewError(null);
-      }
+    if (appearance === "upload" && textureFile) {
+      setPreviewFile(textureFile);
+      setPreviewError(null);
+      return;
     }
-    void updatePreview();
-    return () => {
-      cancelled = true;
-    };
-  }, [appearance, color, textureFile]);
+    setPreviewFile(null);
+    if (appearance !== "color") {
+      setPreviewError(null);
+    }
+  }, [appearance, textureFile]);
 
   const ingredientById = useMemo(() => {
     const map = new Map<string, DrinkIngredient>();
@@ -668,14 +646,16 @@ export default function BrewForm({ session }: Props) {
             </label>
           )
         ) : null}
-        {previewFile ? (
+        {appearance === "color" || previewFile ? (
           <div className="space-y-2">
             <span className="text-xs text-[var(--tfmc-mist)]">Preview</span>
             <ModelPreview
               kind="handheld"
               flatDisplayPreset="generated"
+              potionTintColor={appearance === "color" ? color : null}
               flatTextureFile={previewFile}
               textureFile={previewFile}
+              onPreviewError={setPreviewError}
             />
           </div>
         ) : previewError ? (

@@ -29,3 +29,7 @@ Push **web-facing entitlements** from any server running TFMCWeb (including lobb
 ## Operator notes
 
 See [STAGING.md](../../../STAGING.md) **Step 32**. Lobby jar must ship `player-meta` ladders matching donator groups; players join once before expecting colours on the website.
+
+## Status
+
+**Done** (code). Operator ticks: [STAGING.md](../../../STAGING.md) Step 32.

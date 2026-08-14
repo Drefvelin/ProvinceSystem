@@ -76,7 +76,13 @@
         "zPos": 112.0,
         "subjects": [],
         "size": 19,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 2244,
+            "y": 386,
+            "w": 1332,
+            "h": 1477
+        }
     },
     "Dawngale": {
         "balance": 913.642072,
@@ -99,7 +105,7 @@
             "militia.6"
         ],
         "military queue": [],
-        "name": "xTxhxex xRxexaxcxh",
+        "name": "The Reach",
         "overlord": "Nimbus",
         "prestige modifiers": [
             "Events(25.0)"
@@ -148,7 +154,13 @@
         "zPos": 204.0,
         "subjects": [],
         "size": 10,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 0,
+            "y": 2995,
+            "w": 670,
+            "h": 1050
+        }
     },
     "Luciliburhuc_Farming_Association": {
         "balance": 15.649000000000001,
@@ -199,7 +211,13 @@
         "zPos": 23.0,
         "subjects": [],
         "size": 5,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 690,
+            "y": 0,
+            "w": 1055,
+            "h": 454
+        }
     },
     "Rusvania": {
         "balance": 3646.7785,
@@ -303,7 +321,7 @@
             "militia.6"
         ],
         "military queue": [],
-        "name": "xTxixaxyxexoxuxpxh",
+        "name": "Tiayeouph",
         "prestige modifiers": [
             "Events(160.0)",
             "Canon Dungeon Completion - Mini-Dungeon I(5.0)",
@@ -385,7 +403,13 @@
         "zPos": 225.0,
         "subjects": [],
         "size": 33,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1460,
+            "y": 2628,
+            "w": 2593,
+            "h": 1468
+        }
     },
     "Selk'haren_Labs": {
         "balance": 2119.110856,
@@ -437,7 +461,13 @@
         "zPos": 140.0,
         "subjects": [],
         "size": 2,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 844,
+            "y": 2089,
+            "w": 521,
+            "h": 321
+        }
     },
     "Azur": {
         "balance": 7049.482,
@@ -477,7 +507,13 @@
         "zPos": 143.0,
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1725,
+            "y": 2612,
+            "w": 327,
+            "h": 312
+        }
     },
     "TheDesertCamp": {
         "balance": 609.2607,
@@ -545,7 +581,13 @@
         "zPos": 45.0,
         "subjects": [],
         "size": 16,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1700,
+            "y": 149,
+            "w": 1197,
+            "h": 999
+        }
     },
     "The_Inferni_Consortium": {
         "balance": 33.42768,
@@ -566,7 +608,7 @@
             "militia.6"
         ],
         "military queue": [],
-        "name": "xTxhxex xIxnxfxexrxnxix xCxoxnxsxoxrxtxixuxm",
+        "name": "The Inferni Consortium",
         "overlord": "Verdant_City",
         "prestige modifiers": [],
         "provinces": [],
@@ -629,7 +671,13 @@
         "zPos": 223.0,
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 3478,
+            "y": 3450,
+            "w": 196,
+            "h": 141
+        }
     },
     "Viridia": {
         "balance": 2127.9125,
@@ -693,7 +741,7 @@
             "militia.6"
         ],
         "military queue": [],
-        "name": "xTxhxe xNxRxPxA",
+        "name": "The NRPA",
         "prestige modifiers": [],
         "provinces": [
             135,
@@ -730,7 +778,13 @@
         "zPos": 188.0,
         "subjects": [],
         "size": 3,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 2335,
+            "y": 2736,
+            "w": 532,
+            "h": 654
+        }
     },
     "House_Tenceur": {
         "balance": 886.72495,
@@ -790,7 +844,13 @@
         "zPos": 100.0,
         "subjects": [],
         "size": 6,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1035,
+            "y": 1357,
+            "w": 517,
+            "h": 548
+        }
     },
     "Queendom_of_Eoridcois": {
         "balance": 1652.2583,
@@ -849,7 +909,13 @@
         "zPos": 225.0,
         "subjects": [],
         "size": 8,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1280,
+            "y": 2129,
+            "w": 1015,
+            "h": 1626
+        }
     },
     "Mizeareigh": {
         "balance": 6421.4628375,
@@ -941,7 +1007,13 @@
         "zPos": 26.0,
         "subjects": [],
         "size": 23,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 0,
+            "y": 0,
+            "w": 1210,
+            "h": 1272
+        }
     },
     "The_Pale_Garden": {
         "balance": 1178.4909,
@@ -993,7 +1065,13 @@
         "zPos": 182.0,
         "subjects": [],
         "size": 2,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1450,
+            "y": 2866,
+            "w": 395,
+            "h": 417
+        }
     },
     "Cordelia": {
         "balance": 21.220389625,
@@ -1049,7 +1127,13 @@
         "zPos": 164.0,
         "subjects": [],
         "size": 7,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 2042,
+            "y": 1521,
+            "w": 1711,
+            "h": 1706
+        }
     },
     "imperium": {
         "balance": 3553.7218077,
@@ -1148,7 +1232,19 @@
             "Rah_Clan"
         ],
         "size": 63,
-        "subject_size": 36
+        "subject_size": 36,
+        "overlay": {
+            "x": 457,
+            "y": 1013,
+            "w": 3296,
+            "h": 2214
+        },
+        "overlay_nested": {
+            "x": 911,
+            "y": 1421,
+            "w": 1809,
+            "h": 1416
+        }
     },
     "Lucilinburhuc": {
         "balance": 4667.8369453125,
@@ -1217,7 +1313,19 @@
             "Luciliburhuc_Farming_Association"
         ],
         "size": 17,
-        "subject_size": 5
+        "subject_size": 5,
+        "overlay": {
+            "x": 690,
+            "y": 0,
+            "w": 1371,
+            "h": 835
+        },
+        "overlay_nested": {
+            "x": 1000,
+            "y": 0,
+            "w": 1061,
+            "h": 835
+        }
     },
     "Verdant_City": {
         "balance": 676.63723285,
@@ -1241,7 +1349,7 @@
             "militia.0"
         ],
         "military queue": [],
-        "name": "xVxexrxdxaxnxtx xCxixtxy",
+        "name": "Verdant City",
         "overlord": "imperium",
         "prestige modifiers": [
             "Canon Dungeon Completion - Starter(30.0)",
@@ -1310,7 +1418,19 @@
             "The_Inferni_Consortium"
         ],
         "size": 21,
-        "subject_size": 2
+        "subject_size": 2,
+        "overlay": {
+            "x": 457,
+            "y": 1569,
+            "w": 3227,
+            "h": 1431
+        },
+        "overlay_nested": {
+            "x": 457,
+            "y": 1569,
+            "w": 3227,
+            "h": 1431
+        }
     },
     "House_Weston_of_Blossomreach": {
         "balance": 2294.1046,
@@ -1364,7 +1484,19 @@
             "The_Pale_Garden"
         ],
         "size": 6,
-        "subject_size": 2
+        "subject_size": 2,
+        "overlay": {
+            "x": 957,
+            "y": 2308,
+            "w": 888,
+            "h": 975
+        },
+        "overlay_nested": {
+            "x": 957,
+            "y": 2308,
+            "w": 817,
+            "h": 440
+        }
     },
     "Hell_Hops_Hellhouse": {
         "balance": 340.88805,
@@ -1409,7 +1541,13 @@
         "zPos": 125.0,
         "subjects": [],
         "size": 1,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1497,
+            "y": 1963,
+            "w": 234,
+            "h": 218
+        }
     },
     "Nimbus": {
         "balance": 2487.43,
@@ -1501,7 +1639,19 @@
             "Dawngale"
         ],
         "size": 32,
-        "subject_size": 10
+        "subject_size": 10,
+        "overlay": {
+            "x": 0,
+            "y": 753,
+            "w": 688,
+            "h": 3292
+        },
+        "overlay_nested": {
+            "x": 0,
+            "y": 753,
+            "w": 688,
+            "h": 2363
+        }
     },
     "HouseGrimshaw": {
         "balance": 0.0,
@@ -1568,7 +1718,13 @@
         "zPos": 63.0,
         "subjects": [],
         "size": 14,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1053,
+            "y": 530,
+            "w": 723,
+            "h": 924
+        }
     },
     "Doug's_House": {
         "balance": 2273.766,
@@ -1667,6 +1823,12 @@
         "zPos": 122.0,
         "subjects": [],
         "size": 7,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1794,
+            "y": 1013,
+            "w": 586,
+            "h": 922
+        }
     }
 }

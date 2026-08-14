@@ -90,7 +90,8 @@ sequenceDiagram
 | Bound to UUID | Issued with `player_uuid`; cosmetic always granted to that UUID |
 | Share resistance | Submission stores issuer UUID; ArmourShop only grants that UUID |
 | Storage | Hash of code (SHA-256); plaintext shown once in-game |
-| Lifetime | Expiry (e.g. 24–72h); single redeem for upload session |
+| Lifetime | Code row expiry (plugin-minted); **session 8h** after redeem |
+| Consumption | Code marked used **on successful submit**, not on redeem; may re-redeem same code until submit |
 | Revocation | Staff/plugin can invalidate a code row |
 | Tier limits | 3D pair byte caps + colour stops from ArmourShop `permission-groups.yml` (catalog / player-meta) |
 | Skin token cooldown | **Owned by TFMCWeb** (shared with drink). AS `skin-token-cooldown-days` deprecated for mint after [step-31.02](./batches/step-31/02-tfmcweb-shared-cooldown.md); PS `issue_code` no longer gates mint days. |
@@ -128,7 +129,7 @@ Durable bind so the bot can DM the player. No OAuth; no Discord fields on the we
 | 3 | API | Stores `discord_links` row (`player_uuid` ↔ `discord_user_id`) |
 | Unlink | Player | In-game `/unlinkdiscord` → `POST …/link/unlink` (TFMCWeb); or Discord `/unlinkdiscord` → `POST …/link/unlink-discord` (staff) |
 
-Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected. Skin upload codes are **one-time** (`redeemed_at`).
+Relink replaces the row for the same UUID. A Discord id already linked to another UUID is rejected. Upload codes are **consumed on submit** (`redeemed_at`); redeem may be repeated until submit within session TTL (**8h**).
 
 ### SQLite — `discord_links` / `discord_link_codes`
 
@@ -154,7 +155,7 @@ Relink replaces the row for the same UUID. A Discord id already linked to anothe
 | `code_hash` | unique |
 | `player_uuid` | issuer |
 | `created_at` / `expires_at` | |
-| `redeemed_at` | nullable |
+| `redeemed_at` | set on **submit**, not redeem |
 | `revoked` | bool |
 
 ### SQLite — `submissions`

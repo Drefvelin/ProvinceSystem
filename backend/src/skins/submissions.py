@@ -967,6 +967,10 @@ def create_submission(
             (submission_id,),
         ).fetchone()
 
+    from src.skins.codes import mark_code_consumed
+
+    mark_code_consumed(code_id)
+
     return _public_row(row)
 
 

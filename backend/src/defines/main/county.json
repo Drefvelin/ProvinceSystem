@@ -1,711 +1,1095 @@
 {
-  "COUNTY_1": {
-    "name": "Elvaris",
-    "provinces": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10
-    ],
-    "rgb": "180,80,80"
-  },
-  "COUNTY_2": {
-    "name": "Cyranthis",
-    "provinces": [
-      11,
-      12,
-      13,
-      14,
-      15,
-      57
-    ],
-    "rgb": "160,70,70"
-  },
-  "COUNTY_3": {
-    "name": "Ardvon",
-    "provinces": [
-      16,
-      17,
-      18,
-      19
-    ],
-    "rgb": "140,60,60"
-  },
-  "COUNTY_4": {
-    "name": "Vandrel",
-    "provinces": [
-      20,
-      21,
-      22,
-      23,
-      24,
-      25,
-      38
-    ],
-    "rgb": "170,90,90"
-  },
-  "COUNTY_5": {
-    "name": "Corvalen",
-    "provinces": [
-      26,
-      27,
-      28,
-      29,
-      30,
-      31,
-      32,
-      163
-    ],
-    "rgb": "150,85,85"
-  },
-  "COUNTY_6": {
-    "name": "Nordrith",
-    "provinces": [
-      33,
-      34,
-      35,
-      36,
-      37
-    ],
-    "rgb": "130,75,75"
-  },
-  "COUNTY_7": {
-    "name": "Aurenhold",
-    "provinces": [
-      39,
-      40,
-      41,
-      42,
-      43,
-      44
-    ],
-    "rgb": "190,100,100"
-  },
-  "COUNTY_8": {
-    "name": "Kaelmor",
-    "provinces": [
-      45,
-      46,
-      47,
-      48,
-      49
-    ],
-    "rgb": "200,110,110"
-  },
-  "COUNTY_9": {
-    "name": "Wyrmarch",
-    "provinces": [
-      53,
-      54,
-      55,
-      56,
-      51,
-      52
-    ],
-    "rgb": "175,95,95"
-  },
-  "COUNTY_10": {
-    "name": "Veltharis",
-    "provinces": [
-      162,
-      58,
-      59,
-      60,
-      61
-    ],
-    "rgb": "80,80,180"
-  },
-  "COUNTY_11": {
-    "name": "Bellanor",
-    "provinces": [
-      62,
-      63,
-      64,
-      66,
-      67
-    ],
-    "rgb": "70,70,160"
-  },
-  "COUNTY_12": {
-    "name": "Arthemont",
-    "provinces": [
-      69,
-      70,
-      71,
-      72,
-      73,
-      75,
-      76,
-      68
-    ],
-    "rgb": "60,60,140"
-  },
-  "COUNTY_13": {
-    "name": "Feremont",
-    "provinces": [
-      77,
-      78,
-      79,
-      80,
-      81,
-      82,
-      83,
-      84,
-      74
-    ],
-    "rgb": "90,90,170"
-  },
-  "COUNTY_14": {
-    "name": "Valenfort",
-    "provinces": [
-      85,
-      86,
-      87,
-      88,
-      89
-    ],
-    "rgb": "85,85,150"
-  },
-  "COUNTY_15": {
-    "name": "Castelor",
-    "provinces": [
-      90,
-      91,
-      92,
-      93,
-      94,
-      95
-    ],
-    "rgb": "75,75,130"
-  },
-  "COUNTY_16": {
-    "name": "Arvendor",
-    "provinces": [
-      96,
-      97,
-      98,
-      99,
-      100,
-      101,
-      65
-    ],
-    "rgb": "100,100,190"
-  },
-  "COUNTY_17": {
-    "name": "Wyvenhold",
-    "provinces": [
-      102,
-      103,
-      104,
-      105,
-      106,
-      107,
-      108,
-      109,
-      110
-    ],
-    "rgb": "110,110,200"
-  },
-  "COUNTY_18": {
-    "name": "Dryaris",
-    "provinces": [
-      111,
-      112,
-      113,
-      114,
-      115,
-      116,
-      117
-    ],
-    "rgb": "95,95,175"
-  },
-  "COUNTY_19": {
-    "name": "Ulvarin",
-    "provinces": [
-      118,
-      119,
-      120,
-      121
-    ],
-    "rgb": "80,180,80"
-  },
-  "COUNTY_20": {
-    "name": "Kelvenor",
-    "provinces": [
-      122,
-      123,
-      124
-    ],
-    "rgb": "70,160,70"
-  },
-  "COUNTY_21": {
-    "name": "Aetheron",
-    "provinces": [
-      125,
-      126,
-      127,
-      128
-    ],
-    "rgb": "60,140,60"
-  },
-  "COUNTY_22": {
-    "name": "Caladrel",
-    "provinces": [
-      129,
-      130,
-      131,
-      132,
-      133,
-      134
-    ],
-    "rgb": "90,170,90"
-  },
-  "COUNTY_23": {
-    "name": "Lythvalen",
-    "provinces": [
-      135,
-      136,
-      137,
-      138,
-      139,
-      140
-    ],
-    "rgb": "85,150,85"
-  },
-  "COUNTY_24": {
-    "name": "Sylendar",
-    "provinces": [
-      141,
-      142,
-      143,
-      144,
-      160
-    ],
-    "rgb": "75,130,75"
-  },
-  "COUNTY_25": {
-    "name": "Cerandor",
-    "provinces": [
-      145,
-      146,
-      147
-    ],
-    "rgb": "100,190,100"
-  },
-  "COUNTY_26": {
-    "name": "Lorathen",
-    "provinces": [
-      148,
-      149,
-      150
-    ],
-    "rgb": "110,200,110"
-  },
-  "COUNTY_27": {
-    "name": "Vyras",
-    "provinces": [
-      152,
-      153,
-      154,
-      155,
-      156,
-      157,
-      158,
-      159,
-      161
-    ],
-    "rgb": "95,175,95"
-  },
-  "Directive_01": {
-    "name": "Directive 01",
-    "rgb": "39,197,120",
-    "title-complete": "false",
-    "provinces": [
-      292,
-      291,
-      290,
-      289
-    ]
-  },
-  "SHLF_Cheerios": {
-    "name": "Rosaria",
-    "rgb": "51,224,160",
-    "title-complete": "false",
-    "provinces": [
-      182,
-      181,
-      180,
-      183
-    ]
-  },
-  "Ashfall": {
-    "name": "Ashfall",
-    "rgb": "169,226,37",
-    "title-complete": "false",
-    "provinces": [
-      259,
-      258,
-      261
-    ]
-  },
-  "Directive_02": {
-    "name": "Directive 02",
-    "rgb": "188,26,73",
-    "title-complete": "false",
-    "provinces": [
-      293,
-      294,
-      298
-    ]
-  },
-  "Directive_03": {
-    "name": "Directive 03",
-    "rgb": "179,96,24",
-    "title-complete": "false",
-    "provinces": [
-      295,
-      296,
-      300
-    ]
-  },
-  "Directive_04": {
-    "name": "Directive 04",
-    "rgb": "48,214,94",
-    "title-complete": "false",
-    "provinces": [
-      288,
-      287,
-      299,
-      286
-    ]
-  },
-  "Emberdune": {
-    "name": "Emberdune",
-    "rgb": "108,4,18",
-    "title-complete": "false",
-    "provinces": [
-      260,
-      263,
-      262
-    ]
-  },
-  "Brimspire": {
-    "name": "Brimspire",
-    "rgb": "124,19,3",
-    "title-complete": "false",
-    "provinces": [
-      264,
-      265,
-      266
-    ]
-  },
-  "Lucilinburhuc": {
-    "name": "Lucilinburhuc",
-    "rgb": "184,98,228",
-    "title-complete": "false",
-    "provinces": [
-      247,
-      248,
-      245,
-      244
-    ]
-  },
-  "Severboden": {
-    "name": "Severboden",
-    "rgb": "181,236,80",
-    "title-complete": "false",
-    "provinces": [
-      223,
-      222
-    ]
-  },
-  "Echternach": {
-    "name": "Echternach",
-    "rgb": "185,102,234",
-    "title-complete": "false",
-    "provinces": [
-      246,
-      253,
-      249,
-      251
-    ]
-  },
-  "Waasserbuerg": {
-    "name": "Waasserbuerg",
-    "rgb": "126,108,230",
-    "title-complete": "false",
-    "provinces": [
-      252,
-      250,
-      241,
-      277
-    ]
-  },
-  "Aischdall": {
-    "name": "Aischdall",
-    "rgb": "223,102,234",
-    "title-complete": "false",
-    "provinces": [
-      278,
-      279,
-      276,
-      275
-    ]
-  },
-  "Directive_5": {
-    "name": "Directive 5",
-    "rgb": "238,136,68",
-    "title-complete": "false",
-    "provinces": [
-      305,
-      312,
-      310,
-      316
-    ]
-  },
-  "Vizhuvso": {
-    "name": "Vizhuvso",
-    "rgb": "236,218,79",
-    "title-complete": "false",
-    "provinces": [
-      226,
-      228
-    ]
-  },
-  "Corvid's_Heaven": {
-    "name": "Corvid's Heaven",
-    "rgb": "83,229,150",
-    "title-complete": "false",
-    "provinces": [
-      179,
-      178,
-      184
-    ]
-  },
-  "Etopravda": {
-    "name": "Etopravda",
-    "rgb": "188,238,83",
-    "title-complete": "false",
-    "provinces": [
-      225,
-      224,
-      267
-    ]
-  },
-  "Malazvook": {
-    "name": "Malazvook",
-    "rgb": "240,178,86",
-    "title-complete": "false",
-    "provinces": [
-      227,
-      236,
-      235
-    ]
-  },
-  "Péitruss": {
-    "name": "Péitruss",
-    "rgb": "60,221,219",
-    "title-complete": "false",
-    "provinces": [
-      243,
-      242,
-      240,
-      239
-    ]
-  },
-  "Verchnidom": {
-    "name": "Verchnidom",
-    "rgb": "239,114,77",
-    "title-complete": "false",
-    "provinces": [
-      237,
-      238
-    ]
-  },
-  "Ravenbreak": {
-    "name": "Ravenbreak",
-    "rgb": "189,58,230",
-    "title-complete": "false",
-    "provinces": [
-      255,
-      256,
-      257,
-      254
-    ]
-  },
-  "Neo-Norbaum": {
-    "name": "Neo-Norbaum",
-    "rgb": "228,205,86",
-    "title-complete": "false",
-    "provinces": [
-      302,
-      301,
-      307
-    ]
-  },
-  "Raven's_Reach": {
-    "name": "Raven's Reach",
-    "rgb": "227,62,127",
-    "title-complete": "false",
-    "provinces": [
-      203,
-      188,
-      186,
-      202
-    ]
-  },
-  "Kayadiristan": {
-    "name": "Kayadiristan",
-    "rgb": "159,117,167",
-    "title-complete": "false",
-    "provinces": [
-      306,
-      304,
-      303,
-      308,
-      309
-    ]
-  },
-  "Ra's_eye": {
-    "name": "Ra's Eye",
-    "rgb": "251,194,180",
-    "title-complete": "false",
-    "provinces": [
-      274,
-      269,
-      268,
-      271
-    ]
-  },
-  "Ra's_Arm": {
-    "name": "Ra's Arm",
-    "rgb": "246,178,157",
-    "title-complete": "false",
-    "provinces": [
-      283,
-      315,
-      285
-    ]
-  },
-  "The_Rivers_upon_Dunes": {
-    "name": "The Rivers Upon Dunes",
-    "rgb": "249,217,168",
-    "title-complete": "false",
-    "provinces": [
-      284,
-      273,
-      272
-    ]
-  },
-  "The_Outer_Dunes": {
-    "name": "The Outer Dunes",
-    "rgb": "252,234,174",
-    "title-complete": "false",
-    "provinces": [
-      270,
-      282,
-      317
-    ]
-  },
-  "Aldroth": {
-    "name": "Aldroth",
-    "rgb": "171,26,30",
-    "title-complete": "false",
-    "provinces": [
-      211,
-      210,
-      209,
-      193
-    ]
-  },
-  "Eschoadin": {
-    "name": "Eschoadin",
-    "rgb": "222,237,92",
-    "title-complete": "false",
-    "provinces": [
-      233,
-      231,
-      234
-    ]
-  },
-  "Nimbus": {
-    "name": "Nimbus",
-    "rgb": "69,56,209",
-    "title-complete": "false",
-    "provinces": [
-      195,
-      214,
-      215
-    ]
-  },
-  "Emberfall_Gorge": {
-    "name": "Emberfall Gorge",
-    "rgb": "52,67,204",
-    "title-complete": "false",
-    "provinces": [
-      212,
-      213,
-      208,
-      194
-    ]
-  },
-  "Savine_Valley": {
-    "name": "Savine Valley",
-    "rgb": "63,47,212",
-    "title-complete": "false",
-    "provinces": [
-      206,
-      207,
-      204
-    ]
-  },
-  "Janfort": {
-    "name": "Janfort",
-    "rgb": "4,93,40",
-    "title-complete": "false",
-    "provinces": [
-      229,
-      230,
-      232
-    ]
-  },
-  "Northwestern_Valleys": {
-    "name": "Northwestern Valleys",
-    "rgb": "60,83,217",
-    "title-complete": "false",
-    "provinces": [
-      218,
-      219,
-      220,
-      217
-    ]
-  },
-  "Roots_of_The_Tree": {
-    "name": "Roots Of The Tree",
-    "rgb": "151,126,169",
-    "title-complete": "false",
-    "provinces": [
-      280,
-      314,
-      313
-    ]
-  },
-  "Western_Hills": {
-    "name": "Western Hills",
-    "rgb": "93,67,212",
-    "title-complete": "false",
-    "provinces": [
-      201,
-      221,
-      191,
-      50,
-      192
-    ]
-  }
+    "COUNTY_1": {
+        "name": "Elvaris",
+        "provinces": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+        ],
+        "rgb": "180,80,80",
+        "overlay": {
+            "x": 3125,
+            "y": 1452,
+            "w": 664,
+            "h": 700
+        }
+    },
+    "COUNTY_2": {
+        "name": "Cyranthis",
+        "provinces": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            57
+        ],
+        "rgb": "160,70,70",
+        "overlay": {
+            "x": 1793,
+            "y": 1012,
+            "w": 725,
+            "h": 503
+        }
+    },
+    "COUNTY_3": {
+        "name": "Ardvon",
+        "provinces": [
+            16,
+            17,
+            18,
+            19
+        ],
+        "rgb": "140,60,60",
+        "overlay": {
+            "x": 1437,
+            "y": 908,
+            "w": 497,
+            "h": 547
+        }
+    },
+    "COUNTY_4": {
+        "name": "Vandrel",
+        "provinces": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            38
+        ],
+        "rgb": "170,90,90",
+        "overlay": {
+            "x": 896,
+            "y": 959,
+            "w": 647,
+            "h": 494
+        }
+    },
+    "COUNTY_5": {
+        "name": "Corvalen",
+        "provinces": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            163
+        ],
+        "rgb": "150,85,85",
+        "overlay": {
+            "x": 1231,
+            "y": 529,
+            "w": 546,
+            "h": 556
+        }
+    },
+    "COUNTY_6": {
+        "name": "Nordrith",
+        "provinces": [
+            33,
+            34,
+            35,
+            36,
+            37
+        ],
+        "rgb": "130,75,75",
+        "overlay": {
+            "x": 703,
+            "y": 669,
+            "w": 609,
+            "h": 618
+        }
+    },
+    "COUNTY_7": {
+        "name": "Aurenhold",
+        "provinces": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+        ],
+        "rgb": "190,100,100",
+        "overlay": {
+            "x": 457,
+            "y": 871,
+            "w": 552,
+            "h": 633
+        }
+    },
+    "COUNTY_8": {
+        "name": "Kaelmor",
+        "provinces": [
+            45,
+            46,
+            47,
+            48,
+            49
+        ],
+        "rgb": "200,110,110",
+        "overlay": {
+            "x": 150,
+            "y": 1174,
+            "w": 683,
+            "h": 557
+        }
+    },
+    "COUNTY_9": {
+        "name": "Wyrmarch",
+        "provinces": [
+            53,
+            54,
+            55,
+            56,
+            51,
+            52
+        ],
+        "rgb": "175,95,95",
+        "overlay": {
+            "x": 114,
+            "y": 641,
+            "w": 616,
+            "h": 632
+        }
+    },
+    "COUNTY_10": {
+        "name": "Veltharis",
+        "provinces": [
+            162,
+            58,
+            59,
+            60,
+            61
+        ],
+        "rgb": "80,80,180",
+        "overlay": {
+            "x": 2041,
+            "y": 1370,
+            "w": 500,
+            "h": 493
+        }
+    },
+    "COUNTY_11": {
+        "name": "Bellanor",
+        "provinces": [
+            62,
+            63,
+            64,
+            66,
+            67
+        ],
+        "rgb": "70,70,160",
+        "overlay": {
+            "x": 1527,
+            "y": 1314,
+            "w": 640,
+            "h": 539
+        }
+    },
+    "COUNTY_12": {
+        "name": "Arthemont",
+        "provinces": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            75,
+            76,
+            68
+        ],
+        "rgb": "60,60,140",
+        "overlay": {
+            "x": 1034,
+            "y": 1356,
+            "w": 701,
+            "h": 586
+        }
+    },
+    "COUNTY_13": {
+        "name": "Feremont",
+        "provinces": [
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            74
+        ],
+        "rgb": "90,90,170",
+        "overlay": {
+            "x": 300,
+            "y": 1421,
+            "w": 859,
+            "h": 578
+        }
+    },
+    "COUNTY_14": {
+        "name": "Valenfort",
+        "provinces": [
+            85,
+            86,
+            87,
+            88,
+            89
+        ],
+        "rgb": "85,85,150",
+        "overlay": {
+            "x": 405,
+            "y": 1917,
+            "w": 961,
+            "h": 494
+        }
+    },
+    "COUNTY_15": {
+        "name": "Castelor",
+        "provinces": [
+            90,
+            91,
+            92,
+            93,
+            94,
+            95
+        ],
+        "rgb": "75,75,130",
+        "overlay": {
+            "x": 910,
+            "y": 1851,
+            "w": 766,
+            "h": 485
+        }
+    },
+    "COUNTY_16": {
+        "name": "Arvendor",
+        "provinces": [
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            65
+        ],
+        "rgb": "100,100,190",
+        "overlay": {
+            "x": 1413,
+            "y": 1752,
+            "w": 708,
+            "h": 758
+        }
+    },
+    "COUNTY_17": {
+        "name": "Wyvenhold",
+        "provinces": [
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110
+        ],
+        "rgb": "110,110,200",
+        "overlay": {
+            "x": 1913,
+            "y": 1713,
+            "w": 707,
+            "h": 812
+        }
+    },
+    "COUNTY_18": {
+        "name": "Dryaris",
+        "provinces": [
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117
+        ],
+        "rgb": "95,95,175",
+        "overlay": {
+            "x": 2744,
+            "y": 2255,
+            "w": 1009,
+            "h": 972
+        }
+    },
+    "COUNTY_19": {
+        "name": "Ulvarin",
+        "provinces": [
+            118,
+            119,
+            120,
+            121
+        ],
+        "rgb": "80,180,80",
+        "overlay": {
+            "x": 956,
+            "y": 2307,
+            "w": 975,
+            "h": 505
+        }
+    },
+    "COUNTY_20": {
+        "name": "Kelvenor",
+        "provinces": [
+            122,
+            123,
+            124
+        ],
+        "rgb": "70,160,70",
+        "overlay": {
+            "x": 1318,
+            "y": 2556,
+            "w": 528,
+            "h": 563
+        }
+    },
+    "COUNTY_21": {
+        "name": "Aetheron",
+        "provinces": [
+            125,
+            126,
+            127,
+            128
+        ],
+        "rgb": "60,140,60",
+        "overlay": {
+            "x": 1724,
+            "y": 2446,
+            "w": 586,
+            "h": 613
+        }
+    },
+    "COUNTY_22": {
+        "name": "Caladrel",
+        "provinces": [
+            129,
+            130,
+            131,
+            132,
+            133,
+            134
+        ],
+        "rgb": "90,170,90",
+        "overlay": {
+            "x": 2055,
+            "y": 2378,
+            "w": 665,
+            "h": 775
+        }
+    },
+    "COUNTY_23": {
+        "name": "Lythvalen",
+        "provinces": [
+            135,
+            136,
+            137,
+            138,
+            139,
+            140
+        ],
+        "rgb": "85,150,85",
+        "overlay": {
+            "x": 2115,
+            "y": 2735,
+            "w": 779,
+            "h": 671
+        }
+    },
+    "COUNTY_24": {
+        "name": "Sylendar",
+        "provinces": [
+            141,
+            142,
+            143,
+            144,
+            160
+        ],
+        "rgb": "75,130,75",
+        "overlay": {
+            "x": 1535,
+            "y": 3014,
+            "w": 645,
+            "h": 671
+        }
+    },
+    "COUNTY_25": {
+        "name": "Cerandor",
+        "provinces": [
+            145,
+            146,
+            147
+        ],
+        "rgb": "100,190,100",
+        "overlay": {
+            "x": 2005,
+            "y": 3308,
+            "w": 605,
+            "h": 433
+        }
+    },
+    "COUNTY_26": {
+        "name": "Lorathen",
+        "provinces": [
+            148,
+            149,
+            150
+        ],
+        "rgb": "110,200,110",
+        "overlay": {
+            "x": 1460,
+            "y": 3566,
+            "w": 900,
+            "h": 395
+        }
+    },
+    "COUNTY_27": {
+        "name": "Vyras",
+        "provinces": [
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            159,
+            161
+        ],
+        "rgb": "95,175,95",
+        "overlay": {
+            "x": 2525,
+            "y": 3144,
+            "w": 1528,
+            "h": 825
+        }
+    },
+    "Directive_01": {
+        "name": "Directive 01",
+        "rgb": "39,197,120",
+        "title-complete": "false",
+        "provinces": [
+            292,
+            291,
+            290,
+            289
+        ],
+        "overlay": {
+            "x": 2969,
+            "y": 498,
+            "w": 351,
+            "h": 552
+        }
+    },
+    "SHLF_Cheerios": {
+        "name": "Rosaria",
+        "rgb": "51,224,160",
+        "title-complete": "false",
+        "provinces": [
+            182,
+            181,
+            180,
+            183
+        ],
+        "overlay": {
+            "x": 1181,
+            "y": 2726,
+            "w": 385,
+            "h": 578
+        }
+    },
+    "Ashfall": {
+        "name": "Ashfall",
+        "rgb": "169,226,37",
+        "title-complete": "false",
+        "provinces": [
+            259,
+            258,
+            261
+        ],
+        "overlay": {
+            "x": 2417,
+            "y": 3863,
+            "w": 711,
+            "h": 233
+        }
+    },
+    "Directive_02": {
+        "name": "Directive 02",
+        "rgb": "188,26,73",
+        "title-complete": "false",
+        "provinces": [
+            293,
+            294,
+            298
+        ],
+        "overlay": {
+            "x": 3247,
+            "y": 364,
+            "w": 329,
+            "h": 357
+        }
+    },
+    "Directive_03": {
+        "name": "Directive 03",
+        "rgb": "179,96,24",
+        "title-complete": "false",
+        "provinces": [
+            295,
+            296,
+            300
+        ],
+        "overlay": {
+            "x": 3132,
+            "y": 141,
+            "w": 556,
+            "h": 318
+        }
+    },
+    "Directive_04": {
+        "name": "Directive 04",
+        "rgb": "48,214,94",
+        "title-complete": "false",
+        "provinces": [
+            288,
+            287,
+            299,
+            286
+        ],
+        "overlay": {
+            "x": 2432,
+            "y": 385,
+            "w": 872,
+            "h": 762
+        }
+    },
+    "Emberdune": {
+        "name": "Emberdune",
+        "rgb": "108,4,18",
+        "title-complete": "false",
+        "provinces": [
+            260,
+            263,
+            262
+        ],
+        "overlay": {
+            "x": 2172,
+            "y": 3681,
+            "w": 576,
+            "h": 415
+        }
+    },
+    "Brimspire": {
+        "name": "Brimspire",
+        "rgb": "124,19,3",
+        "title-complete": "false",
+        "provinces": [
+            264,
+            265,
+            266
+        ],
+        "overlay": {
+            "x": 1821,
+            "y": 3883,
+            "w": 479,
+            "h": 213
+        }
+    },
+    "Lucilinburhuc": {
+        "name": "Lucilinburhuc",
+        "rgb": "184,98,228",
+        "title-complete": "false",
+        "provinces": [
+            247,
+            248,
+            245,
+            244
+        ],
+        "overlay": {
+            "x": 1044,
+            "y": 88,
+            "w": 542,
+            "h": 748
+        }
+    },
+    "Severboden": {
+        "name": "Severboden",
+        "rgb": "181,236,80",
+        "title-complete": "false",
+        "provinces": [
+            223,
+            222
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 364,
+            "w": 607,
+            "h": 504
+        }
+    },
+    "Echternach": {
+        "name": "Echternach",
+        "rgb": "185,102,234",
+        "title-complete": "false",
+        "provinces": [
+            246,
+            253,
+            249,
+            251
+        ],
+        "overlay": {
+            "x": 999,
+            "y": 95,
+            "w": 619,
+            "h": 545
+        }
+    },
+    "Waasserbuerg": {
+        "name": "Waasserbuerg",
+        "rgb": "126,108,230",
+        "title-complete": "false",
+        "provinces": [
+            252,
+            250,
+            241,
+            277
+        ],
+        "overlay": {
+            "x": 841,
+            "y": 0,
+            "w": 1161,
+            "h": 227
+        }
+    },
+    "Aischdall": {
+        "name": "Aischdall",
+        "rgb": "223,102,234",
+        "title-complete": "false",
+        "provinces": [
+            278,
+            279,
+            276,
+            275
+        ],
+        "overlay": {
+            "x": 1501,
+            "y": 161,
+            "w": 561,
+            "h": 595
+        }
+    },
+    "Directive_5": {
+        "name": "Directive 5",
+        "rgb": "238,136,68",
+        "title-complete": "false",
+        "provinces": [
+            305,
+            312,
+            310,
+            316
+        ],
+        "overlay": {
+            "x": 2447,
+            "y": 281,
+            "w": 708,
+            "h": 676
+        }
+    },
+    "Vizhuvso": {
+        "name": "Vizhuvso",
+        "rgb": "236,218,79",
+        "title-complete": "false",
+        "provinces": [
+            226,
+            228
+        ],
+        "overlay": {
+            "x": 756,
+            "y": 397,
+            "w": 375,
+            "h": 333
+        }
+    },
+    "Corvid's_Heaven": {
+        "name": "Corvid's Heaven",
+        "rgb": "83,229,150",
+        "title-complete": "false",
+        "provinces": [
+            179,
+            178,
+            184
+        ],
+        "overlay": {
+            "x": 1069,
+            "y": 2478,
+            "w": 691,
+            "h": 1278
+        }
+    },
+    "Etopravda": {
+        "name": "Etopravda",
+        "rgb": "188,238,83",
+        "title-complete": "false",
+        "provinces": [
+            225,
+            224,
+            267
+        ],
+        "overlay": {
+            "x": 548,
+            "y": 494,
+            "w": 1946,
+            "h": 654
+        }
+    },
+    "Malazvook": {
+        "name": "Malazvook",
+        "rgb": "240,178,86",
+        "title-complete": "false",
+        "provinces": [
+            227,
+            236,
+            235
+        ],
+        "overlay": {
+            "x": 346,
+            "y": 238,
+            "w": 470,
+            "h": 379
+        }
+    },
+    "Péitruss": {
+        "name": "Péitruss",
+        "rgb": "60,221,219",
+        "title-complete": "false",
+        "provinces": [
+            243,
+            242,
+            240,
+            239
+        ],
+        "overlay": {
+            "x": 689,
+            "y": 0,
+            "w": 403,
+            "h": 492
+        }
+    },
+    "Verchnidom": {
+        "name": "Verchnidom",
+        "rgb": "239,114,77",
+        "title-complete": "false",
+        "provinces": [
+            237,
+            238
+        ],
+        "overlay": {
+            "x": 491,
+            "y": 0,
+            "w": 273,
+            "h": 373
+        }
+    },
+    "Ravenbreak": {
+        "name": "Ravenbreak",
+        "rgb": "189,58,230",
+        "title-complete": "false",
+        "provinces": [
+            255,
+            256,
+            257,
+            254
+        ],
+        "overlay": {
+            "x": 561,
+            "y": 2199,
+            "w": 539,
+            "h": 655
+        }
+    },
+    "Neo-Norbaum": {
+        "name": "Neo-Norbaum",
+        "rgb": "228,205,86",
+        "title-complete": "false",
+        "provinces": [
+            302,
+            301,
+            307
+        ],
+        "overlay": {
+            "x": 2905,
+            "y": 0,
+            "w": 638,
+            "h": 364
+        }
+    },
+    "Raven's_Reach": {
+        "name": "Raven's Reach",
+        "rgb": "227,62,127",
+        "title-complete": "false",
+        "provinces": [
+            203,
+            188,
+            186,
+            202
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 3276,
+            "w": 340,
+            "h": 769
+        }
+    },
+    "Kayadiristan": {
+        "name": "Kayadiristan",
+        "rgb": "159,117,167",
+        "title-complete": "false",
+        "provinces": [
+            306,
+            304,
+            303,
+            308,
+            309
+        ],
+        "overlay": {
+            "x": 2255,
+            "y": 0,
+            "w": 1379,
+            "h": 403
+        }
+    },
+    "Ra's_eye": {
+        "name": "Ra's Eye",
+        "rgb": "251,194,180",
+        "title-complete": "false",
+        "provinces": [
+            274,
+            269,
+            268,
+            271
+        ],
+        "overlay": {
+            "x": 1928,
+            "y": 584,
+            "w": 478,
+            "h": 532
+        }
+    },
+    "Ra's_Arm": {
+        "name": "Ra's Arm",
+        "rgb": "246,178,157",
+        "title-complete": "false",
+        "provinces": [
+            283,
+            315,
+            285
+        ],
+        "overlay": {
+            "x": 2230,
+            "y": 357,
+            "w": 462,
+            "h": 660
+        }
+    },
+    "The_Rivers_upon_Dunes": {
+        "name": "The Rivers Upon Dunes",
+        "rgb": "249,217,168",
+        "title-complete": "false",
+        "provinces": [
+            284,
+            273,
+            272
+        ],
+        "overlay": {
+            "x": 1699,
+            "y": 522,
+            "w": 817,
+            "h": 450
+        }
+    },
+    "The_Outer_Dunes": {
+        "name": "The Outer Dunes",
+        "rgb": "252,234,174",
+        "title-complete": "false",
+        "provinces": [
+            270,
+            282,
+            317
+        ],
+        "overlay": {
+            "x": 1783,
+            "y": 149,
+            "w": 693,
+            "h": 912
+        }
+    },
+    "Aldroth": {
+        "name": "Aldroth",
+        "rgb": "171,26,30",
+        "title-complete": "false",
+        "provinces": [
+            211,
+            210,
+            209,
+            193
+        ],
+        "overlay": {
+            "x": 58,
+            "y": 2378,
+            "w": 597,
+            "h": 553
+        }
+    },
+    "Eschoadin": {
+        "name": "Eschoadin",
+        "rgb": "222,237,92",
+        "title-complete": "false",
+        "provinces": [
+            233,
+            231,
+            234
+        ],
+        "overlay": {
+            "x": 170,
+            "y": 0,
+            "w": 441,
+            "h": 288
+        }
+    },
+    "Nimbus": {
+        "name": "Nimbus",
+        "rgb": "69,56,209",
+        "title-complete": "false",
+        "provinces": [
+            195,
+            214,
+            215
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 1796,
+            "w": 451,
+            "h": 620
+        }
+    },
+    "Emberfall_Gorge": {
+        "name": "Emberfall Gorge",
+        "rgb": "52,67,204",
+        "title-complete": "false",
+        "provinces": [
+            212,
+            213,
+            208,
+            194
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 2220,
+            "w": 586,
+            "h": 819
+        }
+    },
+    "Savine_Valley": {
+        "name": "Savine Valley",
+        "rgb": "63,47,212",
+        "title-complete": "false",
+        "provinces": [
+            206,
+            207,
+            204
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 2782,
+            "w": 645,
+            "h": 591
+        }
+    },
+    "Janfort": {
+        "name": "Janfort",
+        "rgb": "4,93,40",
+        "title-complete": "false",
+        "provinces": [
+            229,
+            230,
+            232
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 0,
+            "w": 489,
+            "h": 506
+        }
+    },
+    "Northwestern_Valleys": {
+        "name": "Northwestern Valleys",
+        "rgb": "60,83,217",
+        "title-complete": "false",
+        "provinces": [
+            218,
+            219,
+            220,
+            217
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 1160,
+            "w": 486,
+            "h": 765
+        }
+    },
+    "Roots_of_The_Tree": {
+        "name": "Roots Of The Tree",
+        "rgb": "151,126,169",
+        "title-complete": "false",
+        "provinces": [
+            280,
+            314,
+            313
+        ],
+        "overlay": {
+            "x": 2012,
+            "y": 205,
+            "w": 886,
+            "h": 455
+        }
+    },
+    "Western_Hills": {
+        "name": "Western Hills",
+        "rgb": "93,67,212",
+        "title-complete": "false",
+        "provinces": [
+            201,
+            221,
+            191,
+            50,
+            192
+        ],
+        "overlay": {
+            "x": 0,
+            "y": 752,
+            "w": 670,
+            "h": 2660
+        }
+    }
 }

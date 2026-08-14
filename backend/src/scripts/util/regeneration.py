@@ -1,6 +1,7 @@
 import asyncio
 import os
 import json
+import sys
 import time
 
 from ..compile.nation_compiler import process_nations
@@ -40,6 +41,12 @@ def print_queues(map_name: str):
 # Sync regeneration logic
 # -------------------------
 def _sync_regeneration(map_name: str, regen_type: str):
+    # Windows consoles often default to cp1252; regen logs use UTF-8 symbols.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     start_time = time.perf_counter()
 
     validate_map(map_name)

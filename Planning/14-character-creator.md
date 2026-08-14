@@ -39,9 +39,9 @@ Phase 3 **requires** Phase 2 kit claim in RPC. Step 22 is FE/roster polish on to
 | Decision | Choice |
 |----------|--------|
 | Proof of account | In-game `/token create character` (UUID-bound, Discord-eligible) |
-| Code lifetime | **Single-use** — redeem once, then invalid |
+| Code lifetime | Consumed **on successful create/submit**; may re-redeem until consumed |
 | After redeem | API **session** Bearer (same pattern as skins) — not “stay logged in with the raw code” |
-| Default session TTL | **1 hour** (match skins) |
+| Default session TTL | **8 hours** (match skins/drinks) |
 | Remember me | Checkbox on redeem → session TTL **30 days** |
 | Storage | Browser: sessionStorage if not remembered; localStorage if Remember me (still expiry-checked) |
 | Logout | Explicit **Log out** — clear browser session + `POST` revoke on API |

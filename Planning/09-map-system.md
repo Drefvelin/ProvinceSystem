@@ -1,5 +1,7 @@
 # 09 — Map system (SimpleFactions ↔ ProvinceSystem)
 
+> **Product truth:** [16-map-platform.md](./16-map-platform.md). This doc covers the existing SF ↔ API ↔ web pipeline.
+
 End-to-end **interactive world map**: faction data on the Paper server becomes PNG layers and JSON on the website.
 
 Perf/UX work (cropped overlays, hover, mobile): [04-map-performance.md](./04-map-performance.md).  
@@ -76,10 +78,7 @@ SimpleFactions is **not** involved in skins.
 
 ## Implementation notes (map track)
 
-- Fix hover card realm fields (frontend).  
-- Cropped region PNGs + bbox metadata.  
-- Soften hardcoded regen key in SF config.  
-- Keep map routes stable for SF while skins APIs are added beside them.
+See [16-map-platform.md](./16-map-platform.md) steps 37–45. Technical perf detail: fix hover card, cropped PNGs, SF config hygiene.
 
 ## See also
 

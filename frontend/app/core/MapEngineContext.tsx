@@ -2,49 +2,66 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
+import type { MapObject, OverlayBBox } from "../components/map/types";
+import { apiBase } from "../components/map/types";
 
-type MapObject = {
-  id: string;
-  visible: boolean;
-  path: string;
+type HoverRegionResult = {
+  imagePath: string | null;
+  region: Record<string, unknown> | null;
+  overlay?: OverlayBBox;
 };
 
 type MapEngineContextType = {
   mapObjects: MapObject[];
-  loadData: (regionData: Record<string, any>) => void;
-  resetMapObjects: () => void; // ✅ ADD THIS
+  loadData: (regionData: Record<string, unknown>) => void;
+  resetMapObjects: () => void;
   getHoverRegion: (
     mapType: string,
     mapId: string,
     regionId: string,
-    regionData: Record<string, any>
-  ) => { imagePath: string | null; region: any };
-  drillDownRegion: (regionId: string, regionData: Record<string, any>) => void;
+    regionData: Record<string, unknown>
+  ) => HoverRegionResult;
+  drillDownRegion: (
+    regionId: string,
+    regionData: Record<string, unknown>
+  ) => void;
 };
 
-const MapEngineContext = createContext<MapEngineContextType | undefined>(undefined);
+const MapEngineContext = createContext<MapEngineContextType | undefined>(
+  undefined
+);
 
-export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [mapObjects, setMapObjects] = useState<MapObject[]>([]);
 
-  const loadData = (regionData: Record<string, any>) => {
+  const loadData = (regionData: Record<string, unknown>) => {
     const objects = Object.keys(regionData).flatMap((regionId) => {
-      const region = regionData[regionId];
-      const rgbPath = region.rgb.replace(/,/g, "_");
+      const region = regionData[regionId] as Record<string, unknown>;
+      const rgb = region.rgb as string | undefined;
+      if (!rgb) return [];
+
+      const rgbPath = rgb.replace(/,/g, "_");
+      const overlay = region.overlay as OverlayBBox | undefined;
+      const overlayNested = region.overlay_nested as OverlayBBox | undefined;
 
       const entries: MapObject[] = [
         {
           id: regionId,
           visible: !region.overlord,
           path: rgbPath,
+          overlay,
         },
       ];
 
-      if (region.subjects?.length > 0) {
+      const subjects = region.subjects as string[] | undefined;
+      if (subjects?.length) {
         entries.push({
           id: `${regionId}_nested`,
           visible: false,
           path: `${rgbPath}_nested`,
+          overlay: overlayNested,
         });
       }
 
@@ -56,49 +73,63 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const resetMapObjects = () => setMapObjects([]);
 
-  const getHoverRegion = (mapType: string, mapId: string, regionId: string, regionData: Record<string, any>) => {
-    let currentRegionId = regionId;
+  const getHoverRegion = (
+    mapType: string,
+    mapId: string,
+    regionId: string,
+    regionData: Record<string, unknown>
+  ): HoverRegionResult => {
+    const base = apiBase();
+    let currentRegionId: string | null = regionId;
 
     while (currentRegionId) {
-      const region = regionData[currentRegionId];
+      const region = regionData[currentRegionId] as Record<string, unknown>;
       if (!region) return { imagePath: null, region: null };
 
-      const main = mapObjects.find(obj => obj.id === currentRegionId);
+      const main = mapObjects.find((obj) => obj.id === currentRegionId);
       if (main?.visible) {
         return {
-          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${main.path}_hover`,
+          imagePath: `${base}/${mapId}/regions/${mapType}/${main.path}_hover`,
           region,
+          overlay: main.overlay,
         };
       }
 
       const nestedId = `${currentRegionId}_nested`;
-      const nested = mapObjects.find(obj => obj.id === nestedId);
+      const nested = mapObjects.find((obj) => obj.id === nestedId);
       if (nested?.visible) {
         return {
-          imagePath: `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/regions/${mapType}/${nested.path}_hover`,
+          imagePath: `${base}/${mapId}/regions/${mapType}/${nested.path}_hover`,
           region,
+          overlay: nested.overlay,
         };
       }
 
-      currentRegionId = region.overlord || null;
+      currentRegionId = (region.overlord as string) || null;
     }
 
     return { imagePath: null, region: null };
   };
 
-  const drillDownRegion = (regionId: string, regionData: Record<string, any>) => {
+  const drillDownRegion = (
+    regionId: string,
+    regionData: Record<string, unknown>
+  ) => {
     const updated = [...mapObjects];
-    const region = regionData[regionId];
-    if (!region || !region.subjects?.length) return;
+    const region = regionData[regionId] as Record<string, unknown>;
+    const subjects = region?.subjects as string[] | undefined;
+    if (!region || !subjects?.length) return;
 
-    const mainIndex = updated.findIndex(obj => obj.id === regionId);
+    const mainIndex = updated.findIndex((obj) => obj.id === regionId);
     if (mainIndex !== -1) updated[mainIndex].visible = false;
 
-    const nestedIndex = updated.findIndex(obj => obj.id === `${regionId}_nested`);
+    const nestedIndex = updated.findIndex(
+      (obj) => obj.id === `${regionId}_nested`
+    );
     if (nestedIndex !== -1) updated[nestedIndex].visible = true;
 
-    for (const subjectId of region.subjects) {
-      const subjectIndex = updated.findIndex(obj => obj.id === subjectId);
+    for (const subjectId of subjects) {
+      const subjectIndex = updated.findIndex((obj) => obj.id === subjectId);
       if (subjectIndex !== -1) updated[subjectIndex].visible = true;
     }
 
@@ -122,6 +153,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 export const useMapEngine = () => {
   const context = useContext(MapEngineContext);
-  if (!context) throw new Error("useMapEngine must be used inside a MapEngineProvider");
+  if (!context)
+    throw new Error("useMapEngine must be used inside a MapEngineProvider");
   return context;
 };

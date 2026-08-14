@@ -6,6 +6,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _BACKEND_SRC = Path(__file__).resolve().parents[1]
@@ -122,6 +123,41 @@ class DrinkApiTest(unittest.TestCase):
         with self.assertRaises(CodeError) as ctx2:
             redeem_code(issue_code("player-1", "drink")["code"])
         self.assertIn("drinks", str(ctx2.exception).lower())
+
+    def test_redeem_drink_again_before_submit(self) -> None:
+        from datetime import timedelta
+
+        from skins.codes import issue_code, redeem_drink_code
+
+        self._link_player()
+        issued = issue_code("player-1", "drink")
+        first = redeem_drink_code(issued["code"])
+        second = redeem_drink_code(issued["code"])
+        self.assertNotEqual(first["session_token"], second["session_token"])
+        exp = datetime.fromisoformat(second["expires_at"].replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        self.assertGreater(exp - now, timedelta(hours=7))
+
+    def test_redeem_drink_blocked_after_submit(self) -> None:
+        from skins.codes import CodeError, issue_code, redeem_drink_code
+        from skins.drinks import create_drink_submission
+
+        self._link_player()
+        self._seed_catalog()
+        issued = issue_code("player-1", "drink")
+        session = redeem_drink_code(issued["code"])
+        create_drink_submission(
+            session,
+            {
+                "name": "Reuse Test Brew",
+                "ingredients": [{"id": "grape", "amount": 1}],
+                "effects": [],
+                "color": "#AABBCC",
+            },
+        )
+        with self.assertRaises(CodeError) as ctx:
+            redeem_drink_code(issued["code"])
+        self.assertIn("already been used", str(ctx.exception).lower())
 
     def test_noble_texture_rejected(self) -> None:
         from skins.drinks import DrinkError, create_drink_submission

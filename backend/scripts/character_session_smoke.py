@@ -118,9 +118,9 @@ def main() -> None:
     token1 = body["session_token"]
     exp1 = _parse_iso(body["expires_at"])
     delta1 = exp1 - now
-    if not (timedelta(minutes=50) < delta1 < timedelta(hours=2)):
-        fail(f"default TTL expected ~1h, got {delta1} expires_at={body['expires_at']}")
-    print(f"OK redeem without remember_me -> ~1h ({delta1})")
+    if not (timedelta(hours=7) < delta1 < timedelta(hours=9)):
+        fail(f"default TTL expected ~8h, got {delta1} expires_at={body['expires_at']}")
+    print(f"OK redeem without remember_me -> ~8h ({delta1})")
 
     r = client.post("/skins/character/redeem", json={"code": code1})
     if r.status_code != 400:

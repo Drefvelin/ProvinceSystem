@@ -1,12 +1,18 @@
 {
-  "EMPIRE_1": {
-    "name": "Three Kingdoms",
-    "titles": [
-      "KINGDOM_1",
-      "KINGDOM_2",
-      "KINGDOM_3"
-    ],
-    "rgb": "203,195,214",
-    "title-complete": "true"
-  }
+    "EMPIRE_1": {
+        "name": "Three Kingdoms",
+        "titles": [
+            "KINGDOM_1",
+            "KINGDOM_2",
+            "KINGDOM_3"
+        ],
+        "rgb": "203,195,214",
+        "title-complete": "true",
+        "overlay": {
+            "x": 115,
+            "y": 530,
+            "w": 3938,
+            "h": 3438
+        }
+    }
 }

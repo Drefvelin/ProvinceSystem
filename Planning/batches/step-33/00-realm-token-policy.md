@@ -28,3 +28,7 @@ Repo default TFMCWeb `config.yml` keeps **full scopes** + `realm.id: main` so ex
 ## Operator notes
 
 See [STAGING.md](../../../STAGING.md) **Step 33**. After deploy, set lobby `enabled-scopes: [character]` and tutorial to `[]`.
+
+## Status
+
+**Done** (code). Operator ticks: [STAGING.md](../../../STAGING.md) Step 33.

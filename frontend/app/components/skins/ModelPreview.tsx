@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import {
+  composeTintedPotionCanvas,
+  loadDrinkAssetImages,
+} from "../../../lib/drinks/potionTint";
 import {
   applyDisplayToObject,
   resolveDisplayTab,
@@ -23,6 +27,7 @@ import {
   disposeObject3D,
   loadTextureFromFile,
   parseJavaModelJson,
+  type JavaModelJson,
 } from "../../../lib/skins/javaModel";
 import {
   applySteveArmPose,
@@ -79,10 +84,37 @@ type Props = {
   flatFrames?: FlatFrames;
   /** Thirdperson grip Y for large_handheld (2.5–5.5). */
   gripY?: number | null;
+  /** Tinted potion preview color (#RRGGBB); avoids rebuilding mesh on each change. */
+  potionTintColor?: string | null;
+  onPreviewError?: (message: string | null) => void;
   className?: string;
 };
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+type OrbitState = {
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+};
+
+type ViewerRuntime = {
+  renderer: THREE.WebGLRenderer;
+  camera: THREE.PerspectiveCamera;
+  controls: OrbitControls;
+  scene: THREE.Scene;
+  raf: number;
+  removeResize: () => void;
+};
+
+type ContentRefs = {
+  itemRoot: THREE.Object3D | null;
+  itemTexture: THREE.Texture | null;
+  javaJson: JavaModelJson | null;
+  steveRoot: SteveMannequin | null;
+  steveTexture: THREE.Texture | null;
+  potionCanvas: HTMLCanvasElement | null;
+  floatingRoot: THREE.Group | null;
+};
 
 const FRAME_CHIPS: { id: FlatFrameId; label: string }[] = [
   { id: "texture", label: "Standby" },
@@ -118,6 +150,66 @@ function isMultiFrameKind(kind?: DisplayKind): boolean {
   return kind === "bow" || kind === "large_bow" || kind === "crossbow";
 }
 
+function fileIdentity(file: File | null | undefined): string {
+  if (!file) return "";
+  return `${file.name}\0${file.size}\0${file.lastModified}`;
+}
+
+function saveOrbit(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls
+): OrbitState {
+  return {
+    position: camera.position.clone(),
+    target: controls.target.clone(),
+  };
+}
+
+function restoreOrbit(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
+  state: OrbitState
+): void {
+  camera.position.copy(state.position);
+  controls.target.copy(state.target);
+  camera.lookAt(state.target);
+  controls.update();
+}
+
+function setDefaultOrbit(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
+  focus: THREE.Vector3,
+  frameSize: number
+): void {
+  camera.position.set(
+    focus.x + frameSize * 1.4,
+    focus.y + frameSize * 0.55,
+    focus.z + frameSize * 1.6
+  );
+  camera.lookAt(focus);
+  controls.target.copy(focus);
+  controls.update();
+}
+
+function disposeContent(content: ContentRefs): void {
+  if (content.steveRoot) {
+    disposeObject3D(content.steveRoot);
+    content.steveRoot = null;
+  }
+  content.steveTexture?.dispose();
+  content.steveTexture = null;
+  if (content.itemRoot) {
+    disposeObject3D(content.itemRoot);
+    content.itemRoot = null;
+  }
+  content.itemTexture?.dispose();
+  content.itemTexture = null;
+  content.javaJson = null;
+  content.potionCanvas = null;
+  content.floatingRoot = null;
+}
+
 function itemSlotsForKind(
   kind?: DisplayKind
 ): { id: ItemSlot; label: string }[] {
@@ -126,7 +218,6 @@ function itemSlotsForKind(
     { id: "thirdperson_righthand", label: "Right" },
     { id: "thirdperson_lefthand", label: "Left" },
   ];
-  // Head only for 3D helmets (plan: drop Head from item_3d / shield / flat).
   if (kind === "helmet_3d") {
     return [...base, { id: "head", label: "Head" }];
   }
@@ -259,7 +350,6 @@ function resolveFlatArmPose(
   }
   if (kind === "crossbow") {
     if (pull) {
-      // Explicit steps: 0 = start, 1 = old full draw, 2 = stronger full draw.
       const chargeProgress =
         frame === "pull_0" ? 0 : frame === "pull_1" ? 0.5 : 1;
       return {
@@ -268,13 +358,39 @@ function resolveFlatArmPose(
       };
     }
     if (frame === "charged") {
-      // Aimed / loaded — keep crossbow hold.
       return { pose: leftHand ? "crossbow_hold_left" : "crossbow_hold" };
     }
-    // Standby: normal one-hand hold; crossbow stays flat via display tab.
     return { pose: leftHand ? "hold_left" : "hold_right" };
   }
   return { pose: leftHand ? "hold_left" : "hold_right" };
+}
+
+function textureFromCanvas(canvas: HTMLCanvasElement): THREE.Texture {
+  const texture = new THREE.Texture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.flipY = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function canvasImageData(canvas: HTMLCanvasElement): ImageData {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("Could not read potion canvas");
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function updateMeshTexture(root: THREE.Object3D, texture: THREE.Texture): void {
+  root.traverse((obj) => {
+    if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshBasicMaterial) {
+      obj.material.map = texture;
+      obj.material.needsUpdate = true;
+    }
+  });
 }
 
 export default function ModelPreview({
@@ -286,30 +402,51 @@ export default function ModelPreview({
   flatTextureFile = null,
   flatFrames,
   gripY = null,
+  potionTintColor = null,
+  onPreviewError,
   className = "",
 }: Props) {
   const gun = isGunKind(kind);
   const flat = isFlatKind(kind);
   const displayKind = flatDisplayKind(kind, flatDisplayPreset);
+  const potionTintMode =
+    flat && flatDisplayPreset === "generated" && Boolean(potionTintColor);
+
   const hostRef = useRef<HTMLDivElement>(null);
-  const steveLiveRef = useRef<SteveMannequin | null>(null);
-  const heldItemRef = useRef<THREE.Object3D | null>(null);
+  const runtimeRef = useRef<ViewerRuntime | null>(null);
+  const contentRef = useRef<ContentRefs>({
+    itemRoot: null,
+    itemTexture: null,
+    javaJson: null,
+    steveRoot: null,
+    steveTexture: null,
+    potionCanvas: null,
+    floatingRoot: null,
+  });
+  const heldItemRef = useRef<THREE.Group | null>(null);
   const heldMirrorLeftRef = useRef(false);
+  const steveLiveRef = useRef<SteveMannequin | null>(null);
+  const orbitInitializedRef = useRef(false);
+  const orbitStateRef = useRef<OrbitState | null>(null);
+  const drinkAssetsRef = useRef<Awaited<
+    ReturnType<typeof loadDrinkAssetImages>
+  > | null>(null);
+  const syncGenRef = useRef(0);
   const gripYRef = useRef(gripY);
   gripYRef.current = gripY;
   const showOuterLayerRef = useRef(true);
+
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState<PreviewSlot>(
     gun ? "carry_right" : "thirdperson_righthand"
   );
   const [frame, setFrame] = useState<FlatFrameId>("texture");
-  /** Shield only: idle hold vs auto blocking display. */
   const [shieldMode, setShieldMode] = useState<"idle" | "blocking">("idle");
-  /** Local-only player skin for the mannequin; never uploaded with the submission. */
   const [playerSkinFile, setPlayerSkinFile] = useState<File | null>(null);
   const [armModel, setArmModel] = useState<ArmModel>("default");
   const [showOuterLayer, setShowOuterLayer] = useState(true);
+  const [contentVersion, setContentVersion] = useState(0);
   showOuterLayerRef.current = showOuterLayer;
 
   const frameOptions = useMemo(
@@ -321,6 +458,43 @@ export default function ModelPreview({
     if (gun) return GUN_SLOTS.filter((opt) => gunSlotHasFile(opt.id, gunModels));
     return itemSlotsForKind(kind);
   }, [gun, gunModels, kind]);
+
+  const pipelineKey = `${Number(gun)}-${Number(flat)}-${kind ?? ""}-${displayKind}`;
+
+  const activeModelFile = resolveActiveModelFile(
+    gun,
+    slot,
+    modelFile,
+    gunModels
+  );
+
+  const activeFlatTexture = flat
+    ? resolveFlatTextureFile(frame, flatFrames, flatTextureFile, textureFile)
+    : null;
+
+  const hasPreview = flat
+    ? Boolean(activeFlatTexture) || potionTintMode
+    : Boolean(activeModelFile && textureFile);
+
+  const meshOnMannequin = isMannequinSlot(slot, gun);
+
+  const contentSignature = useMemo(() => {
+    const placement = meshOnMannequin ? "m" : "f";
+    if (potionTintMode) return "potion:generated";
+    if (flat) {
+      return `flat:${fileIdentity(activeFlatTexture)}:${placement}`;
+    }
+    return `3d:${fileIdentity(activeModelFile)}:${fileIdentity(textureFile)}:${placement}`;
+  }, [
+    potionTintMode,
+    flat,
+    activeFlatTexture,
+    activeModelFile,
+    textureFile,
+    meshOnMannequin,
+  ]);
+
+  const layoutSignature = `${slot}:${frame}:${shieldMode}:${fileIdentity(playerSkinFile)}`;
 
   useEffect(() => {
     if (previewSlots.some((s) => s.id === slot)) return;
@@ -349,39 +523,221 @@ export default function ModelPreview({
     }
   }, [showOuterLayer]);
 
-  // Update grip display in place — do not rebuild the scene / reset orbit.
-  useEffect(() => {
-    const held = heldItemRef.current;
-    if (!held || !flat || kind !== "large_handheld") return;
-    const leftHand = heldMirrorLeftRef.current;
-    // Mirror the calibrated righthand pose onto the left arm (not the lefthand tab).
-    const tab = resolveFlatDisplayTab(
-      kind,
-      "thirdperson_righthand",
-      gripY
-    );
-    applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
-  }, [gripY, flat, kind]);
-
-  const activeModelFile = resolveActiveModelFile(
-    gun,
-    slot,
-    modelFile,
-    gunModels
+  const reportError = useCallback(
+    (message: string | null) => {
+      setError(message);
+      onPreviewError?.(message);
+    },
+    [onPreviewError]
   );
 
-  const activeFlatTexture = flat
-    ? resolveFlatTextureFile(frame, flatFrames, flatTextureFile, textureFile)
-    : null;
+  const buildItemMesh = useCallback(
+    async (
+      onMannequin: boolean,
+      tintColor: string | null
+    ): Promise<{ root: THREE.Object3D; texture: THREE.Texture; javaJson: JavaModelJson | null; canvas: HTMLCanvasElement | null }> => {
+      if (flat) {
+        if (potionTintMode && tintColor) {
+          const assets =
+            drinkAssetsRef.current ?? (await loadDrinkAssetImages());
+          drinkAssetsRef.current = assets;
+          const canvas = composeTintedPotionCanvas(tintColor, assets);
+          if (!canvas) throw new Error("Invalid potion color");
+          const texture = textureFromCanvas(canvas);
+          const imageData = canvasImageData(canvas);
+          const root = buildExtrudedItemGroup(imageData, texture, {
+            center: !onMannequin,
+          });
+          return { root, texture, javaJson: null, canvas };
+        }
+        if (!activeFlatTexture) {
+          throw new Error("No texture for selected frame");
+        }
+        const loaded = await loadImageDataFromFile(activeFlatTexture);
+        const root = buildExtrudedItemGroup(loaded.imageData, loaded.texture, {
+          center: !onMannequin,
+        });
+        return {
+          root,
+          texture: loaded.texture,
+          javaJson: null,
+          canvas: null,
+        };
+      }
+      if (!activeModelFile || !textureFile) {
+        throw new Error("Missing model or texture");
+      }
+      const modelText = await activeModelFile.text();
+      const javaJson = parseJavaModelJson(modelText);
+      const loaded = await loadTextureFromFile(textureFile);
+      const root = buildJavaModelGroup(
+        javaJson,
+        loaded.texture,
+        loaded.width,
+        loaded.height,
+        { center: !onMannequin }
+      );
+      return { root, texture: loaded.texture, javaJson, canvas: null };
+    },
+    [
+      flat,
+      potionTintMode,
+      activeFlatTexture,
+      activeModelFile,
+      textureFile,
+    ]
+  );
 
-  const hasPreview = flat
-    ? Boolean(activeFlatTexture)
-    : Boolean(activeModelFile && textureFile);
+  const applyLayout = useCallback(
+    async (
+      runtime: ViewerRuntime,
+      content: ContentRefs,
+      resetOrbit: boolean
+    ): Promise<void> => {
+      const { scene, camera, controls } = runtime;
+      const onMannequin = isMannequinSlot(slot, gun);
+      const leftHand = isLeftHandSlot(slot);
 
+      if (content.floatingRoot) {
+        if (content.itemRoot?.parent) {
+          content.itemRoot.parent.remove(content.itemRoot);
+        }
+        scene.remove(content.floatingRoot);
+        disposeObject3D(content.floatingRoot);
+        content.floatingRoot = null;
+      }
+      if (content.steveRoot) {
+        if (content.itemRoot?.parent) {
+          content.itemRoot.parent.remove(content.itemRoot);
+        }
+        scene.remove(content.steveRoot);
+        disposeObject3D(content.steveRoot);
+        content.steveRoot = null;
+        steveLiveRef.current = null;
+      }
+      heldItemRef.current = null;
+
+      if (!content.itemRoot) return;
+
+      let focus = new THREE.Vector3(0, 0, 0);
+      let frameSize = 16;
+
+      if (onMannequin) {
+        if (playerSkinFile) {
+          const skin = await loadTextureFromFile(playerSkinFile);
+          content.steveTexture?.dispose();
+          content.steveTexture = skin.texture;
+        } else {
+          content.steveTexture?.dispose();
+          content.steveTexture = await loadSteveTexture();
+        }
+        const detected = inferArmModelFromTexture(content.steveTexture);
+        setArmModel(detected);
+        const steveRoot = createSteveMannequin(content.steveTexture, detected);
+
+        let pose: SteveArmPose;
+        let chargeProgress: number | undefined;
+        if (flat) {
+          const resolved = resolveFlatArmPose(kind, frame, leftHand);
+          pose = resolved.pose;
+          chargeProgress = resolved.chargeProgress;
+        } else if (kind === "shield" && slot !== "head") {
+          pose =
+            shieldMode === "blocking"
+              ? leftHand
+                ? "shield_block_left"
+                : "shield_block"
+              : leftHand
+                ? "hold_left"
+                : "hold_right";
+        } else if (isAimSlot(slot)) {
+          pose = leftHand ? "crossbow_hold_left" : "crossbow_hold";
+        } else if (slot === "head") {
+          pose = "idle";
+        } else {
+          pose = leftHand ? "hold_left" : "hold_right";
+        }
+        applySteveArmPose(steveRoot, pose, { chargeProgress });
+        setSteveOuterLayerVisible(steveRoot, showOuterLayerRef.current);
+        steveLiveRef.current = steveRoot;
+        content.steveRoot = steveRoot;
+
+        const displayTabName: DisplayTabName =
+          slot === "head" ? "head" : "thirdperson_righthand";
+
+        const held = new THREE.Group();
+        held.name = "heldItem";
+
+        if (flat) {
+          const tab = resolveFlatDisplayTab(
+            displayKind,
+            "thirdperson_righthand",
+            gripYRef.current
+          );
+          applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
+          heldItemRef.current = held;
+          heldMirrorLeftRef.current = leftHand;
+        } else if (
+          kind === "shield" &&
+          shieldMode === "blocking" &&
+          slot !== "head"
+        ) {
+          const tab = resolveShieldBlockingTab(
+            content.javaJson ?? { elements: [] },
+            "thirdperson_righthand"
+          );
+          applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
+        } else {
+          const tab = resolveDisplayTab(
+            content.javaJson ?? { elements: [] },
+            displayTabName,
+            kind
+          );
+          applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
+        }
+
+        held.add(content.itemRoot);
+        const socket =
+          slot === "head"
+            ? steveRoot.bones.itemSocketHead
+            : leftHand
+              ? steveRoot.bones.itemSocketLeft
+              : steveRoot.bones.itemSocketRight;
+        socket.add(held);
+        scene.add(steveRoot);
+
+        focus.set(0, 14, 0);
+        frameSize = 32;
+      } else {
+        const floating = new THREE.Group();
+        floating.name = "floatingItem";
+        floating.add(content.itemRoot);
+        content.floatingRoot = floating;
+        scene.add(floating);
+
+        const box = new THREE.Box3().setFromObject(content.itemRoot);
+        const size = box.getSize(new THREE.Vector3());
+        focus = box.getCenter(new THREE.Vector3());
+        frameSize = Math.max(size.x, size.y, size.z, 1);
+      }
+
+      if (resetOrbit || !orbitInitializedRef.current) {
+        setDefaultOrbit(camera, controls, focus, frameSize);
+        orbitInitializedRef.current = true;
+      } else if (orbitStateRef.current) {
+        restoreOrbit(camera, controls, orbitStateRef.current);
+      }
+    },
+    [slot, gun, flat, kind, frame, shieldMode, displayKind, playerSkinFile]
+  );
+
+  // Viewer lifecycle: renderer + camera + controls persist until pipeline changes.
   useEffect(() => {
     if (!hasPreview) {
       setStatus("idle");
-      setError(null);
+      reportError(null);
+      orbitInitializedRef.current = false;
+      orbitStateRef.current = null;
       return;
     }
 
@@ -389,267 +745,188 @@ export default function ModelPreview({
     if (!host) return;
 
     let cancelled = false;
-    let renderer: THREE.WebGLRenderer | null = null;
-    let controls: OrbitControls | null = null;
-    let raf = 0;
-    let modelRoot: THREE.Object3D | null = null;
-    let steveRoot: SteveMannequin | null = null;
-    let itemTexture: THREE.Texture | null = null;
-    let steveTexture: THREE.Texture | null = null;
-    let removeResize: (() => void) | null = null;
+    setStatus("loading");
+    reportError(null);
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f1c16);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
-    setStatus("loading");
-    setError(null);
-    host.replaceChildren();
+    const widthPx = host.clientWidth || 320;
+    const heightPx = 240;
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(widthPx, heightPx, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    host.replaceChildren(renderer.domElement);
+    renderer.domElement.className = "h-full w-full touch-none";
+    renderer.domElement.style.display = "block";
 
-    (async () => {
-      try {
-        const onMannequin = isMannequinSlot(slot, gun);
-        let group: THREE.Object3D;
+    const camera = new THREE.PerspectiveCamera(35, widthPx / heightPx, 0.1, 500);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
 
-        let javaJson: ReturnType<typeof parseJavaModelJson> | null = null;
+    const onResize = () => {
+      if (!host) return;
+      const w = host.clientWidth || 320;
+      const h = 240;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    };
+    window.addEventListener("resize", onResize);
 
-        if (flat) {
-          if (!activeFlatTexture) {
-            throw new Error("No texture for selected frame");
-          }
-          const loaded = await loadImageDataFromFile(activeFlatTexture);
-          itemTexture = loaded.texture;
-          if (cancelled) {
-            itemTexture.dispose();
-            itemTexture = null;
-            return;
-          }
-          group = buildExtrudedItemGroup(loaded.imageData, itemTexture, {
-            center: !onMannequin,
-          });
-        } else {
-          if (!activeModelFile || !textureFile) {
-            throw new Error("Missing model or texture");
-          }
-          const modelText = await activeModelFile.text();
-          if (cancelled) return;
-          javaJson = parseJavaModelJson(modelText);
-          const loaded = await loadTextureFromFile(textureFile);
-          itemTexture = loaded.texture;
-          if (cancelled) {
-            itemTexture.dispose();
-            itemTexture = null;
-            return;
-          }
-          group = buildJavaModelGroup(
-            javaJson,
-            itemTexture,
-            loaded.width,
-            loaded.height,
-            { center: !onMannequin }
-          );
-        }
+    const runtime: ViewerRuntime = {
+      renderer,
+      camera,
+      controls,
+      scene,
+      raf: 0,
+      removeResize: () => window.removeEventListener("resize", onResize),
+    };
+    runtimeRef.current = runtime;
 
-        if (cancelled) {
-          disposeObject3D(group);
-          return;
-        }
-        modelRoot = group;
-
-        const widthPx = host.clientWidth || 320;
-        const heightPx = 240;
-
-        renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.setSize(widthPx, heightPx, false);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        host.replaceChildren(renderer.domElement);
-        renderer.domElement.className = "h-full w-full touch-none";
-        renderer.domElement.style.display = "block";
-
-        const camera = new THREE.PerspectiveCamera(
-          35,
-          widthPx / heightPx,
-          0.1,
-          500
-        );
-
-        let focus = new THREE.Vector3(0, 0, 0);
-        let frameSize = 16;
-
-        if (onMannequin) {
-          if (playerSkinFile) {
-            const skin = await loadTextureFromFile(playerSkinFile);
-            steveTexture = skin.texture;
-          } else {
-            steveTexture = await loadSteveTexture();
-          }
-          if (cancelled) {
-            steveTexture?.dispose();
-            steveTexture = null;
-            disposeObject3D(group);
-            return;
-          }
-          const detected = inferArmModelFromTexture(steveTexture);
-          if (!cancelled) setArmModel(detected);
-          steveRoot = createSteveMannequin(steveTexture, detected);
-
-          const leftHand = isLeftHandSlot(slot);
-          let pose: SteveArmPose;
-          let chargeProgress: number | undefined;
-          if (flat) {
-            const resolved = resolveFlatArmPose(kind, frame, leftHand);
-            pose = resolved.pose;
-            chargeProgress = resolved.chargeProgress;
-          } else if (kind === "shield" && slot !== "head") {
-            if (shieldMode === "blocking") {
-              pose = leftHand ? "shield_block_left" : "shield_block";
-            } else {
-              pose = leftHand ? "hold_left" : "hold_right";
-            }
-          } else if (isAimSlot(slot)) {
-            pose = leftHand ? "crossbow_hold_left" : "crossbow_hold";
-          } else if (slot === "head") {
-            pose = "idle";
-          } else {
-            pose = leftHand ? "hold_left" : "hold_right";
-          }
-          applySteveArmPose(steveRoot, pose, { chargeProgress });
-          setSteveOuterLayerVisible(steveRoot, showOuterLayerRef.current);
-          steveLiveRef.current = steveRoot;
-
-          const displayTabName: DisplayTabName =
-            slot === "head" ? "head" : "thirdperson_righthand";
-
-          const held = new THREE.Group();
-          held.name = "heldItem";
-
-          if (flat) {
-            const tab = resolveFlatDisplayTab(
-              displayKind,
-              "thirdperson_righthand",
-              gripYRef.current
-            );
-            applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
-            heldItemRef.current = held;
-            heldMirrorLeftRef.current = leftHand;
-          } else if (kind === "shield" && shieldMode === "blocking" && slot !== "head") {
-            // Idle + round blocking Δ (shared constants / pack_models); righthand + mirror.
-            const tab = resolveShieldBlockingTab(
-              javaJson ?? { elements: [] },
-              "thirdperson_righthand"
-            );
-            applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
-            heldItemRef.current = null;
-          } else {
-            const tab = resolveDisplayTab(
-              javaJson ?? { elements: [] },
-              displayTabName,
-              kind
-            );
-            applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
-            heldItemRef.current = null;
-          }
-          held.add(group);
-
-          const socket =
-            slot === "head"
-              ? steveRoot.bones.itemSocketHead
-              : leftHand
-                ? steveRoot.bones.itemSocketLeft
-                : steveRoot.bones.itemSocketRight;
-          socket.add(held);
-          scene.add(steveRoot);
-
-          focus.set(0, 14, 0);
-          frameSize = 32;
-        } else {
-          heldItemRef.current = null;
-          scene.add(group);
-          const box = new THREE.Box3().setFromObject(group);
-          const size = box.getSize(new THREE.Vector3());
-          focus = box.getCenter(new THREE.Vector3());
-          frameSize = Math.max(size.x, size.y, size.z, 1);
-        }
-
-        camera.position.set(
-          focus.x + frameSize * 1.4,
-          focus.y + frameSize * 0.55,
-          focus.z + frameSize * 1.6
-        );
-        camera.lookAt(focus);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-
-        controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.target.copy(focus);
-        controls.update();
-
-        const onResize = () => {
-          if (!renderer || !host) return;
-          const w = host.clientWidth || 320;
-          const h = 240;
-          camera.aspect = w / h;
-          camera.updateProjectionMatrix();
-          renderer.setSize(w, h, false);
-        };
-        window.addEventListener("resize", onResize);
-        removeResize = () => window.removeEventListener("resize", onResize);
-
-        const tick = () => {
-          if (cancelled || !renderer) return;
-          raf = requestAnimationFrame(tick);
-          controls?.update();
-          renderer.render(scene, camera);
-        };
-        tick();
-
-        if (!cancelled) setStatus("ready");
-      } catch (err) {
-        if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : "Could not build preview";
-        setError(message);
-        setStatus("error");
-        host.replaceChildren();
-      }
-    })();
+    const tick = () => {
+      if (cancelled) return;
+      runtime.raf = requestAnimationFrame(tick);
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    tick();
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
-      removeResize?.();
-      controls?.dispose();
-      steveLiveRef.current = null;
+      cancelAnimationFrame(runtime.raf);
+      runtime.removeResize();
+      runtime.controls.dispose();
+      runtime.renderer.dispose();
+      runtimeRef.current = null;
+      disposeContent(contentRef.current);
+      contentRef.current = {
+        itemRoot: null,
+        itemTexture: null,
+        javaJson: null,
+        steveRoot: null,
+        steveTexture: null,
+        potionCanvas: null,
+        floatingRoot: null,
+      };
       heldItemRef.current = null;
-      if (steveRoot) {
-        disposeObject3D(steveRoot);
-        steveRoot = null;
-        modelRoot = null;
-      } else if (modelRoot) {
-        disposeObject3D(modelRoot);
-        modelRoot = null;
-      }
-      itemTexture = null;
-      steveTexture = null;
-      renderer?.dispose();
+      steveLiveRef.current = null;
+      orbitInitializedRef.current = false;
+      orbitStateRef.current = null;
+      drinkAssetsRef.current = null;
       host.replaceChildren();
     };
-  }, [
-    hasPreview,
-    activeModelFile,
-    activeFlatTexture,
-    textureFile,
-    slot,
-    frame,
-    shieldMode,
-    kind,
-    flatDisplayPreset,
-    displayKind,
-    playerSkinFile,
-    gun,
-    flat,
-  ]);
+  }, [hasPreview, pipelineKey, reportError]);
+
+  // Content rebuild: new files / frame / initial potion mesh (not color-only).
+  useEffect(() => {
+    if (!hasPreview) return;
+    const runtime = runtimeRef.current;
+    if (!runtime) return;
+
+    const gen = ++syncGenRef.current;
+
+    setStatus("loading");
+    reportError(null);
+
+    void (async () => {
+      try {
+        const built = await buildItemMesh(
+          meshOnMannequin,
+          potionTintColor ?? null
+        );
+        if (gen !== syncGenRef.current) {
+          disposeObject3D(built.root);
+          built.texture.dispose();
+          return;
+        }
+
+        disposeContent(contentRef.current);
+        contentRef.current = {
+          itemRoot: built.root,
+          itemTexture: built.texture,
+          javaJson: built.javaJson,
+          steveRoot: null,
+          steveTexture: null,
+          potionCanvas: built.canvas,
+          floatingRoot: null,
+        };
+        setContentVersion((v) => v + 1);
+        reportError(null);
+      } catch (err) {
+        if (gen !== syncGenRef.current) return;
+        const message =
+          err instanceof Error ? err.message : "Could not build preview";
+        reportError(message);
+        setStatus("error");
+      }
+    })();
+  }, [hasPreview, contentSignature, buildItemMesh, reportError, potionTintColor, meshOnMannequin]);
+
+  // Layout updates: slot / frame pose / shield / skin — preserve orbit.
+  useEffect(() => {
+    if (!hasPreview) return;
+    const runtime = runtimeRef.current;
+    const content = contentRef.current;
+    if (!runtime || !content.itemRoot) return;
+
+    if (orbitInitializedRef.current) {
+      orbitStateRef.current = saveOrbit(runtime.camera, runtime.controls);
+    }
+
+    void (async () => {
+      try {
+        const resetOrbit = !orbitInitializedRef.current;
+        await applyLayout(runtime, content, resetOrbit);
+        setStatus("ready");
+        reportError(null);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not update preview";
+        reportError(message);
+        setStatus("error");
+      }
+    })();
+  }, [hasPreview, layoutSignature, contentVersion, applyLayout, reportError]);
+
+  // Potion tint: update texture in place without rebuilding geometry.
+  useEffect(() => {
+    if (!potionTintMode || !potionTintColor) return;
+    const content = contentRef.current;
+    if (!content.itemRoot || !content.itemTexture) return;
+
+    void (async () => {
+      try {
+        const assets =
+          drinkAssetsRef.current ?? (await loadDrinkAssetImages());
+        drinkAssetsRef.current = assets;
+        const canvas = composeTintedPotionCanvas(potionTintColor, assets);
+        if (!canvas || !content.itemTexture || !content.itemRoot) return;
+        content.potionCanvas = canvas;
+        content.itemTexture.image = canvas;
+        content.itemTexture.needsUpdate = true;
+        updateMeshTexture(content.itemRoot, content.itemTexture);
+      } catch {
+        reportError("Could not update potion color");
+      }
+    })();
+  }, [potionTintColor, potionTintMode, contentVersion, reportError]);
+
+  // Grip Y for large_handheld — transform only, no orbit reset.
+  useEffect(() => {
+    const held = heldItemRef.current;
+    if (!held || !flat || kind !== "large_handheld") return;
+    const leftHand = heldMirrorLeftRef.current;
+    const tab = resolveFlatDisplayTab(
+      displayKind,
+      "thirdperson_righthand",
+      gripY
+    );
+    applyDisplayToObject(held, tab, { mirrorLeft: leftHand });
+  }, [gripY, flat, kind, displayKind, slot]);
 
   if (!hasPreview) {
     return (

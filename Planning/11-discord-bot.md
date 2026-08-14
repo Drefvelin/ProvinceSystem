@@ -104,8 +104,8 @@ Live production website can stay unchanged during this work.
 - [x] Skins cog: pending intake + **composite review_sheet.png** in `#bot-feed` + approve/deny + message update  
 - [x] Staff API: pending list + staff file download ([step-4/01](./batches/step-4/01-staff-pending-api.md))  
 - [x] `/linkdiscord` + submitted/approve/deny DMs ([step-5](./batches/step-5/00-index.md))  
-- [ ] Ban: add role on ban notify (later)  
-- [ ] Unban command: remove role (later)  
+- [x] Ban: add role on ban notify ([step-17.07](./batches/step-17/07-warn-and-ban-mirror.md))  
+- [x] Unban: remove role on unban notify  
 - [ ] Document Discord permission setup for banned role  
 - [ ] Keep status cog as-is unless unwanted  
 
