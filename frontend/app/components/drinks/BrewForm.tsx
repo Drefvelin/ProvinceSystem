@@ -658,7 +658,8 @@ export default function BrewForm({ session }: Props) {
           <div className="space-y-2">
             <span className="text-xs text-[var(--tfmc-mist)]">Preview</span>
             <ModelPreview
-              kind="generated"
+              kind="handheld"
+              flatDisplayPreset="generated"
               flatTextureFile={previewFile}
               textureFile={previewFile}
             />

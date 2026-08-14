@@ -15,6 +15,7 @@ import {
 } from "../../../lib/skins/extrudeItem";
 import {
   resolveFlatDisplayTab,
+  type FlatDisplayKind,
 } from "../../../lib/skins/flatItemDisplay";
 import { resolveShieldBlockingTab } from "../../../lib/skins/shieldBlockingDisplay";
 import {
@@ -71,6 +72,8 @@ type Props = {
   textureFile: File | null;
   gunModels?: GunModels;
   kind?: DisplayKind;
+  /** Flat item display tab preset (e.g. generated for potions). Defaults to kind. */
+  flatDisplayPreset?: FlatDisplayKind;
   /** Standby / single PNG for flat kinds (optional if flatFrames.texture set). */
   flatTextureFile?: File | null;
   flatFrames?: FlatFrames;
@@ -102,6 +105,13 @@ function isFlatKind(kind?: DisplayKind): boolean {
     kind === "large_bow" ||
     kind === "crossbow"
   );
+}
+
+function flatDisplayKind(
+  kind?: DisplayKind,
+  preset?: FlatDisplayKind
+): FlatDisplayKind {
+  return preset ?? kind ?? "handheld";
 }
 
 function isMultiFrameKind(kind?: DisplayKind): boolean {
@@ -272,6 +282,7 @@ export default function ModelPreview({
   textureFile,
   gunModels,
   kind,
+  flatDisplayPreset,
   flatTextureFile = null,
   flatFrames,
   gripY = null,
@@ -279,6 +290,7 @@ export default function ModelPreview({
 }: Props) {
   const gun = isGunKind(kind);
   const flat = isFlatKind(kind);
+  const displayKind = flatDisplayKind(kind, flatDisplayPreset);
   const hostRef = useRef<HTMLDivElement>(null);
   const steveLiveRef = useRef<SteveMannequin | null>(null);
   const heldItemRef = useRef<THREE.Object3D | null>(null);
@@ -512,7 +524,7 @@ export default function ModelPreview({
 
           if (flat) {
             const tab = resolveFlatDisplayTab(
-              kind ?? "handheld",
+              displayKind,
               "thirdperson_righthand",
               gripYRef.current
             );
@@ -632,13 +644,21 @@ export default function ModelPreview({
     frame,
     shieldMode,
     kind,
+    flatDisplayPreset,
+    displayKind,
     playerSkinFile,
     gun,
     flat,
   ]);
 
   if (!hasPreview) {
-    return null;
+    return (
+      <div
+        className={`rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[var(--tfmc-forest-deep)] px-4 py-8 text-center text-sm text-[var(--tfmc-mist)] ${className}`}
+      >
+        No preview texture loaded.
+      </div>
+    );
   }
 
   const mannequinPreview = isMannequinSlot(slot, gun);

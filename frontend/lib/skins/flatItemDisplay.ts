@@ -12,7 +12,22 @@ type HandTabs = Record<
 >;
 
 const HANDHELD_TP = constants.preview.handheld_tp as unknown as HandTabs;
-const GENERATED_TP = constants.preview.generated_tp as unknown as HandTabs;
+const GENERATED_TP_FALLBACK: HandTabs = {
+  thirdperson_righthand: {
+    rotation: [0, 0, 0],
+    translation: [0, 3, 1],
+    scale: [0.55, 0.55, 0.55],
+  },
+  thirdperson_lefthand: {
+    rotation: [0, 0, 0],
+    translation: [0, 3, 1],
+    scale: [0.55, 0.55, 0.55],
+  },
+};
+
+const GENERATED_TP =
+  (constants.preview as { generated_tp?: HandTabs }).generated_tp ??
+  GENERATED_TP_FALLBACK;
 const BOW_TP = constants.preview.bow_tp as unknown as HandTabs;
 const CROSSBOW_TP = constants.preview.crossbow_tp as unknown as HandTabs;
 const LARGE_BOW_TP = constants.large_bow.display as unknown as HandTabs;
@@ -66,7 +81,9 @@ export function resolveFlatDisplayTab(
     return { ...gripTp(gripY ?? GRIP_Y_DEFAULT)[tabName] };
   }
   if (kind === "generated") {
-    return { ...GENERATED_TP[tabName] };
+    const tab = GENERATED_TP[tabName];
+    if (tab) return { ...tab };
+    return { ...GENERATED_TP_FALLBACK[tabName] };
   }
   if (kind === "large_bow") {
     return { ...LARGE_BOW_TP[tabName] };
