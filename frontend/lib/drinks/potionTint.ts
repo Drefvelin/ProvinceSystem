@@ -26,17 +26,24 @@ export function drinkAssetUrl(filename: string): string {
   return `${getApiBase()}/drinks/assets/${filename}`;
 }
 
+/** API assets (DrinkBuilder sync); fall back to bundled /public/drinks/assets for local dev. */
+async function loadDrinkAsset(filename: string): Promise<HTMLImageElement> {
+  try {
+    return await loadImage(drinkAssetUrl(filename));
+  } catch {
+    return loadImage(`/drinks/assets/${filename}`);
+  }
+}
+
 export async function composeTintedPotionFile(
-  color: string,
-  overlayUrl = drinkAssetUrl("potion_overlay.png"),
-  bottleUrl = drinkAssetUrl("glass_bottle.png")
+  color: string
 ): Promise<File | null> {
   const rgb = parseHex(color);
   if (!rgb) return null;
   try {
     const [overlayImg, bottleImg] = await Promise.all([
-      loadImage(overlayUrl),
-      loadImage(bottleUrl),
+      loadDrinkAsset("potion_overlay.png"),
+      loadDrinkAsset("glass_bottle.png"),
     ]);
     const w = Math.max(overlayImg.naturalWidth || 16, bottleImg.naturalWidth || 16);
     const h = Math.max(overlayImg.naturalHeight || 16, bottleImg.naturalHeight || 16);

@@ -89,6 +89,7 @@ export default function BrewForm({ session }: Props) {
   const [textureFile, setTextureFile] = useState<File | null>(null);
   const [existingTextureId, setExistingTextureId] = useState("");
   const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -164,14 +165,27 @@ export default function BrewForm({ session }: Props) {
     async function updatePreview() {
       if (appearance === "color") {
         const file = await composeTintedPotionFile(color);
-        if (!cancelled) setPreviewFile(file);
+        if (!cancelled) {
+          setPreviewFile(file);
+          setPreviewError(
+            file
+              ? null
+              : "Could not build potion preview. Drink assets may be missing on the server."
+          );
+        }
         return;
       }
       if (appearance === "upload" && textureFile) {
-        if (!cancelled) setPreviewFile(textureFile);
+        if (!cancelled) {
+          setPreviewFile(textureFile);
+          setPreviewError(null);
+        }
         return;
       }
-      if (!cancelled) setPreviewFile(null);
+      if (!cancelled) {
+        setPreviewFile(null);
+        setPreviewError(null);
+      }
     }
     void updatePreview();
     return () => {
@@ -664,6 +678,8 @@ export default function BrewForm({ session }: Props) {
               textureFile={previewFile}
             />
           </div>
+        ) : previewError ? (
+          <p className="text-sm text-[var(--tfmc-mist)]">{previewError}</p>
         ) : null}
       </section>
 
