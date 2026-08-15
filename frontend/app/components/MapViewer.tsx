@@ -3,10 +3,16 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
+import type { MapPickViewport } from "../hooks/useMapCoords";
 import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useGuildCache } from "../hooks/useGuildCache";
-import { computeVisibleNationLabels, DEFAULT_MAP_ZOOM } from "../lib/mapLabels";
+import { useTitleLayerData } from "../hooks/useTitleLayerData";
+import {
+  computeRegionLabelGeometry,
+  filterRegionLabelsForMapObjects,
+  LABEL_MAP_MODES,
+} from "../lib/mapLabels";
 import {
   applyDrillStack,
   drillStackNames,
@@ -14,6 +20,9 @@ import {
   getNextDrillTarget,
   type DrillLayer,
 } from "./map/drillUtils";
+import MapAccessGate, {
+  type MapAccessGateReason,
+} from "./map/MapAccessGate";
 import MapCanvas from "./map/MapCanvas";
 import MapPageLayout from "./map/MapPageLayout";
 import MapToolbar from "./map/MapToolbar";
@@ -30,13 +39,49 @@ import type {
   MapMode,
   RegionInfo,
 } from "./map/types";
-import { MAP_DISPLAY_NAMES, apiBase } from "./map/types";
+import { MAP_DISPLAY_NAMES } from "./map/types";
+import { getSession, isSessionValid } from "@/lib/characters/session";
+import {
+  MapAccessError,
+  fetchMapBlobUrl,
+  fetchMapJson,
+  mapApiUrl,
+  mapRequiresAuth,
+  revokeMapBlobUrl,
+  staffMapAccessReason,
+} from "@/lib/map/api";
 
 type MapViewerProps = {
   mapId: MapId;
 };
 
+function useCharacterSessionToken(): string | null {
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const syncSession = () => {
+      const session = getSession();
+      setSessionToken(
+        isSessionValid(session) ? session?.session_token ?? null : null
+      );
+    };
+
+    syncSession();
+    window.addEventListener("storage", syncSession);
+    return () => window.removeEventListener("storage", syncSession);
+  }, []);
+
+  return sessionToken;
+}
+
 const MapViewer = ({ mapId }: MapViewerProps) => {
+  const sessionToken = useCharacterSessionToken();
+  const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
+  const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(
+    null
+  );
+  const [accessChecked, setAccessChecked] = useState(mapId === "main");
+
   const [mapType, setMapType] = useState<MapMode>("nation");
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
     null
@@ -54,36 +99,108 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportCoordsRef = useRef<MapPickViewport | null>(null);
   const lastProvinceIdRef = useRef<number | null>(null);
 
-  const guildNameCacheRef = mapId === "dev" ? useGuildCache(mapId) : null;
-
   const mapDisplayName = MAP_DISPLAY_NAMES[mapId];
+
+  useEffect(() => {
+    if (mapId !== "dev") {
+      setGateReason(null);
+      setAccessChecked(true);
+      return;
+    }
+
+    let cancelled = false;
+    setAccessChecked(false);
+    setGateReason(null);
+
+    void fetchMapJson(`/${mapId}/data/nation`, { sessionToken: authToken })
+      .then(() => {
+        if (!cancelled) setGateReason(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof MapAccessError && err.status === 403) {
+          setGateReason(staffMapAccessReason(err));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAccessChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapId, authToken]);
+
+  const guildNameCacheRef = useGuildCache(mapId, authToken);
 
   const {
     mapObjects,
     loadData,
+    resetDrillVisibility,
     resetMapObjects,
     getHoverRegion,
     drillDownRegion,
   } = useMapEngine();
-  const { regionData, loading } = useMapModeData({
+  const { regionData, loading, accessError } = useMapModeData({
     mapId,
     mapType,
     loadData,
+    sessionToken: authToken,
   });
-  const { neighbors, centroids, ready: geometryReady } = useMapGeometry(mapId);
+  const { layers: titleLayers } = useTitleLayerData(
+    mapId,
+    mapType,
+    regionData,
+    authToken
+  );
+  const {
+    neighbors,
+    labelNeighbors,
+    centroids,
+    labelGrid,
+    ready: geometryReady,
+  } = useMapGeometry(mapId, authToken);
 
-  const nationLabels = useMemo(() => {
-    if (mapId !== "main" || mapType !== "nation") return [];
-    if (!regionData || !neighbors || !centroids) return [];
-    return computeVisibleNationLabels(
+  const labelGeometry = useMemo(() => {
+    if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;
+    if (!regionData || !neighbors || !centroids) return null;
+    const needsTitleLayers =
+      mapType === "duchy" ||
+      mapType === "kingdom" ||
+      mapType === "empire" ||
+      mapType === "trade";
+    if (needsTitleLayers && !titleLayers) {
+      return null;
+    }
+    return computeRegionLabelGeometry(
+      mapType,
       regionData,
+      titleLayers,
       neighbors,
       centroids,
-      mapObjects
+      {
+        grid: labelGrid ?? undefined,
+        labelNeighbors: labelNeighbors ?? neighbors,
+      }
     );
-  }, [mapId, mapType, regionData, neighbors, centroids, mapObjects]);
+  }, [
+    mapId,
+    mapType,
+    regionData,
+    titleLayers,
+    neighbors,
+    labelNeighbors,
+    centroids,
+    labelGrid,
+  ]);
+
+  const regionLabels = useMemo(
+    () => filterRegionLabelsForMapObjects(labelGeometry, mapType, mapObjects),
+    [labelGeometry, mapType, mapObjects]
+  );
 
   useEffect(() => {
     if (!pendingDrillId || !regionData) return;
@@ -104,7 +221,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   }, [pendingDrillId, regionData, drillDownRegion]);
 
   useEffect(() => {
-    if (loading) return;
+    if (!accessChecked || gateReason || loading || (mapId === "main" && !geometryReady)) {
+      return;
+    }
+
+    let blobUrl: string | null = null;
+    let cancelled = false;
 
     const drawImage = async () => {
       const canvas = canvasRef.current;
@@ -112,14 +234,35 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      const path = `/${mapId}/mapdata/${mapType}`;
+      let src = mapApiUrl(path);
+      if (mapRequiresAuth(mapId) && authToken) {
+        try {
+          src = await fetchMapBlobUrl(path, authToken);
+          blobUrl = src;
+        } catch (err) {
+          console.error("Failed to load pick map image:", err);
+          return;
+        }
+      }
+
+      if (cancelled) {
+        revokeMapBlobUrl(blobUrl);
+        return;
+      }
+
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = `${apiBase()}/${mapId}/mapdata/${mapType}`;
+      img.src = src;
       img.onload = () => {
+        if (cancelled) return;
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
+      };
+      img.onerror = () => {
+        console.error("Failed to load pick map image:", src);
       };
     };
 
@@ -129,16 +272,31 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setRegionInfo(null);
     setModalOpen(false);
     setModalRegionInfo(null);
-    drawImage();
-  }, [mapId, mapType, loading]);
+    void drawImage();
 
-  const { onMouseMove } = useMapHover({
+    return () => {
+      cancelled = true;
+      revokeMapBlobUrl(blobUrl);
+    };
+  }, [
+    mapId,
+    mapType,
+    loading,
+    geometryReady,
+    accessChecked,
+    gateReason,
+    authToken,
+  ]);
+
+  const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable } = useMapHover({
     mapId,
     mapType,
     loading,
     regionData,
     canvasRef,
+    viewportCoordsRef,
     guildNameCacheRef,
+    sessionToken: authToken,
     setCursorTooltip,
     setHoveredOverlay,
     setRegionInfo,
@@ -155,17 +313,20 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
   function handleResetDrill() {
     setDrillStack([]);
-    if (regionData) loadData(regionData);
+    if (regionData) resetDrillVisibility(regionData);
   }
 
   function handleDrillToLayer(index: number) {
     if (!regionData || index < 0 || index >= drillStack.length) return;
 
     const nextStack = drillStack.slice(0, index + 1);
-    applyDrillStack(nextStack, regionData, loadData, drillDownRegion);
+    applyDrillStack(
+      nextStack,
+      regionData,
+      resetDrillVisibility,
+      drillDownRegion
+    );
     setDrillStack(nextStack);
-    setHoveredOverlay(null);
-    setRegionInfo(null);
   }
 
   const handleDrill = () => {
@@ -189,7 +350,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
     if (!isInsideStack) {
       setDrillStack([]);
-      loadData(regionData);
+      resetDrillVisibility(regionData);
       setPendingDrillId(nextTargetId);
       return;
     }
@@ -208,7 +369,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     );
   };
 
-  const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleMapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
     if (!selectedRegionId || !regionData) return;
 
     if (event.ctrlKey || event.metaKey) {
@@ -232,11 +394,31 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   };
 
   const handleMouseLeave = () => {
+    onHoverLeave();
     setCursorTooltip(null);
     setHoveredOverlay(null);
     setRegionInfo(null);
     lastProvinceIdRef.current = null;
   };
+
+  if (!accessChecked) {
+    return (
+      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
+          Loading map…
+        </p>
+      </div>
+    );
+  }
+
+  if (gateReason || accessError) {
+    return (
+      <MapAccessGate
+        reason={gateReason ?? accessError ?? "unknown"}
+        mapDisplayName={mapDisplayName}
+      />
+    );
+  }
 
   if (loading || (mapId === "main" && !geometryReady)) {
     return (
@@ -273,21 +455,25 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
             mapType={mapType}
             regionInfo={regionInfo}
             regionData={regionData}
+            sessionToken={authToken}
           />
         }
       >
         <MapCanvas
           mapId={mapId}
           mapType={mapType}
+          sessionToken={authToken}
           canvasRef={canvasRef}
+          viewportCoordsRef={viewportCoordsRef}
           mapObjects={mapObjects}
           hoveredOverlay={hoveredOverlay}
           cursorTooltip={cursorTooltip}
-          labels={nationLabels}
-          mapZoom={DEFAULT_MAP_ZOOM}
+          labels={regionLabels}
+          hoveredNationId={selectedRegionId}
           onMouseMove={onMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleMapClick}
+          isHoveringClickable={isHoveringClickable}
         />
       </MapPageLayout>
 
@@ -297,6 +483,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
         mapType={mapType}
         regionInfo={modalRegionInfo}
         regionData={regionData}
+        sessionToken={authToken}
         onClose={() => setModalOpen(false)}
       />
     </>

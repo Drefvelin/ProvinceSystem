@@ -86,10 +86,10 @@ Layout function (frontend): `computeNationLabels(regionData, neighbors, centroid
 | Mode | Labels v1 |
 |------|-----------|
 | `nation` | **Yes** — `/map/main` default |
-| `kingdom`, `duchy`, `empire`, `county`, `trade` | **No** — hide label layer |
+| `kingdom`, `duchy`, `empire`, `county`, `trade` | **No** in step 40 — see [step 47](../step-47/00-index.md) |
 | `terrain`, `fertility`, `prosperity` | **No** |
 
-Rationale: only `nation.json` (and `county.json`) carry `provinces[]` today; kingdom/duchy entries use title trees without province lists ([`kingdom.json`](../../../backend/src/defines/main/kingdom.json)). County labels deferred until compile rollup or explicit scope expansion.
+Rationale: only `nation.json` (and `county.json`) carry `provinces[]` in step 40; kingdom/duchy entries use title trees without province lists ([`kingdom.json`](../../../backend/src/defines/main/kingdom.json)). Title/trade labels and Calavorn province modes are [step 47](../step-47/00-index.md).
 
 ## Locked — zoom behaviour
 
@@ -138,7 +138,7 @@ Label layout recomputes from that day's `nation` state + static geometry. Update
 
 - Backend PNG / Cairo / Skia label rasterization
 - Curved `textPath` splines (v1.1)
-- Labels on kingdom / duchy / empire / county / trade modes
+- Labels on kingdom / duchy / empire / county / trade modes → shipped in [step 47](../step-47/00-index.md) (**done**)
 - Cross-nation label collision priority (tier overlap) — defer until multi-mode labels
 - Pan/zoom implementation itself
 - Pick layer / `regiongen` / `fullregen` hook changes for labels

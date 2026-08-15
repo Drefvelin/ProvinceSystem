@@ -25,8 +25,8 @@ See [01-planning-lock](./01-planning-lock.md). Highlights:
 |-------|--------|
 | Renderer | **Frontend SVG** (`LabelLayer`) — not Cairo/PNG |
 | Components | One label per connected province component per nation |
-| Placement | Pixel farthest pair per blob → segment; `fontSize` scaled from `segmentPx` (40.08) |
-| Data | `province_neighbors.json` + `province_centroids.json` + `nation.json` |
+| Placement | Inset corridor search on label grid; `fontSize` scaled from `segmentPx` (40.08–40.09) |
+| Data | `province_neighbors.json` + `province_centroids.json` + `province_label_grid` + `nation.json` |
 | Map mode | **Nation only** on `/map/main` v1 |
 | Zoom | Font scales with blob span (clamped); hide when `currentZoom > LABEL_MAX_ZOOM` |
 | Pick layer | Unchanged — labels never on pick canvas |
@@ -41,11 +41,12 @@ See [01-planning-lock](./01-planning-lock.md). Highlights:
 6. **[06-docs-verify](./06-docs-verify.md)** — Hub close-out + STAGING Step 40 **done**
 7. **[07-label-visibility](./07-label-visibility.md)** — Overlay visibility, drill scopes, z-order **done**
 8. **[08-pixel-diameter](./08-pixel-diameter.md)** — Euclidean farthest pair + scaled font **done**
+9. **[09-inset-corridors](./09-inset-corridors.md)** — Text corridor inset from blob border **done**
 
 ## Checkpoint
 
 ```text
-defines/main/province_neighbors.json + province_centroids.json exist
+defines/main/province_neighbors.json + province_centroids.json + province_label_grid exist
 /map/main nation mode shows names along territory long axis
 exclaves get separate labels; tiny nations skipped
 labels hidden when mapType !== "nation"
@@ -58,7 +59,7 @@ chronicle (step 45) can reuse same LabelLayer + state JSON
 
 ## Status
 
-**Step 40 done (40.01–40.08).**
+**Step 40 done (40.01–40.09).**
 
 ## Next
 

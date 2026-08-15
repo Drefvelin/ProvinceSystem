@@ -1,8 +1,8 @@
 # 16 — Map platform
 
-**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–40 code done**; **step-41 next**. Steps 42–46 planned.  
+**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–41 + 47 + 48 + 49 code done**. **Step 42 next**. Steps 43–46 planned.  
 **Repos:** `ProvinceSystem` (FE + BE mapgen) · `Workspace/simplefactions` (export + upload) · `Workspace/tfmcweb` (staff map gate)  
-**Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-46](./batches/step-46/00-index.md)  
+**Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-49](./batches/step-49/00-index.md)  
 **Technical refs:** [09-map-system.md](./09-map-system.md) · [04-map-performance.md](./04-map-performance.md)  
 **Related:** flows [12](./12-end-to-end-flows.md) · TFMCWeb [13](./13-tfmcweb.md)
 
@@ -18,8 +18,11 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | 2 | Xaero world map → colour base + optional ink parchment | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
 | 3 | Fantasy muted nation overlays (faithful-hue parchment washes) | [38](./batches/step-38/00-index.md) · [39](./batches/step-39/00-index.md) — **done** |
 | 4 | Nation names on continuous territory (frontend SVG, graph diameter) | [40](./batches/step-40/00-index.md) — **done** |
+| 4b | Title + trade labels; Calavorn terrain/fertility/trade modes | [47](./batches/step-47/00-index.md) — **done** |
+| 4c | Label neighbor graph (water bridges ≤100px; labels only) | [48](./batches/step-48/00-index.md) — **done** |
+| 4d | Pan and zoom (wheel + middle-mouse pan, clamped bounds) | [49](./batches/step-49/00-index.md) — **done (code)** |
 | 5 | Visual parity with site hub / shell | [37](./batches/step-37/00-index.md) |
-| 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) |
+| 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) — **done** |
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
 | 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) |
 | 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) |
@@ -84,7 +87,7 @@ Pick layer must stay separate from display (see [`mapgen.py`](../backend/src/scr
 | Grid alignment | `map.png` and `provinces.png` share the same pixel grid per `mapId` |
 | Nation colour | Desaturated/dulled vs raw `rgb` in nation.json; parchment masked interior optional |
 | Interaction | **Click** → nation detail modal; **Ctrl+click** (Cmd on Mac) → drill into subjects; mobile: tap + explicit drill |
-| Staff maps | Gated by TFMCWeb/LP permission (e.g. `tfmc.map.staff`); `public` vs `staff` per map in PS config + SF `mapRef` |
+| Staff maps | Gated by profile Bearer session + `permission_flags["tfmc.map.staff"]` from TFMCWeb/LP sync; `public` vs staff per map in PS `maps.yml` + SF `mapRef` — see [step-41/01-planning-lock](./batches/step-41/01-planning-lock.md) |
 | SF export | Draft schema: [`assets/map-export-schema.json`](./assets/map-export-schema.json) |
 | Wars | **Do not infer** frontlines from territory diffs alone; require SF war rework export ([step-43](./batches/step-43/00-index.md)) |
 | Chronicle | Daily composited snapshot + structured event log (prefer SF-emitted events over pure JSON diff) |
@@ -110,8 +113,8 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 3. **[38](./batches/step-38/00-index.md)** — Parchment pipeline + muted political layers **done**
 4. **[39](./batches/step-39/00-index.md)** — Ink cartography (colour base default, parchment washes, uniform borders) **done**
 5. **[40](./batches/step-40/00-index.md)** — Nation labels (frontend SVG, province graph) **done**
-6. **[41](./batches/step-41/00-index.md)** — Staff map access **next**
-7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS)
+6. **[41](./batches/step-41/00-index.md)** — Staff map access **done**
+7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS) **next**
 8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS)
 9. **[44](./batches/step-44/00-index.md)** — War layer (**blocked on SF war rework**)
 10. **[45](./batches/step-45/00-index.md)** — Map chronicle (snapshots + log)

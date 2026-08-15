@@ -57,8 +57,8 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
     # 1. Compile nation data
     process_nations(map_name)
-    if map_name == "dev":
-       process_trade(map_name)
+    if os.path.exists(input_file(map_name, "guilds.json")):
+        process_trade(map_name)
 
     # 2. Compile queue
     compile_queue(map_name)
@@ -70,9 +70,6 @@ def _sync_regeneration(map_name: str, regen_type: str):
         create_parchment_base(map_name)
 
         for mode in modes:
-            if map_name != "dev" and mode == "trade":
-                print(f"⚠️ Skipping {mode}: Incompatible Map")
-                continue
             queue = load_queue(map_name, mode)
 
             if regen_type.lower() != "fullregen" and not mode == "trade" and not queue:

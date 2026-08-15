@@ -799,7 +799,7 @@ Frontend SVG nation labels on `/map/main` nation mode: province graph + centroid
 
 ### Operator checklist
 
-- [ ] `defines/main/province_neighbors.json` and `province_centroids.json` present on staging
+- [ ] `defines/main/province_neighbors.json`, `province_centroids.json`, and `province_label_grid` present on staging
 - [ ] `/map/main` nation mode: nation names along territory long axis (straight text)
 - [ ] Exclaves get separate labels; small nations below threshold have no label
 - [ ] Labels hidden when `mapType !== "nation"` (switch to kingdom/duchy/etc. — no labels)
@@ -808,19 +808,242 @@ Frontend SVG nation labels on `/map/main` nation mode: province graph + centroid
 - [ ] Ctrl+drill into Drakhanate: subject nations (e.g. Verdant City) labeled; Drakhanate label scoped to direct holdings (not empire-spanning)
 - [ ] Other visible independent nations still labeled while drilled into an empire
 - [ ] Large nations (e.g. Nimbus) have visibly larger label text than small nations (e.g. House Tenceur)
-- [ ] Each province blob uses farthest pixel pair; Drakhanate exclaves get one sized label per blob
-- [ ] Optional dev check: temporarily set `mapZoom={2}` in `MapViewer` — labels hidden
+- [ ] Each province blob uses inset corridor axis; Drakhanate / Eoridcois labels stay inside territory
+- [ ] Zoom in on `/map/main` nation mode past ~1.5× — labels hide (live viewport; step 49)
 - [ ] Regen when `provinces.png` changes: `python -m scripts.map_tools.build_province_geometry main`
 
 ## Step 41 — Staff map access control
 
-**Batch:** [Planning/batches/step-41/00-index.md](./Planning/batches/step-41/00-index.md).
+**Batch:** [Planning/batches/step-41/00-index.md](./Planning/batches/step-41/00-index.md) · lock [01-planning-lock](./Planning/batches/step-41/01-planning-lock.md).
 
-Public `main` only for players; staff maps gated by LP permission.
+Public `main` only for players; staff maps gated by profile login + `tfmc.map.staff` in `permission_flags`.
 
 ### Operator checklist
 
-- [ ] TBD when batch files land
+#### Registry and LP
+
+- [ ] `backend/src/config/maps.yml` lists `main` (public) and `dev` (staff) after 41.02 deploy
+- [ ] LuckPerms grants `tfmc.map.staff` to staff groups
+- [ ] TFMCWeb `player-meta.sync-permissions` includes `tfmc.map.staff` on lobby + survival
+
+#### Anonymous (no profile login)
+
+- [ ] Nav shows **Map** only — no Adavaar link
+- [ ] `/map/main` loads; nation hover/click work; pan/zoom/labels unchanged
+- [ ] `GET /main/data/nation` returns 200
+- [ ] `/map/r3b1rth` shows `MapAccessGate` login message (not a broken partial map)
+- [ ] `GET /dev/data/nation` returns 403
+- [ ] `GET /maps/accessible` returns `main` only
+
+#### Staff (profile login + LP flag)
+
+- [ ] Staff joins lobby/survival once (meta sync); redeems profile code on website
+- [ ] `GET /characters/player-meta` shows `permission_flags.tfmc.map.staff: true`
+- [ ] Nav shows **Adavaar** link → `/map/r3b1rth`
+- [ ] `/map/r3b1rth` loads (map images via Bearer blob URLs)
+- [ ] `GET /dev/data/nation` returns 200
+- [ ] `GET /maps/accessible` includes `dev` for staff session only
+
+#### Regression
+
+- [ ] Player without flag never sees dev nav link; permission gate on `/map/r3b1rth`
+- [ ] Logout on `/character` removes staff nav link (storage event; second tab to observe)
+- [ ] SimpleFactions `mapRef` for each server matches registry `id`
+
+## Step 47 — Map mode labels & Calavorn data layers
+
+**Batch:** [Planning/batches/step-47/00-index.md](./Planning/batches/step-47/00-index.md).
+
+Title/trade labels on `/map/main`; terrain, fertility, trade, prosperity modes for Calavorn (trade data spoofed until SF export).
+
+**Planning lock (47.01) done** — see [01-planning-lock](./Planning/batches/step-47/01-planning-lock.md). **Terrain + fertility (47.02) done** — see [02-calavorn-terrain-fertility](./Planning/batches/step-47/02-calavorn-terrain-fertility.md). **Trade + prosperity (47.03) done** — see [03-calavorn-trade-data](./Planning/batches/step-47/03-calavorn-trade-data.md). **Title rollup (47.04) done** — see [04-title-province-rollup](./Planning/batches/step-47/04-title-province-rollup.md). **Title labels (47.05) done** — see [05-title-labels-frontend](./Planning/batches/step-47/05-title-labels-frontend.md). **Trade labels (47.06) done** — see [06-trade-labels](./Planning/batches/step-47/06-trade-labels.md). **Docs verify (47.07) done** — see [07-docs-verify](./Planning/batches/step-47/07-docs-verify.md).
+
+### 47.02 — Terrain & fertility (done)
+
+Regenerate overlay PNGs after `provinces.txt` or geometry changes:
+
+```bash
+cd ProvinceSystem/backend/src
+python -m scripts.mapgen.mapmodes.terrain_mapmode --map main
+python -m scripts.mapgen.mapmodes.fertility_mapmode --map main
+```
+
+Operator checks:
+
+- [x] `GET /main/mapdata/terrain` and `/fertility` return 200
+- [x] `/map/main` toolbar shows Terrain and Fertility (not dev-only)
+- [x] Terrain / Fertility modes: coloured overlay on parchment base; no nation labels
+- [x] Province hover tooltip shows terrain type or fertility value
+- [x] Mode switch redraws pick canvas (hover still works)
+
+### 47.03 — Trade & prosperity (done)
+
+**Non-canonical:** `input/main/guilds.json` and `province_data.json` are **placeholders** — replace when SimpleFactions exports real Calavorn trade.
+
+Regenerate after spoof data or geometry changes:
+
+```bash
+cd ProvinceSystem/backend/src
+python -m scripts.tools.generate_spoof_province_data --map main
+python -m scripts.compile.trade_compiler --map main
+python -m scripts.mapgen.mapmodes.prosperity_mapmode --map main
+python -m scripts.mapgen.mapmodes.trade_mapmode --map main
+```
+
+Operator checks:
+
+- [x] `defines/main/trade.json` has guild entries with `size` > 0
+- [x] `GET /main/data/trade`, `/mapdata/trade`, `/mapdata/prosperity` return 200
+- [x] `/map/main` toolbar shows Trade and Prosperity (not dev-only)
+- [x] Trade mode: guild-coloured overlay; region pick/hover works
+- [x] Prosperity mode: heat overlay; province hover shows prosperity + trade shares
+- [x] `output/main/regions/trade/` populated (6 guild region overlays)
+- [x] No nation labels on trade/prosperity modes
+
+### 47.04 — Title province rollup (done)
+
+`resolveTitleProvinces()` + `useTitleLayerData` hook (frontend). Trade compile now writes `provinces[]` per guild.
+
+After pull, re-compile trade if `trade.json` lacks `provinces[]`:
+
+```bash
+cd ProvinceSystem/backend/src
+python -m scripts.compile.trade_compiler --map main
+python -m scripts.compile.trade_compiler --map dev
+```
+
+Operator checks:
+
+- [x] `npm test` includes `titleProvinces.test.ts` (8 tests)
+- [x] `GET /main/data/trade` guild entries include `provinces` with length === `size`
+- [x] Rollup lib wired in MapViewer via `computeVisibleRegionLabels` (47.05)
+
+### 47.05 — Title labels (done)
+
+`/map/main` county / duchy / kingdom / empire modes show region names on province blobs via `computeVisibleRegionLabels` + `useTitleLayerData`.
+
+Operator checks:
+
+- [x] Kingdom mode: Revenor, Domenia, Sabarissa, Letzebierg labels on blobs
+- [x] County / duchy / empire: names on correct blobs
+- [x] Exclaves: separate label per connected component
+- [x] Nation mode unchanged (full realm, drill, hover scale)
+- [x] Terrain / fertility / prosperity overlay modes: no labels (trade mode has guild labels per 47.06)
+- [x] `npm test` (51) + `npm run build` pass
+
+### 47.06 — Trade labels (done)
+
+`/map/main` trade mode shows guild names on territory blobs via `computeVisibleRegionLabels` + compiled `trade.json` `provinces[]`.
+
+Operator checks:
+
+- [x] Trade mode: guild names on territory blobs (spoof guilds OK)
+- [x] Exclaves: separate label per connected component (same guild name)
+- [x] Hover scales guild label when hovering guild pick colour
+- [x] Nation / county / duchy / kingdom / empire modes unaffected
+- [x] Terrain / fertility / prosperity: no labels
+- [x] `npm test` (52) + `npm run build` pass
+
+### Operator checklist
+
+Consolidated smoke test for Step 47 on staging. Per-batch detail above (47.02–47.06).
+
+#### Calavorn province layers
+
+- [ ] `output/main/maps/terrain_map.png` + `fertility_map.png` present (regen: 47.02 commands above)
+- [ ] `output/main/maps/trade_map.png` + `prosperity_map.png` present (spoof OK; regen: 47.03 commands above)
+- [ ] `/map/main` toolbar: terrain, fertility, trade, prosperity selectable
+- [ ] Terrain / fertility hover shows province meta
+- [ ] Trade / prosperity hover works
+- [ ] **Non-canonical:** `input/main/guilds.json` + `province_data.json` are spoof until SimpleFactions export
+
+#### Multi-mode labels (`/map/main`)
+
+- [ ] Nation mode: unchanged from Step 40 (full-realm overview, drill, hover scale)
+- [ ] Kingdom / duchy / county / empire: title names on blobs
+- [ ] Trade mode: guild names on blobs
+- [ ] Terrain / fertility / prosperity overlay modes: **no** labels
+- [ ] Labels above hover wash; 1% hover scale on hovered region
+- [ ] Pick canvas, nation drill, modal unchanged
+
+#### Tests
+
+- [x] `npm test` (52: mapLabels + titleProvinces + labelBlobGeometry)
+- [x] `npm run build`
+- [ ] `GET /main/data/trade` guild entries include `provinces[]` (re-run `trade_compiler` after pull if missing)
+
+## Step 48 — Label neighbor graph (water bridges)
+
+**Batch:** [Planning/batches/step-48/00-index.md](./Planning/batches/step-48/00-index.md).
+
+Precomputed `province_label_neighbors.json` merges archipelago / narrow-water province blobs for labels only; strict `province_neighbors.json` unchanged.
+
+### Regen (when `provinces.png` or `provinces.txt` changes)
+
+```bash
+cd backend/src
+python -m scripts.map_tools.build_province_geometry main
+python -m scripts.map_tools.build_province_geometry dev
+python -m scripts.map_tools.test_province_geometry
+```
+
+Commit: `province_neighbors`, `province_label_neighbors`, `province_centroids`, `province_label_grid` (+ `.bin.gz`).
+
+### Operator checklist
+
+#### Geometry artifacts
+
+- [ ] `defines/main/province_label_neighbors.json` present on staging
+- [ ] `GET /main/data/province_label_neighbors` returns JSON (200)
+
+#### Visual QA (`/map/main`)
+
+- [ ] Southern island / channel nations: one label per water-connected blob (spot-check)
+- [ ] Land exclaves: still multiple labels with same name where expected
+- [ ] Nation / title / trade labels: no hover/pick regression
+
+#### Tests
+
+- [x] `python -m scripts.map_tools.test_province_geometry`
+- [x] `npm test` (54) + `npm run build`
+
+## Step 49 — Pan and zoom
+
+**Batch:** [Planning/batches/step-49/00-index.md](./Planning/batches/step-49/00-index.md).
+
+Desktop pan/zoom on `/map/{id}`: wheel zoom toward cursor, middle-mouse pan with grab/grabbing cursor, clamped bounds. Labels hide above ~1.5× user zoom.
+
+### Operator checklist
+
+#### Pan and zoom (`/map/main` + `/map/dev`)
+
+- [ ] Scroll wheel zooms toward cursor; page does **not** scroll when cursor is over map
+- [ ] Middle-mouse drag pans; cursor shows `grab` / `grabbing`
+- [ ] Cannot pan to reveal empty margin outside map (test at zoom 1, 2, and max ~3×)
+- [ ] Initial view at zoom 1 matches pre-pan/zoom fit-to-width
+
+#### Labels
+
+- [ ] Nation/title/trade labels visible at default zoom; hidden after zooming in past ~1.5× user scale
+- [ ] Label font size stays constant when zooming (no scale-with-zoom)
+
+#### Interaction regression
+
+- [ ] Nation hover, click modal, and Ctrl+drill work at zoom 1 and after pan/zoom (spot-check corners + max zoom)
+- [ ] Terrain / fertility / prosperity tooltips track cursor when zoomed/panned
+- [ ] Switching map mode resets pan/zoom to fit view
+- [ ] Navigating `/map/main` ↔ `/map/r3b1rth` resets pan/zoom
+
+#### Edge cases
+
+- [ ] Browser window resize reclamps without empty margins
+- [ ] Middle-click does not open nation modal or trigger autoscroll
+- [ ] Middle-drag cancels when cursor leaves map or window loses focus
+
+#### Tests
+
+- [x] `npm test` — `mapViewportMath` (7), `useMapCoords` (7), `useMapViewport` (1)
+- [x] `npm run build`
 
 ## Step 42 — Capitals and settlements
 

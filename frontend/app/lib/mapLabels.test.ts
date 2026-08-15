@@ -1,26 +1,41 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LABEL_GLYPH_WIDTH_EM,
   MIN_PIXEL_AREA,
   MIN_PROVINCES,
+  cleanRegionName,
   componentPixelArea,
   computeNationLabels,
+  computeRegionLabelGeometry,
   computeVisibleNationLabels,
+  filterRegionLabelsForMapObjects,
+  computeVisibleRegionLabels,
   connectedComponents,
   directHoldingProvinces,
+  estimatedLabelWidthPx,
   fontSizeForLabel,
+  fullRealmProvinces,
   graphDiameterEndpoints,
   isDrilledSuzerainView,
   isNationLabelVisible,
   labelAngleDeg,
+  labelArcPathD,
+  labelPathCenterOffset,
   labelsForProvinces,
+  orientLabelEndpoints,
   pixelDiameterEndpoints,
   provincesForNationLabel,
-  shouldShowLabelsAtZoom,
+  LABEL_MAX_SCREEN_PX,
+  LABEL_MIN_SCREEN_PX,
+  labelScreenFontSize,
+  shouldShowLabelAtScreenSize,
   type LabelMapObject,
   type ProvinceCentroids,
   type ProvinceNeighbors,
 } from "./mapLabels";
+import type { ProvinceLabelGrid } from "./labelBlobGeometry";
+import type { TitleLayers } from "./titleProvinces";
 
 const chainNeighbors: ProvinceNeighbors = {
   "1": [2],
@@ -50,6 +65,31 @@ describe("connectedComponents", () => {
     expect(components.map((c) => [...c].sort())).toEqual([
       [1, 2, 3],
       [10, 11, 12],
+    ]);
+  });
+
+  it("merges components when label neighbors bridge a water gap", () => {
+    const strictNeighbors: ProvinceNeighbors = {
+      "1": [2, 3],
+      "2": [1, 3],
+      "3": [1, 2],
+      "10": [11, 12],
+      "11": [10, 12],
+      "12": [10, 11],
+    };
+    const labelNeighbors: ProvinceNeighbors = {
+      ...strictNeighbors,
+      "3": [1, 2, 12],
+      "12": [10, 11, 3],
+    };
+
+    const components = connectedComponents(
+      [1, 2, 3, 10, 11, 12],
+      labelNeighbors
+    );
+    expect(components).toHaveLength(1);
+    expect(components[0].sort((a, b) => a - b)).toEqual([
+      1, 2, 3, 10, 11, 12,
     ]);
   });
 });
@@ -84,14 +124,64 @@ describe("pixelDiameterEndpoints", () => {
   });
 });
 
+describe("labelPathCenterOffset", () => {
+  it("shifts arched text toward the chord on a horizontal axis", () => {
+    const fontSize = 40;
+    const { dx, dy } = labelPathCenterOffset(0, 100, 200, 100, fontSize);
+    expect(dx).toBeCloseTo(0);
+    expect(dy).toBeGreaterThan(0);
+    expect(dy).toBeCloseTo(200 * 0.08 * 0.5 + fontSize * 0.38);
+  });
+});
+
+describe("labelArcPathD", () => {
+  it("bows upward on a horizontal chord", () => {
+    const path = labelArcPathD(0, 100, 200, 100);
+    expect(path).toMatch(/^M 0 100 Q [\d.]+ [\d.]+ 200 100$/);
+    const controlY = Number(path.split(" ")[5]);
+    expect(controlY).toBeLessThan(100);
+  });
+
+  it("reverses endpoints when the chord would read upside down", () => {
+    const path = labelArcPathD(200, 50, 0, 50);
+    expect(path.startsWith("M 0 50")).toBe(true);
+    expect(path.endsWith("200 50")).toBe(true);
+  });
+});
+
+describe("orientLabelEndpoints", () => {
+  it("swaps when the raw angle points left", () => {
+    expect(orientLabelEndpoints(100, 0, 0, 0)).toEqual({
+      x1: 0,
+      y1: 0,
+      x2: 100,
+      y2: 0,
+    });
+  });
+});
+
 describe("fontSizeForLabel", () => {
   it("scales fontSize from segment length and character count", () => {
-    expect(fontSizeForLabel(600, "Nimbus")).toBe(100);
-    expect(fontSizeForLabel(200, "Test")).toBe(50);
+    expect(fontSizeForLabel(600, "Nimbus")).toBe(
+      Math.round(600 / (6 * LABEL_GLYPH_WIDTH_EM))
+    );
+    expect(fontSizeForLabel(200, "Test")).toBe(
+      Math.round(200 / (4 * LABEL_GLYPH_WIDTH_EM))
+    );
+  });
+
+  it("estimates rendered width near segment length", () => {
+    const fontSize = fontSizeForLabel(500, "Grand Drakhanate");
+    expect(estimatedLabelWidthPx(fontSize, "Grand Drakhanate")).toBeCloseTo(
+      500,
+      -1
+    );
   });
 
   it("uses one unit for empty names", () => {
-    expect(fontSizeForLabel(80, "   ")).toBe(80);
+    expect(fontSizeForLabel(80, "   ")).toBe(
+      Math.round(80 / LABEL_GLYPH_WIDTH_EM)
+    );
   });
 });
 
@@ -101,17 +191,33 @@ describe("componentPixelArea", () => {
   });
 });
 
-describe("shouldShowLabelsAtZoom", () => {
-  it("shows labels at overview zoom", () => {
-    expect(shouldShowLabelsAtZoom(1)).toBe(true);
+describe("shouldShowLabelAtScreenSize", () => {
+  it("computes screen font size from map size and display scale", () => {
+    expect(labelScreenFontSize(40, 0.5)).toBe(20);
   });
 
-  it("shows labels at max zoom boundary", () => {
-    expect(shouldShowLabelsAtZoom(1.5)).toBe(true);
+  it("shows labels within the screen-size band", () => {
+    const displayScale = 0.5;
+    const minFont = LABEL_MIN_SCREEN_PX / displayScale;
+    const maxFont = LABEL_MAX_SCREEN_PX / displayScale;
+    expect(shouldShowLabelAtScreenSize(minFont, displayScale)).toBe(true);
+    expect(shouldShowLabelAtScreenSize(maxFont, displayScale)).toBe(true);
+    expect(
+      shouldShowLabelAtScreenSize(minFont - 1, displayScale)
+    ).toBe(false);
+    expect(
+      shouldShowLabelAtScreenSize(maxFont + 1, displayScale)
+    ).toBe(false);
   });
 
-  it("hides labels when zoomed in past threshold", () => {
-    expect(shouldShowLabelsAtZoom(1.51)).toBe(false);
+  it("hides large-nation labels when zoomed in but keeps small ones", () => {
+    const displayScale = 1;
+    expect(shouldShowLabelAtScreenSize(80, displayScale)).toBe(false);
+    expect(shouldShowLabelAtScreenSize(24, displayScale)).toBe(true);
+  });
+
+  it("hides labels when display scale is zero", () => {
+    expect(shouldShowLabelAtScreenSize(24, 0)).toBe(false);
   });
 });
 
@@ -146,10 +252,10 @@ describe("computeNationLabels", () => {
       cx: 100,
       cy: 0,
       segmentPx: 200,
-      textLength: 200,
-      fontSize: 50,
+      fontSize: fontSizeForLabel(200, "Test"),
     });
     expect(labels[0].angleDeg).toBeCloseTo(0, 5);
+    expect(labels[0].pathD).toContain("Q");
   });
 
   it("emits two labels for two large disconnected components", () => {
@@ -183,7 +289,7 @@ describe("computeNationLabels", () => {
     expect(labels.every((l) => l.text === "Exclave")).toBe(true);
   });
 
-  it("skips components below MIN_PROVINCES", () => {
+  it("labels two-province blobs when above minPixelArea", () => {
     const labels = computeNationLabels(
       { Tiny: { name: "Tiny", provinces: [1, 2] } },
       { "1": [2], "2": [1] },
@@ -193,8 +299,38 @@ describe("computeNationLabels", () => {
       }
     );
 
-    expect(labels).toHaveLength(0);
-    expect(MIN_PROVINCES).toBe(3);
+    expect(labels).toHaveLength(1);
+    expect(MIN_PROVINCES).toBe(1);
+    expect(labels[0].segmentPx).toBeGreaterThan(0);
+  });
+
+  it("labels single-province blob via radial fallback when grid is available", () => {
+    const grid: ProvinceLabelGrid = {
+      mapWidth: 70,
+      mapHeight: 30,
+      gridWidth: 7,
+      gridHeight: 3,
+      cells: new Uint16Array([
+        0, 1, 1, 1, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0,
+      ]),
+      scaleX: 10,
+      scaleY: 10,
+    };
+
+    const labels = labelsForProvinces(
+      "Island",
+      "Island",
+      [1],
+      {},
+      { "1": { x: 35, y: 15, pixel_count: 20000 } },
+      "full",
+      { grid, minPixelArea: 10000 }
+    );
+
+    expect(labels).toHaveLength(1);
+    expect(labels[0].segmentPx).toBeGreaterThan(0);
   });
 
   it("skips components below minPixelArea threshold", () => {
@@ -270,15 +406,54 @@ describe("computeNationLabels", () => {
     expect(largeBlob?.segmentPx).toBe(600);
     expect(largeBlob!.fontSize).toBeGreaterThan(smallBlob!.fontSize);
   });
+
+  it("uses labelNeighbors for component grouping when provided", () => {
+    const strictNeighbors: ProvinceNeighbors = {
+      "1": [2, 3],
+      "2": [1, 3],
+      "3": [1, 2],
+      "10": [11, 12],
+      "11": [10, 12],
+      "12": [10, 11],
+    };
+    const labelNeighbors: ProvinceNeighbors = {
+      ...strictNeighbors,
+      "3": [1, 2, 12],
+      "12": [10, 11, 3],
+    };
+    const centroids: ProvinceCentroids = {
+      "1": { x: 0, y: 0, pixel_count: 6000 },
+      "2": { x: 50, y: 0, pixel_count: 6000 },
+      "3": { x: 100, y: 0, pixel_count: 6000 },
+      "10": { x: 500, y: 0, pixel_count: 6000 },
+      "11": { x: 550, y: 0, pixel_count: 6000 },
+      "12": { x: 600, y: 0, pixel_count: 6000 },
+    };
+
+    const labels = labelsForProvinces(
+      "Bridged",
+      "Bridged",
+      [1, 2, 3, 10, 11, 12],
+      strictNeighbors,
+      centroids,
+      "full",
+      { minPixelArea: 10000, labelNeighbors }
+    );
+
+    expect(labels).toHaveLength(1);
+    expect(labels[0].text).toBe("Bridged");
+  });
 });
 
 const empireNeighbors: ProvinceNeighbors = {
   "1": [2],
   "2": [1, 3],
-  "3": [2, 4],
-  "4": [3, 5],
+  "3": [2],
+  "4": [5],
   "5": [4, 6],
   "6": [5],
+  "7": [8],
+  "8": [7],
   "10": [11],
   "11": [10, 12],
   "12": [11],
@@ -291,6 +466,8 @@ const empireCentroids: ProvinceCentroids = {
   "4": { x: 300, y: 0, pixel_count: 6000 },
   "5": { x: 400, y: 0, pixel_count: 6000 },
   "6": { x: 500, y: 0, pixel_count: 6000 },
+  "7": { x: 300, y: 200, pixel_count: 6000 },
+  "8": { x: 400, y: 200, pixel_count: 6000 },
   "10": { x: 0, y: 100, pixel_count: 6000 },
   "11": { x: 100, y: 100, pixel_count: 6000 },
   "12": { x: 200, y: 100, pixel_count: 6000 },
@@ -299,12 +476,17 @@ const empireCentroids: ProvinceCentroids = {
 const empireRegionData = {
   imperium: {
     name: "Grand Drakhanate",
-    provinces: [1, 2, 3, 4, 5, 6],
+    provinces: [1, 2, 3],
     subjects: ["vassalA"],
   },
   vassalA: {
     name: "Verdant City",
     provinces: [4, 5, 6],
+    subjects: ["vassalB"],
+  },
+  vassalB: {
+    name: "Nested Isle",
+    provinces: [7, 8],
   },
   independent: {
     name: "Nimbus",
@@ -346,11 +528,20 @@ describe("label visibility helpers", () => {
     ]);
   });
 
+  it("unions direct holdings with recursive subject provinces for full realm", () => {
+    expect(fullRealmProvinces("imperium", empireRegionData)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(fullRealmProvinces("independent", empireRegionData)).toEqual([
+      10, 11, 12,
+    ]);
+  });
+
   it("resolves full provinces at overview and direct provinces when drilled", () => {
     expect(
       provincesForNationLabel("imperium", empireRegionData, overviewMapObjects)
     ).toEqual({
-      provinces: [1, 2, 3, 4, 5, 6],
+      provinces: [1, 2, 3, 4, 5, 6, 7, 8],
       scope: "full",
     });
     expect(
@@ -380,17 +571,26 @@ describe("computeVisibleNationLabels", () => {
     expect(nationIds).toContain("independent");
     expect(nationIds).not.toContain("vassalA");
 
-    const empireLabel = labels.find((label) => label.nationId === "imperium");
-    expect(empireLabel?.scope).toBe("full");
-    expect(empireLabel?.x2).toBe(500);
-    expect(empireLabel?.segmentPx).toBe(500);
-    expect(empireLabel?.textLength).toBe(500);
-    expect(empireLabel?.fontSize).toBe(
-      fontSizeForLabel(500, "Grand Drakhanate")
+    const empireLabels = labels.filter((label) => label.nationId === "imperium");
+    expect(empireLabels).toHaveLength(3);
+    expect(empireLabels.every((label) => label.scope === "full")).toBe(true);
+    expect(empireLabels.every((label) => label.text === "Grand Drakhanate")).toBe(
+      true
+    );
+
+    const directBlob = empireLabels.find((label) => label.x2 === 200 && label.x1 === 0);
+    const vassalBlob = empireLabels.find((label) => label.x2 === 500);
+    const nestedBlob = empireLabels.find(
+      (label) => label.x1 === 300 && label.x2 === 400
+    );
+    expect(directBlob?.segmentPx).toBe(200);
+    expect(vassalBlob?.segmentPx).toBe(200);
+    expect(nestedBlob?.segmentPx).toBe(100);
+    expect(vassalBlob?.fontSize).toBe(
+      fontSizeForLabel(200, "Grand Drakhanate")
     );
 
     const nimbusLabel = labels.find((label) => label.nationId === "independent");
-    expect(nimbusLabel?.textLength).toBe(nimbusLabel?.segmentPx);
     expect(nimbusLabel!.fontSize).toBe(fontSizeForLabel(200, "Nimbus"));
   });
 
@@ -434,5 +634,284 @@ describe("computeVisibleNationLabels", () => {
         { minPixelArea: 10000 }
       )
     ).toEqual([]);
+  });
+});
+
+describe("region label geometry cache", () => {
+  const nationOptions = { minPixelArea: 10000 };
+
+  it("filter matches computeVisibleRegionLabels at overview", () => {
+    const geometry = computeRegionLabelGeometry(
+      "nation",
+      empireRegionData,
+      null,
+      empireNeighbors,
+      empireCentroids,
+      nationOptions
+    );
+    const filtered = filterRegionLabelsForMapObjects(
+      geometry,
+      "nation",
+      overviewMapObjects
+    );
+    const direct = computeVisibleRegionLabels(
+      "nation",
+      empireRegionData,
+      null,
+      empireNeighbors,
+      empireCentroids,
+      overviewMapObjects,
+      nationOptions
+    );
+
+    expect(filtered).toEqual(direct);
+  });
+
+  it("filter matches computeVisibleRegionLabels when drilled", () => {
+    const geometry = computeRegionLabelGeometry(
+      "nation",
+      empireRegionData,
+      null,
+      empireNeighbors,
+      empireCentroids,
+      nationOptions
+    );
+    const filtered = filterRegionLabelsForMapObjects(
+      geometry,
+      "nation",
+      drilledMapObjects
+    );
+    const direct = computeVisibleRegionLabels(
+      "nation",
+      empireRegionData,
+      null,
+      empireNeighbors,
+      empireCentroids,
+      drilledMapObjects,
+      nationOptions
+    );
+
+    expect(filtered).toEqual(direct);
+  });
+
+  it("reuses geometry when only mapObjects visibility changes", () => {
+    const geometry = computeRegionLabelGeometry(
+      "nation",
+      empireRegionData,
+      null,
+      empireNeighbors,
+      empireCentroids,
+      nationOptions
+    );
+    const overview = filterRegionLabelsForMapObjects(
+      geometry,
+      "nation",
+      overviewMapObjects
+    );
+    const drilled = filterRegionLabelsForMapObjects(
+      geometry,
+      "nation",
+      drilledMapObjects
+    );
+
+    expect(overview).not.toEqual(drilled);
+    expect(
+      overview.some((label) => label.nationId === "imperium" && label.scope === "full")
+    ).toBe(true);
+    expect(
+      drilled.some(
+        (label) => label.nationId === "imperium" && label.scope === "direct"
+      )
+    ).toBe(true);
+  });
+});
+
+describe("cleanRegionName", () => {
+  it("strips Minecraft colour codes", () => {
+    expect(cleanRegionName("§x§a§3§a§1§8§4Revenor")).toBe("Revenor");
+    expect(cleanRegionName("§cOld §lName")).toBe("Old Name");
+  });
+});
+
+const titleLabelLayers: TitleLayers = {
+  county: {
+    COUNTY_1: { provinces: [1, 2, 3] },
+    COUNTY_2: { provinces: [4, 5] },
+    COUNTY_A: { provinces: [1, 2, 3] },
+    COUNTY_B: { provinces: [10, 11, 12] },
+  },
+  duchy: {
+    DUCHY_1: { titles: ["COUNTY_1", "COUNTY_2"] },
+    DUCHY_EX: { titles: ["COUNTY_A", "COUNTY_B"] },
+  },
+  kingdom: {
+    KINGDOM_1: { titles: ["DUCHY_1"], rgb: "140,69,56" },
+    KINGDOM_EXCLAVE: { titles: ["DUCHY_EX"], rgb: "10,20,30" },
+  },
+};
+
+const titleRegionData = {
+  COUNTY_1: { name: "Elvaris", rgb: "180,80,80", provinces: [1, 2, 3] },
+  KINGDOM_1: { name: "Revenor", rgb: "140,69,56" },
+  KINGDOM_EXCLAVE: { name: "Exclave Realm", rgb: "10,20,30" },
+};
+
+const exclaveNeighbors: ProvinceNeighbors = {
+  "1": [2, 3],
+  "2": [1, 3],
+  "3": [1, 2],
+  "10": [11, 12],
+  "11": [10, 12],
+  "12": [10, 11],
+};
+
+const exclaveCentroids: ProvinceCentroids = {
+  "1": { x: 0, y: 0, pixel_count: 6000 },
+  "2": { x: 50, y: 0, pixel_count: 6000 },
+  "3": { x: 100, y: 0, pixel_count: 6000 },
+  "10": { x: 500, y: 0, pixel_count: 6000 },
+  "11": { x: 550, y: 0, pixel_count: 6000 },
+  "12": { x: 600, y: 0, pixel_count: 6000 },
+};
+
+describe("computeVisibleRegionLabels", () => {
+  it("labels county mode from county provinces", () => {
+    const labels = computeVisibleRegionLabels(
+      "county",
+      titleRegionData,
+      titleLabelLayers,
+      chainNeighbors,
+      chainCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    expect(labels).toHaveLength(1);
+    expect(labels[0].nationId).toBe("COUNTY_1");
+    expect(labels[0].text).toBe("Elvaris");
+  });
+
+  it("labels county mode without title layers", () => {
+    const labels = computeVisibleRegionLabels(
+      "county",
+      titleRegionData,
+      null,
+      chainNeighbors,
+      chainCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    expect(labels).toHaveLength(1);
+    expect(labels[0].nationId).toBe("COUNTY_1");
+  });
+
+  it("labels kingdom mode via duchy rollup", () => {
+    const labels = computeVisibleRegionLabels(
+      "kingdom",
+      titleRegionData,
+      titleLabelLayers,
+      chainNeighbors,
+      chainCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    const revenor = labels.find((label) => label.nationId === "KINGDOM_1");
+    expect(revenor).toBeDefined();
+    expect(revenor!.text).toBe("Revenor");
+  });
+
+  it("creates separate labels per connected component for exclaves", () => {
+    const labels = computeVisibleRegionLabels(
+      "kingdom",
+      titleRegionData,
+      titleLabelLayers,
+      exclaveNeighbors,
+      exclaveCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    const exclaveLabels = labels.filter(
+      (label) => label.nationId === "KINGDOM_EXCLAVE"
+    );
+    expect(exclaveLabels).toHaveLength(2);
+    expect(exclaveLabels.every((label) => label.text === "Exclave Realm")).toBe(
+      true
+    );
+  });
+
+  it("labels trade guild from provinces list", () => {
+    const tradeLayers: TitleLayers = {
+      county: {},
+      trade: {
+        guild_a: { provinces: [1, 2, 3] },
+        guild_empty: { provinces: [] },
+      },
+    };
+    const tradeRegionData = {
+      guild_a: {
+        name: "Merchants League",
+        rgb: "152,77,234",
+        size: 3,
+        provinces: [1, 2, 3],
+      },
+      guild_empty: {
+        name: "Empty Guild",
+        rgb: "0,0,0",
+        size: 0,
+        provinces: [],
+      },
+    };
+
+    const labels = computeVisibleRegionLabels(
+      "trade",
+      tradeRegionData,
+      tradeLayers,
+      chainNeighbors,
+      chainCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    expect(labels).toHaveLength(1);
+    expect(labels[0].nationId).toBe("guild_a");
+    expect(labels[0].text).toBe("Merchants League");
+  });
+
+  it("creates separate labels per connected component for trade exclaves", () => {
+    const tradeLayers: TitleLayers = {
+      county: {},
+      trade: {
+        guild_exclave: { provinces: [1, 2, 3, 10, 11, 12] },
+      },
+    };
+    const tradeRegionData = {
+      guild_exclave: {
+        name: "Exclave Guild",
+        rgb: "10,20,30",
+        size: 6,
+        provinces: [1, 2, 3, 10, 11, 12],
+      },
+    };
+
+    const labels = computeVisibleRegionLabels(
+      "trade",
+      tradeRegionData,
+      tradeLayers,
+      exclaveNeighbors,
+      exclaveCentroids,
+      [],
+      { minPixelArea: 1000, minProvinces: 3 }
+    );
+
+    const exclaveLabels = labels.filter(
+      (label) => label.nationId === "guild_exclave"
+    );
+    expect(exclaveLabels).toHaveLength(2);
+    expect(exclaveLabels.every((label) => label.text === "Exclave Guild")).toBe(
+      true
+    );
   });
 });

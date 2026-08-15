@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Response
 from fastapi.responses import FileResponse
 import os
 from pathlib import Path
 
+from .map_access import ensure_map_access
 from ..scripts.util.dirs import (
     map_image,
     region_image,
@@ -22,7 +23,12 @@ def add_cors(response: Response):
 
 
 @file_router.get("/{map_name}/mapdata/{map_type}")
-async def get_map_file(map_name: str, map_type: str):
+async def get_map_file(
+    map_name: str,
+    map_type: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
     file_path = (
         OUTPUT_BASE
         / map_name
@@ -37,7 +43,13 @@ async def get_map_file(map_name: str, map_type: str):
 
 
 @file_router.get("/{map_name}/regions/{map_type}/{file_name}")
-async def get_region_file(map_name: str, map_type: str, file_name: str):
+async def get_region_file(
+    map_name: str,
+    map_type: str,
+    file_name: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
     # Ensure .png extension
     if not file_name.endswith(".png"):
         file_name = f"{file_name}.png"
@@ -57,7 +69,13 @@ async def get_region_file(map_name: str, map_type: str, file_name: str):
 
 
 @file_router.get("/{map_name}/banners/{mode}/{file_name}")
-async def get_banner_file(map_name: str, mode: str, file_name: str):
+async def get_banner_file(
+    map_name: str,
+    mode: str,
+    file_name: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
     file_path = banner_image(map_name, mode, file_name)
 
     if not os.path.exists(file_path):

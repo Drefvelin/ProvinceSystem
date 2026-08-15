@@ -9,6 +9,7 @@ type NationDetailPanelProps = {
   mapType: MapMode;
   regionInfo: RegionInfo | null;
   regionData: RegionRecord | null;
+  sessionToken?: string | null;
 };
 
 export default function NationDetailPanel({
@@ -16,6 +17,7 @@ export default function NationDetailPanel({
   mapType,
   regionInfo,
   regionData,
+  sessionToken,
 }: NationDetailPanelProps) {
   const showPanel =
     regionInfo && mapType !== "terrain" && mapType !== "fertility";
@@ -32,6 +34,7 @@ export default function NationDetailPanel({
           mapType={mapType}
           regionInfo={regionInfo}
           regionData={regionData}
+          sessionToken={sessionToken}
         />
       )}
     </div>

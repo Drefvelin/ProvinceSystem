@@ -882,8 +882,7 @@
             180,
             179,
             178,
-            123,
-            107
+            123
         ],
         "relations": [
             "Verdant_City(none.neutral.0)",
@@ -908,13 +907,13 @@
         "xPos": 178.0,
         "zPos": 225.0,
         "subjects": [],
-        "size": 8,
+        "size": 7,
         "subject_size": 0,
         "overlay": {
             "x": 1280,
-            "y": 2129,
-            "w": 1015,
-            "h": 1626
+            "y": 2557,
+            "w": 480,
+            "h": 1198
         }
     },
     "Mizeareigh": {
@@ -1163,6 +1162,7 @@
         ],
         "provinces": [
             106,
+            107,
             100,
             103,
             104,
@@ -1231,7 +1231,7 @@
             "Hell_Hops_Hellhouse",
             "Rah_Clan"
         ],
-        "size": 63,
+        "size": 64,
         "subject_size": 36,
         "overlay": {
             "x": 457,

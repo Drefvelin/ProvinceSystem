@@ -13,10 +13,10 @@ export function drillStackNames(layers: DrillLayer[]): string[] {
 export function applyDrillStack(
   layers: DrillLayer[],
   regionData: RegionRecord,
-  loadData: (regionData: RegionRecord) => void,
+  resetDrillVisibility: (regionData: RegionRecord) => void,
   drillDownRegion: (regionId: string, regionData: RegionRecord) => void
 ) {
-  loadData(regionData);
+  resetDrillVisibility(regionData);
   for (const layer of layers) {
     drillDownRegion(layer.regionId, regionData);
   }

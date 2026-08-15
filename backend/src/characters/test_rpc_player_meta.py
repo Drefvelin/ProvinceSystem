@@ -38,6 +38,14 @@ class RpcPlayerMetaTest(unittest.TestCase):
         db_mod.SKINS_DIR = root / "skins"
         db_mod.WARDROBE_DIR = root / "wardrobe"
         db_mod.migrate()
+        self._sync_db_dependents(db_mod)
+
+    def _sync_db_dependents(self, db_mod) -> None:
+        import skins.drinks as drinks_mod
+
+        drinks_mod.db = db_mod
+        drinks_mod.connect = db_mod.connect
+        sys.modules["src.skins.drinks"] = drinks_mod
 
     def tearDown(self) -> None:
         db_mod = self._db_mod
@@ -114,6 +122,51 @@ class RpcPlayerMetaTest(unittest.TestCase):
         self.assertEqual(dev["name_colour_stops"], 4)
         self.assertEqual(dev["skin_kinds"], ["gun"])
         self.assertIsNone(get_rpc_player_meta("p1", "tutorial"))
+
+    def test_has_map_staff_access_true(self) -> None:
+        from characters.rpc_player_meta import (
+            has_map_staff_access,
+            upsert_rpc_player_meta,
+        )
+
+        upsert_rpc_player_meta(
+            {
+                "player_uuid": "staff-map-1",
+                "realm_id": "main",
+                "permission_flags": {"tfmc.map.staff": True},
+            }
+        )
+        self.assertTrue(
+            has_map_staff_access("staff-map-1", "main", "tfmc.map.staff")
+        )
+
+    def test_has_map_staff_access_false_when_flag_missing(self) -> None:
+        from characters.rpc_player_meta import (
+            has_map_staff_access,
+            upsert_rpc_player_meta,
+        )
+
+        upsert_rpc_player_meta(
+            {
+                "player_uuid": "staff-map-2",
+                "realm_id": "main",
+                "permission_flags": {"rulequiz.completed": True},
+            }
+        )
+        self.assertFalse(
+            has_map_staff_access("staff-map-2", "main", "tfmc.map.staff")
+        )
+
+    def test_has_map_staff_access_false_when_row_missing(self) -> None:
+        from characters.rpc_player_meta import has_map_staff_access
+
+        self.assertFalse(
+            has_map_staff_access(
+                "00000000-0000-4000-8000-000000000001",
+                "main",
+                "tfmc.map.staff",
+            )
+        )
 
     def test_resolve_prefers_rpc_over_legacy(self) -> None:
         from characters.rpc_player_meta import (

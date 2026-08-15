@@ -1,0 +1,87 @@
+[
+  {
+    "id": "calavorn_merchants",
+    "name": "Calavorn Merchants League",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "152,77,234",
+    "trade_power": 42000,
+    "banner": [
+      "YELLOW.BASE",
+      "YELLOW.GRADIENT",
+      "YELLOW.CROSS",
+      "WHITE.PUMPKIN"
+    ]
+  },
+  {
+    "id": "eastern_caravan",
+    "name": "Eastern Caravan Company",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "104,219,211",
+    "trade_power": 25000,
+    "banner": [
+      "WHITE.BASE",
+      "WHITE.SQUARE_TOP_LEFT",
+      "LIME.CIRCLE_TILES"
+    ]
+  },
+  {
+    "id": "iron_coast_traders",
+    "name": "Iron Coast Traders",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "218,95,197",
+    "trade_power": 32000,
+    "banner": [
+      "BLUE.BASE",
+      "BLUE.DIAGONAL_UP_LEFT",
+      "CYAN.SMALL_STRIPES",
+      "ORANGE.COMPANION",
+      "YELLOW.ARROW_DOWN"
+    ]
+  },
+  {
+    "id": "southern_spice",
+    "name": "Southern Spice Consortium",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "208,78,233",
+    "trade_power": 18000,
+    "banner": [
+      "ORANGE.BASE",
+      "ORANGE.TRIANGLES_TOP",
+      "ORANGE.STRIPE_DOWNRIGHT",
+      "CYAN.CHECKER",
+      "YELLOW.CURTAINS",
+      "BLUE.ARROW_DOWN"
+    ]
+  },
+  {
+    "id": "nimbus_exchange",
+    "name": "Nimbus Exchange",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "225,124,76",
+    "trade_power": 27500,
+    "banner": [
+      "GRAY.BASE",
+      "GREEN.TRIANGLES_BOTTOM",
+      "LIGHT_BLUE.GONFALON"
+    ]
+  },
+  {
+    "id": "drakhanate_silk",
+    "name": "Drakhanate Silk Route",
+    "type": "Trade Guild",
+    "size": 0,
+    "rgb": "88,160,72",
+    "trade_power": 31000,
+    "banner": [
+      "RED.BASE",
+      "RED.STRIPE_TOP",
+      "WHITE.CROSS",
+      "BLACK.BORDER"
+    ]
+  }
+]

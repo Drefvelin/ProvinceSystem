@@ -1,16 +1,21 @@
 // hooks/mapHover/useProvinceHover.ts
 import { useRef } from "react";
 
+import type { MapId } from "../components/map/types";
+import { fetchMapJson } from "@/lib/map/api";
+
 export function useProvinceHover({
   mapId,
   mapType,
   setCursorTooltip,
-  guildNameCacheRef
+  guildNameCacheRef,
+  sessionToken,
 }: {
-  mapId: "main" | "dev";
+  mapId: MapId;
   mapType: string;
   setCursorTooltip: (v: any) => void;
   guildNameCacheRef: React.MutableRefObject<Record<string, string>> | null;
+  sessionToken?: string | null;
 }) {
   const provinceCache = useRef<Record<number, any>>({});
 
@@ -30,12 +35,11 @@ export function useProvinceHover({
 
     if (!active) return false;
 
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/province/${x},${y}/meta`,
-      { cache: "no-store" }
+    void fetchMapJson<{ province_id?: number }>(
+      `/${mapId}/province/${x},${y}/meta`,
+      { sessionToken, cache: "no-store" }
     )
-      .then(r => (r.ok ? r.json() : null))
-      .then(meta => {
+      .then((meta) => {
         if (!meta?.province_id) return;
 
         const render = (data: any) => {
@@ -87,19 +91,18 @@ export function useProvinceHover({
         const pid = meta.province_id;
 
         if (!provinceCache.current[pid]) {
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/${mapId}/compiled_data/provinces`,
-            { cache: "no-store" }
-          )
-            .then(r => r.json())
-            .then(all => {
-              provinceCache.current = all;
-              render(all[pid]);
-            });
+          void fetchMapJson<Record<number, any>>(
+            `/${mapId}/compiled_data/provinces`,
+            { sessionToken, cache: "no-store" }
+          ).then((all) => {
+            provinceCache.current = all;
+            render(all[pid]);
+          });
         } else {
           render(provinceCache.current[pid]);
         }
-      });
+      })
+      .catch(() => {});
 
     const consumesHover =
         mapType === "terrain" ||

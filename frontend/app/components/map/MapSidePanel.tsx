@@ -72,6 +72,7 @@ type MapDesktopSidePanelProps = {
   mapType: MapMode;
   regionInfo: RegionInfo | null;
   regionData: RegionRecord | null;
+  sessionToken?: string | null;
 };
 
 export function MapDesktopSidePanel({
@@ -79,6 +80,7 @@ export function MapDesktopSidePanel({
   mapType,
   regionInfo,
   regionData,
+  sessionToken,
 }: MapDesktopSidePanelProps) {
   return (
     <NationDetailPanel
@@ -86,6 +88,7 @@ export function MapDesktopSidePanel({
       mapType={mapType}
       regionInfo={regionInfo}
       regionData={regionData}
+      sessionToken={sessionToken}
     />
   );
 }

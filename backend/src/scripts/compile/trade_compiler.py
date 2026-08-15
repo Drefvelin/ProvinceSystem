@@ -104,6 +104,7 @@ def process_trade(map_name: str):
             "rgb": f"{rgb[0]},{rgb[1]},{rgb[2]}",
             "tier": clean_name(guild.get("type", guild_id)),
             "size": 0,
+            "provinces": [],
             "subjects": [],
             "overlord": None,
             "banner": banner_id,
@@ -120,6 +121,7 @@ def process_trade(map_name: str):
         dominant = get_dominant_guild(trade)
         if dominant and dominant in trade_regions:
             trade_regions[dominant]["size"] += 1
+            trade_regions[dominant]["provinces"].append(pdata["id"])
 
     # === Generate banners & prune unused guilds ===
     for guild_id in list(trade_regions.keys()):
@@ -143,3 +145,20 @@ def process_trade(map_name: str):
         json.dump(trade_regions, f, indent=4)
 
     print(f"💱 Trade compiled for map '{map_name}'")
+
+
+def main() -> None:
+    import argparse
+    import sys
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    parser = argparse.ArgumentParser(description="Compile trade.json from guilds + province_data")
+    parser.add_argument("--map", required=True, help="Map id (e.g. main, dev)")
+    args = parser.parse_args()
+    process_trade(args.map)
+
+
+if __name__ == "__main__":
+    main()

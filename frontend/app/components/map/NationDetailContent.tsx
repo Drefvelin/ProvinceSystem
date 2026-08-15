@@ -1,11 +1,12 @@
+import MapAuthImage from "./MapAuthImage";
 import type { MapId, MapMode, RegionInfo, RegionRecord } from "./types";
-import { apiBase } from "./types";
 
 type NationDetailContentProps = {
   mapId: MapId;
   mapType: MapMode;
   regionInfo: RegionInfo;
   regionData: RegionRecord | null;
+  sessionToken?: string | null;
 };
 
 export default function NationDetailContent({
@@ -13,9 +14,8 @@ export default function NationDetailContent({
   mapType,
   regionInfo,
   regionData,
+  sessionToken,
 }: NationDetailContentProps) {
-  const base = apiBase();
-
   return (
     <div className="flex gap-4">
       <div className="min-w-0 flex-1">
@@ -68,8 +68,10 @@ export default function NationDetailContent({
 
       {regionInfo.banner && (
         <div className="flex shrink-0 flex-col items-center">
-          <img
-            src={`${base}/${mapId}/banners/${mapType}/${regionInfo.banner}.png`}
+          <MapAuthImage
+            mapId={mapId}
+            path={`/${mapId}/banners/${mapType}/${regionInfo.banner}.png`}
+            sessionToken={sessionToken}
             alt={`${regionInfo.title} banner`}
             className="image-render-pixel w-24 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] shadow-md"
           />

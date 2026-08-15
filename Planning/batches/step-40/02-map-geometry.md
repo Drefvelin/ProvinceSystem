@@ -19,6 +19,8 @@ Generate static province **neighbor graph** and **centroids** for label layout. 
 | [`backend/src/defines/dev/province_neighbors.json`](../../../backend/src/defines/dev/province_neighbors.json) | Regenerated (parity) |
 | [`backend/src/defines/dev/province_centroids.json`](../../../backend/src/defines/dev/province_centroids.json) | Generated — dev |
 
+**Step 48:** same CLI also writes `province_label_neighbors.json` (water bridges for label grouping only). See [step-48/02-label-neighbor-geometry](../step-48/02-label-neighbor-geometry.md).
+
 [`find_neighbours.py`](../../../backend/src/editor/find_neighbours.py) — comment points to new CLI; editor script unchanged.
 
 ## Operator command

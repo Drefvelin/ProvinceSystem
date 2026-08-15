@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Header, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
 import json, os, time
 
+from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 from ..scripts.loader.province_metadata import load_province_metadata
 
@@ -58,8 +59,11 @@ def build_compiled_provinces(map_name: str):
     return out
 
 @data_router.get("/{map_name}/compiled_data/provinces")
-async def get_compiled_provinces(map_name: str):
-    validate_map(map_name)
+async def get_compiled_provinces(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
     now = time.time()
     cached = _province_cache.get(map_name)
 
@@ -70,9 +74,28 @@ async def get_compiled_provinces(map_name: str):
     _province_cache[map_name] = {"ts": now, "data": data}
     return JSONResponse(data)
 
+@data_router.get("/{map_name}/data/province_label_grid_bin")
+async def get_province_label_grid_bin(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
+    path = defines_file(map_name, "province_label_grid.bin.gz")
+    if not os.path.exists(path):
+        return JSONResponse({"error": "Data not found"}, 404)
+    return FileResponse(
+        path,
+        media_type="application/gzip",
+        filename="province_label_grid.bin.gz",
+    )
+
 @data_router.get("/{map_name}/data/{file}")
-async def get_map_name_data(map_name: str, file: str):
-    validate_map(map_name)
+async def get_map_name_data(
+    map_name: str,
+    file: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
     path = defines_file(map_name, f"{file}.json")
     if not os.path.exists(path):
         return JSONResponse({"error": "Data not found"}, 404)

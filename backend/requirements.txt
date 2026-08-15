@@ -4,3 +4,4 @@ pillow
 svgwrite
 python-multipart
 python-dotenv
+pyyaml

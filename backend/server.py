@@ -65,12 +65,14 @@ from src.api.banner_routes import banner_router
 from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
+from src.api.maps_routes import maps_router
 from src.api.skins_routes import skins_router
 from src.api.characters_routes import characters_router
 from src.api.drinks_routes import drinks_router
 
 app.include_router(map_router)
 app.include_router(data_router)
+app.include_router(maps_router)
 app.include_router(banner_router)
 app.include_router(claim_router)
 app.include_router(regen_router)

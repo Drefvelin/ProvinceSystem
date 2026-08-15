@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
 import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
@@ -36,7 +36,11 @@ export function useRegionHover({
   mapDisplayName: string;
   mapObjects: MapObject[];
 }) {
-  const lastRgbRef = useRef<string | null>(null);
+  const lastHoverKeyRef = useRef<string | null>(null);
+
+  const resetHoverCache = useCallback(() => {
+    lastHoverKeyRef.current = null;
+  }, []);
 
   const handleRegionHover = (
     ctx: CanvasRenderingContext2D,
@@ -45,19 +49,27 @@ export function useRegionHover({
     screenX: number,
     screenY: number,
     setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
-  ) => {
-    if (!regionData) return;
+  ): boolean => {
+    if (!regionData) return false;
 
-    const pixel = ctx.getImageData(x, y, 1, 1).data;
+    let pixel: Uint8ClampedArray;
+    try {
+      if (x < 0 || y < 0 || x >= ctx.canvas.width || y >= ctx.canvas.height) {
+        return false;
+      }
+      pixel = ctx.getImageData(x, y, 1, 1).data;
+    } catch {
+      return false;
+    }
     const rgb = `${pixel[0]},${pixel[1]},${pixel[2]}`;
     const pickId = rgbToId[rgb];
 
     if (!pickId) {
-      lastRgbRef.current = null;
+      lastHoverKeyRef.current = null;
       setHoveredOverlay(null);
       setRegionInfo(null);
       setCursorTooltip(null);
-      return;
+      return false;
     }
 
     const { regionId, imagePath, overlay, region } = getHoverRegion(
@@ -68,11 +80,11 @@ export function useRegionHover({
     );
 
     if (!regionId || !region) {
-      lastRgbRef.current = null;
+      lastHoverKeyRef.current = null;
       setHoveredOverlay(null);
       setRegionInfo(null);
       setCursorTooltip(null);
-      return;
+      return false;
     }
 
     setSelectedRegionId(regionId);
@@ -102,13 +114,15 @@ export function useRegionHover({
       hint: hintLines.join("\n"),
     });
 
-    if (rgb !== lastRgbRef.current) {
-      lastRgbRef.current = rgb;
-
+    const hoverKey = `${pickId}:${regionId}`;
+    if (hoverKey !== lastHoverKeyRef.current) {
+      lastHoverKeyRef.current = hoverKey;
       setHoveredOverlay(imagePath ? { url: imagePath, overlay } : null);
       setRegionInfo(info);
     }
+
+    return true;
   };
 
-  return { handleRegionHover };
+  return { handleRegionHover, resetHoverCache };
 }

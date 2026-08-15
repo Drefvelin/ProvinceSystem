@@ -1,20 +1,28 @@
 // hooks/useGuildCache.ts
 import { useEffect, useRef } from "react";
 
-export function useGuildCache(mapId: "main" | "dev") {
+import type { MapId } from "../components/map/types";
+import { fetchMapJson } from "@/lib/map/api";
+
+export function useGuildCache(
+  mapId: MapId,
+  sessionToken?: string | null
+) {
   const guildNameCacheRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/${mapId}/data/trade`)
-      .then(res => res.json())
+    void fetchMapJson<Record<string, { name?: string }>>(
+      `/${mapId}/data/trade`,
+      { sessionToken }
+    )
       .then((guilds) => {
         if (cancelled) return;
 
         const map: Record<string, string> = {};
         for (const [id, g] of Object.entries(guilds)) {
-          map[id] = (g as any).name ?? id;
+          map[id] = g.name ?? id;
         }
         guildNameCacheRef.current = map;
       })
@@ -27,7 +35,7 @@ export function useGuildCache(mapId: "main" | "dev") {
     return () => {
       cancelled = true;
     };
-  }, [mapId]);
+  }, [mapId, sessionToken]);
 
   return guildNameCacheRef;
 }

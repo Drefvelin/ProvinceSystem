@@ -1,4 +1,4 @@
-"""CLI: build province_neighbors.json and province_centroids.json for a map."""
+"""CLI: build province geometry JSON (neighbors, label neighbors, centroids, label grid)."""
 
 import sys
 

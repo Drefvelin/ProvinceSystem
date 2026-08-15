@@ -167,6 +167,31 @@ def get_rpc_player_meta(
     return _row_to_dict(row)
 
 
+def has_map_staff_access(
+    player_uuid: str,
+    realm_id: str | None,
+    permission_node: str,
+) -> bool:
+    """True when synced rpc_player_meta has permission_node in permission_flags."""
+    node = (permission_node or "").strip()
+    if not node:
+        return False
+
+    uuid = (player_uuid or "").strip().lower()
+    if not uuid:
+        return False
+
+    meta = get_rpc_player_meta(uuid, realm_id)
+    if meta is None:
+        return False
+
+    flags = meta.get("permission_flags") or {}
+    if not isinstance(flags, dict):
+        return False
+
+    return bool(flags.get(node))
+
+
 def _row_to_dict(row: Any) -> dict[str, Any]:
     stops = 0
     if row["name_colour_stops"] is not None:

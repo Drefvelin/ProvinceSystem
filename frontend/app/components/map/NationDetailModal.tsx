@@ -10,6 +10,7 @@ type NationDetailModalProps = {
   mapType: MapMode;
   regionInfo: RegionInfo | null;
   regionData: RegionRecord | null;
+  sessionToken?: string | null;
   onClose: () => void;
 };
 
@@ -19,6 +20,7 @@ export default function NationDetailModal({
   mapType,
   regionInfo,
   regionData,
+  sessionToken,
   onClose,
 }: NationDetailModalProps) {
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function NationDetailModal({
           mapType={mapType}
           regionInfo={regionInfo}
           regionData={regionData}
+          sessionToken={sessionToken}
         />
       </div>
     </div>

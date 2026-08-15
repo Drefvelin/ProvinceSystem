@@ -178,11 +178,42 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] [40.05](./batches/step-40/05-label-polish.md) ink + halo styling; zoom-hide stub
 - [x] [40.06](./batches/step-40/06-docs-verify.md) docs + STAGING
 
-### M4 — Access ([step-41](./batches/step-41/00-index.md)) — **next**
+### M3b — Map mode labels ([step-47](./batches/step-47/00-index.md)) — **done**
 
-- [ ] Staff-only maps (configurable per `mapId`)
+- [x] [47.01](./batches/step-47/01-planning-lock.md) planning lock
+- [x] [47.02](./batches/step-47/02-calavorn-terrain-fertility.md) Calavorn terrain + fertility maps + toolbar
+- [x] [47.03](./batches/step-47/03-calavorn-trade-data.md) spoof trade data + regen for `main`
+- [x] [47.04](./batches/step-47/04-title-province-rollup.md) `resolveTitleProvinces()` (frontend rollup)
+- [x] [47.05](./batches/step-47/05-title-labels-frontend.md) title mode labels on `/map/main`
+- [x] [47.06](./batches/step-47/06-trade-labels.md) trade guild labels
+- [x] [47.07](./batches/step-47/07-docs-verify.md) docs + STAGING
 
-### M5 — Settlements ([step-42](./batches/step-42/00-index.md))
+### M3c — Label neighbor graph ([step-48](./batches/step-48/00-index.md)) — **done**
+
+- [x] [48.01](./batches/step-48/01-planning-lock.md) planning lock
+- [x] [48.02](./batches/step-48/02-label-neighbor-geometry.md) `province_label_neighbors.json` builder + `main`/`dev`
+- [x] [48.03](./batches/step-48/03-frontend-wiring.md) fetch + `connectedComponents` wiring + tests
+- [x] [48.04](./batches/step-48/04-docs-verify.md) docs + STAGING
+
+### M3d — Pan and zoom ([step-49](./batches/step-49/00-index.md)) — **done**
+
+- [x] [49.01](./batches/step-49/01-planning-lock.md) planning lock
+- [x] [49.02](./batches/step-49/02-viewport-math.md) `mapViewportMath.ts` + `useMapViewport`
+- [x] [49.03](./batches/step-49/03-map-viewport.md) `MapViewport` + `MapCanvas`
+- [x] [49.04](./batches/step-49/04-pick-hover.md) `screenToMap` / pick-hover pipeline
+- [x] [49.05](./batches/step-49/05-labels-reset.md) live zoom → labels; viewport reset
+- [x] [49.06](./batches/step-49/06-edge-cases.md) resize, `mapSize` load, middle-click
+- [x] [49.07](./batches/step-49/07-docs-verify.md) STAGING + manual QA
+
+### M4 — Access ([step-41](./batches/step-41/00-index.md)) — **done**
+
+- [x] [41.01](./batches/step-41/01-planning-lock.md) planning lock
+- [x] [41.02](./batches/step-41/02-ps-map-registry.md) `maps.yml` + route guards
+- [x] [41.03](./batches/step-41/03-staff-session.md) profile session + `permission_flags`
+- [x] [41.04](./batches/step-41/04-frontend-gate.md) nav + error states
+- [x] [41.05](./batches/step-41/05-docs-verify.md) STAGING + manual QA
+
+### M5 — Settlements ([step-42](./batches/step-42/00-index.md)) — **next**
 
 - [ ] SF named capitals / guild settlements export + map markers
 
@@ -243,8 +274,8 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 26. **Map parchment pipeline / Step 38** — **done** ([step-38](./batches/step-38/00-index.md); tick [STAGING](../STAGING.md) Step 38 when ready)  
 27. **Ink cartography / Step 39** — **done** ([step-39](./batches/step-39/00-index.md); tick [STAGING](../STAGING.md) Step 39 when ready)  
 28. **Nation labels / Step 40** — **done** ([step-40](./batches/step-40/00-index.md); tick [STAGING](../STAGING.md) Step 40 when ready)  
-29. **Staff maps / Step 41** — **next build**  
-30. **Settlements, forts, wars, chronicle, wealth / Steps 42–46**  
+29. **Staff maps / Step 41** — **done** ([step-41](./batches/step-41/00-index.md); tick [STAGING](../STAGING.md) Step 41 when ready)  
+30. **Settlements, forts, wars, chronicle, wealth / Steps 42–46** — **next: step 42**  
 31. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
 32. **SimpleFactions via TFMCWeb / Step 47** — later (post map platform)  
 
@@ -262,4 +293,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), SimpleFactions via TFMCWeb ([step-46](./batches/README.md)).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.06).** Next build: [step-41 staff map access](./batches/step-41/00-index.md). Steps 42–46 **planned** ([16-map-platform.md](./16-map-platform.md)). Tick operator [STAGING](../STAGING.md) Steps 37–40 when ready.
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Next build:** [step-42](./batches/step-42/00-index.md). Steps 43–46 **planned** ([16-map-platform.md](./16-map-platform.md)).

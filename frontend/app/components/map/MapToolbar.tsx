@@ -50,12 +50,12 @@ export default function MapToolbar({
         <option value="duchy">Duchy Map</option>
         <option value="kingdom">Kingdom Map</option>
         <option value="empire">Empire Map</option>
-        {mapId === "dev" && (
+        {(mapId === "main" || mapId === "dev") && (
           <>
-            <option value="trade">Trade</option>
-            <option value="prosperity">Prosperity</option>
             <option value="terrain">Terrain</option>
             <option value="fertility">Fertility</option>
+            <option value="trade">Trade</option>
+            <option value="prosperity">Prosperity</option>
           </>
         )}
       </select>

@@ -57,6 +57,7 @@ Map regen auth: hashed key on claim/regen routes. Cosmetic routes use session to
 ## What works (platform)
 
 - Multi-map nation / county / duchy / kingdom / empire (+ terrain, fertility, trade, prosperity where data exists)
+- Desktop pan/zoom on `/map/{id}`: wheel zoom toward cursor, middle-mouse pan, clamped bounds ([step-49](./batches/step-49/00-index.md) — **code done**)
 - Hub + `/skins` + `/drinks` + `/character` (creator, kits, sheet, wardrobe)
 - TFMCWeb tokens, Discord link, shared skin↔drink cooldown, realm gateway (steps 32–35)
 - Skins E2E path (upload → Discord → ArmourShop apply)
@@ -64,12 +65,11 @@ Map regen auth: hashed key on claim/regen routes. Cosmetic routes use session to
 
 ## Known issues (map — primary remaining site work)
 
-Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-41](./batches/step-41/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**.
+Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-42](./batches/step-42/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**. Steps 47–49 (multi-mode labels, label neighbors, pan/zoom) **code done**. **Step 41** staff map access **code done** ([step-41](./batches/step-41/00-index.md)).
 
-1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Next map layers: settlements, forts, wars, chronicle, wealth ([steps 42–46](./batches/step-46/00-index.md)).
-2. **Staff maps** — no per-mapId access gate ([step-41](./batches/step-41/00-index.md)) — **next build**.
-3. **Settlements / forts / wars / chronicle / wealth** — not on map yet ([steps 42–46](./batches/step-46/00-index.md)).
-4. **Cropped overlays** — require **fullregen** after deploy for bbox metadata ([03-cropped-overlays](./batches/step-37/03-cropped-overlays.md)).
+1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Multi-mode title/trade labels + Calavorn terrain/fertility/trade/prosperity toolbar ([step-47](./batches/step-47/00-index.md) — **code done**). Desktop pan/zoom ([step-49](./batches/step-49/00-index.md) — **code done**). Further map layers: settlements, forts, wars, chronicle, wealth ([steps 42–46](./batches/step-46/00-index.md)).
+2. **Settlements / forts / wars / chronicle / wealth** — not on map yet ([steps 42–46](./batches/step-46/00-index.md)) — **next: step 42**.
+3. **Cropped overlays** — require **fullregen** after deploy for bbox metadata ([03-cropped-overlays](./batches/step-37/03-cropped-overlays.md)).
 
 ## Implications for the roadmap
 

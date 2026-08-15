@@ -272,4 +272,4 @@ Staging verify script: [08-docs-verify.md](./batches/step-17/08-docs-verify.md).
 
 ## Next step
 
-Character creator **done** (through step-30). Drink Builder **done** (step-31). Realm gateway **done** (steps 32–35). Map site UX **done** (step-37, code). Parchment pipeline v1 **done** (step-38, code). Ink cartography **done** (step-39, code). Nation labels **done** (step-40, code). **Next product work:** [step-41 staff map access](./batches/step-41/00-index.md) ([16-map-platform.md](./16-map-platform.md)).
+Character creator **done** (through step-30). Drink Builder **done** (step-31). Realm gateway **done** (steps 32–35). Map site UX **done** (step-37, code). Parchment pipeline v1 **done** (step-38, code). Ink cartography **done** (step-39, code). Nation labels **done** (step-40, code). Staff map access **done** (step-41, code). **Next product work:** [step-42 capitals / settlements](./batches/step-42/00-index.md) ([16-map-platform.md](./16-map-platform.md)).

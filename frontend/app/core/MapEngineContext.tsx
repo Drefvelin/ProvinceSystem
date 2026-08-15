@@ -2,8 +2,12 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
-import type { MapObject, OverlayBBox } from "../components/map/types";
+import type { OverlayBBox } from "../components/map/types";
 import { apiBase } from "../components/map/types";
+import {
+  buildMapObjectsFromRegionData,
+  initialMapObjectVisibility,
+} from "./mapObjectBuilder";
 
 type HoverRegionResult = {
   regionId: string | null;
@@ -13,8 +17,9 @@ type HoverRegionResult = {
 };
 
 type MapEngineContextType = {
-  mapObjects: MapObject[];
+  mapObjects: ReturnType<typeof buildMapObjectsFromRegionData>;
   loadData: (regionData: Record<string, unknown>) => void;
+  resetDrillVisibility: (regionData: Record<string, unknown>) => void;
   resetMapObjects: () => void;
   getHoverRegion: (
     mapType: string,
@@ -35,41 +40,21 @@ const MapEngineContext = createContext<MapEngineContextType | undefined>(
 export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [mapObjects, setMapObjects] = useState<MapObject[]>([]);
+  const [mapObjects, setMapObjects] = useState<
+    ReturnType<typeof buildMapObjectsFromRegionData>
+  >([]);
 
   const loadData = (regionData: Record<string, unknown>) => {
-    const objects = Object.keys(regionData).flatMap((regionId) => {
-      const region = regionData[regionId] as Record<string, unknown>;
-      const rgb = region.rgb as string | undefined;
-      if (!rgb) return [];
+    setMapObjects(buildMapObjectsFromRegionData(regionData));
+  };
 
-      const rgbPath = rgb.replace(/,/g, "_");
-      const overlay = region.overlay as OverlayBBox | undefined;
-      const overlayNested = region.overlay_nested as OverlayBBox | undefined;
-
-      const entries: MapObject[] = [
-        {
-          id: regionId,
-          visible: !region.overlord,
-          path: rgbPath,
-          overlay,
-        },
-      ];
-
-      const subjects = region.subjects as string[] | undefined;
-      if (subjects?.length) {
-        entries.push({
-          id: `${regionId}_nested`,
-          visible: false,
-          path: `${rgbPath}_nested`,
-          overlay: overlayNested,
-        });
-      }
-
-      return entries;
-    });
-
-    setMapObjects(objects);
+  const resetDrillVisibility = (regionData: Record<string, unknown>) => {
+    setMapObjects((prev) =>
+      prev.map((obj) => ({
+        ...obj,
+        visible: initialMapObjectVisibility(obj, regionData),
+      }))
+    );
   };
 
   const resetMapObjects = () => setMapObjects([]);
@@ -144,6 +129,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         mapObjects,
         loadData,
+        resetDrillVisibility,
         resetMapObjects,
         getHoverRegion,
         drillDownRegion,

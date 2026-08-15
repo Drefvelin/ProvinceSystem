@@ -14,7 +14,7 @@ Labels must render above political PNGs, only appear for map-visible nations, an
 | Z-order | `LabelLayer` above political overlay PNGs; hover wash stays on top |
 | Visibility | Label when `mapObjects` `main` or `_nested` entry is `visible: true` |
 | Hidden vassals | No label while overlay hidden (e.g. Verdant City at overview) |
-| Full borders | `main` visible → label from full `provinces[]` |
+| Full borders | `main` visible → union of suzerain `provinces[]` plus all descendant subject provinces (recursive `subjects[]`); data stores these separately |
 | Direct holdings | `main` hidden + `_nested` visible → suzerain label from `provinces[]` minus subject provinces |
 | While drilled | All visible nations labeled; other independents keep full-border labels |
 | Font size | No drill-tier hardcoding; `LABEL_FONT_SIZE` (28) for all |
