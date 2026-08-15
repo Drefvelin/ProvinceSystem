@@ -1,7 +1,14 @@
 // core/MapEngineContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { OverlayBBox } from "../components/map/types";
 import { apiBase } from "../components/map/types";
 import {
@@ -43,23 +50,34 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
   const [mapObjects, setMapObjects] = useState<
     ReturnType<typeof buildMapObjectsFromRegionData>
   >([]);
+  const mapObjectsRef = useRef(mapObjects);
+  mapObjectsRef.current = mapObjects;
 
-  const loadData = (regionData: Record<string, unknown>) => {
-    setMapObjects(buildMapObjectsFromRegionData(regionData));
-  };
+  const loadData = useCallback((regionData: Record<string, unknown>) => {
+    const next = buildMapObjectsFromRegionData(regionData);
+    setMapObjects((prev) => {
+      if (prev.length === 0 && next.length === 0) return prev;
+      return next;
+    });
+  }, []);
 
-  const resetDrillVisibility = (regionData: Record<string, unknown>) => {
-    setMapObjects((prev) =>
-      prev.map((obj) => ({
-        ...obj,
-        visible: initialMapObjectVisibility(obj, regionData),
-      }))
-    );
-  };
+  const resetDrillVisibility = useCallback(
+    (regionData: Record<string, unknown>) => {
+      setMapObjects((prev) =>
+        prev.map((obj) => ({
+          ...obj,
+          visible: initialMapObjectVisibility(obj, regionData),
+        }))
+      );
+    },
+    []
+  );
 
-  const resetMapObjects = () => setMapObjects([]);
+  const resetMapObjects = useCallback(() => {
+    setMapObjects((prev) => (prev.length === 0 ? prev : []));
+  }, []);
 
-  const getHoverRegion = (
+  const getHoverRegion = useCallback((
     mapType: string,
     mapId: string,
     regionId: string,
@@ -67,12 +85,13 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
   ): HoverRegionResult => {
     const base = apiBase();
     let currentRegionId: string | null = regionId;
+    const objects = mapObjectsRef.current;
 
     while (currentRegionId) {
       const region = regionData[currentRegionId] as Record<string, unknown>;
       if (!region) return { regionId: null, imagePath: null, region: null };
 
-      const main = mapObjects.find((obj) => obj.id === currentRegionId);
+      const main = objects.find((obj) => obj.id === currentRegionId);
       if (main?.visible) {
         return {
           regionId: currentRegionId,
@@ -83,7 +102,7 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const nestedId = `${currentRegionId}_nested`;
-      const nested = mapObjects.find((obj) => obj.id === nestedId);
+      const nested = objects.find((obj) => obj.id === nestedId);
       if (nested?.visible) {
         return {
           regionId: currentRegionId,
@@ -97,44 +116,56 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     return { regionId: null, imagePath: null, region: null };
-  };
+  }, []);
 
-  const drillDownRegion = (
-    regionId: string,
-    regionData: Record<string, unknown>
-  ) => {
-    const updated = [...mapObjects];
-    const region = regionData[regionId] as Record<string, unknown>;
-    const subjects = region?.subjects as string[] | undefined;
-    if (!region || !subjects?.length) return;
+  const drillDownRegion = useCallback(
+    (regionId: string, regionData: Record<string, unknown>) => {
+      setMapObjects((prev) => {
+        const region = regionData[regionId] as Record<string, unknown>;
+        const subjects = region?.subjects as string[] | undefined;
+        if (!region || !subjects?.length) return prev;
 
-    const mainIndex = updated.findIndex((obj) => obj.id === regionId);
-    if (mainIndex !== -1) updated[mainIndex].visible = false;
+        const updated = prev.map((obj) => ({ ...obj }));
+        const mainIndex = updated.findIndex((obj) => obj.id === regionId);
+        if (mainIndex !== -1) updated[mainIndex].visible = false;
 
-    const nestedIndex = updated.findIndex(
-      (obj) => obj.id === `${regionId}_nested`
-    );
-    if (nestedIndex !== -1) updated[nestedIndex].visible = true;
+        const nestedIndex = updated.findIndex(
+          (obj) => obj.id === `${regionId}_nested`
+        );
+        if (nestedIndex !== -1) updated[nestedIndex].visible = true;
 
-    for (const subjectId of subjects) {
-      const subjectIndex = updated.findIndex((obj) => obj.id === subjectId);
-      if (subjectIndex !== -1) updated[subjectIndex].visible = true;
-    }
+        for (const subjectId of subjects) {
+          const subjectIndex = updated.findIndex((obj) => obj.id === subjectId);
+          if (subjectIndex !== -1) updated[subjectIndex].visible = true;
+        }
 
-    setMapObjects(updated);
-  };
+        return updated;
+      });
+    },
+    []
+  );
+
+  const value = useMemo(
+    () => ({
+      mapObjects,
+      loadData,
+      resetDrillVisibility,
+      resetMapObjects,
+      getHoverRegion,
+      drillDownRegion,
+    }),
+    [
+      mapObjects,
+      loadData,
+      resetDrillVisibility,
+      resetMapObjects,
+      getHoverRegion,
+      drillDownRegion,
+    ]
+  );
 
   return (
-    <MapEngineContext.Provider
-      value={{
-        mapObjects,
-        loadData,
-        resetDrillVisibility,
-        resetMapObjects,
-        getHoverRegion,
-        drillDownRegion,
-      }}
-    >
+    <MapEngineContext.Provider value={value}>
       {children}
     </MapEngineContext.Provider>
   );

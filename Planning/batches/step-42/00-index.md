@@ -10,21 +10,23 @@ Faction and guild capitals (and distant guild settlements) must be **named in-ga
 
 ## Locked rules
 
+Spec: **`Workspace/simplefactions/Documentation/Settlements.md`** · [01-planning-lock](./01-planning-lock.md)
+
 | Piece | Choice |
 |-------|--------|
-| SF | `setcapital` + guild capital rules; settlement when guild capital > X blocks from faction capital |
-| Export | `capitals` + `settlements` arrays per [map-export-schema.json](../../assets/map-export-schema.json) |
-| Render | Icon + label at province centroid or `map_x`/`map_y` |
-| Unnamed | No marker until named in-game |
+| SF | Named `Settlement` cities; `setcapital` found/join rules; explicit province lists |
+| Export | `map_markers` sidecar per [map-export-schema.json](../../assets/map-export-schema.json) |
+| Render | Marker at settlement centre coords (`centerX`/`centerZ`) |
+| Map | One marker per settlement; faction capital on centre only when using existing city |
 
-## Batches (when step starts)
+## Batches
 
-1. **01-planning-lock**  
-2. **02-sf-export** — Capitals/settlements in upload payload  
+1. **[01-planning-lock](./01-planning-lock.md)** — Naming, distance, export contract, SF package rules **done**
+2. **02-sf-export** — `settlement` package + `Map.export`; per Settlements.md  
 3. **03-ps-compile** — Store in defines / serve via API  
 4. **04-frontend-markers** — Town layer on map  
 5. **05-docs-verify** — STAGING Step 42  
 
 ## Status
 
-**Planned.**
+**42.01 locked.** Next: SF export (42.02).
