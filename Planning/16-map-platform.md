@@ -1,6 +1,6 @@
 # 16 — Map platform
 
-**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–41 + 47 + 48 + 49 code done**. **Step 42 next**. Steps 43–46 planned.  
+**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–42 + 47 + 48 + 49 code done**. **Step 43 next**. Steps 44–46 planned.  
 **Repos:** `ProvinceSystem` (FE + BE mapgen) · `Workspace/simplefactions` (export + upload) · `Workspace/tfmcweb` (staff map gate)  
 **Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-49](./batches/step-49/00-index.md)  
 **Technical refs:** [09-map-system.md](./09-map-system.md) · [04-map-performance.md](./04-map-performance.md)  
@@ -24,7 +24,7 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | 5 | Visual parity with site hub / shell | [37](./batches/step-37/00-index.md) |
 | 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) — **done** |
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
-| 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) |
+| 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) — **done** |
 | 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) |
 | 10 | Wars / frontlines / campaigns | [44](./batches/step-44/00-index.md) (blocked on SF war rework) |
 | 11 | Daily map snapshots + changelog | [45](./batches/step-45/00-index.md) |
@@ -114,19 +114,16 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 4. **[39](./batches/step-39/00-index.md)** — Ink cartography (colour base default, parchment washes, uniform borders) **done**
 5. **[40](./batches/step-40/00-index.md)** — Nation labels (frontend SVG, province graph) **done**
 6. **[41](./batches/step-41/00-index.md)** — Staff map access **done**
-7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS) **next**
-8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS)
+7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS + TFMCWeb + FE) — **done**
+8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS) — **next**
 9. **[44](./batches/step-44/00-index.md)** — War layer (**blocked on SF war rework**)
 10. **[45](./batches/step-45/00-index.md)** — Map chronicle (snapshots + log)
 11. **[46](./batches/step-46/00-index.md)** — Wealth history + charts
-
-**Later:** [step-46](./batches/README.md) — SimpleFactions REST via TFMCWeb gateway (post map platform).
 
 ## Out of scope (v1 map platform)
 
 - Vector / WebGL map engine rewrite
 - Auto-generated oversimplified animation video (store frames + events for future tooling)
-- SimpleFactions HTTP through TFMCWeb (step 46)
 - Rewriting mapgen in another language
 
 ## Success criteria (map platform MVP)

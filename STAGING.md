@@ -1049,11 +1049,45 @@ Desktop pan/zoom on `/map/{id}`: wheel zoom toward cursor, middle-mouse pan with
 
 **Batch:** [Planning/batches/step-42/00-index.md](./Planning/batches/step-42/00-index.md).
 
-SF named capitals / guild settlements export + map markers.
+SF named capitals / guild settlements export + map markers via TFMCWeb gateway; PS `GET /data/markers`; frontend settlement pins on political modes.
 
 ### Operator checklist
 
-- [ ] TBD when batch files land
+#### SF + LP + TFMCWeb
+
+- [ ] TFMCWeb `api.base-url` / `api.plugin-key` configured
+- [ ] SimpleFactions `softdepend` TFMCWeb; map uploads use gateway (no SF API URL)
+- [ ] `settlement-found-distance` in SF config (default 2)
+- [ ] `settlement-large-population-threshold` in SF config (default 8)
+
+#### Gameplay
+
+- [ ] Faction can found city with `/faction setcapital "Name"`
+- [ ] Guild can found/join per distance rules
+- [ ] City with 9+ guild capitals exports `marker_size: large`
+
+#### Map data
+
+- [ ] `map_markers.json` uploaded on regen (via gateway)
+- [ ] `GET /main/data/markers` returns settlements with `map_x`/`map_y`, `population`, `marker_size`
+
+#### Website
+
+- [ ] Zoomed out: no settlement markers visible
+- [ ] Zoomed in: correct pin per `marker_size` and `kind` (`settlement_*` vs `capital_settlement_*`)
+- [ ] Straight black settlement name under each pin (no arc)
+- [ ] Anonymous `/map/main` unchanged for access; staff map unchanged from step 41
+
+#### Regression
+
+- [ ] Nation labels, pan/zoom, modals still work
+- [ ] Lose centre province → city removed from map after regen
+
+#### Tests
+
+- [x] `python -m unittest discover -s src/scripts/loader -p "test_markers.py" -v` (7 tests)
+- [x] `python -m unittest src.api.test_map_access -v` (19 tests)
+- [x] `npm test` (92) + `npm run build`
 
 ## Step 43 — Forts and zone of control
 

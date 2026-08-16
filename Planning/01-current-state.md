@@ -65,10 +65,10 @@ Map regen auth: hashed key on claim/regen routes. Cosmetic routes use session to
 
 ## Known issues (map — primary remaining site work)
 
-Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-42](./batches/step-42/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**. Steps 47–49 (multi-mode labels, label neighbors, pan/zoom) **code done**. **Step 41** staff map access **code done** ([step-41](./batches/step-41/00-index.md)).
+Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-43](./batches/step-43/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**. Steps 47–49 (multi-mode labels, label neighbors, pan/zoom) **code done**. **Step 41** staff map access **code done** ([step-41](./batches/step-41/00-index.md)). **Step 42** settlements **code done** ([step-42](./batches/step-42/00-index.md)).
 
-1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Multi-mode title/trade labels + Calavorn terrain/fertility/trade/prosperity toolbar ([step-47](./batches/step-47/00-index.md) — **code done**). Desktop pan/zoom ([step-49](./batches/step-49/00-index.md) — **code done**). Further map layers: settlements, forts, wars, chronicle, wealth ([steps 42–46](./batches/step-46/00-index.md)).
-2. **Settlements / forts / wars / chronicle / wealth** — not on map yet ([steps 42–46](./batches/step-46/00-index.md)) — **next: step 42**.
+1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Multi-mode title/trade labels + Calavorn terrain/fertility/trade/prosperity toolbar ([step-47](./batches/step-47/00-index.md) — **code done**). Desktop pan/zoom ([step-49](./batches/step-49/00-index.md) — **code done**). Settlement markers on political modes ([step-42](./batches/step-42/00-index.md) — **code done**). Further map layers: forts, wars, chronicle, wealth ([steps 43–46](./batches/step-46/00-index.md)).
+2. **Forts / wars / chronicle / wealth** — not on map yet ([steps 43–46](./batches/step-46/00-index.md)) — **next: step 43**.
 3. **Cropped overlays** — require **fullregen** after deploy for bbox metadata ([03-cropped-overlays](./batches/step-37/03-cropped-overlays.md)).
 
 ## Implications for the roadmap

@@ -213,9 +213,12 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] [41.04](./batches/step-41/04-frontend-gate.md) nav + error states
 - [x] [41.05](./batches/step-41/05-docs-verify.md) STAGING + manual QA
 
-### M5 — Settlements ([step-42](./batches/step-42/00-index.md)) — **next**
+### M5 — Settlements ([step-42](./batches/step-42/00-index.md)) — **done**
 
-- [ ] SF named capitals / guild settlements export + map markers
+- [x] SF settlement core, setcapital, territory, relocate, departure hooks
+- [x] `map_markers` export + PS `GET /data/markers` + centroid enrich
+- [x] TFMCWeb gateway for SF map HTTP
+- [x] Population + `marker_size` export; FE settlement marker layer
 
 ### M6 — Forts ([step-43](./batches/step-43/00-index.md))
 
@@ -275,9 +278,10 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 27. **Ink cartography / Step 39** — **done** ([step-39](./batches/step-39/00-index.md); tick [STAGING](../STAGING.md) Step 39 when ready)  
 28. **Nation labels / Step 40** — **done** ([step-40](./batches/step-40/00-index.md); tick [STAGING](../STAGING.md) Step 40 when ready)  
 29. **Staff maps / Step 41** — **done** ([step-41](./batches/step-41/00-index.md); tick [STAGING](../STAGING.md) Step 41 when ready)  
-30. **Settlements, forts, wars, chronicle, wealth / Steps 42–46** — **next: step 42**  
-31. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
-32. **SimpleFactions via TFMCWeb / Step 47** — later (post map platform)  
+30. **Settlements / Step 42** — **done** ([step-42](./batches/step-42/00-index.md))  
+31. **Forts, wars, chronicle, wealth / Steps 43–46** — **next: step 43**  
+32. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
+33. SimpleFactions map HTTP via TFMCWeb — **done** ([42.07](./batches/step-42/07-sf-tfmcweb-gateway.md))  
 
 ---
 
@@ -292,5 +296,5 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | TFMCWeb | Survival Discord gate; `/token create skin|drink`; shared mint cooldown; ArmourShop no longer owns link |
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
-Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer), SimpleFactions via TFMCWeb ([step-46](./batches/README.md)).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Next build:** [step-42](./batches/step-42/00-index.md). Steps 43–46 **planned** ([16-map-platform.md](./16-map-platform.md)).
+Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer).  
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Step 42 settlements done (42.01–42.10).** **Next build:** [step-43](./batches/step-43/00-index.md). Steps 44–46 **planned** ([16-map-platform.md](./16-map-platform.md)).

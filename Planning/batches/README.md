@@ -77,7 +77,7 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-41/00-index](./step-41/00-index.md) | 41 | Staff map access control | **done** (code) |
 | [step-47/00-index](./step-47/00-index.md) | 47 | Map mode labels & Calavorn data layers | **done** |
 | [step-48/00-index](./step-48/00-index.md) | 48 | Label neighbor graph (water bridges) | **done** |
-| [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | planned |
+| [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | **done** |
 | [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | planned |
 | [step-44/00-index](./step-44/00-index.md) | 44 | War map layer | planned (blocked on SF war rework) |
 | [step-45/00-index](./step-45/00-index.md) | 45 | Map chronicle | planned |
@@ -85,6 +85,6 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 
 **Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX; Step 26 = kit asset sync + status; Step 27 = kit templates + resetkit; Step 28 = book skins + kit journal; Step 29 = kit customise visibility + claim AS gate; Step 30 = character skin wardrobe; Step 31 = Drink Builder; Steps 32–35 = realm + TFMCWeb gateway; Steps 36–45 = map platform.
 
-**Later:** SimpleFactions map upload via TFMCWeb (step 46); migrate legacy `tfmc_armor` if desired.
+**In step 42:** SimpleFactions map HTTP via TFMCWeb ([42.07](./step-42/07-sf-tfmcweb-gateway.md)) — **done**.
 
 Parent playbook: [../README.md](../README.md) · TFMCWeb: [../13-tfmcweb.md](../13-tfmcweb.md) · Characters: [../14-character-creator.md](../14-character-creator.md) · Drinks: [../15-drink-builder.md](../15-drink-builder.md) · Map: [../16-map-platform.md](../16-map-platform.md) · Checklist: [../08-implementation-checklist.md](../08-implementation-checklist.md)

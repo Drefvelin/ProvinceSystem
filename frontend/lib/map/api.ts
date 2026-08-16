@@ -1,4 +1,4 @@
-import type { MapId } from "@/app/components/map/types";
+import type { MapId, MapMarkersResponse } from "@/app/components/map/types";
 
 export const STAFF_MAP_ACCESS_DETAIL = "Staff map access required";
 export const STAFF_MAP_PERMISSION_DETAIL = "Staff map permission required";
@@ -142,6 +142,15 @@ export async function fetchAccessibleMaps(
   sessionToken?: string | null
 ): Promise<AccessibleMapsResponse> {
   return fetchMapJson<AccessibleMapsResponse>("/maps/accessible", {
+    sessionToken,
+  });
+}
+
+export async function fetchMapMarkers(
+  mapId: MapId,
+  sessionToken?: string | null
+): Promise<MapMarkersResponse> {
+  return fetchMapJson<MapMarkersResponse>(`/${mapId}/data/markers`, {
     sessionToken,
   });
 }

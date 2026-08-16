@@ -7,6 +7,7 @@ import {
   fetchAccessibleMaps,
   fetchMapApi,
   fetchMapJson,
+  fetchMapMarkers,
   staffMapAccessReason,
 } from "@/lib/map/api";
 
@@ -32,6 +33,25 @@ describe("map api", () => {
       "http://api.test/dev/data/nation",
       expect.objectContaining({
         headers: { Authorization: "Bearer abc-token" },
+      })
+    );
+  });
+
+  it("fetchMapMarkers requests markers endpoint with session token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ map_id: "main", exported_at: null, settlements: [] }),
+        { status: 200 }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchMapMarkers("main", "token-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://api.test/main/data/markers",
+      expect.objectContaining({
+        headers: { Authorization: "Bearer token-1" },
       })
     );
   });

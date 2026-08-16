@@ -4,6 +4,7 @@ import json, os, time
 
 from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, defines_file, validate_map
+from ..scripts.loader.markers import build_markers_response
 from ..scripts.loader.province_metadata import load_province_metadata
 
 data_router = APIRouter()
@@ -89,6 +90,14 @@ async def get_province_label_grid_bin(
         filename="province_label_grid.bin.gz",
     )
 
+@data_router.get("/{map_name}/data/markers")
+async def get_map_markers(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
+    return JSONResponse(build_markers_response(map_name))
+
 @data_router.get("/{map_name}/data/{file}")
 async def get_map_name_data(
     map_name: str,
@@ -109,7 +118,7 @@ async def upload_region_data(map_name: str, mode: str, request: Request):
 
     path = (
         input_file(map_name, f"{mode}.json")
-        if mode in {"nation", "guilds", "province_data", "queue"}
+        if mode in {"nation", "guilds", "province_data", "queue", "map_markers"}
         else defines_file(map_name, f"{mode}.json")
     )
 

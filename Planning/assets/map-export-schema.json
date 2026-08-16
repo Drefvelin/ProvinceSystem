@@ -13,6 +13,10 @@
       "type": "string",
       "format": "date-time"
     },
+    "settlement_large_population_threshold": {
+      "type": "integer",
+      "description": "SF config: settlements with population greater than this export marker_size large (default 8)"
+    },
     "global_wealth": {
       "type": "number",
       "description": "Optional server-wide wealth aggregate for charts"
@@ -52,8 +56,36 @@
           "type": "string",
           "enum": ["faction_capital", "guild_capital", "settlement"]
         },
-        "map_x": { "type": "integer", "description": "Pixel X on shared map grid" },
-        "map_y": { "type": "integer", "description": "Pixel Y on shared map grid" }
+        "center_x": {
+          "type": "integer",
+          "description": "Minecraft block X at founding (SF export)"
+        },
+        "center_z": {
+          "type": "integer",
+          "description": "Minecraft block Z at founding (SF export)"
+        },
+        "provinces": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Settlement territory province ids"
+        },
+        "population": {
+          "type": "integer",
+          "description": "Guild capitals in settlement provinces (SF export)"
+        },
+        "marker_size": {
+          "type": "string",
+          "enum": ["small", "large"],
+          "description": "Icon tier from SF population vs settlement_large_population_threshold"
+        },
+        "map_x": {
+          "type": "integer",
+          "description": "Pixel X on shared map grid (PS-served from province centroid)"
+        },
+        "map_y": {
+          "type": "integer",
+          "description": "Pixel Y on shared map grid (PS-served from province centroid)"
+        }
       }
     },
     "fort": {

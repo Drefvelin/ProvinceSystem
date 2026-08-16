@@ -6,6 +6,7 @@ import { useMapHover } from "../hooks/useMapHover";
 import type { MapPickViewport } from "../hooks/useMapCoords";
 import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
+import { useMapMarkers } from "../hooks/useMapMarkers";
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
 import {
@@ -163,6 +164,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     labelGrid,
     ready: geometryReady,
   } = useMapGeometry(mapId, authToken);
+  const markersEnabled = accessChecked && gateReason === null;
+  const { settlements } = useMapMarkers(mapId, authToken, markersEnabled);
 
   const labelGeometry = useMemo(() => {
     if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;
@@ -469,6 +472,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           hoveredOverlay={hoveredOverlay}
           cursorTooltip={cursorTooltip}
           labels={regionLabels}
+          settlements={settlements}
           hoveredNationId={selectedRegionId}
           onMouseMove={onMouseMove}
           onMouseLeave={handleMouseLeave}

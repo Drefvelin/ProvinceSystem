@@ -40,11 +40,11 @@ flowchart TB
 |------|-----|------|
 | 1 | Gameplay | Nation claims change |
 | 2 | SimpleFactions | Enqueue affected region RGB; persist nation JSON |
-| 3 | SimpleFactions | `POST /{map}/data/upload/…` and/or queue upload |
-| 4 | SimpleFactions | `GET /{map}/{key}/api/regenerate/…` |
+| 3 | SimpleFactions | `POST /{map}/data/upload/…` via TFMCWeb `ProvinceSystemGateway` (nation, queue, `map_markers`, …) |
+| 4 | SimpleFactions | `GET /{map}/{key}/api/regenerate/…` via gateway |
 | 5 | ProvinceSystem | Compile + mapgen + regiongen → `output/{map}/` |
 | 6 | Visitor | Opens `/map/{mapId}`; loads mapdata, regions, defines JSON |
-| 7 | Visitor | Hover/drill-down on MapViewer |
+| 7 | Visitor | Hover/drill-down on MapViewer; settlement pins on political modes when zoomed in |
 
 **Failure modes:** wrong `mapRef`; empty `output/`; regen lock; stale CDN/browser cache (API FileResponse).
 

@@ -57,7 +57,7 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 
 ## Track H — Map platform
 
-**Status:** **Steps 40–41 + 47–49 code done.** Next: **step-42 settlements.** Steps 43–46 planned.  
+**Status:** **Steps 40–42 + 47–49 code done.** Next: **step-43 forts.** Steps 44–46 planned.  
 **Repos:** ProvinceSystem · SimpleFactions · TFMCWeb (staff map gate)  
 **Playbook:** [16-map-platform.md](./16-map-platform.md)
 
@@ -69,15 +69,13 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 | H2b | [39](./batches/step-39/00-index.md) | Ink cartography: colour base default, parchment washes, uniform borders — **done (code)** |
 | H3 | [40](./batches/step-40/00-index.md) | Nation labels (frontend SVG, straight text v1) — **done (code)** |
 | H4 | [41](./batches/step-41/00-index.md) | Staff-only maps (configurable) — **done (code)** |
-| H5 | [42](./batches/step-42/00-index.md) | Named capitals / guild settlements (SF export) |
+| H5 | [42](./batches/step-42/00-index.md) | Named capitals / guild settlements (SF export, TFMCWeb, FE markers) — **done** |
 | H6 | [43](./batches/step-43/00-index.md) | Forts + zone of control (SF forts) |
 | H7 | [44](./batches/step-44/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
 | H8 | [45](./batches/step-45/00-index.md) | Daily snapshots + chronicle log |
 | H9 | [46](./batches/step-46/00-index.md) | Wealth history + charts |
 
 **Done when:** Parchment political map, nation modals, staff map gates, settlements, chronicle + wealth charts; wars when SF ships.
-
-**Later:** SimpleFactions REST via TFMCWeb (step 46 — not part of map platform).
 
 Technical detail: [09-map-system.md](./09-map-system.md), [04-map-performance.md](./04-map-performance.md).
 
@@ -281,15 +279,12 @@ Quotas, retention, module template, optional brewery stub.
 | G3 | [34](./batches/step-34/00-realm-scoped-data.md) | Realm-scoped create/apply queues — **done** |
 | G4 | [35](./batches/step-35/00-http-gateway-per-realm.md) | TFMCWeb HTTP gateway + per-realm isolation — **done** |
 
-**Later:** SimpleFactions map upload via TFMCWeb (step 46).
-
 ---
 
 ## Priority for “finished product ASAP”
 
-1. **Track H / step-42** — Capitals / settlements (next build)  
-2. **Track H / steps 43–46** — Forts, wars, chronicle, wealth  
-3. Tick operator [STAGING](../STAGING.md) Steps 37–41 when ready; Steps 17–35, 31 when ready  
+1. **Track H / step-43** — Forts + zone of control (next build)  
+2. **Track H / steps 44–46** — Wars, chronicle, wealth  
+3. Tick operator [STAGING](../STAGING.md) Steps 37–42 when ready; Steps 17–35, 31 when ready  
 4. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
-5. **Step 16** — 3D upload preview polish (02–03 done; variants optional)  
-6. **Step 46** — SimpleFactions via TFMCWeb (post map platform)
+5. **Step 16** — 3D upload preview polish (02–03 done; variants optional)

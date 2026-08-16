@@ -60,6 +60,32 @@ export type CursorTooltip = {
   hint?: string;
 };
 
+export type SettlementMarkerKind =
+  | "faction_capital"
+  | "guild_capital"
+  | "settlement";
+
+export type SettlementMarkerSize = "small" | "large";
+
+export type SettlementMarker = {
+  id: string;
+  name: string;
+  faction_id?: string;
+  province_id?: number;
+  kind?: SettlementMarkerKind;
+  marker_size?: SettlementMarkerSize;
+  population?: number;
+  map_x?: number;
+  map_y?: number;
+};
+
+export type MapMarkersResponse = {
+  map_id: string;
+  exported_at: string | null;
+  settlement_large_population_threshold?: number;
+  settlements: SettlementMarker[];
+};
+
 export const MAP_BOUNDS: Record<MapId, number> = {
   main: 4096,
   dev: 6400,

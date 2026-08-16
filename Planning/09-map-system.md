@@ -35,21 +35,25 @@ sequenceDiagram
 
 ## SimpleFactions REST
 
-Primary client: `Workspace/simplefactions/.../REST/RestServer.java` (under the TFMC workspace root).
+Primary client: `Workspace/simplefactions/.../REST/RestServer.java` — delegates to TFMCWeb `ProvinceSystemGateway` via `api/GatewayClient.java`.
 
 | Call | Purpose |
 |------|---------|
 | `GET {api}/{mapRef}/map/province/{x},{z}` | Resolve province under player |
-| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue JSON |
+| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue / `map_markers` JSON |
 | `GET {api}/{mapRef}/{hashedKey}/api/regenerate/{type}` | `textonly`, queued, or `fullregen` |
 | `GET {api}/generator/banner` | Random banner patterns |
 
-Config knobs (today partly hardcoded):
+Config knobs:
 
-- `apiURL` — e.g. production API or `http://localhost:8000`
-- `Cache.mapRef` — which map folder (`main`, `dev`, …)
-- `Cache.mapEnabled` — kill switch
-- Regen auth — MD5 path segment; **move secret to plugin config** when touching this code (do not leave production secrets only in source)
+| Where | Key | Purpose |
+|-------|-----|---------|
+| **TFMCWeb** `config.yml` | `api.base-url`, `api.plugin-key` | ProvinceSystem HTTP (all SF map calls) |
+| **SimpleFactions** `config.yml` | `map-reference` | `Cache.mapRef` — which map folder (`main`, `dev`, …) |
+| **SimpleFactions** `config.yml` | `enable-map` | `Cache.mapEnabled` — kill switch |
+| SF source | regen path hash | MD5 segment in regenerate URL (move to config in a later security batch) |
+
+SimpleFactions **soft-depends** on TFMCWeb; with `enable-map: true` and TFMCWeb missing, SF logs a severe startup warning and map HTTP fails at runtime.
 
 Claim changes typically `enqueue("nation", rgb)` then later upload queue + regenerate.
 
@@ -57,8 +61,8 @@ Claim changes typically `enqueue("nation", rgb)` then later upload queue + regen
 
 1. Load/compile nation (and other modes) into `defines/{map}/`.  
 2. `create_map` / `generate_regions` write `output/{map}/maps/` and `regions/`.  
-3. [`file_routes`](../backend/src/api/file_routes.py) serves PNGs; data routes serve JSON.  
-4. Frontend uses `NEXT_PUBLIC_API_URL` + `mapId` (e.g. `/map/main`).
+3. [`file_routes`](../backend/src/api/file_routes.py) serves PNGs; data routes serve JSON (including `GET /{map}/data/markers` for settlement pins).  
+4. Frontend uses `NEXT_PUBLIC_API_URL` + `mapId` (e.g. `/map/main`); `MapSettlementMarkers` renders pins + straight labels on political modes when zoomed in.
 
 Generators on `dev` are fast; browser cost is still full-size region overlays until [04](./04-map-performance.md) lands.
 
@@ -71,7 +75,7 @@ Each logical world has its own `input/{map}`, `defines/{map}`, `output/{map}`. S
 | Mode | Map data |
 |------|----------|
 | Website only | Sample `input`/`defines` + one-shot regen → `output` ([06](./06-local-development.md)) |
-| Integration | Point SF `apiURL` at local/staging API; use a test mapRef |
+| Integration | TFMCWeb `api.base-url` → local/staging API; SF `map-reference` = test mapRef |
 | Production | SF on Paper → live API; players browse tfminecraft.net |
 
 SimpleFactions is **not** involved in skins.

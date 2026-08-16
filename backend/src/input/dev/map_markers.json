@@ -1,0 +1,38 @@
+{
+
+  "map_id": "dev",
+
+  "exported_at": "2026-08-15T20:00:00Z",
+
+  "settlement_large_population_threshold": 8,
+
+  "settlements": [
+
+    {
+
+      "id": "rivendell",
+
+      "name": "Rivendell",
+
+      "faction_id": "elves",
+
+      "province_id": 1,
+
+      "center_x": 1200,
+
+      "center_z": -3400,
+
+      "kind": "faction_capital",
+
+      "population": 1,
+
+      "marker_size": "small",
+
+      "provinces": [1, 2]
+
+    }
+
+  ]
+
+}
+

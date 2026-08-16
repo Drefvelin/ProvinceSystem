@@ -237,7 +237,7 @@ Warnings are **not** Essentials notes; web-backed for character/staff pages late
 
 Completed in step-17: TFMCWeb owns link, notices, and `/token create`; ArmourShop keeps pack apply + admin token list/delete. Staging LP: migrate `armourshop.token.create` → `tfmcweb.token.create`.
 
-Still later: SimpleFactions REST through TFMCWeb ([step-46](./batches/README.md)). Character creator **done** through Phase 4 ([step-30](./batches/step-30/00-index.md)). Realm gateway **done** (steps 32–35).
+Still in progress: step 42 settlements ([42.08](./batches/step-42/08-sf-marker-size-export.md) onward). Character creator **done** through Phase 4 ([step-30](./batches/step-30/00-index.md)). Realm gateway **done** (steps 32–35). SimpleFactions map HTTP **done** ([42.07](./batches/step-42/07-sf-tfmcweb-gateway.md)).
 
 ---
 
@@ -251,7 +251,7 @@ Still later: SimpleFactions REST through TFMCWeb ([step-46](./batches/README.md)
 | `/warning` + Essentials ban mirror + Banned role | Done ([17.07](./batches/step-17/07-warn-and-ban-mirror.md)) |
 | `rpc_player_meta` + realm gateway | Done (steps [32](./batches/step-32/00-rpc-player-meta.md)–[35](./batches/step-35/00-http-gateway-per-realm.md)) |
 | Identity routes outside `/skins` path prefix | Remaining (tables still under skins API) |
-| SimpleFactions via TFMCWeb | Remaining (step 46) |
+| SimpleFactions via TFMCWeb | Done ([42.07](./batches/step-42/07-sf-tfmcweb-gateway.md)) |
 
 ---
 

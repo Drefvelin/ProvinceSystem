@@ -49,4 +49,4 @@ Sidecar `map_markers.json` per [map-export-schema.json](../../assets/map-export-
 
 ## Next
 
-42.02 SF export — implement per `Settlements.md`.
+[02-sf-settlement-core](./02-sf-settlement-core.md) → [10-docs-verify](./10-docs-verify.md) — see [00-index](./00-index.md).

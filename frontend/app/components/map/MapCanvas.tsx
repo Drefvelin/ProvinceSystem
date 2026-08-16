@@ -6,6 +6,7 @@ import type {
   MapId,
   MapMode,
   MapObject,
+  SettlementMarker,
 } from "./types";
 import { MAP_BOUNDS } from "./types";
 import {
@@ -14,6 +15,7 @@ import {
   overlayStyle,
 } from "./overlayStyle";
 import LabelLayer from "./LabelLayer";
+import MapSettlementMarkers from "./MapSettlementMarkers";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { useMapViewport } from "../../hooks/useMapViewport";
@@ -109,6 +111,7 @@ type MapCanvasProps = {
   hoveredOverlay: HoverOverlay | null;
   cursorTooltip: CursorTooltip | null;
   labels?: NationLabelSpec[];
+  settlements?: SettlementMarker[];
   hoveredNationId?: string | null;
   viewportCoordsRef?: MutableRefObject<MapPickViewport | null>;
   onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -126,6 +129,7 @@ export default function MapCanvas({
   hoveredOverlay,
   cursorTooltip,
   labels = [],
+  settlements = [],
   hoveredNationId = null,
   viewportCoordsRef,
   onMouseMove,
@@ -279,6 +283,13 @@ export default function MapCanvas({
           mapH={mapSize.h}
           displayScale={viewport.displayScale}
           hoveredNationId={hoveredNationId}
+        />
+        <MapSettlementMarkers
+          settlements={settlements}
+          mapW={mapSize.w}
+          mapH={mapSize.h}
+          displayScale={viewport.displayScale}
+          mapType={mapType}
         />
         <canvas
           ref={canvasRef}
