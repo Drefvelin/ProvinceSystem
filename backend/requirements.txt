@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+numpy
 pillow
 svgwrite
 python-multipart

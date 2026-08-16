@@ -1,9 +1,13 @@
-from PIL import Image
 import os
 
 from ..loader.provinces import load_provinces
 from ..loader.province_metadata import load_province_metadata
 from ..util.dirs import input_file, validate_map
+from .map_paint_numpy import (
+    load_provinces_array,
+    paint_from_rgb_lut,
+    rgba_array_to_image,
+)
 
 
 # -----------------------------
@@ -67,25 +71,11 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
         rgb_to_rgba[rgb] = (*color, 255)
 
     # -------------------------------------------------
-    # Load base image
+    # Paint
     # -------------------------------------------------
-    base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")
-    src = base_img.load()
-    width, height = base_img.size
-
-    out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    dst = out.load()
-
-    # -------------------------------------------------
-    # FAST SINGLE-PASS PAINT
-    # -------------------------------------------------
-    painted = 0
-    for y in range(height):
-        for x in range(width):
-            rgba = rgb_to_rgba.get(src[x, y][:3])
-            if rgba:
-                dst[x, y] = rgba
-                painted += 1
+    provinces = load_provinces_array(input_file(map_name, "provinces.png"))
+    painted = paint_from_rgb_lut(provinces, rgb_to_rgba, skip_black=False)
+    painted_pixels = int((painted[:, :, 3] > 0).sum())
 
     # -------------------------------------------------
     # Save output (PNG compression kept)
@@ -98,9 +88,9 @@ def create_fertility_map(map_name: str, filename: str = "fertility"):
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    out.save(output_path, "PNG")
+    rgba_array_to_image(painted).save(output_path, "PNG")
 
     print(
         f"🌱 Fertility map generated → {output_path} | "
-        f"painted: {painted:,}"
+        f"painted: {painted_pixels:,}"
     )

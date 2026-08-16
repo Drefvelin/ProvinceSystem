@@ -18,6 +18,7 @@ from ..util.overlay_metadata import (
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map, map_image
+from .geometry_cache import MapGeometryCache
 
 
 def log_progress(message: str):
@@ -60,14 +61,33 @@ def generate_regions(
     queued_regen: bool = False,
     border_thickness: int = default_border_thickness,
     border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    cache: MapGeometryCache | None = None,
 ):
+    if cache is not None:
+        from .regiongen_numpy import generate_regions_numpy
+
+        return generate_regions_numpy(
+            map_name,
+            mode,
+            borders,
+            cache,
+            queued_regen=queued_regen,
+            border_thickness=border_thickness,
+            border_color=border_color,
+        )
+
     start_time = time.perf_counter()
     validate_map(map_name)
 
     img_path = input_file(map_name, "provinces.png")
-    src_img = Image.open(img_path).convert("RGBA")
-    src = src_img.load()
-    width, height = src_img.size
+    if cache is not None:
+        provinces_rgba = cache.provinces_rgba
+        width, height = cache.width, cache.height
+    else:
+        src_img = Image.open(img_path).convert("RGBA")
+        provinces_rgba = None
+        src = src_img.load()
+        width, height = src_img.size
 
     province_to_color = build_color_mapping(map_name, mode)
     if not province_to_color:
@@ -119,7 +139,10 @@ def generate_regions(
 
     for y in range(height):
         for x in range(width):
-            rgb = src[x, y][:3]
+            if cache is not None:
+                rgb = tuple(int(v) for v in provinces_rgba[y, x, :3])
+            else:
+                rgb = src[x, y][:3]
             if rgb in province_to_color:
                 province_pixels.setdefault(rgb, []).append((x, y))
 

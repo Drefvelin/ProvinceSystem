@@ -1,16 +1,16 @@
-from PIL import Image
 import os
-import sys
 import time
 
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.border_paint import paint_borders
 from ..util.dirs import input_file, validate_map
-
-
-def log_progress(message):
-    sys.stdout.write("\r" + message)
-    sys.stdout.flush()
+from .geometry_cache import MapGeometryCache
+from .map_paint_numpy import (
+    load_provinces_array,
+    paint_from_province_id_lut,
+    paint_from_rgb_lut,
+    rgba_array_to_image,
+)
 
 
 def create_map(
@@ -23,6 +23,7 @@ def create_map(
     # otherwise vassals get overwritten by overlord colours and become un-pickable.
     # Pick maps must also keep raw nation rgb — never call display_colour.display_rgb here.
     apply_overrides: bool = False,
+    cache: MapGeometryCache | None = None,
 ):
     """
     Creates a single full map image from provinces.png using the mapping for `mode`.
@@ -36,9 +37,12 @@ def create_map(
 
     province_to_color = build_color_mapping(map_name, mode)
 
-    base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")
-    src = base_img.load()
-    width, height = base_img.size
+    if cache is not None:
+        provinces = cache.provinces_rgba
+        height, width = cache.height, cache.width
+    else:
+        provinces = load_provinces_array(input_file(map_name, "provinces.png"))
+        height, width = provinces.shape[:2]
 
     # --------------------------------------------------------------
     # Output path
@@ -55,71 +59,42 @@ def create_map(
     # Empty mapping → transparent output
     # --------------------------------------------------------------
     if not province_to_color:
-        out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        out.save(output_path, "PNG")
+        if cache is not None:
+            painted = paint_from_province_id_lut(
+                cache.province_id_map,
+                cache.rgb_to_id,
+                {},
+            )
+        else:
+            painted = paint_from_rgb_lut(provinces, {})
+        rgba_array_to_image(painted).save(output_path, "PNG")
         print(f"🗺️ Empty map generated → {output_path}")
         return
 
-    overrides = get_color_overrides(map_name, mode) if apply_overrides else {}
+    overrides = get_color_overrides(map_name, mode) if apply_overrides else None
 
-    out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    dst = out.load()
-
-    # --------------------------------------------------------------
-    # Paint map pixels
-    # --------------------------------------------------------------
-    total_pixels = width * height
-    processed = 0
-    last_update = time.time()
-
-    if not overrides:
-        # Fast path (pick-safe)
-        for y in range(height):
-            for x in range(width):
-                color = province_to_color.get(src[x, y][:3])
-
-                # 🚫 Skip null / sentinel colour
-                if color and color != (0, 0, 0):
-                    dst[x, y] = (*color, 255)
-
-                processed += 1
-                if time.time() - last_update > 0.1:
-                    percent = (processed / total_pixels) * 100
-                    log_progress(
-                        f"Painting map: {processed:,}/{total_pixels:,} "
-                        f"({percent:5.1f}%)"
-                    )
-                    last_update = time.time()
+    if cache is not None:
+        painted = paint_from_province_id_lut(
+            cache.province_id_map,
+            cache.rgb_to_id,
+            province_to_color,
+            skip_black=True,
+            color_overrides=overrides,
+        )
     else:
-        # Override path (display-only)
-        for y in range(height):
-            for x in range(width):
-                rgb = src[x, y][:3]
-                color = province_to_color.get(rgb)
-
-                if color:
-                    color = overrides.get(color, color)
-
-                    # 🚫 Skip null / sentinel colour
-                    if color != (0, 0, 0):
-                        dst[x, y] = (*color, 255)
-
-                processed += 1
-                if time.time() - last_update > 0.1:
-                    percent = (processed / total_pixels) * 100
-                    log_progress(
-                        f"Painting map: {processed:,}/{total_pixels:,} "
-                        f"({percent:5.1f}%)"
-                    )
-                    last_update = time.time()
-
-    print()
+        painted = paint_from_rgb_lut(
+            provinces,
+            province_to_color,
+            skip_black=True,
+            color_overrides=overrides,
+        )
+    out = rgba_array_to_image(painted)
 
     # --------------------------------------------------------------
     # Borders
     # --------------------------------------------------------------
     if borders:
-        paint_borders(True, True, dst, width, height)
+        paint_borders(True, True, out.load(), width, height)
 
     # --------------------------------------------------------------
     # Save output

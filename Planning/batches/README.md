@@ -78,6 +78,8 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-47/00-index](./step-47/00-index.md) | 47 | Map mode labels & Calavorn data layers | **done** |
 | [step-48/00-index](./step-48/00-index.md) | 48 | Label neighbor graph (water bridges) | **done** |
 | [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | **done** |
+| [step-50/00-index](./step-50/00-index.md) | 50 | S5 cutover — Adavaar → public `main` | **50.04 done**; next [50.05](./step-50/05-ps-frontend-registry.md) |
+| [step-51/00-index](./step-51/00-index.md) | 51 | Mapgen performance — `fullregen` optimization | planned; next [51.02](./step-51/02-baseline-snapshot.md) |
 | [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | planned |
 | [step-44/00-index](./step-44/00-index.md) | 44 | War map layer | planned (blocked on SF war rework) |
 | [step-45/00-index](./step-45/00-index.md) | 45 | Map chronicle | planned |

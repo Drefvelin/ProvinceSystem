@@ -1,9 +1,13 @@
-from PIL import Image
 import os
 
 from ..loader.provinces import load_provinces
 from ..loader.province_metadata import load_province_metadata
 from ..util.dirs import input_file, validate_map
+from .map_paint_numpy import (
+    load_provinces_array,
+    paint_from_rgb_lut,
+    rgba_array_to_image,
+)
 
 
 TERRAIN_COLORS = {
@@ -49,23 +53,10 @@ def create_terrain_map(map_name: str, filename: str = "terrain"):
             rgb_to_color[rgb] = color
 
     # -------------------------------------------------
-    # Load base image
+    # Paint
     # -------------------------------------------------
-    base_img = Image.open(input_file(map_name, "provinces.png")).convert("RGBA")
-    src = base_img.load()
-    width, height = base_img.size
-
-    out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    dst = out.load()
-
-    # -------------------------------------------------
-    # FAST SINGLE-PASS PAINT
-    # -------------------------------------------------
-    for y in range(height):
-        for x in range(width):
-            color = rgb_to_color.get(src[x, y][:3])
-            if color:
-                dst[x, y] = (*color, 255)
+    provinces = load_provinces_array(input_file(map_name, "provinces.png"))
+    painted = paint_from_rgb_lut(provinces, rgb_to_color, skip_black=False)
 
     # -------------------------------------------------
     # Save (fast PNG)
@@ -78,6 +69,6 @@ def create_terrain_map(map_name: str, filename: str = "terrain"):
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    out.save(output_path, "PNG")
+    rgba_array_to_image(painted).save(output_path, "PNG")
 
     print(f"🗺️ Terrain map generated → {output_path}")

@@ -12,6 +12,7 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 /backend/src/output/
+/backend/benchmarks/regen/snapshots/
 
 # Node.js dependencies
 node_modules/
