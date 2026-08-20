@@ -74,7 +74,7 @@ export default function WardrobeSlotFrame({
             ? `${label} locked`
             : pending
               ? `${label} pending server`
-              : `${label}${slot.filled ? "" : " empty"} — edit`
+              : `${label}${slot.filled ? "" : " empty"} - edit`
         }
       >
         {locked ? (

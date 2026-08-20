@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMapCoords, type MapPickViewport } from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
-import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
+import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
+import type { MapMarker } from "../lib/mapMarkers";
+import { filterVisibleMapMarkers, isMarkerMapMode, pickMapMarkerAt } from "../lib/mapMarkers";
+import { lookupFortZocOverlay } from "../lib/fortZoc";
 
 type UseMapHoverProps = {
   mapId: MapId;
@@ -31,6 +34,10 @@ type UseMapHoverProps = {
   };
   mapDisplayName: string;
   mapObjects: MapObject[];
+  markers?: MapMarker[];
+  forts?: FortMarker[];
+  setHoveredMarkerId?: (id: string | null) => void;
+  setHoveredFortZoc?: (overlay: HoverOverlay | null) => void;
 };
 
 type PointerPosition = {
@@ -55,6 +62,8 @@ export function useMapHover(props: UseMapHoverProps) {
     setCursorTooltip,
     guildNameCacheRef,
     mapObjects,
+    markers,
+    forts,
   } = props;
 
   const propsRef = useRef(props);
@@ -114,9 +123,36 @@ export function useMapHover(props: UseMapHoverProps) {
     );
     if (!coords) {
       current.setCursorTooltip(null);
+      current.setHoveredMarkerId?.(null);
+      current.setHoveredFortZoc?.(null);
       setIsHoveringClickable(false);
       return;
     }
+
+    const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
+    const visibleMarkers = current.markers?.length
+      ? filterVisibleMapMarkers(current.markers, displayScale)
+      : [];
+    const markerHit = visibleMarkers.length
+      ? pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+      : null;
+    current.setHoveredMarkerId?.(markerHit?.id ?? null);
+    if (markerHit) {
+      current.setCursorTooltip(null);
+      current.setHoveredOverlay(null);
+      resetHoverCacheRef.current();
+      if (isMarkerMapMode(current.mapType)) {
+        current.setHoveredFortZoc?.(
+          lookupFortZocOverlay(markerHit, current.forts ?? [])
+        );
+      } else {
+        current.setHoveredFortZoc?.(null);
+      }
+      setIsHoveringClickable(true);
+      return;
+    }
+
+    current.setHoveredFortZoc?.(null);
 
     if (
       handleProvinceHoverRef.current(
@@ -146,6 +182,11 @@ export function useMapHover(props: UseMapHoverProps) {
     [mapObjects]
   );
 
+  const fortsKey = useMemo(
+    () => (forts ?? []).map((fort) => fort.id).join("|"),
+    [forts]
+  );
+
   useEffect(() => {
     if (loading) return;
 
@@ -157,7 +198,7 @@ export function useMapHover(props: UseMapHoverProps) {
       clientX: pointer.clientX,
       clientY: pointer.clientY,
     } as React.MouseEvent<HTMLCanvasElement>);
-  }, [loading, mapObjectsVisibility, processHover]);
+  }, [loading, mapObjectsVisibility, fortsKey, markers?.length, processHover]);
 
   const onMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (loading) return;
@@ -179,6 +220,8 @@ export function useMapHover(props: UseMapHoverProps) {
   };
 
   const onMouseLeave = () => {
+    propsRef.current.setHoveredMarkerId?.(null);
+    propsRef.current.setHoveredFortZoc?.(null);
     setIsHoveringClickable(false);
   };
 

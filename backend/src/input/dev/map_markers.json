@@ -1,38 +1,80 @@
 {
-
   "map_id": "dev",
-
-  "exported_at": "2026-08-15T20:00:00Z",
-
+  "exported_at": "2026-08-19T12:40:52.086994826Z",
   "settlement_large_population_threshold": 8,
-
   "settlements": [
-
     {
-
-      "id": "rivendell",
-
-      "name": "Rivendell",
-
-      "faction_id": "elves",
-
-      "province_id": 1,
-
-      "center_x": 1200,
-
-      "center_z": -3400,
-
-      "kind": "faction_capital",
-
+      "id": "Cape_Wells",
+      "name": "§x§a§3§a§1§8§4Cape Wells",
+      "faction_id": "Lantan",
+      "province_id": 695,
+      "center_x": 1513,
+      "center_z": 2941,
       "population": 1,
-
       "marker_size": "small",
-
-      "provinces": [1, 2]
-
+      "kind": "settlement",
+      "provinces": [
+        695
+      ]
+    },
+    {
+      "id": "Lanbury",
+      "name": "§x§a§3§a§1§8§4Lanbury",
+      "faction_id": "Lantan",
+      "province_id": 705,
+      "center_x": 1748,
+      "center_z": 2739,
+      "population": 1,
+      "marker_size": "small",
+      "kind": "faction_capital",
+      "provinces": [
+        705
+      ]
     }
-
+  ],
+  "installations": [
+    {
+      "id": "Lantan_Airfield",
+      "name": "§x§a§3§a§1§8§4Lantan Airfield",
+      "kind": "airport",
+      "faction_id": "Lantan",
+      "province_id": 705,
+      "center_x": 1720,
+      "center_z": 2579
+    },
+    {
+      "id": "Lan_Harbour",
+      "name": "§x§a§3§a§1§8§4Lan Harbour",
+      "kind": "port",
+      "faction_id": "Lantan",
+      "province_id": 695,
+      "center_x": 1498,
+      "center_z": 2865
+    },
+    {
+      "id": "Greenfold",
+      "name": "§x§a§3§a§1§8§4Greenfold",
+      "kind": "fort",
+      "faction_id": "Lantan",
+      "province_id": 704,
+      "center_x": 1560,
+      "center_z": 2590
+    }
+  ],
+  "forts": [
+    {
+      "id": "Greenfold",
+      "name": "§x§a§3§a§1§8§4Greenfold",
+      "faction_id": "Lantan",
+      "province_id": 704,
+      "center_x": 1560,
+      "center_z": 2590,
+      "zoc_provinces": [
+        695,
+        704,
+        705,
+        713
+      ]
+    }
   ]
-
 }
-

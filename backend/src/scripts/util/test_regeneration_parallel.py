@@ -14,6 +14,7 @@ from .regeneration import (
     parallel_mode_count,
     should_parallelize_modes,
 )
+from .regen_types import parse_regen_type
 
 
 class TestParallelRegenHelpers(unittest.TestCase):
@@ -40,9 +41,9 @@ class TestParallelRegenHelpers(unittest.TestCase):
 
     def test_should_parallelize_only_fullregen(self) -> None:
         os.environ["REGEN_PARALLEL_MODES"] = "4"
-        self.assertTrue(should_parallelize_modes("fullregen"))
-        self.assertFalse(should_parallelize_modes("incremental"))
-        self.assertFalse(should_parallelize_modes("textonly"))
+        self.assertTrue(should_parallelize_modes(parse_regen_type("fullregen")))
+        self.assertFalse(should_parallelize_modes(parse_regen_type("fullregen:nation")))
+        self.assertFalse(should_parallelize_modes(parse_regen_type("queued")))
 
     def test_merge_worker_timings(self) -> None:
         timings = _RegenTimings()
@@ -79,8 +80,14 @@ class TestParallelRegenHelpers(unittest.TestCase):
     @patch("scripts.util.regeneration.load_queue")
     def test_modes_to_run_fullregen_includes_all(self, load_queue) -> None:
         load_queue.return_value = []
-        runnable = modes_to_run("main", "fullregen", MODES)
+        runnable = modes_to_run("main", parse_regen_type("fullregen"))
         self.assertEqual(runnable, MODES)
+
+    @patch("scripts.util.regeneration.load_queue")
+    def test_modes_to_run_fullregen_single_mode(self, load_queue) -> None:
+        load_queue.return_value = []
+        runnable = modes_to_run("main", parse_regen_type("fullregen:nation"))
+        self.assertEqual(runnable, ["nation"])
 
     @patch("scripts.util.regeneration.load_queue")
     def test_modes_to_run_incremental_skips_empty_queue(self, load_queue) -> None:
@@ -88,7 +95,7 @@ class TestParallelRegenHelpers(unittest.TestCase):
             return ["51_200_210"] if mode == "nation" else []
 
         load_queue.side_effect = _queue
-        runnable = modes_to_run("main", "incremental", MODES)
+        runnable = modes_to_run("main", parse_regen_type("queued"))
         self.assertEqual(runnable, ["nation", "trade"])
 
 

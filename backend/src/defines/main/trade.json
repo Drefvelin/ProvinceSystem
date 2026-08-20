@@ -11,10 +11,30 @@
         "overlord": null,
         "banner": "51_200_210",
         "overlay": {
-            "x": 0,
-            "y": 0,
+            "x": 1563,
+            "y": 2518,
             "w": 315,
             "h": 254
+        }
+    },
+    "Lantel_Shipping": {
+        "name": "Lantel Shipping",
+        "rgb": "107,90,230",
+        "tier": "Guild",
+        "size": 3,
+        "provinces": [
+            693,
+            694,
+            695
+        ],
+        "subjects": [],
+        "overlord": null,
+        "banner": "107_90_230",
+        "overlay": {
+            "x": 814,
+            "y": 2602,
+            "w": 714,
+            "h": 469
         }
     }
 }

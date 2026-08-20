@@ -6,7 +6,7 @@ import sys
 import time
 
 
-def run_mode(map_name: str, mode: str, regen_type: str) -> dict:
+def run_mode(map_name: str, mode: str, full_regions: bool) -> dict:
     """Run map + region generation for one political mode.
 
     Each worker loads its own geometry cache (isolated process).
@@ -46,7 +46,7 @@ def run_mode(map_name: str, mode: str, regen_type: str) -> dict:
         map_name,
         mode,
         borders=mode != "trade",
-        queued_regen=(regen_type.lower() != "fullregen" and mode != "trade"),
+        queued_regen=(not full_regions and mode != "trade"),
         cache=cache,
     )
     steps[f"{mode}.regions"] = time.perf_counter() - t0

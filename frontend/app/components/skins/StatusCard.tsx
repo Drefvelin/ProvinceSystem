@@ -10,7 +10,7 @@ function statusMessage(row: SubmissionPublic): string {
   if (row.staff) {
     switch (row.status) {
       case "pending":
-        return "Staff submission — waiting for auto-approve.";
+        return "Staff submission - waiting for auto-approve.";
       case "denied":
         return row.deny_reason?.trim()
           ? `Denied: ${row.deny_reason.trim()}`

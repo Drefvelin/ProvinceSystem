@@ -58,7 +58,7 @@ export function assertSlugClient(id: string): void {
     throw new Error("File name id cannot contain double underscores");
   }
   if (RESERVED.has(s)) {
-    throw new Error(`The name '${s}' is reserved — rename your PNG`);
+    throw new Error(`The name '${s}' is reserved - rename your PNG`);
   }
 }
 

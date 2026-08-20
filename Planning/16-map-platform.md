@@ -1,6 +1,6 @@
 # 16 — Map platform
 
-**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–42 + 47 + 48 + 49 code done**. **Step 43 next**. Steps 44–46 planned.  
+**Status:** Planning lock **done** (step-36.01). Implementation **steps 37–43 + 47 + 48 + 49 code done**. **Step 44.01 war planning lock done** ([Wars.md](../../simplefactions/Documentation/Wars.md)); SF war P1 next. Steps 45–46 planned.  
 **Repos:** `ProvinceSystem` (FE + BE mapgen) · `Workspace/simplefactions` (export + upload) · `Workspace/tfmcweb` (staff map gate)  
 **Batches:** [step-36](./batches/step-36/00-index.md) (lock) · [step-37](./batches/step-37/00-index.md)–[step-49](./batches/step-49/00-index.md)  
 **Technical refs:** [09-map-system.md](./09-map-system.md) · [04-map-performance.md](./04-map-performance.md)  
@@ -25,8 +25,8 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | 6 | Staff-only maps (configurable per `mapId`) | [41](./batches/step-41/00-index.md) — **done** |
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
 | 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) — **done** |
-| 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) |
-| 10 | Wars / frontlines / campaigns | [44](./batches/step-44/00-index.md) (blocked on SF war rework) |
+| 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) — **done** |
+| 10 | Wars / occupation / campaigns | [44](./batches/step-44/00-index.md) — **44.01 lock done**; SF P1–P9 then PS overlay |
 | 11 | Daily map snapshots + changelog | [45](./batches/step-45/00-index.md) |
 | 12 | Nation / global wealth charts over time | [46](./batches/step-46/00-index.md) |
 
@@ -100,7 +100,7 @@ Nation upload (`nation.json`) already carries `balance`, `provinces`, `relations
 - `capitals` — faction + guild named capitals with province id and map pixel coords
 - `settlements` — guild towns beyond distance threshold from faction capital
 - `forts` — fort id, province, ZOC province list
-- `wars` — belligerents, frontline province ids, campaign markers (when war rework ships)
+- `wars` — belligerents, occupation zones, campaign line, objective province ([Wars.md](../../simplefactions/Documentation/Wars.md))
 - `events` — explicit chronicle events (war declared, province taken, capital moved, …)
 - `global_wealth` — optional aggregate for charts
 
@@ -115,8 +115,8 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 5. **[40](./batches/step-40/00-index.md)** — Nation labels (frontend SVG, province graph) **done**
 6. **[41](./batches/step-41/00-index.md)** — Staff map access **done**
 7. **[42](./batches/step-42/00-index.md)** — Capitals / settlements (SF + PS + TFMCWeb + FE) — **done**
-8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS) — **next**
-9. **[44](./batches/step-44/00-index.md)** — War layer (**blocked on SF war rework**)
+8. **[43](./batches/step-43/00-index.md)** — Forts + ZOC (SF + PS + FE) — **done**
+9. **[44](./batches/step-44/00-index.md)** — War layer (**44.01 planning lock done**; SF implementation P1–P9)
 10. **[45](./batches/step-45/00-index.md)** — Map chronicle (snapshots + log)
 11. **[46](./batches/step-46/00-index.md)** — Wealth history + charts
 

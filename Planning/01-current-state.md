@@ -2,6 +2,8 @@
 
 Honest baseline of ProvinceSystem on the **`dev`** branch (2026). Planning and implementation should assume this tree, not `main`.
 
+**Dev-only shortcuts (timers, bypasses, spoof data):** [DEV-SHORTCUTS.md](./DEV-SHORTCUTS.md)
+
 ## Stack
 
 | Layer | Tech |
@@ -65,10 +67,10 @@ Map regen auth: hashed key on claim/regen routes. Cosmetic routes use session to
 
 ## Known issues (map — primary remaining site work)
 
-Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-43](./batches/step-43/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**. Steps 47–49 (multi-mode labels, label neighbors, pan/zoom) **code done**. **Step 41** staff map access **code done** ([step-41](./batches/step-41/00-index.md)). **Step 42** settlements **code done** ([step-42](./batches/step-42/00-index.md)).
+Product truth: [16-map-platform.md](./16-map-platform.md) · build [step-44](./batches/step-44/00-index.md)–[46](./batches/step-46/00-index.md). Steps 37–40 (site UX + parchment + ink cartography + nation labels) **code done**. Steps 47–49 (multi-mode labels, label neighbors, pan/zoom) **code done**. **Step 41** staff map access **code done** ([step-41](./batches/step-41/00-index.md)). **Step 42** settlements **code done** ([step-42](./batches/step-42/00-index.md)). **Step 54** province grid + installations **code done** ([step-54](./batches/step-54/00-index.md)). **Step 55** installation economy + GUI **code done** ([step-55](./batches/step-55/00-index.md)). **Step 43** fort ZOC hatch overlay **code done** ([step-43](./batches/step-43/00-index.md)). **Step 44.01** war planning lock **done** ([Wars.md](../../simplefactions/Documentation/Wars.md), [war-build-order.md](./war-build-order.md)). **Step 56** war foundation **done** ([step-56](./batches/step-56/00-index.md)). **Step 57** pathfinder & campaign **done** ([step-57](./batches/step-57/00-index.md)). **Step 58** initiative & occupation **done** ([step-58](./batches/step-58/00-index.md)). **Next:** SF war **59** battle scheduling (declare codes **step 68**).
 
-1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Multi-mode title/trade labels + Calavorn terrain/fertility/trade/prosperity toolbar ([step-47](./batches/step-47/00-index.md) — **code done**). Desktop pan/zoom ([step-49](./batches/step-49/00-index.md) — **code done**). Settlement markers on political modes ([step-42](./batches/step-42/00-index.md) — **code done**). Further map layers: forts, wars, chronicle, wealth ([steps 43–46](./batches/step-46/00-index.md)).
-2. **Forts / wars / chronicle / wealth** — not on map yet ([steps 43–46](./batches/step-46/00-index.md)) — **next: step 43**.
+1. **Visual** — Nation labels shipped on `/map/main` nation mode ([step-40](./batches/step-40/00-index.md)); colour satellite base + parchment-wash overlays ([step-39](./batches/step-39/00-index.md)). Multi-mode title/trade labels + Calavorn terrain/fertility/trade/prosperity toolbar ([step-47](./batches/step-47/00-index.md) — **code done**). Desktop pan/zoom ([step-49](./batches/step-49/00-index.md) — **code done**). Settlement markers on political modes ([step-42](./batches/step-42/00-index.md) — **code done**). Installation markers (fort/port/airport) on political modes ([step-54](./batches/step-54/00-index.md) — **code done**). Fort ZOC hatch on fort pin hover ([step-43](./batches/step-43/00-index.md) — **code done**). Further map layers: wars, chronicle, wealth ([steps 44–46](./batches/step-46/00-index.md)).
+2. **Wars** — [war-build-order.md](./war-build-order.md): **step 56** foundation **done**; **step 57** pathfinder & campaign **done**; **step 58** initiative & occupation **done**; **59+** planned; declare codes **step 68** (last). PS map layer **step 44** after SF **67**.
 3. **Cropped overlays** — require **fullregen** after deploy for bbox metadata ([03-cropped-overlays](./batches/step-37/03-cropped-overlays.md)).
 
 ## Implications for the roadmap

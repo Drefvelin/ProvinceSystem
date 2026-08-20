@@ -7,8 +7,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..loader.provinces import load_provinces, load_province_terrains
+from ..province_id_grid import build_province_id_map
 from ..util.dirs import input_file, validate_map
-from .map_paint_numpy import _pack_key, load_provinces_array, pack_rgb
+from .map_paint_numpy import load_provinces_array, pack_rgb
 
 SKIP_TERRAINS = {"water", "sea", ""}
 
@@ -31,13 +32,9 @@ class MapGeometryCache:
         provinces_rgba = load_provinces_array(provinces_path)
         height, width = provinces_rgba.shape[:2]
 
+        width, height, province_id_map = build_province_id_map(map_name)
         rgb_to_id = load_provinces(map_name)
         packed_rgb = pack_rgb(provinces_rgba[:, :, :3])
-
-        id_lut = np.zeros(1 << 24, dtype=np.uint16)
-        for rgb, province_id in rgb_to_id.items():
-            id_lut[_pack_key(rgb)] = province_id
-        province_id_map = id_lut[packed_rgb]
 
         terrains = load_province_terrains(map_name)
         land_mask = np.zeros_like(province_id_map, dtype=bool)

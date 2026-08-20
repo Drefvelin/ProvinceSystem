@@ -1,5 +1,7 @@
 # Step 42.01 — Planning lock
 
+> **Superseded for settlement territory rules by [step-53/01-planning-lock](../step-53/01-planning-lock.md)** (2026-08-18). Step 42 remains valid for map export, markers, and package conventions.
+
 **Plan + docs only.** Lock capitals/settlements scope before SF export (42.02) and PS/FE batches.
 
 **Repos:** `Workspace/simplefactions` · `ProvinceSystem`  
@@ -16,17 +18,12 @@ Summary below; if this file disagrees with `Settlements.md`, the SF doc wins.
 
 ## Locked — summary
 
+Settlement **territory, founding, join, claim growth, and hop-distance** rules are superseded by [step-53/01-planning-lock](../step-53/01-planning-lock.md). One settlement is exactly one province.
+
 | Area | Rule |
 |------|------|
-| Entity | `Settlement` on faction — `id`, `name`, `centerProvince`, `centerX/Z`, explicit `provinces` list |
-| Found | `/setcapital "name"` when ≥2 land hops from any settlement centre; initial provinces = centre + eligible land neighbours |
-| Join | 1 hop from centre → join existing settlement, no name; add capital province to list if missing |
-| Faction capital | On existing city must be **centre province** only |
-| Claim growth | New province adjacent to settlement territory → add; **random** tie-break if multiple |
-| Loss | Non-centre → remove from list; centre lost → dissolve settlement |
-| Dissolve | Clear all guild + faction capitals in that settlement’s provinces |
-| Hygiene | `validate()` from `Faction.tick()` — strip non–directly-owned provinces; dissolve if centre invalid |
-| Relocate | Last guild leaves settlement → disband; destination uses same setcapital rules |
+| Entity | `Settlement` on faction — `id`, `name`, `centerProvince`, `centerX/Z`, `provinces` |
+| Territory | **Step 53:** `provinces = { centerProvince }` only — see Settlements.md |
 | Export | One map marker per settlement (`centerX/Z`, name, `faction_id`) |
 | SF packages | Lowercase `settlement` domain; see Settlements.md |
 

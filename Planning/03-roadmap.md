@@ -57,7 +57,7 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 
 ## Track H — Map platform
 
-**Status:** **Steps 40–42 + 47–49 code done.** Next: **step-43 forts.** Steps 44–46 planned.  
+**Status:** **Steps 40–43 + 47–49 + 53 + 54 + 55 code done.** **Step 44.01 war planning lock done** ([Wars.md](../../simplefactions/Documentation/Wars.md)). **Next:** SF war rework **P1** (declare codes + FSM). PS war overlay after SF P9 export.  
 **Repos:** ProvinceSystem · SimpleFactions · TFMCWeb (staff map gate)  
 **Playbook:** [16-map-platform.md](./16-map-platform.md)
 
@@ -70,8 +70,11 @@ See also [08-implementation-checklist.md](./08-implementation-checklist.md) (cro
 | H3 | [40](./batches/step-40/00-index.md) | Nation labels (frontend SVG, straight text v1) — **done (code)** |
 | H4 | [41](./batches/step-41/00-index.md) | Staff-only maps (configurable) — **done (code)** |
 | H5 | [42](./batches/step-42/00-index.md) | Named capitals / guild settlements (SF export, TFMCWeb, FE markers) — **done** |
-| H6 | [43](./batches/step-43/00-index.md) | Forts + zone of control (SF forts) |
-| H7 | [44](./batches/step-44/00-index.md) | Wars / frontlines (**blocked on SF war rework**) |
+| H5b | [53](./batches/step-53/00-index.md) | One province per settlement — **done** |
+| H5c | [54](./batches/step-54/00-index.md) | Province grid + installations (fort/port/airport) — **done** |
+| H5d | [55](./batches/step-55/00-index.md) | Installation upkeep + construction + GUI — **done** |
+| H6 | [43](./batches/step-43/00-index.md) | Forts + zone of control — **done** |
+| H7 | [44](./batches/step-44/00-index.md) | Wars / occupation overlay (**44.01 lock done**; SF P1–P9) |
 | H8 | [45](./batches/step-45/00-index.md) | Daily snapshots + chronicle log |
 | H9 | [46](./batches/step-46/00-index.md) | Wealth history + charts |
 
@@ -283,8 +286,8 @@ Quotas, retention, module template, optional brewery stub.
 
 ## Priority for “finished product ASAP”
 
-1. **Track H / step-43** — Forts + zone of control (next build)  
+1. **Track H / step-44** — SF war rework **P1** ([Wars.md](../../simplefactions/Documentation/Wars.md)); PS overlay after SF export  
 2. **Track H / steps 44–46** — Wars, chronicle, wealth  
-3. Tick operator [STAGING](../STAGING.md) Steps 37–42 when ready; Steps 17–35, 31 when ready  
+3. Tick operator [STAGING](../STAGING.md) Steps 37–43, 54–55 when ready; Steps 17–35, 31 when ready  
 4. **B0–B5, C, D, E, F, G** — **code done**; staging verification ongoing  
 5. **Step 16** — 3D upload preview polish (02–03 done; variants optional)

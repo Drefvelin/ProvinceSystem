@@ -277,9 +277,41 @@ class MapAccessApiTest(unittest.TestCase):
             "exported_at": "2026-08-15T20:00:00Z",
             "settlements": [],
         }
-        r = self.client.post("/main/data/upload/map_markers", json=payload)
+        with mock.patch("src.api.data_routes.generate_zoc_overlays") as zocgen:
+            r = self.client.post("/main/data/upload/map_markers", json=payload)
         self.assertEqual(r.status_code, 200)
         self.assertIn("map_markers", r.json()["message"])
+        zocgen.assert_called_once_with("main")
+
+    def test_get_zoc_overlay_missing_returns_404(self) -> None:
+        r = self.client.get("/main/zoc/nonexistent-fort")
+        self.assertEqual(r.status_code, 404)
+
+    def test_get_zoc_overlay_accepts_png_suffix_in_url(self) -> None:
+        zoc_path = (
+            Path(__file__).resolve().parents[1] / "output" / "dev" / "zoc" / "Greenfold.png"
+        )
+        if not zoc_path.is_file():
+            self.skipTest("dev Greenfold ZOC fixture missing")
+
+        session = {
+            "scope": "character",
+            "player_uuid": self.player,
+            "realm_id": "main",
+        }
+        with mock.patch(
+            "src.api.map_access.get_character_session",
+            return_value=session,
+        ), mock.patch(
+            "src.api.map_access.has_map_staff_access",
+            return_value=True,
+        ):
+            r = self.client.get(
+                "/dev/zoc/Greenfold.png",
+                headers={"Authorization": "Bearer test-token"},
+            )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.headers.get("content-type"), "image/png")
 
 
 if __name__ == "__main__":

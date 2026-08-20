@@ -79,15 +79,40 @@ export type SettlementMarker = {
   map_y?: number;
 };
 
+export type InstallationMarkerKind = "fort" | "port" | "airport";
+
+export type InstallationMarker = {
+  id: string;
+  name: string;
+  kind: InstallationMarkerKind;
+  faction_id?: string;
+  province_id?: number;
+  map_x?: number;
+  map_y?: number;
+};
+
+export type FortMarker = {
+  id: string;
+  name?: string;
+  province_id?: number;
+  faction_id?: string;
+  map_x?: number;
+  map_y?: number;
+  overlay?: OverlayBBox;
+  zoc_url?: string;
+};
+
 export type MapMarkersResponse = {
   map_id: string;
   exported_at: string | null;
   settlement_large_population_threshold?: number;
   settlements: SettlementMarker[];
+  installations: InstallationMarker[];
+  forts: FortMarker[];
 };
 
 export const MAP_BOUNDS: Record<MapId, number> = {
-  main: 4096,
+  main: 6400,
   dev: 6400,
 };
 

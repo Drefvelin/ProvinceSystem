@@ -7,6 +7,13 @@ import type { MapPickViewport } from "../hooks/useMapCoords";
 import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useMapMarkers } from "../hooks/useMapMarkers";
+import { isMarkerMapMode } from "../lib/mapMarkers";
+import {
+  installationToMapMarker,
+} from "../lib/installationMarkers";
+import {
+  settlementToMapMarker,
+} from "../lib/settlementMarkers";
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
 import {
@@ -87,6 +94,9 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
     null
   );
+  const [hoveredFortZoc, setHoveredFortZoc] = useState<HoverOverlay | null>(
+    null
+  );
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [regionInfo, setRegionInfo] = useState<RegionInfo | null>(null);
   const [modalRegionInfo, setModalRegionInfo] = useState<RegionInfo | null>(
@@ -98,6 +108,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const [cursorTooltip, setCursorTooltip] = useState<CursorTooltip | null>(
     null
   );
+  const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportCoordsRef = useRef<MapPickViewport | null>(null);
@@ -165,7 +176,15 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     ready: geometryReady,
   } = useMapGeometry(mapId, authToken);
   const markersEnabled = accessChecked && gateReason === null;
-  const { settlements } = useMapMarkers(mapId, authToken, markersEnabled);
+  const { settlements, installations, forts } = useMapMarkers(mapId, authToken, markersEnabled);
+
+  const mapMarkers = useMemo(() => {
+    if (!isMarkerMapMode(mapType)) return [];
+    return [
+      ...settlements.map(settlementToMapMarker),
+      ...installations.map(installationToMapMarker),
+    ];
+  }, [settlements, installations, mapType]);
 
   const labelGeometry = useMemo(() => {
     if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;
@@ -272,6 +291,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setCursorTooltip(null);
     setDrillStack([]);
     setHoveredOverlay(null);
+    setHoveredFortZoc(null);
     setRegionInfo(null);
     setModalOpen(false);
     setModalRegionInfo(null);
@@ -302,11 +322,15 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     sessionToken: authToken,
     setCursorTooltip,
     setHoveredOverlay,
+    setHoveredFortZoc,
     setRegionInfo,
     setSelectedRegionId,
     getHoverRegion,
     mapDisplayName,
     mapObjects,
+    markers: mapMarkers,
+    forts,
+    setHoveredMarkerId,
   });
 
   function handleMapTypeChange(mode: MapMode) {
@@ -398,8 +422,10 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
   const handleMouseLeave = () => {
     onHoverLeave();
+    setHoveredMarkerId(null);
     setCursorTooltip(null);
     setHoveredOverlay(null);
+    setHoveredFortZoc(null);
     setRegionInfo(null);
     lastProvinceIdRef.current = null;
   };
@@ -470,9 +496,11 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           viewportCoordsRef={viewportCoordsRef}
           mapObjects={mapObjects}
           hoveredOverlay={hoveredOverlay}
+          hoveredFortZoc={hoveredFortZoc}
           cursorTooltip={cursorTooltip}
           labels={regionLabels}
-          settlements={settlements}
+          markers={mapMarkers}
+          hoveredMarkerId={hoveredMarkerId}
           hoveredNationId={selectedRegionId}
           onMouseMove={onMouseMove}
           onMouseLeave={handleMouseLeave}

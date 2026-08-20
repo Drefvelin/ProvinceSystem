@@ -558,7 +558,7 @@ function StageBody({
                 ? "Yes"
                 : draft.eighteen === false
                   ? "No"
-                  : "—"
+                  : "-"
             }
             onEdit={() => onJump("real_age")}
           />
@@ -587,7 +587,7 @@ function StageBody({
         />
         <SummaryLine
           label="Traits"
-          value={traitNames.join(", ") || "—"}
+          value={traitNames.join(", ") || "-"}
           onEdit={() => onJump("trait")}
         />
         <SummaryLine
@@ -597,7 +597,7 @@ function StageBody({
         />
         <SummaryLine
           label="Clues"
-          value={draft.clues.filter((c) => c.trim()).join(" · ") || "—"}
+          value={draft.clues.filter((c) => c.trim()).join(" · ") || "-"}
           onEdit={() => onJump("clue")}
         />
       </div>
@@ -626,7 +626,7 @@ function SummaryLine({
         <p className="text-xs uppercase tracking-wide text-[var(--tfmc-stone)]">
           {label}
         </p>
-        <p className="mt-1 text-[var(--tfmc-cream)]">{value || "—"}</p>
+        <p className="mt-1 text-[var(--tfmc-cream)]">{value || "-"}</p>
       </div>
       <button
         type="button"
@@ -905,7 +905,7 @@ export default function CreationWizard({
       ) : null}
       {uiDevDone ? (
         <p className="mt-3 text-sm text-[var(--tfmc-accent)]" role="status">
-          Created (UI-dev) — draft logged to console.
+          Created (UI-dev) - draft logged to console.
         </p>
       ) : null}
 

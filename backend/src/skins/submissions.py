@@ -357,7 +357,7 @@ def _reject_duplicate_textures(files_bytes: dict[str, bytes]) -> None:
         dig = hashlib.sha256(data).hexdigest()
         if dig in seen:
             raise SubmissionError(
-                f"File '{field}' is identical to '{seen[dig]}' — "
+                f"File '{field}' is identical to '{seen[dig]}' - "
                 "each PNG in a submission must be unique"
             )
         seen[dig] = field
@@ -714,7 +714,7 @@ def create_submission(
     minecraft_name = link.get("minecraft_name")
     if not minecraft_name:
         raise SubmissionError(
-            "Minecraft name missing — re-link Discord or wait for API migrate"
+            "Minecraft name missing - re-link Discord or wait for API migrate"
         )
 
     try:
@@ -764,7 +764,7 @@ def create_submission(
         taken = staff_skin_set_key_taken(submission_id, kind, tier_list)
         if taken:
             raise SlugConflictError(
-                f"Skin set key '{taken}' is invalid — already in use by an "
+                f"Skin set key '{taken}' is invalid - already in use by an "
                 "active submission. Choose a different item name."
             )
 
@@ -913,7 +913,7 @@ def create_submission(
         except sqlite3.IntegrityError as e:
             if is_staff:
                 raise SlugConflictError(
-                    f"Skin set key '{submission_id}' is invalid — already in use. "
+                    f"Skin set key '{submission_id}' is invalid - already in use. "
                     "Choose a different item name."
                 ) from e
             raise SlugConflictError(

@@ -41,9 +41,19 @@ async def regenerate_map(
         "success": True,
         "map": map,
         "regen_type": regen_type,
-        "message": (
-            "Full regeneration started."
-            if regen_type.lower() == "fullregen"
-            else "Regeneration queued."
-        )
+        "message": _regen_start_message(regen_type),
     })
+
+
+def _regen_start_message(regen_type: str) -> str:
+    lower = regen_type.lower()
+    if lower == "fullregen":
+        return "Full regeneration started."
+    if lower.startswith("fullregen:"):
+        mode = lower.split(":", 1)[1]
+        return f"Full regeneration started for mode '{mode}'."
+    if lower.startswith("queued"):
+        return "Queued regeneration started."
+    if lower == "textonly":
+        return "Text-only compile started."
+    return "Regeneration started."

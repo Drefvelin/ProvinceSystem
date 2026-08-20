@@ -21,7 +21,6 @@ from ..util.overlay_metadata import (
     crop_to_content,
     merge_overlay_metadata,
     rgb_tuple_to_str,
-    save_cropped,
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map, map_image
@@ -70,6 +69,8 @@ class RegionBuffer:
         self.hover: np.ndarray | None = None
         self.nested: np.ndarray | None = None
         self.nested_hover: np.ndarray | None = None
+        self.overlay_meta: dict[str, int] | None = None
+        self.overlay_nested_meta: dict[str, int] | None = None
         self._initialized = False
 
     def _expand(self, new_x0: int, new_y0: int, new_x1: int, new_y1: int) -> None:
@@ -162,6 +163,30 @@ def _finalize_layer_from_full(
 ) -> tuple[np.ndarray, dict[str, int] | None]:
     cropped, meta = crop_to_content(Image.fromarray(full, mode="RGBA"))
     return np.array(cropped, dtype=np.uint8), meta
+
+
+def _save_layer_array(arr: np.ndarray, path: str) -> None:
+    Image.fromarray(np.array(arr, dtype=np.uint8, copy=True), mode="RGBA").save(path, "PNG")
+
+
+def _finalize_buffer_layer(
+    buf: RegionBuffer,
+    layer: str,
+    full: np.ndarray,
+    *,
+    store_overlay_meta: bool = False,
+    store_nested_overlay_meta: bool = False,
+) -> None:
+    cropped, meta = _finalize_layer_from_full(full)
+    setattr(buf, layer, cropped)
+    if store_overlay_meta and meta is not None:
+        buf.overlay_meta = meta
+    if store_nested_overlay_meta and meta is not None:
+        buf.overlay_nested_meta = meta
+    buf._initialized = True
+    buf.x0 = buf.y0 = 0
+    buf.x1 = cropped.shape[1]
+    buf.y1 = cropped.shape[0]
 
 
 def _apply_region_borders_np(
@@ -318,12 +343,8 @@ def generate_regions_numpy(
                     border_thickness,
                 )
 
-                buf.base, _ = _finalize_layer_from_full(full_base)
-                buf.hover, _ = _finalize_layer_from_full(full_hover)
-                buf._initialized = True
-                buf.x0 = buf.y0 = 0
-                buf.x1 = buf.base.shape[1]
-                buf.y1 = buf.base.shape[0]
+                _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
+                _finalize_buffer_layer(buf, "hover", full_hover)
         else:
             for i, (color, buf) in enumerate(regions.items(), start=1):
                 log_progress(
@@ -350,7 +371,7 @@ def generate_regions_numpy(
                     base_stroke,
                     border_thickness,
                 )
-                buf.base, _ = _finalize_layer_from_full(full_base)
+                _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
 
                 full_hover = np.zeros((height, width, 4), dtype=np.uint8)
                 full_hover[y0:y1, x0:x1] = buf.hover
@@ -361,7 +382,7 @@ def generate_regions_numpy(
                     hover_stroke,
                     border_thickness,
                 )
-                buf.hover, _ = _finalize_layer_from_full(full_hover)
+                _finalize_buffer_layer(buf, "hover", full_hover)
 
                 if buf.with_nested and buf.nested is not None:
                     full_nested = np.zeros((height, width, 4), dtype=np.uint8)
@@ -379,7 +400,12 @@ def generate_regions_numpy(
                         base_stroke,
                         border_thickness,
                     )
-                    buf.nested, _ = _finalize_layer_from_full(full_nested)
+                    _finalize_buffer_layer(
+                        buf,
+                        "nested",
+                        full_nested,
+                        store_nested_overlay_meta=True,
+                    )
 
                     full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
                     full_nested_hover[y0:y1, x0:x1] = buf.nested_hover
@@ -390,31 +416,37 @@ def generate_regions_numpy(
                         hover_stroke,
                         border_thickness,
                     )
-                    buf.nested_hover, _ = _finalize_layer_from_full(full_nested_hover)
-
-                buf._initialized = True
-                buf.x0 = buf.y0 = 0
-                buf.x1 = buf.base.shape[1]
-                buf.y1 = buf.base.shape[0]
+                    _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
     elif regions:
         for buf in regions.values():
-            buf.base, _ = _finalize_layer_from_full(
-                _stage_on_full_canvas(buf, height, width, "base")
+            map_x0, map_y0, map_x1, map_y1 = buf.x0, buf.y0, buf.x1, buf.y1
+
+            full_base = np.zeros((height, width, 4), dtype=np.uint8)
+            full_base[map_y0:map_y1, map_x0:map_x1] = buf.base
+            _finalize_buffer_layer(
+                buf,
+                "base",
+                full_base,
+                store_overlay_meta=True,
             )
-            buf.hover, _ = _finalize_layer_from_full(
-                _stage_on_full_canvas(buf, height, width, "hover")
-            )
-            if buf.with_nested and buf.nested is not None:
-                buf.nested, _ = _finalize_layer_from_full(
-                    _stage_on_full_canvas(buf, height, width, "nested")
+
+            full_hover = np.zeros((height, width, 4), dtype=np.uint8)
+            full_hover[map_y0:map_y1, map_x0:map_x1] = buf.hover
+            _finalize_buffer_layer(buf, "hover", full_hover)
+
+            if buf.with_nested and buf.nested is not None and buf.nested_hover is not None:
+                full_nested = np.zeros((height, width, 4), dtype=np.uint8)
+                full_nested[map_y0:map_y1, map_x0:map_x1] = buf.nested
+                _finalize_buffer_layer(
+                    buf,
+                    "nested",
+                    full_nested,
+                    store_nested_overlay_meta=True,
                 )
-                buf.nested_hover, _ = _finalize_layer_from_full(
-                    _stage_on_full_canvas(buf, height, width, "nested_hover")
-                )
-            buf._initialized = True
-            buf.x0 = buf.y0 = 0
-            buf.x1 = buf.base.shape[1]
-            buf.y1 = buf.base.shape[0]
+
+                full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
+                full_nested_hover[map_y0:map_y1, map_x0:map_x1] = buf.nested_hover
+                _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
 
     print()
 
@@ -430,27 +462,24 @@ def generate_regions_numpy(
             f"({i / total_outputs * 100:5.1f}%) → {name}"
         )
 
-        overlay_meta = save_cropped(
-            buf.to_image("base"),
-            os.path.join(output_dir, f"{name}.png"),
-        )
-        save_cropped(buf.to_image("hover"), os.path.join(output_dir, f"{name}_hover.png"))
+        if buf.base is None or buf.hover is None:
+            continue
+
+        _save_layer_array(buf.base, os.path.join(output_dir, f"{name}.png"))
+        _save_layer_array(buf.hover, os.path.join(output_dir, f"{name}_hover.png"))
 
         region_meta: dict = {}
-        if overlay_meta:
-            region_meta["overlay"] = overlay_meta
+        if buf.overlay_meta:
+            region_meta["overlay"] = buf.overlay_meta
 
-        if buf.with_nested and buf.nested is not None:
-            nested_meta = save_cropped(
-                buf.to_image("nested"),
-                os.path.join(output_dir, f"{name}_nested.png"),
-            )
-            save_cropped(
-                buf.to_image("nested_hover"),
+        if buf.with_nested and buf.nested is not None and buf.nested_hover is not None:
+            _save_layer_array(buf.nested, os.path.join(output_dir, f"{name}_nested.png"))
+            _save_layer_array(
+                buf.nested_hover,
                 os.path.join(output_dir, f"{name}_nested_hover.png"),
             )
-            if nested_meta:
-                region_meta["overlay_nested"] = nested_meta
+            if buf.overlay_nested_meta:
+                region_meta["overlay_nested"] = buf.overlay_nested_meta
 
         if region_meta:
             metadata_by_rgb[rgb_tuple_to_str(color)] = region_meta

@@ -3461,18 +3461,33 @@
   },
   {
     "id": 693,
-    "prosperity": 0.0,
-    "trade": {}
+    "prosperity": 0.15,
+    "trade": {
+      "Lantel_Shipping": {
+        "trade": 0.53,
+        "production": 0.18
+      }
+    }
   },
   {
     "id": 694,
-    "prosperity": 0.0,
-    "trade": {}
+    "prosperity": 1.21,
+    "trade": {
+      "Lantel_Shipping": {
+        "trade": 2.37,
+        "production": 1.25
+      }
+    }
   },
   {
     "id": 695,
-    "prosperity": 0.0,
-    "trade": {}
+    "prosperity": 3.26,
+    "trade": {
+      "Lantel_Shipping": {
+        "trade": 5.0,
+        "production": 3.0
+      }
+    }
   },
   {
     "id": 696,
@@ -3511,12 +3526,12 @@
   },
   {
     "id": 703,
-    "prosperity": 0.0,
+    "prosperity": 0.12,
     "trade": {}
   },
   {
     "id": 704,
-    "prosperity": 0.27,
+    "prosperity": 0.39,
     "trade": {}
   },
   {
@@ -4006,7 +4021,7 @@
   },
   {
     "id": 801,
-    "prosperity": 0.29,
+    "prosperity": 0.41,
     "trade": {}
   },
   {

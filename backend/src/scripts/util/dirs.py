@@ -35,6 +35,18 @@ def parchment_image(map_name: str) -> str:
 def paper_texture_asset() -> str:
     return os.path.join(BASE_DIR, "assets", "map", "paper_texture.png")
 
+def zoc_hatch_asset() -> str:
+    return os.path.join(BASE_DIR, "assets", "map", "zoc_hatch.png")
+
+def zoc_dir(map_name: str) -> str:
+    return os.path.join(OUTPUT_DIR, map_name, "zoc")
+
+def zoc_image(map_name: str, fort_id: str) -> str:
+    return os.path.join(zoc_dir(map_name), f"{fort_id}.png")
+
+def zoc_overlays_file(map_name: str) -> str:
+    return defines_file(map_name, "zoc_overlays.json")
+
 def validate_map(map_name: str):
     if not map_name.isalnum():
         raise ValueError("Invalid map name")

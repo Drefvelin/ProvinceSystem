@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { RefObject, MutableRefObject } from "react";
 import type {
   CursorTooltip,
@@ -6,16 +13,17 @@ import type {
   MapId,
   MapMode,
   MapObject,
-  SettlementMarker,
 } from "./types";
 import { MAP_BOUNDS } from "./types";
+import type { MapMarker } from "../../lib/mapMarkers";
+import { isMarkerMapMode } from "../../lib/mapMarkers";
 import {
   HOVER_OVERLAY_EXPAND,
   overlayPathFromHoverUrl,
   overlayStyle,
 } from "./overlayStyle";
 import LabelLayer from "./LabelLayer";
-import MapSettlementMarkers from "./MapSettlementMarkers";
+import MapMarkerLayer from "./MapMarkerLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { useMapViewport } from "../../hooks/useMapViewport";
@@ -61,26 +69,38 @@ function HoverOverlayImage({
   overlay,
   mapW,
   mapH,
+  opacity = HOVER_OVERLAY_OPACITY,
+  alt = "Hovered region",
+  imageClassName = "",
 }: {
   mapId: MapId;
   sessionToken?: string | null;
   overlay: HoverOverlay;
   mapW: number;
   mapH: number;
+  opacity?: number;
+  alt?: string;
+  imageClassName?: string;
 }) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const path = mapApiPathFromUrl(overlay.url);
   const { url } = useMapAssetUrl(mapId, path, sessionToken, Boolean(path));
 
-  const markLoaded = () => {
+  useEffect(() => {
+    setLoadedUrl(null);
+  }, [url]);
+
+  const markLoaded = useCallback(() => {
     if (url) setLoadedUrl(url);
-  };
+  }, [url]);
 
   const ready = Boolean(url) && loadedUrl === url;
   const positioned = overlayStyle(overlay.overlay, mapW, mapH, {
     expand: ready ? HOVER_OVERLAY_EXPAND : 0,
   });
-  const visible = ready && positioned.visibility !== "hidden";
+  const show =
+    Boolean(url) && positioned.visibility !== "hidden" && mapW > 0 && mapH > 0;
+  const imageOpacity = show ? (ready ? opacity : opacity * 0.35) : 0;
 
   if (!url) return null;
 
@@ -88,16 +108,19 @@ function HoverOverlayImage({
     <img
       key={url}
       src={url}
-      alt="Hovered region"
+      alt={alt}
       ref={(node) => {
-        if (node?.complete) markLoaded();
+        if (node?.complete && node.naturalWidth > 0) markLoaded();
       }}
-      className={`${OVERLAY_TRANSITION_CLASS} z-10`}
+      className={`${OVERLAY_TRANSITION_CLASS} z-10 ${imageClassName}`.trim()}
       style={{
         ...positioned,
-        opacity: visible ? HOVER_OVERLAY_OPACITY : 0,
+        opacity: imageOpacity,
       }}
       onLoad={markLoaded}
+      onError={() => {
+        setLoadedUrl(null);
+      }}
     />
   );
 }
@@ -109,9 +132,11 @@ type MapCanvasProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   mapObjects: MapObject[];
   hoveredOverlay: HoverOverlay | null;
+  hoveredFortZoc?: HoverOverlay | null;
   cursorTooltip: CursorTooltip | null;
   labels?: NationLabelSpec[];
-  settlements?: SettlementMarker[];
+  markers?: MapMarker[];
+  hoveredMarkerId?: string | null;
   hoveredNationId?: string | null;
   viewportCoordsRef?: MutableRefObject<MapPickViewport | null>;
   onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -127,9 +152,11 @@ export default function MapCanvas({
   canvasRef,
   mapObjects,
   hoveredOverlay,
+  hoveredFortZoc = null,
   cursorTooltip,
   labels = [],
-  settlements = [],
+  markers = [],
+  hoveredMarkerId = null,
   hoveredNationId = null,
   viewportCoordsRef,
   onMouseMove,
@@ -268,6 +295,17 @@ export default function MapCanvas({
               }}
             />
           ))}
+        {isMarkerMapMode(mapType) && hoveredFortZoc && (
+          <HoverOverlayImage
+            mapId={mapId}
+            sessionToken={sessionToken}
+            overlay={hoveredFortZoc}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+            opacity={0.85}
+            alt="Fort zone of control"
+          />
+        )}
         {hoveredOverlay && (
           <HoverOverlayImage
             mapId={mapId}
@@ -277,6 +315,15 @@ export default function MapCanvas({
             mapH={mapSize.h}
           />
         )}
+        <MapMarkerLayer
+          markers={markers}
+          hoveredMarkerId={hoveredMarkerId}
+          mapW={mapSize.w}
+          mapH={mapSize.h}
+          mapType={mapType}
+          displayScale={viewport.displayScale}
+          layer="base"
+        />
         <LabelLayer
           labels={labels}
           mapW={mapSize.w}
@@ -284,12 +331,14 @@ export default function MapCanvas({
           displayScale={viewport.displayScale}
           hoveredNationId={hoveredNationId}
         />
-        <MapSettlementMarkers
-          settlements={settlements}
+        <MapMarkerLayer
+          markers={markers}
+          hoveredMarkerId={hoveredMarkerId}
           mapW={mapSize.w}
           mapH={mapSize.h}
-          displayScale={viewport.displayScale}
           mapType={mapType}
+          displayScale={viewport.displayScale}
+          layer="hovered"
         />
         <canvas
           ref={canvasRef}

@@ -440,7 +440,7 @@ export default function UploadForm({
         return;
       }
       if (catalogError || !catalog) {
-        setError(catalogError || "Catalog not loaded — wait or refresh");
+        setError(catalogError || "Catalog not loaded - wait or refresh");
         return;
       }
       if (staffCategories.length < 1) {

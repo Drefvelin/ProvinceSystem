@@ -3,7 +3,7 @@
         "id": "Lantan",
         "name": "Lantan",
         "rgb": "51,200,210",
-        "leader": "ukindaickyngl",
+        "leader": "drefvelin",
         "ruler title": "Leader",
         "government": "Community",
         "culture": "Multicultural",
@@ -19,7 +19,9 @@
         "banner": "51_200_210",
         "provinces": [
             705,
-            704
+            704,
+            713,
+            695
         ],
         "titles": [],
         "relations": [],
@@ -37,7 +39,7 @@
             {
                 "id": "Lantan",
                 "name": "§cLantan",
-                "leader": "ukindaickyngl",
+                "leader": "drefvelin",
                 "rgb": "51,200,210",
                 "type": "realm",
                 "capital": 705,
@@ -46,14 +48,15 @@
                 "stance": "SUPPORT",
                 "xPos": 0.0,
                 "zPos": 0.0,
-                "balance": 0.0,
+                "balance": 47.7,
                 "banner": [
                     "BROWN.BASE",
                     "GREEN.SQUARE_TOP_RIGHT",
                     "YELLOW.ARROWS_DOWN"
                 ],
                 "members": [
-                    "ukindaickyngl"
+                    "ukindaickyngl",
+                    "drefvelin"
                 ],
                 "branches": [
                     {
@@ -89,9 +92,63 @@
                 "creditScore": 50,
                 "favoured": false,
                 "repressed": false
+            },
+            {
+                "id": "Lantel_Shipping",
+                "name": "§x§a§3§a§1§8§4Lantel Shipping",
+                "leader": "dummy_1",
+                "rgb": "107,90,230",
+                "type": "guild",
+                "capital": 695,
+                "bank": "true",
+                "world": "TFMC_Map",
+                "stance": "NEUTRAL",
+                "xPos": 0.0,
+                "zPos": 0.0,
+                "balance": 9.1,
+                "banner": [
+                    "LIME.BASE",
+                    "LIME.TRIANGLE_TOP",
+                    "RED.PEACE",
+                    "YELLOW.CLUB"
+                ],
+                "members": [
+                    "dummy_1"
+                ],
+                "branches": [
+                    {
+                        "id": "guild_halls",
+                        "level": 0
+                    },
+                    {
+                        "id": "workshops",
+                        "level": 0
+                    },
+                    {
+                        "id": "storehouses",
+                        "level": 0
+                    }
+                ],
+                "upgrades": [],
+                "upgrade queue": [],
+                "wealth modifiers": [],
+                "loans": [],
+                "creditScore": 50,
+                "favoured": false,
+                "repressed": false
             }
         ],
         "settlements": [
+            {
+                "id": "Cape_Wells",
+                "name": "§x§a§3§a§1§8§4Cape Wells",
+                "centerProvince": 695,
+                "centerX": 1513,
+                "centerZ": 2941,
+                "provinces": [
+                    695
+                ]
+            },
             {
                 "id": "Lanbury",
                 "name": "§x§a§3§a§1§8§4Lanbury",
@@ -99,13 +156,41 @@
                 "centerX": 1748,
                 "centerZ": 2739,
                 "provinces": [
-                    705,
-                    704
+                    705
                 ]
             }
         ],
+        "installations": [
+            {
+                "id": "Lantan_Airfield",
+                "name": "§x§a§3§a§1§8§4Lantan Airfield",
+                "kind": "airport",
+                "province": 705,
+                "centerX": 1720,
+                "centerZ": 2579,
+                "completedAt": 0
+            },
+            {
+                "id": "Lan_Harbour",
+                "name": "§x§a§3§a§1§8§4Lan Harbour",
+                "kind": "port",
+                "province": 695,
+                "centerX": 1498,
+                "centerZ": 2865,
+                "completedAt": 0
+            },
+            {
+                "id": "Greenfold",
+                "name": "§x§a§3§a§1§8§4Greenfold",
+                "kind": "fort",
+                "province": 704,
+                "centerX": 1560,
+                "centerZ": 2590,
+                "completedAt": 0
+            }
+        ],
         "governmentData": {
-            "power": 20.0,
+            "power": 106.08949999999999,
             "last election date": 0,
             "council members": [],
             "proposals": [],
@@ -141,13 +226,13 @@
             "favouring:no_favouring"
         ],
         "subjects": [],
-        "size": 2,
+        "size": 4,
         "subject_size": 0,
         "overlay": {
-            "x": 0,
-            "y": 0,
+            "x": 1249,
+            "y": 2286,
             "w": 634,
-            "h": 334
+            "h": 790
         }
     }
 }

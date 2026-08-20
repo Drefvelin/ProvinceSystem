@@ -1089,15 +1089,123 @@ SF named capitals / guild settlements export + map markers via TFMCWeb gateway; 
 - [x] `python -m unittest src.api.test_map_access -v` (19 tests)
 - [x] `npm test` (92) + `npm run build`
 
+## Step 54 — Province grid + installations
+
+**Batch:** [Planning/batches/step-54/00-index.md](./Planning/batches/step-54/00-index.md).
+
+Local province grid (no HTTP lookup) + fort/port/airport via `/faction construct`; map markers on political modes.
+
+### Operator checklist
+
+#### SF setup
+
+- [ ] `Input/province_id_grid.bin.gz` present (copy from PS `defines/{map}/province_id_grid.bin.gz` after grid rebuild)
+- [ ] `port-sea-proximity-blocks` in SF config (default 20)
+- [ ] Plugin fails loud if grid file missing on enable
+
+#### Gameplay
+
+- [ ] `/faction claim` / `setcapital` resolve province locally (no "could not connect to webapp" error)
+- [ ] `/faction construct fort|port|airport <name>` on directly owned land succeeds
+- [ ] Second same-kind installation on same province rejected
+- [ ] Port inland rejected; coastal within `port-sea-proximity-blocks` OK
+- [ ] Unclaim province dissolves installations on that province
+
+#### Map data
+
+- [ ] `map_markers.json` includes `installations[]` after construct + regen upload
+- [ ] `GET /main/data/markers` returns enriched `installations` with `map_x`/`map_y`
+
+#### Website
+
+- [ ] `/map/main` shows fort/port/airport pins with labels
+- [ ] Settlement markers unchanged
+- [ ] `/map/dev` shows fort + port fixtures (staff map)
+
+#### Tests
+
+- [x] `mvn -q package -DskipTests` (simplefactions)
+- [x] `python -m unittest scripts.loader.test_markers -v` (14 tests)
+- [x] `python -m unittest scripts.tools.test_build_province_id_grid -v`
+- [x] `npm test` (99) + `npm run build`
+
+## Step 55 — Installation upkeep, construction, and GUI
+
+**Batch:** [Planning/batches/step-55/00-index.md](./Planning/batches/step-55/00-index.md).
+
+Daily upkeep (`Cashflow.INSTALLATIONS`), construction queue (max 1), pay-or-destroy (cheapest first), faction Installations tab + GUI confirm deconstruct.
+
+### Operator checklist
+
+#### Config
+
+- [ ] `installations.*.daily-upkeep` and `construction-time` present in SF `config.yml`
+- [ ] Dev `construction-time: 10` with prod seconds in comments
+
+#### Construction
+
+- [ ] `/faction construct` enqueues — not on map until timer completes
+- [ ] Second construct while one building → rejected
+- [ ] Queue visible in faction Installations GUI (slot 39)
+
+#### Upkeep
+
+- [ ] Ledger shows **Installations** expense line
+- [ ] Broke faction loses **cheapest** installation on new day
+
+#### GUI / commands
+
+- [ ] Faction hub slot 32 (march icon) → installations list
+- [ ] Detail → deconstruct → confirm GUI → removed
+- [ ] `/faction deconstruct` opens installations GUI
+- [ ] `/faction deconstruct <id>` opens confirm GUI
+
+#### Regression
+
+- [ ] Step 54 construct validation (port sea, one per kind per province) still works
+- [ ] Province loss still dissolves installations
+
+#### Tests
+
+- [x] `mvn -q package -DskipTests` (simplefactions)
+
 ## Step 43 — Forts and zone of control
 
 **Batch:** [Planning/batches/step-43/00-index.md](./Planning/batches/step-43/00-index.md).
 
-Forts + ZOC overlay (requires SF forts).
+Fort ZOC hatch overlay (`forts[]` + `zoc_provinces` export, PS zocgen, FE hover). **After step 55** — ZOC on operational forts only.
 
-### Operator checklist
+### SF export + regen
 
-- [ ] TBD when batch files land
+- [ ] Operational fort exists (construction completed — step 55)
+- [ ] Pending fort **not** in `forts[]` until operational
+- [ ] After SF regen: `map_markers.json` contains `forts[]` with `zoc_provinces`, `center_x`/`center_z`
+- [x] `mvn -q package -DskipTests` (simplefactions)
+
+### PS backend
+
+- [ ] `output/main/zoc/{fort_id}.png` exists after regen
+- [ ] `GET /main/data/markers` → `forts[]` entry has `overlay` + `zoc_url`
+- [ ] `GET /main/zoc/{fort_id}.png` returns PNG (200)
+- [ ] Stale ZOC PNG removed when fort deconstructed
+
+### Frontend (`/map/main`)
+
+- [ ] Political mode (`nation`): hover **fort** pin → diagonal hatch over ZOC provinces
+- [ ] Hover **port** / **airport** → no hatch
+- [ ] Hover nation territory (not pin) → nation fill overlay; no ZOC
+- [ ] `terrain` mode → no installation markers; no ZOC
+- [ ] Nation drill stack + labels still work (regression)
+
+### Staff map (`/map/r3b1rth`)
+
+- [ ] Fort fixture on `dev` map: ZOC PNG loads with Bearer auth
+
+### Tests
+
+- [x] Backend: `test_zocgen.py` (4), `test_markers.py` fort cases (17), `test_map_access` (20)
+- [x] Frontend: `npm test` (113), `npm run build`
+- [x] `mvn -q package -DskipTests` (simplefactions)
 
 ## Step 44 — War map layer
 

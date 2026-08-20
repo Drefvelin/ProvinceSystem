@@ -1,73 +1,29 @@
 [
   {
-    "id": "Dendburgh",
-    "name": "§x§a§3§a§1§8§4Dendburgh",
+    "id": "Lantan",
+    "name": "§cLantan",
     "type": "§x§5§e§a§b§c§4Realm",
-    "size": 82,
-    "rgb": "152,77,234",
-    "trade_power": 41736.01,
+    "size": 0,
+    "rgb": "51,200,210",
+    "trade_power": 1.0,
     "banner": [
-      "YELLOW.BASE",
-      "YELLOW.GRADIENT",
-      "YELLOW.CROSS",
-      "WHITE.PUMPKIN"
+      "BROWN.BASE",
+      "GREEN.SQUARE_TOP_RIGHT",
+      "YELLOW.ARROWS_DOWN"
     ]
   },
   {
-    "id": "hauvid",
-    "name": "§x§a§3§a§1§8§4Hauvid",
-    "type": "§x§5§e§a§b§c§4Realm",
-    "size": 48,
-    "rgb": "104,219,211",
-    "trade_power": 25305.74,
+    "id": "Lantel_Shipping",
+    "name": "§x§a§3§a§1§8§4Lantel Shipping",
+    "type": "§x§b§d§a§4§6§4Guild",
+    "size": 0,
+    "rgb": "107,90,230",
+    "trade_power": 7.76,
     "banner": [
-      "WHITE.BASE",
-      "WHITE.SQUARE_TOP_LEFT",
-      "LIME.CIRCLE_TILES"
-    ]
-  },
-  {
-    "id": "Schmorain",
-    "name": "§x§a§3§a§1§8§4Schmorain",
-    "type": "§x§5§e§a§b§c§4Realm",
-    "size": 64,
-    "rgb": "218,95,197",
-    "trade_power": 32125.65,
-    "banner": [
-      "BLUE.BASE",
-      "BLUE.DIAGONAL_UP_LEFT",
-      "CYAN.SMALL_STRIPES",
-      "ORANGE.COMPANION",
-      "YELLOW.ARROW_DOWN"
-    ]
-  },
-  {
-    "id": "Tvyyr",
-    "name": "§x§5§a§a§6§a§6Tvyyr",
-    "type": "§x§5§e§a§b§c§4Realm",
-    "size": 38,
-    "rgb": "208,78,233",
-    "trade_power": 3800.97,
-    "banner": [
-      "ORANGE.BASE",
-      "ORANGE.TRIANGLES_TOP",
-      "ORANGE.STRIPE_DOWNRIGHT",
-      "CYAN.CHECKER",
-      "YELLOW.CURTAINS",
-      "BLUE.ARROW_DOWN"
-    ]
-  },
-  {
-    "id": "Atill",
-    "name": "§x§a§3§a§1§8§4Atill",
-    "type": "§x§5§e§a§b§c§4Realm",
-    "size": 101,
-    "rgb": "225,124,76",
-    "trade_power": 27665.99,
-    "banner": [
-      "GRAY.BASE",
-      "GREEN.TRIANGLES_BOTTOM",
-      "LIGHT_BLUE.GONFALON"
+      "LIME.BASE",
+      "LIME.TRIANGLE_TOP",
+      "RED.PEACE",
+      "YELLOW.CLUB"
     ]
   }
 ]

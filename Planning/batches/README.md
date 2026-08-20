@@ -78,10 +78,17 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-47/00-index](./step-47/00-index.md) | 47 | Map mode labels & Calavorn data layers | **done** |
 | [step-48/00-index](./step-48/00-index.md) | 48 | Label neighbor graph (water bridges) | **done** |
 | [step-42/00-index](./step-42/00-index.md) | 42 | Capitals and settlements | **done** |
+| [step-54/00-index](./step-54/00-index.md) | 54 | Province grid + installations | **done** |
+| [step-55/00-index](./step-55/00-index.md) | 55 | Installation upkeep + construction + GUI | **done** |
 | [step-50/00-index](./step-50/00-index.md) | 50 | S5 cutover — Adavaar → public `main` | **50.04 done**; next [50.05](./step-50/05-ps-frontend-registry.md) |
 | [step-51/00-index](./step-51/00-index.md) | 51 | Mapgen performance — `fullregen` optimization | planned; next [51.02](./step-51/02-baseline-snapshot.md) |
-| [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | planned |
-| [step-44/00-index](./step-44/00-index.md) | 44 | War map layer | planned (blocked on SF war rework) |
+| [step-43/00-index](./step-43/00-index.md) | 43 | Forts and zone of control | **done** |
+| [step-44/00-index](./step-44/00-index.md) | 44 | War map layer (PS) | **44.01 lock done**; after SF **67** |
+| [war-build-order.md](../war-build-order.md) | — | Full war step list (56–68 + 44) | **locked** |
+| [step-56/00-index](./step-56/00-index.md) | 56 | SF war foundation | **done** (56.01–56.09) |
+| [step-57/00-index](./step-57/00-index.md) | 57 | SF pathfinder & campaign | **done** (57.01–57.05) |
+| [step-58/00-index](./step-58/00-index.md) | 58 | SF initiative & occupation | **58.01 lock done** |
+| [step-59](../step-59/00-index.md)–[68](../step-68/00-index.md) | 59–68 | SF war + declare codes | planned (index stubs) |
 | [step-45/00-index](./step-45/00-index.md) | 45 | Map chronicle | planned |
 | [step-46/00-index](./step-46/00-index.md) | 46 | Wealth history and charts | planned |
 

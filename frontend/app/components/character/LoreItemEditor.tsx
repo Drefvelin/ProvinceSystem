@@ -532,7 +532,7 @@ export default function LoreItemEditor({
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           {DISPLAY_NAME_HINT}. Colour stops use your rank perk. You can also use
           inline §l / &amp;l (bold), §o (italic), §n (underline), §m (strike) in
-          the name — preview shows them like lore.
+          the name - preview shows them like lore.
         </p>
         <input
           type="text"

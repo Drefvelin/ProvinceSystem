@@ -1,361 +1,238 @@
 {
-    "Dendburgh": {
-        "id": "Dendburgh",
-        "name": "Dendburgh",
-        "rgb": "152,77,234",
-        "leader": "dummy_5",
-        "ruler title": "Leader",
-        "government": "Homestead",
-        "culture": "Multicultural",
-        "religion": "Religious Diversity",
-        "tax rate": 5.0,
-        "vassal tax rate": 100.0,
-        "capital": 13,
-        "extra node capacity": 0.0,
-        "banner": "152_77_234",
-        "provinces": [
-            13,
-            26
-        ],
-        "titles": [],
-        "relations": [],
-        "tier index": -1.0,
-        "military": [
-            "professional.0",
-            "militia.6"
-        ],
-        "military queue": [],
-        "prestige modifiers": [],
-        "guilds": [
-            {
-                "id": "Dendburgh",
-                "name": "\u00a7x\u00a7a\u00a73\u00a7a\u00a71\u00a78\u00a74Dendburgh",
-                "leader": "dummy_5",
-                "rgb": "152,77,234",
-                "type": "realm",
-                "capital": 13,
-                "bank": "true",
-                "world": "TFMC_S2",
-                "xPos": 265.0,
-                "zPos": 105.0,
-                "balance": 30720.08,
-                "banner": [
-                    "YELLOW.BASE",
-                    "YELLOW.GRADIENT",
-                    "YELLOW.CROSS",
-                    "WHITE.PUMPKIN"
-                ],
-                "members": [
-                    "dummy_5"
-                ],
-                "branches": [
-                    {
-                        "id": "bureaucracy",
-                        "level": 23
-                    },
-                    {
-                        "id": "workshops",
-                        "level": 32
-                    },
-                    {
-                        "id": "storehouses",
-                        "level": 27
-                    }
-                ],
-                "wealth modifiers": []
-            }
-        ],
-        "faction modifiers": [],
-        "subjects": [],
-        "size": 2,
-        "subject_size": 0
-    },
-    "hauvid": {
-        "id": "hauvid",
-        "name": "Hauvid",
-        "rgb": "104,219,211",
-        "leader": "dummy_3",
-        "ruler title": "Leader",
-        "government": "Homestead",
-        "culture": "Multicultural",
-        "religion": "Religious Diversity",
-        "tax rate": 5.0,
-        "vassal tax rate": 100.0,
-        "capital": 41,
-        "extra node capacity": 0.0,
-        "banner": "104_219_211",
-        "provinces": [
-            41
-        ],
-        "titles": [],
-        "relations": [],
-        "tier index": -1.0,
-        "military": [
-            "professional.0",
-            "militia.6"
-        ],
-        "military queue": [],
-        "prestige modifiers": [],
-        "guilds": [
-            {
-                "id": "hauvid",
-                "name": "\u00a7x\u00a7a\u00a73\u00a7a\u00a71\u00a78\u00a74Hauvid",
-                "leader": "dummy_3",
-                "rgb": "104,219,211",
-                "type": "realm",
-                "capital": 41,
-                "bank": "true",
-                "world": "TFMC_S2",
-                "xPos": 319.0,
-                "zPos": 107.0,
-                "balance": 39075.52,
-                "banner": [
-                    "WHITE.BASE",
-                    "WHITE.SQUARE_TOP_LEFT",
-                    "LIME.CIRCLE_TILES"
-                ],
-                "members": [
-                    "dummy_3"
-                ],
-                "branches": [
-                    {
-                        "id": "bureaucracy",
-                        "level": 21
-                    },
-                    {
-                        "id": "workshops",
-                        "level": 6
-                    },
-                    {
-                        "id": "storehouses",
-                        "level": 21
-                    }
-                ],
-                "wealth modifiers": []
-            }
-        ],
-        "faction modifiers": [],
-        "subjects": [],
-        "size": 1,
-        "subject_size": 0
-    },
-    "Schmorain": {
-        "id": "Schmorain",
-        "name": "Schmorain",
-        "rgb": "218,95,197",
+    "Lantan": {
+        "id": "Lantan",
+        "name": "Lantan",
+        "rgb": "51,200,210",
         "leader": "drefvelin",
         "ruler title": "Leader",
-        "government": "Homestead",
+        "government": "Community",
         "culture": "Multicultural",
         "religion": "Religious Diversity",
-        "tax rate": 5.0,
-        "vassal tax rate": 100.0,
-        "capital": 25,
+        "citizen tax": 0.0,
+        "guild tax": 0.0,
+        "vassal tax": 0.0,
+        "dividend tax": 0.0,
+        "tariffs": 0.0,
+        "specific taxes": {},
+        "capital": 705,
         "extra node capacity": 0.0,
-        "banner": "218_95_197",
+        "banner": "51_200_210",
         "provinces": [
-            25
+            705,
+            704,
+            713,
+            695
         ],
         "titles": [],
         "relations": [],
+        "trade relation": [],
         "tier index": -1.0,
         "military": [
             "professional.0",
             "militia.6"
         ],
         "military queue": [],
-        "prestige modifiers": [],
+        "prestige modifiers": [
+            "debug(1000.0)"
+        ],
         "guilds": [
             {
-                "id": "Schmorain",
-                "name": "\u00a7x\u00a7a\u00a73\u00a7a\u00a71\u00a78\u00a74Schmorain",
+                "id": "Lantan",
+                "name": "§cLantan",
                 "leader": "drefvelin",
-                "rgb": "218,95,197",
+                "rgb": "51,200,210",
                 "type": "realm",
-                "capital": 25,
+                "capital": 705,
                 "bank": "true",
-                "world": "TFMC_S2",
-                "xPos": 245.0,
-                "zPos": 92.0,
-                "balance": 1116557.36,
+                "world": "TFMC_Map",
+                "stance": "SUPPORT",
+                "xPos": 0.0,
+                "zPos": 0.0,
+                "balance": 47.7,
                 "banner": [
-                    "BLUE.BASE",
-                    "BLUE.DIAGONAL_UP_LEFT",
-                    "CYAN.SMALL_STRIPES",
-                    "ORANGE.COMPANION",
-                    "YELLOW.ARROW_DOWN"
+                    "BROWN.BASE",
+                    "GREEN.SQUARE_TOP_RIGHT",
+                    "YELLOW.ARROWS_DOWN"
                 ],
                 "members": [
+                    "ukindaickyngl",
                     "drefvelin"
                 ],
                 "branches": [
                     {
                         "id": "bureaucracy",
-                        "level": 18
+                        "level": 0
                     },
                     {
                         "id": "workshops",
-                        "level": 20
+                        "level": 0
                     },
                     {
                         "id": "storehouses",
-                        "level": 26
+                        "level": 0
                     }
                 ],
-                "wealth modifiers": []
-            }
-        ],
-        "faction modifiers": [],
-        "subjects": [],
-        "size": 1,
-        "subject_size": 0
-    },
-    "Tvyyr": {
-        "id": "Tvyyr",
-        "name": "Tvyyr",
-        "rgb": "208,78,233",
-        "leader": "dummy_1",
-        "ruler title": "Leader",
-        "government": "Homestead",
-        "culture": "Multicultural",
-        "religion": "Religious Diversity",
-        "tax rate": 5.0,
-        "vassal tax rate": 100.0,
-        "capital": 443,
-        "extra node capacity": 0.0,
-        "banner": "208_78_233",
-        "provinces": [
-            443,
-            455,
-            456,
-            444
-        ],
-        "titles": [],
-        "relations": [],
-        "tier index": -1.0,
-        "military": [
-            "professional.0",
-            "militia.6"
-        ],
-        "military queue": [],
-        "prestige modifiers": [],
-        "guilds": [
+                "upgrades": [
+                    {
+                        "id": "max_admin_power",
+                        "level": 0
+                    },
+                    {
+                        "id": "max_diplomatic_capacity",
+                        "level": 0
+                    },
+                    {
+                        "id": "admin_power_gain",
+                        "level": 0
+                    }
+                ],
+                "upgrade queue": [],
+                "wealth modifiers": [],
+                "loans": [],
+                "creditScore": 50,
+                "favoured": false,
+                "repressed": false
+            },
             {
-                "id": "Tvyyr",
-                "name": "\u00a7x\u00a75\u00a7a\u00a7a\u00a76\u00a7a\u00a76Tvyyr",
+                "id": "Lantel_Shipping",
+                "name": "§x§a§3§a§1§8§4Lantel Shipping",
                 "leader": "dummy_1",
-                "rgb": "208,78,233",
-                "type": "realm",
-                "capital": 443,
+                "rgb": "107,90,230",
+                "type": "guild",
+                "capital": 695,
                 "bank": "true",
-                "world": "TFMC_S2",
-                "xPos": 371.0,
-                "zPos": 105.0,
-                "balance": 1545.81,
+                "world": "TFMC_Map",
+                "stance": "NEUTRAL",
+                "xPos": 0.0,
+                "zPos": 0.0,
+                "balance": 9.1,
                 "banner": [
-                    "ORANGE.BASE",
-                    "ORANGE.TRIANGLES_TOP",
-                    "ORANGE.STRIPE_DOWNRIGHT",
-                    "CYAN.CHECKER",
-                    "YELLOW.CURTAINS",
-                    "BLUE.ARROW_DOWN"
+                    "LIME.BASE",
+                    "LIME.TRIANGLE_TOP",
+                    "RED.PEACE",
+                    "YELLOW.CLUB"
                 ],
                 "members": [
                     "dummy_1"
                 ],
                 "branches": [
                     {
-                        "id": "bureaucracy",
-                        "level": 9
+                        "id": "guild_halls",
+                        "level": 0
                     },
                     {
                         "id": "workshops",
-                        "level": 20
+                        "level": 0
                     },
                     {
                         "id": "storehouses",
-                        "level": 9
+                        "level": 0
                     }
                 ],
-                "wealth modifiers": []
+                "upgrades": [],
+                "upgrade queue": [],
+                "wealth modifiers": [],
+                "loans": [],
+                "creditScore": 50,
+                "favoured": false,
+                "repressed": false
             }
         ],
-        "faction modifiers": [],
-        "subjects": [],
-        "size": 4,
-        "subject_size": 0
-    },
-    "Atill": {
-        "id": "Atill",
-        "name": "Atill",
-        "rgb": "225,124,76",
-        "leader": "dummy_4",
-        "ruler title": "Leader",
-        "government": "Homestead",
-        "culture": "Multicultural",
-        "religion": "Religious Diversity",
-        "tax rate": 5.0,
-        "vassal tax rate": 100.0,
-        "capital": 49,
-        "extra node capacity": 0.0,
-        "banner": "225_124_76",
-        "provinces": [
-            49,
-            50,
-            52,
-            129
-        ],
-        "titles": [],
-        "relations": [],
-        "tier index": -1.0,
-        "military": [
-            "professional.0",
-            "militia.6"
-        ],
-        "military queue": [],
-        "prestige modifiers": [],
-        "guilds": [
+        "settlements": [
             {
-                "id": "Atill",
-                "name": "\u00a7x\u00a7a\u00a73\u00a7a\u00a71\u00a78\u00a74Atill",
-                "leader": "dummy_4",
-                "rgb": "225,124,76",
-                "type": "realm",
-                "capital": 49,
-                "bank": "true",
-                "world": "TFMC_S2",
-                "xPos": 315.0,
-                "zPos": 108.0,
-                "balance": 7244.64,
-                "banner": [
-                    "GRAY.BASE",
-                    "GREEN.TRIANGLES_BOTTOM",
-                    "LIGHT_BLUE.GONFALON"
-                ],
-                "members": [
-                    "dummy_2",
-                    "dummy_4"
-                ],
-                "branches": [
-                    {
-                        "id": "bureaucracy",
-                        "level": 13
-                    },
-                    {
-                        "id": "workshops",
-                        "level": 45
-                    },
-                    {
-                        "id": "storehouses",
-                        "level": 43
-                    }
-                ],
-                "wealth modifiers": []
+                "id": "Cape_Wells",
+                "name": "§x§a§3§a§1§8§4Cape Wells",
+                "centerProvince": 695,
+                "centerX": 1513,
+                "centerZ": 2941,
+                "provinces": [
+                    695
+                ]
+            },
+            {
+                "id": "Lanbury",
+                "name": "§x§a§3§a§1§8§4Lanbury",
+                "centerProvince": 705,
+                "centerX": 1748,
+                "centerZ": 2739,
+                "provinces": [
+                    705
+                ]
             }
         ],
+        "installations": [
+            {
+                "id": "Lantan_Airfield",
+                "name": "§x§a§3§a§1§8§4Lantan Airfield",
+                "kind": "airport",
+                "province": 705,
+                "centerX": 1720,
+                "centerZ": 2579,
+                "completedAt": 0
+            },
+            {
+                "id": "Lan_Harbour",
+                "name": "§x§a§3§a§1§8§4Lan Harbour",
+                "kind": "port",
+                "province": 695,
+                "centerX": 1498,
+                "centerZ": 2865,
+                "completedAt": 0
+            },
+            {
+                "id": "Greenfold",
+                "name": "§x§a§3§a§1§8§4Greenfold",
+                "kind": "fort",
+                "province": 704,
+                "centerX": 1560,
+                "centerZ": 2590,
+                "completedAt": 0
+            }
+        ],
+        "governmentData": {
+            "power": 106.08949999999999,
+            "last election date": 0,
+            "council members": [],
+            "proposals": [],
+            "eligible voters": [],
+            "election candidates": {
+                "LEADER": [],
+                "COUNCIL": []
+            },
+            "election votes": {
+                "LEADER": {},
+                "COUNCIL": {}
+            },
+            "previous votes": {
+                "LEADER": {},
+                "COUNCIL": {}
+            },
+            "stability modifiers": [],
+            "movements": []
+        },
         "faction modifiers": [],
+        "laws": [
+            "citizen_tax:none",
+            "vassal_tax:none",
+            "guild_tax:none",
+            "leadership:fixed",
+            "government:community",
+            "council:none",
+            "military:decentralized",
+            "vassalage:none",
+            "economy:decentralized",
+            "borders:closed_borders",
+            "repression:no_repression",
+            "favouring:no_favouring"
+        ],
         "subjects": [],
         "size": 4,
-        "subject_size": 0
+        "subject_size": 0,
+        "overlay": {
+            "x": 1249,
+            "y": 2286,
+            "w": 634,
+            "h": 790
+        }
     }
 }

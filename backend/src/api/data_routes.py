@@ -6,6 +6,7 @@ from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 from ..scripts.loader.markers import build_markers_response
 from ..scripts.loader.province_metadata import load_province_metadata
+from ..scripts.mapgen.zocgen import generate_zoc_overlays
 
 data_router = APIRouter()
 
@@ -127,4 +128,8 @@ async def upload_region_data(map_name: str, mode: str, request: Request):
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
     _province_cache.pop(map_name, None)
+
+    if mode == "map_markers":
+        generate_zoc_overlays(map_name)
+
     return JSONResponse({"message": f"{mode} data saved for '{map_name}'"})

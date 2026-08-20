@@ -220,13 +220,66 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] TFMCWeb gateway for SF map HTTP
 - [x] Population + `marker_size` export; FE settlement marker layer
 
+### M5b — Province grid + installations ([step-54](./batches/step-54/00-index.md)) — **done**
+
+- [x] PS admin script → `province_id_grid.bin.gz`
+- [x] SF `ProvinceGrid` + local `getProvince` (no HTTP)
+- [x] SF installations + `/faction construct`
+- [x] PS/FE `installations[]` markers on map
+- [x] SF docs: `Installations.md`, `ProvinceGrid.md`
+
+### M5c — Installation economy + GUI ([step-55](./batches/step-55/00-index.md))
+
+- [x] [55.01](./batches/step-55/01-planning-lock.md) planning lock
+- [x] [55.02](./batches/step-55/02-config-loader.md) config loader (`daily-upkeep`, `construction-time`)
+- [x] [55.03](./batches/step-55/03-construction-queue.md) construction queue (max 1, tick, persist)
+- [x] [55.04](./batches/step-55/04-upkeep-ledger.md) `Cashflow.INSTALLATIONS` + pay-or-destroy (cheapest first)
+- [x] [55.05](./batches/step-55/05-installations-gui.md) faction GUI + confirm deconstruct
+- [x] [55.06](./batches/step-55/06-docs-verify.md) docs + STAGING
+
 ### M6 — Forts ([step-43](./batches/step-43/00-index.md))
 
-- [ ] Forts + zone of control (SF forts required)
+- [x] [43.01](./batches/step-43/01-planning-lock.md) planning lock
+- [x] [43.02](./batches/step-43/02-sf-forts-export.md) SF `forts[]` + `zoc_provinces` export
+- [x] [43.03](./batches/step-43/03-ps-zocgen.md) PS zocgen + static route + markers enrich
+- [x] [43.04](./batches/step-43/04-frontend-zoc-hover.md) FE fort hover hatch overlay
+- [x] [43.05](./batches/step-43/05-docs-verify.md) docs + STAGING
 
-### M7 — Wars ([step-44](./batches/step-44/00-index.md))
+### M7 — Wars ([war-build-order.md](../war-build-order.md))
 
-- [ ] War frontlines layer (**blocked on SF war rework**)
+- [x] [44.01](./batches/step-44/01-planning-lock.md) planning lock — [Wars.md](../../simplefactions/Documentation/Wars.md)
+- [x] War build order locked (steps 56–68 + 44)
+- [x] [56.01](./batches/step-56/01-planning-lock.md) planning lock
+- [x] [56.02](./batches/step-56/02-domain-model.md) domain model v2
+- [x] [56.03](./batches/step-56/03-goal-validation.md) goal validation
+- [x] [56.04](./batches/step-56/04-persistence.md) persistence
+- [x] [56.05](./batches/step-56/05-declare-flow.md) declare flow
+- [x] [56.06](./batches/step-56/06-participants.md) participants
+- [x] [56.07](./batches/step-56/07-war-id-stubs.md) war_id stubs
+- [x] [56.08](./batches/step-56/08-admin-commands.md) admin commands
+- [x] [56](./batches/step-56/00-index.md) war foundation (56.01–56.09)
+- [x] [57.01](./batches/step-57/01-planning-lock.md) planning lock
+- [x] [57.02](./batches/step-57/02-pathfinder.md) pathfinder
+- [x] [57.03](./batches/step-57/03-campaign-line.md) campaign line
+- [x] [57.04](./batches/step-57/04-integration.md) integration
+- [x] [57.05](./batches/step-57/05-docs-verify.md) docs verify
+- [x] [57](./batches/step-57/00-index.md) pathfinder & campaign (57.01–57.05)
+- [x] [58.01](./batches/step-58/01-planning-lock.md) planning lock
+- [x] [58.02](./batches/step-58/02-domain-model.md) domain model
+- [x] [58.03](./batches/step-58/03-progression-core.md) progression core
+- [x] [58.04](./batches/step-58/04-occupation-zone.md) occupation zone
+- [x] [58.05](./batches/step-58/05-campaign-gui.md) Campaign GUI
+- [x] [58.06](./batches/step-58/06-integration.md) integration
+- [x] [58.07](./batches/step-58/07-docs-verify.md) docs verify
+- [x] [58](./batches/step-58/00-index.md) initiative & occupation (58.01–58.07)
+- [x] [59.01](./batches/step-59/01-planning-lock.md) battle scheduling planning lock
+- [x] [59.02](./batches/step-59/02-domain-model.md) battle scheduling domain model
+- [x] [59.03](./batches/step-59/03-vote-tally.md) vote tally services
+- [x] [59.04](./batches/step-59/04-schedule-orchestration.md) schedule orchestration
+- [x] [59.05](./batches/step-59/05-campaign-gui.md) Campaign GUI hour toggles
+- [ ] SF steps 59.06–67
+- [ ] [68](./batches/step-68/00-index.md) declare codes (last)
+- [ ] PS step 44 map layer (after SF 67)
 
 ### M8 — Chronicle ([step-45](./batches/step-45/00-index.md))
 
@@ -279,9 +332,11 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 28. **Nation labels / Step 40** — **done** ([step-40](./batches/step-40/00-index.md); tick [STAGING](../STAGING.md) Step 40 when ready)  
 29. **Staff maps / Step 41** — **done** ([step-41](./batches/step-41/00-index.md); tick [STAGING](../STAGING.md) Step 41 when ready)  
 30. **Settlements / Step 42** — **done** ([step-42](./batches/step-42/00-index.md))  
-31. **Forts, wars, chronicle, wealth / Steps 43–46** — **next: step 43**  
-32. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
-33. SimpleFactions map HTTP via TFMCWeb — **done** ([42.07](./batches/step-42/07-sf-tfmcweb-gateway.md))  
+31. **Province grid + installations / Step 54** — **done** ([step-54](./batches/step-54/00-index.md))  
+32. **Installation upkeep + construction + GUI / Step 55** — **done** ([step-55](./batches/step-55/00-index.md))  
+33. **Wars, chronicle, wealth / Steps 44–46** — **44.01 lock done**; **SF war P1** next ([Wars.md](../../simplefactions/Documentation/Wars.md))  
+34. Tick [STAGING](../STAGING.md) Steps 17–35, 31 when ready  
+35. SimpleFactions map HTTP via TFMCWeb — **done** ([42.07](./batches/step-42/07-sf-tfmcweb-gateway.md))  
 
 ---
 
@@ -297,4 +352,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Step 42 settlements done (42.01–42.10).** **Next build:** [step-43](./batches/step-43/00-index.md). Steps 44–46 **planned** ([16-map-platform.md](./16-map-platform.md)).
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Step 42 settlements done (42.01–42.10).** **Step 54 province grid + installations done (54.01–54.06).** **Step 55 installation economy + GUI done (55.01–55.06).** **Step 43 fort ZOC done (43.01–43.05).** **Step 56.01 war foundation planning lock done.** **Step 56.02 domain model v2 done.** **Step 56.04 persistence done.** **Step 56.05 declare flow done.** **Step 56.06 participants done.** **Step 56.07 war_id stubs done.** **Step 56 war foundation done (56.01–56.09).** **Step 57 pathfinder & campaign done (57.01–57.05).** **Step 58.06 integration done.** **Step 58 initiative & occupation done (58.01–58.07).** **Step 59.01 battle scheduling planning lock done.** **Step 59.02 domain model done.** **Step 59.04 schedule orchestration done.** **Step 59.05 Campaign GUI done.** **Next build:** SF war **59.06** scheduler + `warschedule` ([59.05 GUI](./batches/step-59/05-campaign-gui.md)). Steps 45–46 **planned** ([16-map-platform.md](./16-map-platform.md)).

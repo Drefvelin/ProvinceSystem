@@ -31,7 +31,13 @@
     },
     "forts": {
       "type": "array",
-      "items": { "$ref": "#/$defs/fort" }
+      "items": { "$ref": "#/$defs/fort" },
+      "description": "Step 43 ZOC export — not used in step 54; use installations[] for map markers"
+    },
+    "installations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/installation" },
+      "description": "Step 54: forts, ports, airports placed via /faction construct"
     },
     "wars": {
       "type": "array",
@@ -67,11 +73,13 @@
         "provinces": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Settlement territory province ids"
+          "minItems": 1,
+          "maxItems": 1,
+          "description": "Single-province settlement territory — always [province_id] / [centerProvince]"
         },
         "population": {
           "type": "integer",
-          "description": "Guild capitals in settlement provinces (SF export)"
+          "description": "Guild capitals in the settlement province (SF export)"
         },
         "marker_size": {
           "type": "string",
@@ -99,27 +107,121 @@
         "zoc_provinces": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Fort province plus one-ring neighbors"
+          "description": "Fort province plus one-ring land neighbors owned by factions in the same top realm (step 43 ZOC)"
+        },
+        "center_x": {
+          "type": "integer",
+          "description": "Minecraft block X at construct (SF export)"
+        },
+        "center_z": {
+          "type": "integer",
+          "description": "Minecraft block Z at construct (SF export)"
         },
         "map_x": { "type": "integer" },
         "map_y": { "type": "integer" }
       }
     },
+    "installation": {
+      "type": "object",
+      "required": ["id", "name", "kind", "province_id", "faction_id", "center_x", "center_z"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Display name set in-game (hex colour supported)" },
+        "kind": {
+          "type": "string",
+          "enum": ["fort", "port", "airport"]
+        },
+        "province_id": { "type": "integer" },
+        "faction_id": { "type": "string" },
+        "center_x": {
+          "type": "integer",
+          "description": "Minecraft block X at construct (SF export)"
+        },
+        "center_z": {
+          "type": "integer",
+          "description": "Minecraft block Z at construct (SF export)"
+        },
+        "map_x": {
+          "type": "integer",
+          "description": "Pixel X on shared map grid (PS-served from center_x, 1:1)"
+        },
+        "map_y": {
+          "type": "integer",
+          "description": "Pixel Y on shared map grid (PS-served from center_z, 1:1)"
+        }
+      }
+    },
     "war": {
       "type": "object",
-      "required": ["id", "belligerents", "status"],
+      "required": ["id", "war_type", "goal", "status", "belligerents", "attacker_leader_id", "defender_leader_id"],
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "war_type": {
+          "type": "string",
+          "enum": ["de_jure", "subjugate", "transfer_subject", "raid"],
+          "description": "Campaign shape; goal may further specify de_jure_annex vs subjugate"
+        },
+        "goal": {
+          "type": "string",
+          "enum": ["de_jure_annex", "subjugate", "transfer_subject"],
+          "description": "One goal per war; raid wars use pillage outcome instead"
+        },
         "status": { "type": "string", "enum": ["active", "ended"] },
+        "attacker_leader_id": { "type": "string", "description": "Main attacker faction id (war leader)" },
+        "defender_leader_id": { "type": "string", "description": "Main defender faction id (war leader)" },
         "belligerents": {
           "type": "array",
           "items": { "type": "string" },
-          "minItems": 2
+          "minItems": 2,
+          "description": "All faction ids on either side (main, subjects, called allies)"
+        },
+        "objective_province_id": {
+          "type": "integer",
+          "description": "Single capture/recapture province for this war"
+        },
+        "target_title_id": {
+          "type": "string",
+          "description": "De jure title id when applicable"
+        },
+        "campaign_provinces": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Ordered campaign polyline province ids"
+        },
+        "cursor_index": {
+          "type": "integer",
+          "description": "Current index into campaign_provinces"
+        },
+        "initiative_attacker": { "type": "integer" },
+        "initiative_defender": { "type": "integer" },
+        "white_peace_proposed_by_attacker": {
+          "type": "boolean",
+          "description": "Attacker auto-proposed white peace (cannot reach capitulation target with remaining initiative)"
+        },
+        "white_peace_proposed_by_defender": {
+          "type": "boolean",
+          "description": "Defender auto-proposed white peace"
+        },
+        "occupied_by_attacker": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Provinces tinted as attacker-occupied (bulge front)"
+        },
+        "occupied_by_defender": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Provinces tinted as defender-occupied"
+        },
+        "last_battle_occupied": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Provinces added by the most recent battle"
         },
         "frontline_provinces": {
           "type": "array",
-          "items": { "type": "integer" }
+          "items": { "type": "integer" },
+          "description": "Deprecated alias; prefer occupied_* lists. Optional edge highlight."
         },
         "campaign_markers": {
           "type": "array",
@@ -129,12 +231,27 @@
             "properties": {
               "label": { "type": "string" },
               "map_x": { "type": "integer" },
-              "map_y": { "type": "integer" }
+              "map_y": { "type": "integer" },
+              "province_id": { "type": "integer" }
             }
           }
         },
         "started_at": { "type": "string", "format": "date-time" },
-        "ended_at": { "type": "string", "format": "date-time" }
+        "ended_at": { "type": "string", "format": "date-time" },
+        "end_reason": {
+          "type": "string",
+          "enum": [
+            "attacker_goal",
+            "defender_goal",
+            "attacker_surrender",
+            "defender_surrender",
+            "white_peace",
+            "auto_white_peace",
+            "attacker_capital_lost",
+            "defender_capital_lost",
+            "raid_complete"
+          ]
+        }
       }
     },
     "chronicle_event": {
@@ -149,6 +266,9 @@
             "province_lost",
             "war_declared",
             "war_ended",
+            "battle_scheduled",
+            "battle_result",
+            "province_occupied",
             "capital_moved",
             "fort_built",
             "fort_lost",

@@ -27,7 +27,7 @@ function Row({ item, linkable }: { item: CharacterListItem; linkable?: boolean }
           {item.name || "Unnamed"}
         </p>
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          {meta || "—"}
+          {meta || "-"}
         </p>
         {status === "REJECTED" && err ? (
           <p className="mt-1 text-xs text-[#e8a0a0]">{err}</p>

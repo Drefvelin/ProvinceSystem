@@ -1,8 +1,10 @@
 import unittest
 
 import numpy as np
+from PIL import Image
 
-from .regiongen_numpy import RegionBuffer
+from ..util.overlay_metadata import crop_to_content
+from .regiongen_numpy import RegionBuffer, _finalize_buffer_layer, _stage_on_full_canvas
 
 
 class TestRegiongenNumpy(unittest.TestCase):
@@ -70,6 +72,27 @@ class TestRegiongenNumpy(unittest.TestCase):
         canvas[buf.y0 : buf.y1, buf.x0 : buf.x1] = buf.base
 
         np.testing.assert_array_equal(reference, canvas)
+
+    def test_finalize_buffer_layer_preserves_map_overlay(self):
+        height, width = 100, 120
+        buf = RegionBuffer(with_nested=False)
+        mask = np.zeros((height, width), dtype=bool)
+        mask[40:60, 30:50] = True
+        buf.paint_flat(mask, (10, 20, 30), (40, 50, 60))
+
+        _finalize_buffer_layer(
+            buf,
+            "base",
+            _stage_on_full_canvas(buf, height, width, "base"),
+            store_overlay_meta=True,
+        )
+
+        self.assertIsNotNone(buf.overlay_meta)
+        assert buf.overlay_meta is not None
+        self.assertEqual(buf.overlay_meta["x"], 28)
+        self.assertEqual(buf.overlay_meta["y"], 38)
+        self.assertEqual(buf.overlay_meta["w"], 24)
+        self.assertEqual(buf.overlay_meta["h"], 24)
 
 
 if __name__ == "__main__":

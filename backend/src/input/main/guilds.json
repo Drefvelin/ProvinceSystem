@@ -11,5 +11,19 @@
       "GREEN.SQUARE_TOP_RIGHT",
       "YELLOW.ARROWS_DOWN"
     ]
+  },
+  {
+    "id": "Lantel_Shipping",
+    "name": "§x§a§3§a§1§8§4Lantel Shipping",
+    "type": "§x§b§d§a§4§6§4Guild",
+    "size": 0,
+    "rgb": "107,90,230",
+    "trade_power": 7.76,
+    "banner": [
+      "LIME.BASE",
+      "LIME.TRIANGLE_TOP",
+      "RED.PEACE",
+      "YELLOW.CLUB"
+    ]
   }
 ]

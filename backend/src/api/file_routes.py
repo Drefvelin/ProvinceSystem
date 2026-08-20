@@ -7,8 +7,11 @@ from .map_access import ensure_map_access
 from ..scripts.util.dirs import (
     map_image,
     region_image,
-    banner_image
+    banner_image,
+    zoc_image,
+    validate_map,
 )
+from ..scripts.util.zoc_paths import safe_fort_filename
 
 ROUTER_DIR = Path(__file__).resolve().parent
 OUTPUT_BASE = ROUTER_DIR.parent / "output"
@@ -80,5 +83,31 @@ async def get_banner_file(
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Banner not found")
+
+    return add_cors(FileResponse(file_path, media_type="image/png"))
+
+
+@file_router.get("/{map_name}/zoc/{fort_id}")
+async def get_zoc_overlay(
+    map_name: str,
+    fort_id: str,
+    authorization: str | None = Header(default=None),
+):
+    ensure_map_access(map_name, authorization)
+    try:
+        validate_map(map_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    fort_id = fort_id.strip()
+    if fort_id.lower().endswith(".png"):
+        fort_id = fort_id[:-4]
+    safe_id = safe_fort_filename(fort_id)
+    if safe_id is None:
+        raise HTTPException(status_code=400, detail="Invalid fort id")
+
+    file_path = Path(zoc_image(map_name, safe_id))
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="ZOC overlay not found")
 
     return add_cors(FileResponse(file_path, media_type="image/png"))

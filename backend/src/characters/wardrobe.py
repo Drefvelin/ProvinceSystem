@@ -164,7 +164,7 @@ def load_masked_template() -> bytes:
     path = _wardrobe_assets_dir() / "masked.png"
     if not path.is_file():
         raise WardrobeError(
-            "Masked template not synced — reload RPCharacters on the game server",
+            "Masked template not synced - reload RPCharacters on the game server",
             status_code=400,
         )
     return path.read_bytes()

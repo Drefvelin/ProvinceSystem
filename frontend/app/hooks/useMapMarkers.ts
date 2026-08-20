@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 
-import type { MapId, SettlementMarker } from "../components/map/types";
+import type {
+  FortMarker,
+  InstallationMarker,
+  MapId,
+  SettlementMarker,
+} from "../components/map/types";
+import { filterPlacedInstallations } from "../lib/installationMarkers";
 import { filterPlacedSettlements } from "../lib/settlementMarkers";
 import { fetchMapMarkers } from "@/lib/map/api";
 
 type MapMarkersState = {
   settlements: SettlementMarker[];
+  installations: InstallationMarker[];
+  forts: FortMarker[];
   loading: boolean;
   error: string | null;
 };
@@ -17,13 +25,21 @@ export function useMapMarkers(
 ): MapMarkersState {
   const [state, setState] = useState<MapMarkersState>({
     settlements: [],
+    installations: [],
+    forts: [],
     loading: enabled,
     error: null,
   });
 
   useEffect(() => {
     if (!enabled) {
-      setState({ settlements: [], loading: false, error: null });
+      setState({
+        settlements: [],
+        installations: [],
+        forts: [],
+        loading: false,
+        error: null,
+      });
       return;
     }
 
@@ -36,6 +52,8 @@ export function useMapMarkers(
         if (cancelled) return;
         setState({
           settlements: filterPlacedSettlements(data.settlements ?? []),
+          installations: filterPlacedInstallations(data.installations ?? []),
+          forts: data.forts ?? [],
           loading: false,
           error: null,
         });
@@ -44,7 +62,13 @@ export function useMapMarkers(
         const message =
           err instanceof Error ? err.message : "Failed to load map markers";
         console.error("[useMapMarkers]", message, err);
-        setState({ settlements: [], loading: false, error: message });
+        setState({
+          settlements: [],
+          installations: [],
+          forts: [],
+          loading: false,
+          error: message,
+        });
       }
     };
 

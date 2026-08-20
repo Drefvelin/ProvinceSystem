@@ -205,7 +205,7 @@ export default function CharacterPage() {
         <div className="mt-4">
           <p className="text-sm text-[var(--tfmc-stone)]">
             {uiDev
-              ? "UI-dev session — no redeem required."
+              ? "UI-dev session - no redeem required."
               : `Session expires ${formatExpiresIn(session.expires_at)} (${formatLocal(session.expires_at)})`}
           </p>
           {loadingList && characters.length === 0 ? (

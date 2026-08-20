@@ -251,7 +251,7 @@ export function assert3dPairBudgets(
 
   const cap = Math.max(0, Math.floor(maxBytes));
   if (cap <= 0) {
-    throw new Error("3D size limit unavailable — wait for catalog sync");
+    throw new Error("3D size limit unavailable - wait for catalog sync");
   }
 
   if (isModel3dKind(kind)) {

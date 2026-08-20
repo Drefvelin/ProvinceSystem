@@ -1,0 +1,127 @@
+import { memo, useMemo } from "react";
+
+import type { MapMode } from "./types";
+import {
+  MARKER_HOVER_SCALE,
+  MARKER_HOVER_TRANSITION,
+  MARKER_LABEL_GAP,
+  MARKER_LAYER_Z_BELOW_LABELS,
+  MARKER_LAYER_Z_HOVERED,
+  MARKER_VISIBILITY_TRANSITION,
+  isMarkerMapMode,
+  markerDimensions,
+  markerLabelTextStyle,
+  markerLayout,
+  resolveMarkerImageSrc,
+  shouldShowMapMarker,
+  type MapMarker,
+} from "../../lib/mapMarkers";
+
+type MapMarkerLayerProps = {
+  markers: MapMarker[];
+  hoveredMarkerId?: string | null;
+  mapW: number;
+  mapH: number;
+  mapType: MapMode;
+  displayScale: number;
+  /** Base pins render below faction labels; hovered pin renders above. */
+  layer: "base" | "hovered";
+};
+
+export default memo(MapMarkerLayer);
+
+function MapMarkerLayer({
+  markers,
+  hoveredMarkerId = null,
+  mapW,
+  mapH,
+  mapType,
+  displayScale,
+  layer,
+}: MapMarkerLayerProps) {
+  const layerMarkers = useMemo(() => {
+    if (layer === "hovered") {
+      if (!hoveredMarkerId) return [];
+      const hovered = markers.find((marker) => marker.id === hoveredMarkerId);
+      return hovered ? [hovered] : [];
+    }
+    if (!hoveredMarkerId) return markers;
+    return markers.filter((marker) => marker.id !== hoveredMarkerId);
+  }, [markers, hoveredMarkerId, layer]);
+
+  if (!isMarkerMapMode(mapType) || !layerMarkers.length || !mapW || !mapH) {
+    return null;
+  }
+
+  const layerZ =
+    layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_BELOW_LABELS;
+
+  return (
+    <div
+      className="pointer-events-none absolute left-0 top-0 h-full w-full overflow-visible"
+      style={{ zIndex: layerZ }}
+      aria-hidden
+    >
+      {layerMarkers.map((marker) => {
+        const layout = markerLayout(
+          marker.mapX,
+          marker.mapY,
+          marker.markerSize,
+          marker.kind
+        );
+        const visible = shouldShowMapMarker(marker, displayScale);
+        const hovered = hoveredMarkerId === marker.id;
+        const scale = hovered ? MARKER_HOVER_SCALE : 1;
+        const src = resolveMarkerImageSrc(marker.kind, marker.markerSize);
+        const showLabel = !marker.showLabelOnlyOnHover || hovered;
+        const iconOffset = (layout.size - layout.iconSize) / 2;
+
+        return (
+          <div
+            key={marker.id}
+            title={marker.title}
+            className="absolute overflow-visible"
+            style={{
+              left: layout.imageX,
+              top: layout.imageY,
+              width: layout.size,
+              opacity: visible ? 1 : 0,
+              transform: `scale(${scale})`,
+              transformOrigin: `${layout.size / 2}px ${layout.size / 2}px`,
+              transition: `${MARKER_VISIBILITY_TRANSITION}, ${MARKER_HOVER_TRANSITION}`,
+            }}
+          >
+            <img
+              src={src}
+              alt=""
+              width={layout.iconSize}
+              height={layout.iconSize}
+              className="absolute block"
+              style={{
+                left: iconOffset,
+                top: iconOffset,
+              }}
+              draggable={false}
+            />
+            {showLabel ? (
+              <p
+                className="absolute m-0 whitespace-nowrap"
+                style={{
+                  left: layout.size / 2,
+                  top: layout.size + MARKER_LABEL_GAP,
+                  transform: "translateX(-50%)",
+                  ...markerLabelTextStyle({
+                    fontSize: layout.fontSize,
+                    highlighted: hovered,
+                  }),
+                }}
+              >
+                {marker.label}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

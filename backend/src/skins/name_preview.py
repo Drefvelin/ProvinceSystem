@@ -121,7 +121,7 @@ def render_name_preview_png(
     name_styles: list[str] | None = None,
 ) -> bytes:
     """Return PNG bytes of the coloured display name on a dark background."""
-    text = (display_name or "").strip() or "—"
+    text = (display_name or "").strip() or "-"
     styles = {str(s).strip().lower() for s in (name_styles or [])}
     bold = "bold" in styles
     italic = "italic" in styles

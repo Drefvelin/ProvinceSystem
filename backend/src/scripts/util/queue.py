@@ -140,3 +140,40 @@ def clear_mode(map_name: str, mode: str):
         print(f"Cleared all entries under mode '{mode}' for map '{map_name}'.")
     else:
         print(f"No entries to clear for mode '{mode}' on map '{map_name}'.")
+
+
+def queue_all_for_mode(map_name: str, mode: str) -> list[str]:
+    """Queue every region RGB for a map mode (mirrors SF queueAllNations for nation)."""
+    from .dirs import defines_file, validate_map
+
+    validate_map(map_name)
+    mode = mode.lower()
+    data_path = defines_file(map_name, f"{mode}.json")
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"No defines file for mode '{mode}' on map '{map_name}'")
+
+    with open(data_path, encoding="utf-8") as handle:
+        region_data = json.load(handle)
+
+    rgbs: list[str] = []
+    for info in region_data.values():
+        if not isinstance(info, dict):
+            continue
+        rgb = info.get("rgb")
+        if not rgb:
+            continue
+        if mode == "nation":
+            provinces = info.get("provinces")
+            if not isinstance(provinces, list) or len(provinces) == 0:
+                continue
+        rgbs.append(rgb)
+
+    raw_path = raw_queue_path(map_name)
+    queue: dict = {}
+    if os.path.exists(raw_path):
+        with open(raw_path, encoding="utf-8") as handle:
+            queue = json.load(handle)
+
+    queue[mode] = sorted(set(rgbs))
+    _save_queue(map_name, queue)
+    return queue[mode]
