@@ -1,13 +1,21 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
-import CharacterRedeemForm from "../character/CharacterRedeemForm";
+import {
+  CharactersApiError,
+  redeemCharacter,
+} from "@/lib/characters/api";
 import {
   clearSession,
+  setSession,
   type CharacterSession,
 } from "@/lib/characters/session";
+import {
+  isDevGateBypassCode,
+  setDevGateBypass,
+} from "@/lib/site/devGateBypass";
 import { SITE_DISCORD_URL } from "@/lib/site/config";
 import { hasSiteStaffAccess } from "@/lib/site/staffAccess";
 
@@ -52,10 +60,11 @@ export default function DevLandingPage({
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const [code, setCode] = useState("");
   const [staffError, setStaffError] = useState<string | null>(
     accessDenied ? STAFF_DENIED_MESSAGE : null
   );
-  const [verifying, setVerifying] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (accessDenied) {
@@ -64,28 +73,59 @@ export default function DevLandingPage({
     }
   }, [accessDenied]);
 
-  async function handleRedeemed(session: CharacterSession) {
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
     setStaffError(null);
-    setVerifying(true);
+
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setStaffError("Enter a code");
+      return;
+    }
+
+    if (isDevGateBypassCode(trimmed)) {
+      setDevGateBypass();
+      onStaffVerified();
+      const returnPath = pathname && pathname !== "/" ? pathname : "/";
+      router.replace(returnPath);
+      return;
+    }
+
+    setSubmitting(true);
     try {
+      const result = await redeemCharacter(trimmed, false);
+      const session: CharacterSession = {
+        session_token: result.session_token,
+        player_uuid: result.player_uuid,
+        expires_at: result.expires_at,
+        scope: result.scope || "character",
+        ...(result.realm_id ? { realm_id: result.realm_id } : {}),
+        remember_me: false,
+      };
       const staff = await hasSiteStaffAccess(session.session_token);
       if (!staff) {
         clearSession();
         setStaffError(STAFF_DENIED_MESSAGE);
         return;
       }
+      setSession(session, false);
       onStaffVerified();
       const returnPath = pathname && pathname !== "/" ? pathname : "/";
       router.replace(returnPath);
-    } catch {
-      clearSession();
-      setStaffError(STAFF_DENIED_MESSAGE);
+    } catch (err) {
+      const message =
+        err instanceof CharactersApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Redeem failed";
+      setStaffError(message);
     } finally {
-      setVerifying(false);
+      setSubmitting(false);
     }
   }
 
-  const showSpinner = loading || verifying;
+  const showSpinner = loading || submitting;
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6">
@@ -120,10 +160,35 @@ export default function DevLandingPage({
             <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Checking access…</p>
           ) : (
             <>
-              <CharacterRedeemForm
-                variant="compact"
-                onRedeemed={handleRedeemed}
-              />
+              <form
+                onSubmit={onSubmit}
+                className="mt-4 flex w-full flex-col gap-4"
+              >
+                <label className="flex flex-col gap-2 text-left">
+                  <span className="text-sm font-medium text-[var(--tfmc-stone)]">
+                    Log in with code
+                  </span>
+                  <input
+                    type="text"
+                    name="code"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    disabled={submitting}
+                    placeholder="e.g. ABCD-1234"
+                    className="rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2.5 text-[var(--tfmc-cream)] outline-none placeholder:text-[color-mix(in_srgb,var(--tfmc-mist)_60%,transparent)] focus:border-[var(--tfmc-accent)] disabled:opacity-60"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  Enter
+                </button>
+              </form>
               {staffError ? (
                 <p className="mt-3 text-sm text-[#e8a0a0]" role="alert">
                   {staffError}

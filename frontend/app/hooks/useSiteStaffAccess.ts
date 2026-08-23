@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getSession, isSessionValid } from "@/lib/characters/session";
 import { isCharacterUiDev } from "@/lib/characters/uiDev";
+import { isDevGateBypassActive } from "@/lib/site/devGateBypass";
 import { hasSiteStaffAccess } from "@/lib/site/staffAccess";
 
 export type SiteStaffAccessState =
@@ -22,7 +23,7 @@ export function useSiteStaffAccess(opts?: Options): {
 } {
   const enabled = opts?.enabled !== false;
   const [state, setState] = useState<SiteStaffAccessState>(() => {
-    if (!enabled || isCharacterUiDev()) return "staff";
+    if (!enabled || isCharacterUiDev() || isDevGateBypassActive()) return "staff";
     return "loading";
   });
   const [tick, setTick] = useState(0);
@@ -40,6 +41,11 @@ export function useSiteStaffAccess(opts?: Options): {
     let cancelled = false;
 
     async function probe() {
+      if (isDevGateBypassActive()) {
+        if (!cancelled) setState("staff");
+        return;
+      }
+
       setState("loading");
 
       const session = getSession();
