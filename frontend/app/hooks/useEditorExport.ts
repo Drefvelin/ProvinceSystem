@@ -85,7 +85,7 @@ export function useEditorExport({
       }
 
       const zipBytes = buildEditorTitlesZip(drafts);
-      const blob = new Blob([zipBytes], { type: "application/zip" });
+      const blob = new Blob([zipBytes.slice()], { type: "application/zip" });
       downloadBlob(blob, editorTitlesZipFilename(mapId));
       setExportState("idle");
       setExportError(null);
