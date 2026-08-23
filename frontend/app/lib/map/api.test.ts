@@ -80,7 +80,7 @@ describe("map api", () => {
       vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
-            maps: [{ id: "main", display_name: "Calavorn", public: true }],
+            maps: [{ id: "main", display_name: "Adavaar", public: true }],
           }),
           { status: 200 }
         )

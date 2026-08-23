@@ -87,9 +87,9 @@ nano backend/.env
 Example (use your real production keys):
 
 ```env
-PLUGIN_KEY=your-production-plugin-key
-STAFF_KEY=your-production-staff-key
-MINESKIN_API_KEY=
+PLUGIN_KEY=dev-plugin-key
+STAFF_KEY=your-dev-staff-key
+MINESKIN_API_KEY=msk_i61s0B91_AxauAAIA41nwIrahEn1MezBlRe9_PBn7IkyZyYGnK-0Qehqx0mAQEi4GoR5PWTpA
 ```
 
 - `PLUGIN_KEY` must match TFMCWeb `api.plugin-key` on every MC server.
@@ -132,9 +132,8 @@ SSH in, then from **`~/ProvinceSystem`**:
 ```bash
 cd ~/ProvinceSystem
 git fetch origin
-git checkout site-rework          # or main, whichever is production
+git checkout site-rework
 git reset --hard origin/site-rework
-
 docker compose down
 docker compose build --no-cache
 docker compose up -d
@@ -161,13 +160,14 @@ curl -s https://www.tfminecraft.net/api/ping
 
 ### Optional: Season 5 dev landing
 
-In `docker-compose.yml`, uncomment on the frontend service:
+Production `docker-compose.yml` enables the gate by default (`NEXT_PUBLIC_SITE_DEV_GATE=1` build arg).
 
-```yaml
-- NEXT_PUBLIC_SITE_DEV_GATE=1
+**Launch day:** set the build arg to `"0"` (or remove the line), then rebuild the frontend:
+
+```bash
+docker compose build --no-cache frontend
+docker compose up -d
 ```
-
-Then rebuild the frontend (`docker compose build --no-cache frontend && docker compose up -d`).
 
 ---
 

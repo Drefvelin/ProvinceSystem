@@ -35,7 +35,7 @@ TEST_REGISTRY = """
 maps:
   - id: main
     public: true
-    display_name: Calavorn
+    display_name: Adavaar
     realm_id: main
   - id: dev
     public: false

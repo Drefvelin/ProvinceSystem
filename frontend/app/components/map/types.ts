@@ -171,7 +171,7 @@ export const MAP_BOUNDS: Record<MapId, number> = {
 };
 
 export const MAP_DISPLAY_NAMES: Record<MapId, string> = {
-  main: "Calavorn",
+  main: "Adavaar",
   dev: "Adavaar",
 };
 
