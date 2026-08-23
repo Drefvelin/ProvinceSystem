@@ -43,6 +43,10 @@ describe("mapMarkers", () => {
     expect(resolveMarkerImageSrc("airport", "large")).toBe("/airport.png");
   });
 
+  it("resolveMarkerImageSrc picks battle asset", () => {
+    expect(resolveMarkerImageSrc("battle", "small")).toBe("/battle.png");
+  });
+
   it("markerLayout centers icon on map coords", () => {
     const layout = markerLayout(100, 200, "small");
     expect(layout.imageX).toBe(50);
@@ -56,6 +60,11 @@ describe("mapMarkers", () => {
     expect(layout.iconSize).toBe(75);
     expect(layout.size).toBe(100);
     expect(layout.textY).toBe(222);
+  });
+
+  it("markerLayout shrinks battle icons to 75%", () => {
+    const layout = markerLayout(100, 200, "small", "battle");
+    expect(layout.iconSize).toBe(75);
   });
 
   it("filterVisibleMapMarkers hides markers below min screen label size", () => {

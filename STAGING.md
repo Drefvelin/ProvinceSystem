@@ -1045,6 +1045,89 @@ Desktop pan/zoom on `/map/{id}`: wheel zoom toward cursor, middle-mouse pan with
 - [x] `npm test` — `mapViewportMath` (7), `useMapCoords` (7), `useMapViewport` (1)
 - [x] `npm run build`
 
+## Step 72 — Map title editor
+
+**Batch:** [Planning/batches/step-72/00-index.md](./Planning/batches/step-72/00-index.md) · playbook [Planning/17-map-title-editor.md](./Planning/17-map-title-editor.md). **UX polish:** [step-73](./Planning/batches/step-73/00-index.md) (entry flow, locked map, performance).
+
+Staff-gated web editor at `/map/editor?map=main|dev` for political title hierarchy (`county` / `duchy` / `kingdom` / `empire`): click-combine territories, name titles, RGB colours, save to `defines/{map}/`, regen preview on `/map/{id}`.
+
+**Prerequisites:** profile login + `tfmc.map.staff` in `permission_flags` (same LP / TFMCWeb meta sync as Step 41).
+
+### Operator checklist
+
+#### Access gate
+
+- [ ] Non-staff (no `tfmc.map.staff`): `/map/editor?map=main` shows permission gate, not the editor canvas
+- [ ] `SiteHeader`: Home, Map, Skins, Drinks, Character only (no Adavaar, no Map editor link)
+- [ ] Staff on `/map/main`: **Edit titles** visible; opens `/map/editor?map=main` (tier tabs County / Duchy / Kingdom / Empire)
+- [ ] Staff on `/map/r3b1rth`: **Edit titles** opens `/map/editor?map=dev`
+- [ ] Bare `/map/editor` without `?map=` redirects or gates (does not silently edit wrong map)
+
+#### County tier
+
+- [ ] Create county, rename, recolour (RGB picker), add/remove province by click, delete county
+- [ ] Live paint updates on map click without regen
+- [ ] **Save to server** writes `defines/{map}/county.json` (verify via GET `/{map}/data/county` with staff Bearer or file on host)
+- [ ] **Regenerate** `fullregen:county` after save; `/map/{map}` county mode colours match editor
+
+#### Duchy, kingdom, empire
+
+- [ ] Duchy: combine 2+ counties, save, regen `fullregen:duchy`, viewer duchy mode shows members
+- [ ] Kingdom: at least one kingdom with duchy members (smoke)
+- [ ] Empire: at least one empire with kingdom members (smoke)
+
+#### Save / auth regression
+
+- [ ] `POST /main/data/upload/county` without staff Bearer returns **403**
+- [ ] Unsaved changes: tier or map switch prompts discard confirm
+- [ ] Browser tab close with dirty draft triggers `beforeunload` warning
+
+#### UX
+
+- [ ] Pan/zoom usable on editor map (desktop-primary; mobile smoke OK)
+- [ ] Layout at 1280px: no document horizontal scroll; tier tabs and save bar reachable
+- [ ] County mode: after initial load, province click paint feels responsive (no multi-second freeze)
+- [ ] Editor: read-only map name (Calavorn / Adavaar); no map dropdown
+- [ ] No em dash in editor labels, buttons, or error strings
+
+#### Step 73 performance (code shipped)
+
+Province index: `GET /{map}/editor/province-index` (gzip grid) with image fallback. Paint: incremental subset updates; name field edits do not trigger full-map repaint. See [step-73/00-index.md](./Planning/batches/step-73/00-index.md).
+
+#### Calavorn smoke (`main`, post-72.10)
+
+- [ ] One county rename on `main` per [Calavorn runbook](./Planning/17-map-title-editor.md) Phase A (save + regen county)
+
+#### Tools
+
+```bash
+# ProvinceSystem/backend — coverage after counties rebuilt
+python -m src.scripts.util.validate_title_coverage main
+
+# Regen via editor UI (Save then Regenerate), or staff API:
+curl -s -X POST "http://127.0.0.1:18001/main/editor/regen/fullregen:county" \
+  -H "Authorization: Bearer <staff-session-token>"
+```
+
+#### Tests (CI)
+
+- [x] `npm test` — `app/lib/map/editor/` (frontend)
+- [x] `python -m unittest src.scripts.util.test_validate_title_coverage` (backend)
+
+### Walkthrough notes
+
+Record when staging checklist is run:
+
+| Field | Value |
+|-------|-------|
+| Date | |
+| Tester | |
+| Staging URL | |
+| `provinces.png` natural size (`main`) | |
+| Province index load time (county open) | |
+| Step 73 QA date / tester | |
+| Notes | |
+
 ## Step 42 — Capitals and settlements
 
 **Batch:** [Planning/batches/step-42/00-index.md](./Planning/batches/step-42/00-index.md).
@@ -1372,6 +1455,21 @@ Web create / skin upload / Discord link / moderation free-text fields share char
 Web names may include accents; in-game chat creation `SetterStage` name gate is still ASCII letters/spaces until a separate RPC change.
 
 Smoke: `name: "A<a>"` → 400; `José O'Brien` (length ok) → accepted; skin `display_name` with `<script>` rejected before slugify.
+
+## Site dev gate (Season 5 landing)
+
+When `NEXT_PUBLIC_SITE_DEV_GATE=1` on the frontend, the entire UI is replaced by a dev landing page until the visitor redeems a **character** code and has `tfmc.map.staff` in `permission_flags` (same LP / TFMCWeb meta sync as staff maps).
+
+**Security:** Client-side gate only; API routes remain reachable if endpoints are known. Unset the env var on public launch.
+
+**Prerequisites:** staff account with `tfmc.map.staff`; in-game `/token create character` for redeem code.
+
+- [ ] Gate **off** (`NEXT_PUBLIC_SITE_DEV_GATE` unset): site works as today (hub, map, skins, etc.)
+- [ ] Gate **on**, no session: any route (`/`, `/map/main`, `/skins`, …) shows dev landing with Discord link (`https://discord.gg/tfmc`)
+- [ ] Gate **on**, player character code (no staff LP): redeem shows "This site is in development. Staff access only."; session cleared
+- [ ] Gate **on**, staff character code: nav + intended route visible; `/` shows hub
+- [ ] Gate **on** + `NEXT_PUBLIC_CHARACTER_UI_DEV=1`: bypass (local UI dev)
+- [ ] `GET /characters/player-meta` (Bearer staff session) shows `permission_flags.tfmc.map.staff: true`
 
 ## Port already in use?
 

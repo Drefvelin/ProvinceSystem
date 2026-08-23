@@ -183,6 +183,113 @@ class CreateValidationWireTests(unittest.TestCase):
             out = _validate_and_normalize("player-uuid", body)
             self.assertEqual(out["name"], "José O'Brien")
 
+    def test_rejects_prosthetic_point_overspend(self) -> None:
+        from src.characters.creates import CreateError, _validate_and_normalize
+
+        catalog = _minimal_catalog()
+        catalog["traits"] = [
+            {"id": "arcane_prosthetic_arm", "key": "prosthetic", "cost": 1},
+            {"id": "basic_prosthetic_arm", "key": "prosthetic", "cost": 1},
+        ]
+        catalog["stages"] = [
+            {
+                "id": "prosthetic_selection_stage",
+                "type": "selection",
+                "target": "trait",
+                "key": "prosthetic",
+                "min_select": 0,
+                "max_select": 2,
+                "points": 1,
+            }
+        ]
+        body = {
+            "name": "Test Hero",
+            "age": 20,
+            "description": "A valid description here.",
+            "gender": "",
+            "race_id": "human",
+            "class_id": "warrior",
+            "traits": ["arcane_prosthetic_arm", "basic_prosthetic_arm"],
+            "clues": [],
+            "attributes": {"str": 0},
+        }
+        with patch(
+            "src.characters.creates.require_synced_creation_catalog",
+            return_value=catalog,
+        ), patch(
+            "src.characters.creates.get_player_meta",
+            return_value={"real_age_set": True, "eighteen": True},
+        ), patch(
+            "src.characters.creates.count_alive",
+            return_value=0,
+        ), patch(
+            "src.characters.creates.get_max_alive",
+            return_value=5,
+        ):
+            with self.assertRaises(CreateError) as ctx:
+                _validate_and_normalize("player-uuid", body)
+            self.assertIn("point budget", str(ctx.exception).lower())
+
+    def test_strips_injury_replaced_by_prosthetic(self) -> None:
+        from src.characters.creates import _validate_and_normalize
+
+        catalog = _minimal_catalog()
+        catalog["traits"] = [
+            {"id": "one_handed", "key": "injury", "cost": 0},
+            {
+                "id": "wooden_claw_arm",
+                "key": "prosthetic",
+                "cost": 1,
+                "replaces_injury": "one_handed",
+            },
+        ]
+        catalog["stages"] = [
+            {
+                "id": "permanent_injury_selection_stage",
+                "type": "selection",
+                "target": "trait",
+                "key": "injury",
+                "min_select": 0,
+                "max_select": 99,
+            },
+            {
+                "id": "prosthetic_selection_stage",
+                "type": "selection",
+                "target": "trait",
+                "key": "prosthetic",
+                "min_select": 0,
+                "max_select": 1,
+                "points": 1,
+            },
+        ]
+        body = {
+            "name": "Test Hero",
+            "age": 20,
+            "description": "A valid description here.",
+            "gender": "",
+            "race_id": "human",
+            "class_id": "warrior",
+            "traits": ["one_handed", "wooden_claw_arm"],
+            "clues": [],
+            "attributes": {"str": 0},
+        }
+        with patch(
+            "src.characters.creates.require_synced_creation_catalog",
+            return_value=catalog,
+        ), patch(
+            "src.characters.creates.get_player_meta",
+            return_value={"real_age_set": True, "eighteen": True},
+        ), patch(
+            "src.characters.creates.count_alive",
+            return_value=0,
+        ), patch(
+            "src.characters.creates.get_max_alive",
+            return_value=5,
+        ):
+            out = _validate_and_normalize("player-uuid", body)
+            self.assertEqual(out["traits"], ["wooden_claw_arm"])
+            self.assertEqual(out["all_traits"], ["wooden_claw_arm"])
+
 
 class SubmissionDisplayNameWireTests(unittest.TestCase):
     def test_rejects_script_before_slugify(self) -> None:

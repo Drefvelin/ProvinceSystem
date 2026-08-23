@@ -87,6 +87,24 @@ def attribute_spend(ranks: dict[str, int], cost_for_rank: list[int]) -> int:
     return total
 
 
+def _strip_injuries_replaced_by_prosthetics(
+    trait_ids: list[str], traits_by_id: dict[str, dict]
+) -> list[str]:
+    injuries_to_remove: set[str] = set()
+    for tid in trait_ids:
+        trait = traits_by_id.get(tid)
+        if not isinstance(trait, dict):
+            continue
+        if str(trait.get("key") or "").strip().lower() != "prosthetic":
+            continue
+        replaces = str(trait.get("replaces_injury") or "").strip()
+        if replaces:
+            injuries_to_remove.add(replaces)
+    if not injuries_to_remove:
+        return trait_ids
+    return [tid for tid in trait_ids if tid not in injuries_to_remove]
+
+
 def expand_attribute_traits(
     ranks: dict[str, int],
     abbreviations: dict[str, str],
@@ -267,6 +285,24 @@ def _validate_and_normalize(
             raise CreateError(
                 f"traits for key '{key}' must be between {min_select} and {max_select}"
             )
+        try:
+            budget = int(stage.get("points") or 0)
+        except (TypeError, ValueError):
+            budget = 0
+        if budget > 0:
+            spent = 0
+            for tid in selected_traits:
+                tkey = str(traits_by_id[tid].get("key") or "").strip().lower()
+                if tkey != key:
+                    continue
+                try:
+                    spent += int(traits_by_id[tid].get("cost") or 0)
+                except (TypeError, ValueError):
+                    pass
+            if spent > budget:
+                raise CreateError(
+                    f"traits for key '{key}' exceed point budget ({spent} > {budget})"
+                )
 
     clues_raw = _as_list(body.get("clues"), "clues")
     clue_cfg = _as_dict(validation.get("clues"), "validation.clues")
@@ -354,6 +390,8 @@ def _validate_and_normalize(
     alive = count_alive(player_uuid, realm)
     if alive >= max_alive:
         raise CreateError("no free character slot")
+
+    selected_traits = _strip_injuries_replaced_by_prosthetics(selected_traits, traits_by_id)
 
     merged_traits = list(dict.fromkeys([*selected_traits, *attr_traits]))
 

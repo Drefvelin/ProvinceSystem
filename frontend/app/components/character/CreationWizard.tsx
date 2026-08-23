@@ -49,7 +49,7 @@ import {
   traitPlaytimeReason,
   traitPointsRemaining,
   traitPointsSpent,
-  traitsForKey,
+  traitsForStage,
   type WizardDraft,
 } from "../../../lib/characters/wizardState";
 import {
@@ -395,7 +395,7 @@ function StageBody({
 
   if (type === "selection" && target === "trait") {
     const key = String(stage.key || "").trim();
-    const options = traitsForKey(catalog, key);
+    const options = traitsForStage(catalog, stage);
     const selected = selectedTraitsForKey(draft, catalog, key);
     const max = Number(stage.max_select ?? 1);
     const min = Number(stage.min_select ?? 0);
@@ -487,7 +487,12 @@ function StageBody({
                   selected={on}
                   cost={cost !== 0 ? cost : null}
                   showCostInBody={cost !== 0}
-                  descriptionLines={optionDescriptionLines(t)}
+                  descriptionLines={[
+                    ...optionDescriptionLines(t),
+                    ...(t.fuel_disclaimer
+                      ? ["Requires arcane fuel to stay powered."]
+                      : []),
+                  ]}
                   dependency={resolveTraitDependencyNames(t, catalog)}
                   mutuallyExclusive={resolveMutuallyExclusiveNames(t, catalog)}
                   modifierLines={optionModifierPreview(

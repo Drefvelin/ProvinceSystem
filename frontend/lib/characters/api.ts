@@ -166,6 +166,7 @@ export type CatalogStage = {
   order?: number;
   target?: string;
   key?: string;
+  filter?: string;
   min_select?: number;
   max_select?: number;
   points?: number;
@@ -233,6 +234,10 @@ export type CatalogTrait = {
     depends_on?: string[];
   };
   required_account_playtime_hours?: number;
+  has_duration?: boolean;
+  fuel_disclaimer?: boolean;
+  icon?: string;
+  replaces_injury?: string;
   [key: string]: unknown;
 };
 
@@ -291,6 +296,8 @@ export type CharacterSheetTrait = {
   id: string;
   name: string;
   key?: string;
+  duration_remaining_ms?: number;
+  fuel_percent?: number;
 };
 
 export type CharacterListItem = {

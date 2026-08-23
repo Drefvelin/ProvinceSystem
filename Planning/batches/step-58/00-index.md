@@ -3,6 +3,8 @@
 **Repo:** SF · **Spec:** [Wars.md](../../../../simplefactions/Documentation/Wars.md) · [01-planning-lock.md](./01-planning-lock.md) · [war-build-order.md](../../war-build-order.md)  
 **Depends on:** [57](../step-57/00-index.md) · **Next:** [59](../step-59/00-index.md)
 
+> **Runtime progression superseded by [step 62](../step-62/00-index.md)** (capability model: coalition initiative, Push/Hold + Attack/Peace, symmetric white peace). Shipped 58.03 FSM and 58.05 yellow hold/counter GUI are historical; live code follows [62.01 lock](../step-62/01-campaign-progression-lock.md).
+
 ## Goal
 
 Full campaign axis (border cursor in middle), initiative pools, cursor movement, occupation bulge, optional counter-push, white peace proposals, **GUI-first Campaign view**.

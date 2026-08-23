@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Header, Request, Response
+from fastapi import APIRouter, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 import json, os, time
 
-from .map_access import ensure_map_access
+from .map_access import ensure_map_access, ensure_map_staff_write
+from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 from ..scripts.loader.markers import build_markers_response
 from ..scripts.loader.province_metadata import load_province_metadata
@@ -12,6 +13,9 @@ data_router = APIRouter()
 
 CACHE_TTL = 300
 _province_cache = {}
+
+def clear_province_cache(map_name: str) -> None:
+    _province_cache.pop(map_name, None)
 
 def add_cors(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -113,9 +117,24 @@ async def get_map_name_data(
         return JSONResponse(json.load(f))
 
 @data_router.post("/{map_name}/data/upload/{mode}")
-async def upload_region_data(map_name: str, mode: str, request: Request):
+async def upload_region_data(
+    map_name: str,
+    mode: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
     validate_map(map_name)
     payload = await request.json()
+
+    mode_norm = (mode or "").strip().lower()
+    if mode_norm in TITLE_TIERS:
+        ensure_map_staff_write(map_name, authorization)
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Title data must be a JSON object")
+        try:
+            payload = validate_title_tier(mode_norm, payload, map_name)
+        except TitleValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     path = (
         input_file(map_name, f"{mode}.json")

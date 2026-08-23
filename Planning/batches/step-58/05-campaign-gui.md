@@ -3,6 +3,8 @@
 **Step:** 58 · **Repo:** SF  
 **Spec:** [01-planning-lock.md](./01-planning-lock.md) · [Wars.md](../../../../simplefactions/Documentation/Wars.md)
 
+> **Superseded (runtime GUI):** yellow hold/counter route nodes and `applyDefenderHold` / `applyDefenderCounterPush` actions were replaced by [step 62.04](../step-62/00-index.md) Push/Hold + Attack/Peace buttons. White peace symmetric reach checks moved to [62.03](../step-62/00-index.md).
+
 ## Goal
 
 Campaign view (route row, cursor, initiative/phase info, leader actions) and `WhitePeaceService` (auto-propose recalc, accept, auto-end). GUI-first for hold, counter-push, and accept peace.

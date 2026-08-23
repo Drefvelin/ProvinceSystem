@@ -55,18 +55,65 @@ export type FetchMapApiOptions = {
   sessionToken?: string | null;
   method?: string;
   cache?: RequestCache;
+  body?: string;
+  headers?: HeadersInit;
 };
+
+export type EditorTier = "county" | "duchy" | "kingdom" | "empire";
+
+export type EditorProvinceRow = {
+  id: number;
+  rgb: string;
+  terrain?: string;
+  fertility?: number;
+};
+
+export type EditorProvincesResponse = {
+  provinces: EditorProvinceRow[];
+};
+
+export type EditorTitlesResponse = {
+  ok: true;
+  tier: string;
+  count: number;
+};
+
+export type EditorRegenResponse = {
+  ok: true;
+  regen_type: string;
+  message: string;
+};
+
+export type EditorTitleDraft = Record<
+  string,
+  {
+    name: string;
+    rgb: string;
+    provinces?: number[];
+    titles?: string[];
+  }
+>;
+
+function mergeHeaders(
+  sessionToken?: string | null,
+  extra?: HeadersInit
+): HeadersInit | undefined {
+  const auth = authHeaders(sessionToken);
+  if (!auth && !extra) return undefined;
+  return { ...extra, ...auth };
+}
 
 export async function fetchMapApi(
   path: string,
   options: FetchMapApiOptions = {}
 ): Promise<Response> {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const headers = authHeaders(options.sessionToken);
+  const headers = mergeHeaders(options.sessionToken, options.headers);
   try {
     return await fetch(`${getApiBase()}${normalized}`, {
       method: options.method ?? "GET",
       headers,
+      body: options.body,
       cache: options.cache,
     });
   } catch {
@@ -162,4 +209,68 @@ export function staffMapAccessReason(
   if (error.detail === STAFF_MAP_ACCESS_DETAIL) return "login";
   if (error.detail === STAFF_MAP_PERMISSION_DETAIL) return "permission";
   return "unknown";
+}
+
+export async function fetchEditorProvinces(
+  mapId: MapId,
+  sessionToken: string
+): Promise<EditorProvincesResponse> {
+  return fetchMapJson<EditorProvincesResponse>(`/${mapId}/editor/provinces`, {
+    sessionToken,
+  });
+}
+
+export function editorProvincePickPath(mapId: MapId): string {
+  return `/${mapId}/editor/pick/provinces`;
+}
+
+export function editorProvinceIndexPath(mapId: MapId): string {
+  return `/${mapId}/editor/province-index`;
+}
+
+export async function fetchEditorProvinceIndex(
+  mapId: MapId,
+  sessionToken: string
+): Promise<ArrayBuffer> {
+  const res = await fetchMapApi(editorProvinceIndexPath(mapId), {
+    sessionToken,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    const detail = detailMessage(data, res.statusText);
+    throw new MapAccessError(
+      `Editor province index failed: ${detail}`,
+      res.status,
+      detail
+    );
+  }
+  return await res.arrayBuffer();
+}
+
+export async function postEditorTitles(
+  mapId: MapId,
+  tier: EditorTier,
+  body: EditorTitleDraft,
+  sessionToken: string
+): Promise<EditorTitlesResponse> {
+  return fetchMapJson<EditorTitlesResponse>(`/${mapId}/editor/titles/${tier}`, {
+    method: "POST",
+    sessionToken,
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function postEditorRegen(
+  mapId: MapId,
+  regenType: string,
+  sessionToken: string
+): Promise<EditorRegenResponse> {
+  return fetchMapJson<EditorRegenResponse>(
+    `/${mapId}/editor/regen/${encodeURIComponent(regenType)}`,
+    {
+      method: "POST",
+      sessionToken,
+    }
+  );
 }

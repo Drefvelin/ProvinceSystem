@@ -71,10 +71,12 @@ function MapMarkerLayer({
         );
         const visible = shouldShowMapMarker(marker, displayScale);
         const hovered = hoveredMarkerId === marker.id;
-        const scale = hovered ? MARKER_HOVER_SCALE : 1;
+        const baseScale = marker.baseScale ?? 1;
+        const scale = baseScale * (hovered ? MARKER_HOVER_SCALE : 1);
         const src = resolveMarkerImageSrc(marker.kind, marker.markerSize);
         const showLabel = !marker.showLabelOnlyOnHover || hovered;
         const iconOffset = (layout.size - layout.iconSize) / 2;
+        const ringSize = layout.iconSize * 1.2;
 
         return (
           <div
@@ -91,6 +93,20 @@ function MapMarkerLayer({
               transition: `${MARKER_VISIBILITY_TRANSITION}, ${MARKER_HOVER_TRANSITION}`,
             }}
           >
+            {marker.highlightRing ? (
+              <div
+                className="absolute rounded-full"
+                style={{
+                  left: iconOffset + (layout.iconSize - ringSize) / 2,
+                  top: iconOffset + (layout.iconSize - ringSize) / 2,
+                  width: ringSize,
+                  height: ringSize,
+                  border: "3px solid color-mix(in srgb, #3dff3d 70%, transparent)",
+                  boxShadow:
+                    "0 0 8px color-mix(in srgb, #3dff3d 35%, transparent)",
+                }}
+              />
+            ) : null}
             <img
               src={src}
               alt=""

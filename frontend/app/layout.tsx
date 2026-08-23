@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
-import SiteHeader from "./components/shell/SiteHeader";
+import SiteDevGate from "./components/site/SiteDevGate";
 import "./internal/globals.css";
 
 const fraunces = Fraunces({
@@ -33,8 +33,7 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${sourceSans.variable} min-h-dvh antialiased`}
       >
-        <SiteHeader />
-        {children}
+        <SiteDevGate>{children}</SiteDevGate>
       </body>
     </html>
   );

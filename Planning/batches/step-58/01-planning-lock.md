@@ -2,6 +2,8 @@
 
 **Plan + docs only.** Lock full campaign axis, progression FSM, white peace proposals, Campaign GUI, and persistence before 58.02+ code.
 
+> **Historical:** runtime FSM and defender yellow-choice rules below were **superseded by [step 62.01](../step-62/01-campaign-progression-lock.md)** (2026-08). Axis, occupation, and GUI tint rules remain authoritative unless 62 lock says otherwise.
+
 **Repos:** `Workspace/simplefactions`  
 **Depends on:** [00-index](./00-index.md) · [step-57](../step-57/00-index.md) · [Wars.md](../../../../simplefactions/Documentation/Wars.md) · [war-build-order.md](../../war-build-order.md)  
 **Authoritative gameplay doc:** [Wars.md](../../../../simplefactions/Documentation/Wars.md)

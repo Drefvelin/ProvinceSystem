@@ -50,6 +50,7 @@ def _normalize_stages(raw: list) -> list[dict[str, Any]]:
         for key in (
             "target",
             "key",
+            "filter",
             "lock_time",
             "repeat",
             "auto_next",

@@ -13,9 +13,14 @@ import {
 
 type Props = {
   onRedeemed: (session: CharacterSession) => void;
+  variant?: "default" | "compact";
 };
 
-export default function CharacterRedeemForm({ onRedeemed }: Props) {
+export default function CharacterRedeemForm({
+  onRedeemed,
+  variant = "default",
+}: Props) {
+  const compact = variant === "compact";
   const [code, setCode] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,10 +62,13 @@ export default function CharacterRedeemForm({ onRedeemed }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex w-full flex-col gap-4">
+    <form
+      onSubmit={onSubmit}
+      className={`flex w-full flex-col gap-4 ${compact ? "mt-4" : "mt-8"}`}
+    >
       <label className="flex flex-col gap-2 text-left">
         <span className="text-sm font-medium text-[var(--tfmc-stone)]">
-          Character code
+          {compact ? "Log in with code" : "Character code"}
         </span>
         <input
           type="text"
@@ -75,22 +83,24 @@ export default function CharacterRedeemForm({ onRedeemed }: Props) {
         />
       </label>
 
-      <label className="flex items-start gap-3 text-left text-sm text-[var(--tfmc-mist)]">
-        <FancyCheckbox
-          checked={rememberMe}
-          disabled={loading}
-          onChange={setRememberMe}
-          aria-label="Remember me"
-        />
-        <span>
-          <span className="font-medium text-[var(--tfmc-stone)]">
-            Remember me
+      {!compact ? (
+        <label className="flex items-start gap-3 text-left text-sm text-[var(--tfmc-mist)]">
+          <FancyCheckbox
+            checked={rememberMe}
+            disabled={loading}
+            onChange={setRememberMe}
+            aria-label="Remember me"
+          />
+          <span>
+            <span className="font-medium text-[var(--tfmc-stone)]">
+              Remember me
+            </span>
+            <span className="mt-0.5 block text-[var(--tfmc-mist)]">
+              Keep this session for 30 days on this device.
+            </span>
           </span>
-          <span className="mt-0.5 block text-[var(--tfmc-mist)]">
-            Keep this session for 30 days on this device.
-          </span>
-        </span>
-      </label>
+        </label>
+      ) : null}
 
       {error ? (
         <p className="text-sm text-[#e8a0a0]" role="alert">
@@ -103,7 +113,7 @@ export default function CharacterRedeemForm({ onRedeemed }: Props) {
         disabled={loading}
         className="inline-flex items-center justify-center rounded-sm bg-[var(--tfmc-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? "Redeeming…" : "Redeem"}
+        {loading ? (compact ? "Entering…" : "Redeeming…") : compact ? "Enter" : "Redeem"}
       </button>
     </form>
   );

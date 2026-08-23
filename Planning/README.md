@@ -19,7 +19,7 @@ Docs live under `ProvinceSystem/Planning/` as the team hub. Code for other piece
 
 ## Product lines
 
-1. **Map** — Live borders on the web; **map platform** (parchment, ink, labels, chronicle) in progress — [16-map-platform.md](./16-map-platform.md) / [step-36](./batches/step-36/00-index.md)–[46](./batches/step-46/00-index.md).  
+1. **Map** — Live borders on the web; **map platform** (parchment, ink, labels, chronicle) in progress — [16-map-platform.md](./16-map-platform.md) / [step-36](./batches/step-36/00-index.md)–[46](./batches/step-46/00-index.md). **Map title editor** (staff county → empire setup) **shipped** — [17-map-title-editor.md](./17-map-title-editor.md) / [step-72](./batches/step-72/00-index.md).  
 2. **Skins** — Donator cosmetics: code → website upload → Discord approve → ArmourShop applies `tfmc_submissions`. Staff curated: staff token → auto-approve → `tfmc_armorshop` + category/scroll ([step-18](./batches/step-18/00-index.md)).  
 2b. **Drinks** — Donator BreweryX recipes: `/token create drink` → `/drinks` → Discord approve → DrinkBuilder writes `tfmc_drinks` + `recipes.yml` ([15](./15-drink-builder.md) / [step-31](./batches/step-31/00-index.md); **code done**). Shared mint cooldown with skins on TFMCWeb.  
 3. **Identity / TFMCWeb** — Discord link + guild membership required to play Survival; scoped tokens; warn/ban mirror — [13-tfmcweb.md](./13-tfmcweb.md).  
@@ -63,6 +63,7 @@ Public map data is low sensitivity. Still validate uploads, hash codes, and keep
 **Map**
 
 6. [16-map-platform.md](./16-map-platform.md) — map platform north star (steps 37–45)  
+6b. [17-map-title-editor.md](./17-map-title-editor.md) — staff web title hierarchy editor ([step-72](./batches/step-72/00-index.md))  
 7. [09-map-system.md](./09-map-system.md) — SimpleFactions ↔ API ↔ web (technical)  
 8. [04-map-performance.md](./04-map-performance.md) — overlays, hover, mobile (technical)  
 

@@ -322,9 +322,49 @@
       }
     },
     {
-      "id": "creation_description_stage",
+      "id": "permanent_injury_info_stage",
       "type": "info",
       "order": 24,
+      "web_messages": [
+        "title(Backstory Injuries)",
+        "subtitle(Optional permanent injuries from your character's past. These cost no points and you may pick several.)",
+        "subtitle(You can skip this step if your character has no injuries.)"
+      ]
+    },
+    {
+      "id": "permanent_injury_selection_stage",
+      "type": "selection",
+      "order": 25,
+      "target": "trait",
+      "key": "injury",
+      "filter": "permanent-only",
+      "min_select": 0,
+      "max_select": 99
+    },
+    {
+      "id": "prosthetic_info_stage",
+      "type": "info",
+      "order": 26,
+      "web_messages": [
+        "title(Backstory Prosthetic)",
+        "subtitle(Optional prosthetic from your character's past. Costs 1 point and you may pick at most one.)",
+        "subtitle(Arcane prosthetics require fuel to stay powered. You can skip this step.)"
+      ]
+    },
+    {
+      "id": "prosthetic_selection_stage",
+      "type": "selection",
+      "order": 27,
+      "target": "trait",
+      "key": "prosthetic",
+      "min_select": 0,
+      "max_select": 1,
+      "points": 1
+    },
+    {
+      "id": "creation_description_stage",
+      "type": "info",
+      "order": 28,
       "messages": [
         "title(§aCharacter Description)",
         "subtitle(§eWrite a short description of your character)",
@@ -342,14 +382,14 @@
     {
       "id": "creation_description_set_stage",
       "type": "setter",
-      "order": 25,
+      "order": 29,
       "target": "description",
       "message": "subtitle(§7Type your character description in chat)"
     },
     {
       "id": "clue_info_stage",
       "type": "info",
-      "order": 26,
+      "order": 30,
       "messages": [
         "title(§aCharacter Clues)",
         "subtitle(§eClues are how others know your character)",
@@ -367,13 +407,13 @@
     {
       "id": "clue_entry_stage",
       "type": "clue",
-      "order": 27,
+      "order": 31,
       "message": "subtitle(§7Type clue {current}/{needed} in chat)"
     },
     {
       "id": "creation_summary_stage",
       "type": "summary",
-      "order": 28,
+      "order": 32,
       "entries": {
         "name": "creation_name_set_stage",
         "class": "class_selection_stage",
@@ -381,6 +421,8 @@
         "age": "character_age_stage",
         "description": "creation_description_set_stage",
         "attributes": "attributes_selection_stage",
+        "permanent_injury": "permanent_injury_selection_stage",
+        "prosthetic": "prosthetic_selection_stage",
         "clues": "clues"
       }
     }
@@ -785,6 +827,73 @@
       "cost": 1,
       "description": ["Takes what others won't give. Roads are hunting grounds."],
       "required_account_playtime_hours": 24
+    },
+    {
+      "id": "one_handed",
+      "name": "One-Handed",
+      "key": "injury",
+      "cost": 0,
+      "has_duration": false,
+      "icon": "BONE",
+      "description": ["This character only has one arm."],
+      "attribute_modifiers": [
+        { "type": "strength", "amount": -3 },
+        { "type": "constitution", "amount": -1 }
+      ]
+    },
+    {
+      "id": "one_legged",
+      "name": "One-Legged",
+      "key": "injury",
+      "cost": 0,
+      "has_duration": false,
+      "icon": "STICK",
+      "description": ["This character only has one leg."],
+      "attribute_modifiers": [{ "type": "dexterity", "amount": -3 }]
+    },
+    {
+      "id": "blind",
+      "name": "Blind",
+      "key": "injury",
+      "cost": 0,
+      "has_duration": false,
+      "icon": "SPIDER_EYE",
+      "description": ["This character is blind."],
+      "attribute_modifiers": [
+        { "type": "dexterity", "amount": -4 },
+        { "type": "strength", "amount": -2 }
+      ]
+    },
+    {
+      "id": "wooden_claw_arm",
+      "name": "Wooden Claw Arm",
+      "key": "prosthetic",
+      "cost": 1,
+      "replaces_injury": "one_handed",
+      "description": ["A crude wooden claw replaces this character's arm."],
+      "attribute_modifiers": [
+        { "type": "strength", "amount": -2 },
+        { "type": "constitution", "amount": -1 }
+      ]
+    },
+    {
+      "id": "arcane_prosthetic_arm",
+      "name": "Arcane Prosthetic Arm",
+      "key": "prosthetic",
+      "cost": 1,
+      "fuel_disclaimer": true,
+      "replaces_injury": "one_handed",
+      "description": ["An arcane prosthetic arm. Requires fuel to stay powered."],
+      "attribute_modifiers": [{ "type": "strength", "amount": -1 }]
+    },
+    {
+      "id": "pegleg",
+      "name": "Pegleg",
+      "key": "prosthetic",
+      "cost": 1,
+      "replaces_injury": "one_legged",
+      "description": ["A wooden pegleg replaces this character's leg."],
+      "attribute_modifiers": [{ "type": "dexterity", "amount": -2 }]
     }
   ],
   "validation": {

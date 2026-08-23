@@ -91,8 +91,11 @@ Each batch is **one plan + one build**: small enough to finish and verify before
 | [step-59](../step-59/00-index.md)–[68](../step-68/00-index.md) | 59–68 | SF war + declare codes | planned (index stubs) |
 | [step-45/00-index](./step-45/00-index.md) | 45 | Map chronicle | planned |
 | [step-46/00-index](./step-46/00-index.md) | 46 | Wealth history and charts | planned |
+| [step-72/00-index](./step-72/00-index.md) | 72 | Map title editor (staff web UI) | **72.01–72.11 done** |
+| [step-73/00-index](./step-73/00-index.md) | 73 | Map editor UX + performance | **73.01–73.07 done** |
+| [step-74/00-index](./step-74/00-index.md) | 74 | Editor offline ZIP export | **74.01–74.04 done**; next [74.05](./step-74/05-reset-and-toolbar.md) |
 
-**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX; Step 26 = kit asset sync + status; Step 27 = kit templates + resetkit; Step 28 = book skins + kit journal; Step 29 = kit customise visibility + claim AS gate; Step 30 = character skin wardrobe; Step 31 = Drink Builder; Steps 32–35 = realm + TFMCWeb gateway; Steps 36–45 = map platform.
+**Repos:** Step 2–3 ProvinceSystem; Step 4 = Discord review; Step 5 = Discord link + DMs; Step 6 = token mint; Step 7 = pack writer; Step 8 = live apply (`base_set` → shop); Step 13 = 3D kinds; Step 14 = guns; Step 15 = GaG IA; Step 16 = upload model preview; Step 17 = TFMCWeb; Step 18 = staff curated skins; Step 19 = character creator Phase 1; Step 20 = starter kits; Step 21 = lore-item + kit claim; Step 22 = web character sheet; Step 23 = kit editor polish; Step 24 = sheet traits/attrs/background parity; Step 25 = kit submit/deny UX; Step 26 = kit asset sync + status; Step 27 = kit templates + resetkit; Step 28 = book skins + kit journal; Step 29 = kit customise visibility + claim AS gate; Step 30 = character skin wardrobe; Step 31 = Drink Builder; Steps 32–35 = realm + TFMCWeb gateway; Steps 36–45 = map platform; Step 72 = map title editor.
 
 **In step 42:** SimpleFactions map HTTP via TFMCWeb ([42.07](./step-42/07-sf-tfmcweb-gateway.md)) — **done**.
 

@@ -28,9 +28,9 @@ Battle window, hourly voting (`min` rule), configurable vote/defender deadlines,
 | [59.03 vote tally](./03-vote-tally.md) | Window, vote, quorum services + tests | **done** (2026-08-20) |
 | [59.04 schedule orchestration](./04-schedule-orchestration.md) | Postpone, autoresolve, auto-Hold | **done** (2026-08-20) |
 | [59.05 Campaign GUI](./05-campaign-gui.md) | Hour toggles + schedule info + autoresolve buttons | **done** (2026-08-20) |
-| 59.06 scheduler + `warschedule` | Declare hook, tick, `warstatus` | planned |
-| 59.07 docs verify | Staging checklist | planned |
+| [59.06 scheduler + warschedule](./06-scheduler-integration.md) | Declare hook, tick, `warschedule`, dev quorum | **done** (2026-08-20) |
+| [59.07 docs verify](./07-docs-verify.md) | Tests + staging checklist | **done** (2026-08-20) |
 
 ## Status
 
-**59.05 complete** (2026-08-20). **Next:** [59.06 scheduler + warschedule](./06-scheduler-integration.md) (TBD).
+**Step 59 complete** (2026-08-20). **Next:** [60 - Warbands merge & battle runtime](../step-60/00-index.md).

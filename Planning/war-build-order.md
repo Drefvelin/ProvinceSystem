@@ -1,11 +1,11 @@
 # War system — build order (locked)
 
 **Spec:** [simplefactions/Documentation/Wars.md](../../simplefactions/Documentation/Wars.md) (planning lock v1.0)  
-**Locked:** 2026-08-19 (updated: declare codes deferred to **step 68**)
+**Locked:** 2026-08-19 (updated: declare codes deferred to **step 69**)
 
 ## Principle
 
-Build and test the automated war system **without declare codes** first. Staff/ticket codes gate production declare only after the full loop is proven (**step 68**).
+Build and test the automated war system **without declare codes** first. Staff/ticket codes gate production declare only after the full loop is proven (**step 69**).
 
 ## Steps overview
 
@@ -15,16 +15,24 @@ Build and test the automated war system **without declare codes** first. Staff/t
 | **[57](./batches/step-57/00-index.md)** | Pathfinder & campaign | SF | 56 | `ProvincePathfinder`, border start, route priority, campaign line, objective province |
 | **[58](./batches/step-58/00-index.md)** | Initiative & occupation | SF | 57 | Initiative pools, cursor, per-battle occupation (bulge), counter-push, white peace |
 | **[59](./batches/step-59/00-index.md)** | Battle scheduling | SF | 58 | Configurable vote/defender deadlines, hour voting (`min` rule), postpone (votes persist), dual-leader autoresolve, admin `warschedule` |
-| **[60](./batches/step-60/00-index.md)** | Warbands merge & battle runtime | SF | 59 | Merge Warbands, templates, auto battles, join command, province-leave penalty |
+| **[60](./batches/step-60/00-index.md)** | Warbands merge & battle runtime | SF | 59 | Province tracker, field/siege/raid battles, templates, naval variant, join command |
 | **[61](./batches/step-61/00-index.md)** | Military & casualties | SF | 60 | Lives, offense/defense by location, militia rules, levy commit, regiment losses |
-| **[62](./batches/step-62/00-index.md)** | War end & goals | SF | 61 | Surrender, white peace, goal apply, reparations, retake loop |
-| **[63](./batches/step-63/00-index.md)** | Forts & sieges | SF | 57, 60 | Fort ZOC on campaign line, sieges, war ZOC filter |
-| **[64](./batches/step-64/00-index.md)** | Naval & installation battles | SF | 63 | Sea zones, port coverage, per-battle installation pick |
-| **[65](./batches/step-65/00-index.md)** | Inter-battle raids | SF | 64 | Naval/air/fort raids between campaign battles |
-| **[66](./batches/step-66/00-index.md)** | Raid war type | SF | 57, 60 | One-battle border settlement raid |
-| **[67](./batches/step-67/00-index.md)** | War map export | SF | 58–62 | `wars[]` in map upload |
-| **[44](./batches/step-44/00-index.md)** | War map layer | PS | 67 | Occupation tint on website |
-| **[68](./batches/step-68/00-index.md)** | Declare codes & ticket gate | SF | 62+ (full loop tested) | Ticket → code → in-game declare; production gate |
+| **[61b](./batches/step-61b/00-index.md)** | Battle dev mode (solo staging) | SF | 61 | Devmode toggle, phantom warbands, capture min 1, campaign join cap |
+| **[61c](./batches/step-61c/00-index.md)** | Campaign UX & template cleanup | SF | 61b | Template settings-only, warschedule formatted output, warband signup, E2E verify |
+| **[62](./batches/step-62/00-index.md)** | War end & goals | SF | 61c | Capability-based campaign progression ([62.01 lock](./batches/step-62/01-campaign-progression-lock.md)); white peace, Push/Hold (goal apply deferred) |
+| **[63](./batches/step-63/00-index.md)** | War end closure | SF | 62 | Surrender, stalemate peace, battle victory, winner chat (no goal apply) |
+| **[64](./batches/step-64/00-index.md)** | Campaign schedule & fort sieges | SF | 63, 57, 60 | Battle schedule at declare, fort ZOC sieges, war-time fort control, trim, initiative, GUI kinds, remove battle zones |
+| **[65](./batches/step-65/00-index.md)** | Naval & invasions | SF | 64 | Port ZOC naval battles, naval invasion slots, war ZOC export |
+| **[70](./batches/step-70/00-index.md)** | Per-side battle caps & initiative | SF | 64, 65, 62 | Two-legged schedule trim; asymmetric declare fuel; counter-push schedule |
+| **[70b](./batches/step-70b/00-index.md)** | Campaign schedule simplicity | SF (+ PS optional) | 70, 66 | Cadence 3; schedule-only GUI; counter wilderness battles; export align |
+| **[70c](./batches/step-70c/00-index.md)** | Geographic route GUI | SF | 70b | Axis-left-to-right row; no pagination; border-B marker; cap 4/leg |
+| **[70d](./batches/step-70d/00-index.md)** | Chronological leg schedules (`placeBattle`) | SF | 70c | FB→DT / (B−1)→AC lists; axis-order insert; **done** |
+| **[66](./batches/step-66/00-index.md)** | War campaign map | SF + PS | 70, 58, 42 | Smooth campaign line + battle pins on web map (`wars[]` route slice) |
+| **[71](./batches/step-71/00-index.md)** | Inter-battle raids | SF | 65, 70, 66 | Naval/air/fort raids between campaign battles |
+| **[67](./batches/step-67/00-index.md)** | Raid war type | SF | 57, 60 | One-battle border settlement raid |
+| **[68](./batches/step-68/00-index.md)** | War map export (full) | SF | 58–63, 66 | Occupation, chronicle; extends `wars[]` beyond step 66 route |
+| **[44](./batches/step-44/00-index.md)** | War map layer | PS | 66, 68 | Occupation tint on website (route ships in 66) |
+| **[69](./batches/step-69/00-index.md)** | Declare codes & ticket gate | SF | 63+ (full loop tested) | Ticket → code → in-game declare; production gate |
 
 **Chronicle (step 45):** war events hook in after **67**; not a separate war step.
 
@@ -37,23 +45,29 @@ flowchart TB
   s58 --> s59[59 scheduling]
   s59 --> s60[60 warbands]
   s60 --> s61[61 military]
-  s61 --> s62[62 end and goals]
-  s57 --> s63[63 forts]
-  s63 --> s64[64 naval]
-  s64 --> s65[65 inter-battle raids]
-  s57 --> s66[66 raid war type]
-  s58 --> s67[67 map export]
-  s62 --> s67
-  s67 --> s44[44 PS map layer]
-  s62 --> s68[68 declare codes]
-  s67 --> s68
+  s61 --> s61b[61b devmode]
+  s61b --> s61c[61c campaign UX]
+  s61c --> s62[62 end and goals]
+  s62 --> s63[63 war end closure]
+  s63 --> s64[64 schedule and fort sieges]
+  s64 --> s65[65 naval and invasions]
+  s65 --> s70[70 per-side caps and initiative]
+  s70 --> s66[66 war campaign map]
+  s66 --> s71[71 inter-battle raids]
+  s57 --> s67[67 raid war type]
+  s58 --> s68[68 war map export full]
+  s62 --> s68
+  s66 --> s44[44 PS map layer partial]
+  s68 --> s44
+  s62 --> s69[69 declare codes]
+  s68 --> s69
 ```
 
 ## Minimum playable path
 
-**56 → 57 → 58 → 59 → 60 → 61 → 62 → 67 → 44**
+**56 → 57 → 58 → 59 → 60 → 61 → 61c → 62 → 66 → 44 (route only)**
 
-Steps **63–66** and **68** can follow once core campaign battles work.
+Steps **63–65**, **70**, **66**, **71**, **67**, and **68** extend the loop. Occupation tint needs **68** after **66** route ships.
 
 ## Status
 
@@ -85,6 +99,49 @@ Steps **63–66** and **68** can follow once core campaign battles work.
 | 58 | **done** — [Initiative & occupation](./batches/step-58/00-index.md) |
 | 59.01 planning lock | **done** (2026-08-20) |
 | 59.02 domain model | **done** (2026-08-20) |
-| 59.03–59.07 | planned |
-| 59 | **59.02 done** — [Battle scheduling](./batches/step-59/00-index.md) |
-| 60–68 | planned (index stubs only) |
+| 59.03 vote tally | **done** (2026-08-20) |
+| 59.04 schedule orchestration | **done** (2026-08-20) |
+| 59.05 Campaign GUI | **done** (2026-08-20) |
+| 59.06 scheduler + warschedule | **done** (2026-08-20) |
+| 59.07 docs verify | **done** (2026-08-20) |
+| 59 | **done** — [Battle scheduling](./batches/step-59/00-index.md) |
+| 60–64 | **done** — see batches [60](./batches/step-60/00-index.md)–[64](./batches/step-64/00-index.md) |
+| 66 | **done** (2026-08-23) — [War campaign map](./batches/step-66/00-index.md) |
+| 66.01 planning lock | **done** (2026-08-23) |
+| 66.02 SF wars export | **done** (2026-08-23) |
+| 66.03 PS schema passthrough | **done** (2026-08-23) |
+| 66.04 FE campaign line | **done** (2026-08-23) |
+| 66.05 FE battle markers | **done** (2026-08-23) |
+| 66.06 docs verify | **done** (2026-08-23) |
+| 67–68, 71 | planned (index stubs) |
+| 61.01 planning lock | **done** (2026-08-20) |
+| 61.01b levy & vassal lock | **done** (2026-08-20) |
+| 61.02 war commitment | **done** (2026-08-20) |
+| 61.03 battle pool | **done** (2026-08-21) |
+| 61.04 collective lives | **done** (2026-08-21) |
+| 61.05 casualty ledger | **done** (2026-08-21) |
+| 61.06 casualty apply | **done** (2026-08-21) |
+| 61.07 docs verify | **done** (2026-08-21) |
+| 61 | **done** — [Military & casualties](./batches/step-61/00-index.md) |
+| 61b.01 planning lock | **done** (2026-08-21) |
+| 61b.02 capture threshold | **done** (2026-08-21) |
+| 61b.03 battle devmode | **done** (2026-08-21) |
+| 61b.04 campaign join rules | **done** (2026-08-21) |
+| 61b.05 docs verify | **done** (2026-08-21) |
+| 61b | **done** — [Battle dev mode](./batches/step-61b/00-index.md) |
+| 61c.01 planning lock | **done** (2026-08-21) |
+| 61c.02 template settings-only | **done** (2026-08-21) |
+| 61c.03 warschedule output | **done** (2026-08-21) |
+| 61c.04 campaign warband signup | **done** (2026-08-21) |
+| 61c.05 docs verify | **done** (2026-08-21) |
+| 61c.06 warband list & naming | **done** (2026-08-21) |
+| 61c.07 campaign warband hotfixes | **done** (2026-08-21) |
+| 61c | **done** — [Campaign UX & template cleanup](./batches/step-61c/00-index.md) |
+| 62 | **done** — [War end & goals / campaign capability](./batches/step-62/00-index.md) |
+| 63 | **done** (2026-08-22) — [War end closure](./batches/step-63/00-index.md) |
+| 64 | **done** (2026-08-23) — [Campaign schedule & fort sieges](./batches/step-64/00-index.md) |
+| 65 | **done** (2026-08-23) — [Naval & invasions](./batches/step-65/00-index.md) |
+| 70.01 planning lock | **done** (2026-08-23) |
+| 70 | **done** (2026-08-23) — [Per-side battle caps & initiative](./batches/step-70/00-index.md) |
+| 70b | **done** (2026-08-23) — [Campaign schedule simplicity](./batches/step-70b/00-index.md) |
+| 70d | **done** (2026-08-23) — [Chronological leg schedules](./batches/step-70d/00-index.md) |

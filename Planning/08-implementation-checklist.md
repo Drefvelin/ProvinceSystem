@@ -195,6 +195,44 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] [48.03](./batches/step-48/03-frontend-wiring.md) fetch + `connectedComponents` wiring + tests
 - [x] [48.04](./batches/step-48/04-docs-verify.md) docs + STAGING
 
+### M3e — Map title editor ([step-72](./batches/step-72/00-index.md))
+
+- [x] [72.01](./batches/step-72/01-planning-lock.md) planning lock
+- [x] [72.02](./batches/step-72/02-staff-write-api.md) staff write API + gate upload
+- [x] [72.03](./batches/step-72/03-title-rgb-picker.md) `TitleRgbPicker` + `titleRgb.ts`
+- [x] [72.04](./batches/step-72/04-editor-route-shell.md) `/map/editor` route + shell
+- [x] [72.05](./batches/step-72/05-province-pick-layer.md) pick canvas + live paint layers
+- [x] [72.06](./batches/step-72/06-county-mode.md) county create/edit/delete
+- [x] [72.07](./batches/step-72/07-duchy-mode.md) duchy mode
+- [x] [72.08](./batches/step-72/08-kingdom-empire-mode.md) kingdom + empire modes
+- [x] [72.09](./batches/step-72/09-save-upload-regen.md) save, upload, regen preview
+- [x] [72.10](./batches/step-72/10-main-calavorn-prep.md) Calavorn wipe duchy+ runbook
+- [x] [72.11](./batches/step-72/11-docs-verify.md) STAGING + QA
+
+Step 72 map title editor **complete** (72.01–72.11).
+
+### M3f — Map editor polish ([step-73](./batches/step-73/00-index.md))
+
+- [x] [73.01](./batches/step-73/01-planning-lock.md) UX lock (nav, entry, locked map)
+- [x] [73.02](./batches/step-73/02-nav-and-entry.md) nav cleanup + viewer Edit titles
+- [x] [73.03](./batches/step-73/03-locked-map-editor.md) remove map selector; require `?map=`
+- [x] [73.04](./batches/step-73/04-layout-overflow.md) flex overflow / layout fix
+- [x] [73.05](./batches/step-73/05-province-index-perf.md) province index build perf
+- [x] [73.06](./batches/step-73/06-canvas-paint-perf.md) incremental canvas paint
+- [x] [73.07](./batches/step-73/07-docs-verify.md) STAGING + hub docs
+
+Step 73 map editor polish **complete** (73.01–73.07).
+
+### M3g — Editor offline export ([step-74](./batches/step-74/00-index.md))
+
+- [x] [74.01](./batches/step-74/01-planning-lock.md) offline export lock
+- [x] [74.02](./batches/step-74/02-precomputed-grid-only.md) precomputed grid only
+- [x] [74.03](./batches/step-74/03-loading-progress.md) loading progress UI
+- [x] [74.04](./batches/step-74/04-export-zip.md) download ZIP (no save to server)
+- [ ] [74.05](./batches/step-74/05-reset-and-toolbar.md) reset + toolbar cleanup
+- [ ] [74.06](./batches/step-74/06-api-deprecation.md) API deprecation
+- [ ] [74.07](./batches/step-74/07-docs-verify.md) STAGING + hub docs
+
 ### M3d — Pan and zoom ([step-49](./batches/step-49/00-index.md)) — **done**
 
 - [x] [49.01](./batches/step-49/01-planning-lock.md) planning lock
@@ -277,7 +315,15 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 - [x] [59.03](./batches/step-59/03-vote-tally.md) vote tally services
 - [x] [59.04](./batches/step-59/04-schedule-orchestration.md) schedule orchestration
 - [x] [59.05](./batches/step-59/05-campaign-gui.md) Campaign GUI hour toggles
-- [ ] SF steps 59.06–67
+- [x] [59.06](./batches/step-59/06-scheduler-integration.md) scheduler tick + warschedule
+- [x] [59.07](./batches/step-59/07-docs-verify.md) docs verify
+- [x] [59](./batches/step-59/00-index.md) battle scheduling (59.01–59.07)
+- [x] [60.01](./batches/step-60/01-planning-lock.md) province presence + battle type planning lock
+- [x] [60.02 province presence](./batches/step-60/02-province-presence.md) province presence tracker
+- [ ] [60.03–60.10](./batches/step-60/00-index.md) Warbands merge & battle runtime
+- [x] [61](./batches/step-61/00-index.md) military & casualties (61.01–61.07)
+- [x] [61b](./batches/step-61b/00-index.md) battle dev mode (solo staging)
+- [ ] SF steps 62–67
 - [ ] [68](./batches/step-68/00-index.md) declare codes (last)
 - [ ] PS step 44 map layer (after SF 67)
 
@@ -352,4 +398,4 @@ Repos: `ProvinceSystem` (`dev`) | `tfmc_bot` | `Workspace/armourshop` | `Workspa
 | Ops | Local website demo without Paper; deferred IA reload when safe |
 
 Post-MVP later: Discord multi-view 3D review bake (after [step-16](./batches/step-16/00-index.md) site viewer).  
-Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Step 42 settlements done (42.01–42.10).** **Step 54 province grid + installations done (54.01–54.06).** **Step 55 installation economy + GUI done (55.01–55.06).** **Step 43 fort ZOC done (43.01–43.05).** **Step 56.01 war foundation planning lock done.** **Step 56.02 domain model v2 done.** **Step 56.04 persistence done.** **Step 56.05 declare flow done.** **Step 56.06 participants done.** **Step 56.07 war_id stubs done.** **Step 56 war foundation done (56.01–56.09).** **Step 57 pathfinder & campaign done (57.01–57.05).** **Step 58.06 integration done.** **Step 58 initiative & occupation done (58.01–58.07).** **Step 59.01 battle scheduling planning lock done.** **Step 59.02 domain model done.** **Step 59.04 schedule orchestration done.** **Step 59.05 Campaign GUI done.** **Next build:** SF war **59.06** scheduler + `warschedule` ([59.05 GUI](./batches/step-59/05-campaign-gui.md)). Steps 45–46 **planned** ([16-map-platform.md](./16-map-platform.md)).
+Steps 17–35 **done** (code). Step 36 map platform planning lock **done**. **Step 37 code done (37.01–37.06).** **Step 38 parchment pipeline done (38.01–38.05).** **Step 39 ink cartography done (39.01–39.06).** **Step 40 nation labels done (40.01–40.09).** **Steps 47–49 done (code).** **Step 41 staff map access done (41.01–41.05).** **Step 42 settlements done (42.01–42.10).** **Step 54 province grid + installations done (54.01–54.06).** **Step 55 installation economy + GUI done (55.01–55.06).** **Step 43 fort ZOC done (43.01–43.05).** **Step 56.01 war foundation planning lock done.** **Step 56.02 domain model v2 done.** **Step 56.04 persistence done.** **Step 56.05 declare flow done.** **Step 56.06 participants done.** **Step 56.07 war_id stubs done.** **Step 56 war foundation done (56.01–56.09).** **Step 57 pathfinder & campaign done (57.01–57.05).** **Step 58.06 integration done.** **Step 58 initiative & occupation done (58.01–58.07).** **Step 59.01 battle scheduling planning lock done.** **Step 59.02 domain model done.** **Step 59.04 schedule orchestration done.** **Step 59.06 scheduler + warschedule done.** **Step 59.07 docs verify done.** **Step 59 battle scheduling complete.** **Step 60.02** province presence tracker **done**. **Next build:** SF war **60.03** warbands merge. Steps 45–46 **planned** ([16-map-platform.md](./16-map-platform.md)).

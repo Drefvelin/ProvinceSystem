@@ -5,6 +5,7 @@ import type {
   InstallationMarker,
   MapId,
   SettlementMarker,
+  WarExport,
 } from "../components/map/types";
 import { filterPlacedInstallations } from "../lib/installationMarkers";
 import { filterPlacedSettlements } from "../lib/settlementMarkers";
@@ -14,6 +15,7 @@ type MapMarkersState = {
   settlements: SettlementMarker[];
   installations: InstallationMarker[];
   forts: FortMarker[];
+  wars: WarExport[];
   loading: boolean;
   error: string | null;
 };
@@ -27,6 +29,7 @@ export function useMapMarkers(
     settlements: [],
     installations: [],
     forts: [],
+    wars: [],
     loading: enabled,
     error: null,
   });
@@ -37,6 +40,7 @@ export function useMapMarkers(
         settlements: [],
         installations: [],
         forts: [],
+        wars: [],
         loading: false,
         error: null,
       });
@@ -54,6 +58,7 @@ export function useMapMarkers(
           settlements: filterPlacedSettlements(data.settlements ?? []),
           installations: filterPlacedInstallations(data.installations ?? []),
           forts: data.forts ?? [],
+          wars: data.wars ?? [],
           loading: false,
           error: null,
         });
@@ -66,6 +71,7 @@ export function useMapMarkers(
           settlements: [],
           installations: [],
           forts: [],
+          wars: [],
           loading: false,
           error: message,
         });

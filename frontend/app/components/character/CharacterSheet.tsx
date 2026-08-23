@@ -22,6 +22,25 @@ function capitalizeKey(raw: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function formatTraitSuffix(t: CharacterSheetTrait): string {
+  const parts: string[] = [];
+  const ms = t.duration_remaining_ms;
+  if (ms != null && Number.isFinite(ms) && ms > 0) {
+    const hours = Math.floor(ms / 3_600_000);
+    const mins = Math.floor((ms % 3_600_000) / 60_000);
+    if (hours > 0) {
+      parts.push(`${hours}h remaining`);
+    } else {
+      parts.push(`${mins}m remaining`);
+    }
+  }
+  const fuel = t.fuel_percent;
+  if (fuel != null && Number.isFinite(fuel)) {
+    parts.push(`Fuel: ${fuel}%`);
+  }
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+}
+
 function groupTraits(
   traits: CharacterSheetTrait[]
 ): { key: string; label: string; items: CharacterSheetTrait[] }[] {
@@ -198,14 +217,20 @@ export default function CharacterSheet({ character, catalog }: Props) {
                   {group.label}
                 </p>
                 <ul className="mt-2 space-y-1">
-                  {group.items.map((t) => (
+                  {group.items.map((t) => {
+                    const suffix = formatTraitSuffix(t);
+                    return (
                     <li
                       key={t.id || t.name}
                       className="text-sm text-[var(--tfmc-mist)]"
                     >
                       {String(t.name || t.id).trim()}
+                      {suffix ? (
+                        <span className="text-[var(--tfmc-stone)]">{suffix}</span>
+                      ) : null}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             ))}

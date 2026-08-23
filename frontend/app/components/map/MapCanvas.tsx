@@ -13,6 +13,7 @@ import type {
   MapId,
   MapMode,
   MapObject,
+  WarExport,
 } from "./types";
 import { MAP_BOUNDS } from "./types";
 import type { MapMarker } from "../../lib/mapMarkers";
@@ -24,12 +25,13 @@ import {
 } from "./overlayStyle";
 import LabelLayer from "./LabelLayer";
 import MapMarkerLayer from "./MapMarkerLayer";
+import WarCampaignLineLayer from "./WarCampaignLineLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
-import type { NationLabelSpec } from "../../lib/mapLabels";
+import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
 import { mapApiPathFromUrl } from "@/lib/map/api";
 
 const panelClass =
@@ -136,6 +138,8 @@ type MapCanvasProps = {
   cursorTooltip: CursorTooltip | null;
   labels?: NationLabelSpec[];
   markers?: MapMarker[];
+  wars?: WarExport[];
+  centroids?: ProvinceCentroids | null;
   hoveredMarkerId?: string | null;
   hoveredNationId?: string | null;
   viewportCoordsRef?: MutableRefObject<MapPickViewport | null>;
@@ -156,6 +160,8 @@ export default function MapCanvas({
   cursorTooltip,
   labels = [],
   markers = [],
+  wars = [],
+  centroids = null,
   hoveredMarkerId = null,
   hoveredNationId = null,
   viewportCoordsRef,
@@ -311,6 +317,14 @@ export default function MapCanvas({
             mapId={mapId}
             sessionToken={sessionToken}
             overlay={hoveredOverlay}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+          />
+        )}
+        {isMarkerMapMode(mapType) && wars.length > 0 && (
+          <WarCampaignLineLayer
+            wars={wars}
+            centroids={centroids}
             mapW={mapSize.w}
             mapH={mapSize.h}
           />

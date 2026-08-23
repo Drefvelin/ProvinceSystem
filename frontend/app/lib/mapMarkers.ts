@@ -16,12 +16,14 @@ export const MARKER_LABEL_GAP = -28;
 export const MARKER_LABEL_COLOR = "#000000";
 export const MARKER_LABEL_MIN_SCREEN_PX = 9;
 export const INSTALLATION_ICON_SCALE = 0.75;
+export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
 export const MARKER_LAYER_Z_BELOW_LABELS = 14;
 export const MARKER_LAYER_Z_HOVERED = 17;
 
 export type MapMarkerSize = "small" | "large";
 
 export const INSTALLATION_MARKER_KINDS = new Set(["fort", "port", "airport"]);
+export const BATTLE_MARKER_KIND = "battle";
 
 export type MapMarker = {
   id: string;
@@ -33,7 +35,15 @@ export type MapMarker = {
   title: string;
   /** Installation pins hide their label until hovered. */
   showLabelOnlyOnHover?: boolean;
+  /** Optional base scale for highlighted pins (e.g. next campaign battle). */
+  baseScale?: number;
+  /** Optional ring behind icon for next campaign battle. */
+  highlightRing?: boolean;
 };
+
+export function isBattleMarkerKind(kind: string | undefined): boolean {
+  return kind === BATTLE_MARKER_KIND;
+}
 
 export function isInstallationMarkerKind(kind: string | undefined): boolean {
   return kind != null && INSTALLATION_MARKER_KINDS.has(kind);
@@ -49,7 +59,7 @@ export function markerVisibilityScreenPx(
 ): number {
   if (displayScale <= 0) return 0;
   const { size, fontSize } = markerDimensions(marker.markerSize);
-  if (marker.showLabelOnlyOnHover || isInstallationMarkerKind(marker.kind)) {
+  if (marker.showLabelOnlyOnHover || isInstallationMarkerKind(marker.kind) || isBattleMarkerKind(marker.kind)) {
     return size * markerIconScale(marker.kind) * displayScale;
   }
   return fontSize * displayScale;
@@ -72,7 +82,10 @@ export function filterVisibleMapMarkers(
 }
 
 export function markerIconScale(kind: string | undefined): number {
-  return isInstallationMarkerKind(kind) ? INSTALLATION_ICON_SCALE : 1;
+  if (isBattleMarkerKind(kind) || isInstallationMarkerKind(kind)) {
+    return BATTLE_ICON_SCALE;
+  }
+  return 1;
 }
 
 export function markerLabelHaloShadow(fontSize: number): string {
@@ -116,6 +129,7 @@ export function resolveMarkerImageSrc(
   if (kind === "fort") return "/fort.png";
   if (kind === "port") return "/port.png";
   if (kind === "airport") return "/airport.png";
+  if (kind === BATTLE_MARKER_KIND) return "/battle.png";
 
   const large = markerSize === "large";
   if (kind === "faction_capital" || kind === "guild_capital") {

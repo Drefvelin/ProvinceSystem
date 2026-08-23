@@ -59,6 +59,7 @@ def ping():
 # --------------------
 # Routers (AFTER CORS)
 # --------------------
+from src.api.editor_routes import editor_router
 from src.api.map_routes import map_router
 from src.api.data_routes import data_router
 from src.api.banner_routes import banner_router
@@ -71,6 +72,7 @@ from src.api.characters_routes import characters_router
 from src.api.drinks_routes import drinks_router
 
 app.include_router(map_router)
+app.include_router(editor_router)
 app.include_router(data_router)
 app.include_router(maps_router)
 app.include_router(banner_router)

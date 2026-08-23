@@ -151,6 +151,97 @@
         }
       }
     },
+    "war_capital_coords": {
+      "type": "object",
+      "required": ["province_id"],
+      "properties": {
+        "province_id": { "type": "integer" },
+        "center_x": {
+          "type": "integer",
+          "description": "Minecraft block X at faction capital settlement (SF export)"
+        },
+        "center_z": {
+          "type": "integer",
+          "description": "Minecraft block Z at faction capital settlement (SF export)"
+        },
+        "map_x": {
+          "type": "integer",
+          "description": "Pixel X on shared map grid (PS-served from center_x or centroid)"
+        },
+        "map_y": {
+          "type": "integer",
+          "description": "Pixel Y on shared map grid (PS-served from center_z or centroid)"
+        }
+      }
+    },
+    "war_schedule_slot": {
+      "type": "object",
+      "required": [
+        "schedule_index",
+        "leg",
+        "province_id",
+        "kind",
+        "kind_label",
+        "status"
+      ],
+      "properties": {
+        "schedule_index": { "type": "integer" },
+        "leg": {
+          "type": "string",
+          "enum": ["invasion", "counter"],
+          "description": "Schedule leg (step 70 dual-leg model)"
+        },
+        "province_id": { "type": "integer" },
+        "kind": {
+          "type": "string",
+          "enum": ["field", "siege", "naval", "naval_invasion"],
+          "description": "CampaignBattleKind.toJson()"
+        },
+        "kind_label": {
+          "type": "string",
+          "description": "Player-facing label from CampaignUiCopy.formatBattleKind()"
+        },
+        "battle_type": {
+          "type": "string",
+          "enum": ["FIELD", "SIEGE"],
+          "description": "ScheduledCampaignBattle.battleType()"
+        },
+        "required": { "type": "boolean" },
+        "status": {
+          "type": "string",
+          "enum": ["fought", "next", "upcoming"],
+          "description": "Computed at SF export from active leg indices"
+        },
+        "fort_installation_id": { "type": ["string", "null"] },
+        "port_installation_id": { "type": ["string", "null"] },
+        "province_name": {
+          "type": "string",
+          "description": "PS-enriched display name for hover tooltips"
+        },
+        "map_x": {
+          "type": "integer",
+          "description": "Pixel X on shared map grid (PS-served from province centroid or capital coords)"
+        },
+        "map_y": {
+          "type": "integer",
+          "description": "Pixel Y on shared map grid (PS-served from province centroid or capital coords)"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Player-facing battle title (SF BattleNamingService, same as campaign GUI)"
+        }
+      }
+    },
+    "war_line_point": {
+      "type": "object",
+      "required": ["province_id", "map_x", "map_y"],
+      "properties": {
+        "province_id": { "type": "integer" },
+        "map_x": { "type": "integer" },
+        "map_y": { "type": "integer" }
+      },
+      "description": "PS-computed waypoint for campaign line smoothing (step 66)"
+    },
     "war": {
       "type": "object",
       "required": ["id", "war_type", "goal", "status", "belligerents", "attacker_leader_id", "defender_leader_id"],
@@ -187,14 +278,56 @@
         "campaign_provinces": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Ordered campaign polyline province ids"
+          "description": "Ordered campaign polyline province ids (attacker capital through objective)"
         },
         "cursor_index": {
           "type": "integer",
-          "description": "Current index into campaign_provinces"
+          "description": "Border index into campaign_provinces (first invasion battle)"
         },
-        "initiative_attacker": { "type": "integer" },
-        "initiative_defender": { "type": "integer" },
+        "push_target": {
+          "type": "string",
+          "enum": ["toward_objective", "toward_aggressor_capital", "retake_objective"],
+          "description": "Active campaign push direction (step 66 route highlight)"
+        },
+        "campaign_schedule_index": {
+          "type": "integer",
+          "description": "Active index into campaign_battle_schedule (invasion leg)"
+        },
+        "campaign_counter_schedule_index": {
+          "type": "integer",
+          "description": "Active index into campaign_counter_schedule (counter leg)"
+        },
+        "campaign_battle_schedule": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/war_schedule_slot" },
+          "description": "Invasion leg trimmed schedule (step 66 export)"
+        },
+        "campaign_counter_schedule": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/war_schedule_slot" },
+          "description": "Counter leg trimmed schedule (step 70)"
+        },
+        "attacker_capital": {
+          "$ref": "#/$defs/war_capital_coords",
+          "description": "Attacker leader faction capital coords for line endpoint refinement"
+        },
+        "defender_capital": {
+          "$ref": "#/$defs/war_capital_coords",
+          "description": "Defender leader faction capital coords for line endpoint refinement"
+        },
+        "campaign_line_points": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/war_line_point" },
+          "description": "Optional PS-computed centroids per campaign_provinces entry for FE spline"
+        },
+        "initiative_attacker": {
+          "type": "integer",
+          "description": "Step 68 full export; omitted in step 66 route slice"
+        },
+        "initiative_defender": {
+          "type": "integer",
+          "description": "Step 68 full export; omitted in step 66 route slice"
+        },
         "white_peace_proposed_by_attacker": {
           "type": "boolean",
           "description": "Attacker auto-proposed white peace (cannot reach capitulation target with remaining initiative)"
@@ -206,17 +339,17 @@
         "occupied_by_attacker": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Provinces tinted as attacker-occupied (bulge front)"
+          "description": "Step 68 full export: provinces tinted as attacker-occupied (bulge front)"
         },
         "occupied_by_defender": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Provinces tinted as defender-occupied"
+          "description": "Step 68 full export: provinces tinted as defender-occupied"
         },
         "last_battle_occupied": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "Provinces added by the most recent battle"
+          "description": "Step 68 full export: provinces added by the most recent battle"
         },
         "frontline_provinces": {
           "type": "array",

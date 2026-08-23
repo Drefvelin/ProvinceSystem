@@ -6,6 +6,7 @@ type MapPageLayoutProps = {
   mapModeSelector: ReactNode;
   drillStackBar: ReactNode;
   desktopSidePanel: ReactNode;
+  headerAction?: ReactNode;
 };
 
 export default function MapPageLayout({
@@ -14,6 +15,7 @@ export default function MapPageLayout({
   mapModeSelector,
   drillStackBar,
   desktopSidePanel,
+  headerAction,
 }: MapPageLayoutProps) {
   return (
     <div className="relative min-h-[calc(100dvh-var(--tfmc-header-h))] text-[var(--tfmc-cream)]">
@@ -30,13 +32,16 @@ export default function MapPageLayout({
       />
       <div className="relative z-10 mx-auto flex max-w-[90rem] flex-col gap-4 px-4 py-6 sm:px-6 md:flex-row md:items-start md:gap-8 md:py-8">
         <div className="min-w-0 flex-1">
-          <header className="mb-4">
-            <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-              World map
-            </p>
-            <h1 className="font-[family-name:var(--font-fraunces)] text-3xl font-medium tracking-tight text-[var(--tfmc-cream)] sm:text-4xl">
-              {mapDisplayName}
-            </h1>
+          <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
+                World map
+              </p>
+              <h1 className="font-[family-name:var(--font-fraunces)] text-3xl font-medium tracking-tight text-[var(--tfmc-cream)] sm:text-4xl">
+                {mapDisplayName}
+              </h1>
+            </div>
+            {headerAction}
           </header>
           <div className="mb-4">{mapModeSelector}</div>
           {children}

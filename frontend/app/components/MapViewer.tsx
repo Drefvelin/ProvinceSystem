@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
 import type { MapPickViewport } from "../hooks/useMapCoords";
@@ -11,6 +12,7 @@ import { isMarkerMapMode } from "../lib/mapMarkers";
 import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
+import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
 import {
   settlementToMapMarker,
 } from "../lib/settlementMarkers";
@@ -48,7 +50,8 @@ import type {
   RegionInfo,
 } from "./map/types";
 import { MAP_DISPLAY_NAMES } from "./map/types";
-import { getSession, isSessionValid } from "@/lib/characters/session";
+import { useCharacterSessionToken } from "../hooks/useCharacterSessionToken";
+import { useCanEditMap } from "../hooks/useCanEditMap";
 import {
   MapAccessError,
   fetchMapBlobUrl,
@@ -58,32 +61,18 @@ import {
   revokeMapBlobUrl,
   staffMapAccessReason,
 } from "@/lib/map/api";
+import { editorUrl } from "@/lib/map/editorAccess";
+
+const editTitlesLinkClass =
+  "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] no-underline transition hover:brightness-110 hover:border-[var(--tfmc-accent)]";
 
 type MapViewerProps = {
   mapId: MapId;
 };
 
-function useCharacterSessionToken(): string | null {
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const syncSession = () => {
-      const session = getSession();
-      setSessionToken(
-        isSessionValid(session) ? session?.session_token ?? null : null
-      );
-    };
-
-    syncSession();
-    window.addEventListener("storage", syncSession);
-    return () => window.removeEventListener("storage", syncSession);
-  }, []);
-
-  return sessionToken;
-}
-
 const MapViewer = ({ mapId }: MapViewerProps) => {
   const sessionToken = useCharacterSessionToken();
+  const { canEdit, loading: canEditLoading } = useCanEditMap(mapId, sessionToken);
   const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
   const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(
     null
@@ -176,15 +165,17 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     ready: geometryReady,
   } = useMapGeometry(mapId, authToken);
   const markersEnabled = accessChecked && gateReason === null;
-  const { settlements, installations, forts } = useMapMarkers(mapId, authToken, markersEnabled);
+  const { settlements, installations, forts, wars } = useMapMarkers(mapId, authToken, markersEnabled);
 
   const mapMarkers = useMemo(() => {
     if (!isMarkerMapMode(mapType)) return [];
+    const battleMarkers = warBattleMarkersFromWars(wars);
     return [
       ...settlements.map(settlementToMapMarker),
       ...installations.map(installationToMapMarker),
+      ...battleMarkers,
     ];
-  }, [settlements, installations, mapType]);
+  }, [settlements, installations, wars, mapType]);
 
   const labelGeometry = useMemo(() => {
     if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;
@@ -463,6 +454,13 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     <>
       <MapPageLayout
         mapDisplayName={mapDisplayName}
+        headerAction={
+          canEdit && !canEditLoading ? (
+            <Link href={editorUrl(mapId)} className={editTitlesLinkClass}>
+              Edit titles
+            </Link>
+          ) : null
+        }
         mapModeSelector={
           <MapToolbar
             mapId={mapId}
@@ -500,6 +498,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           cursorTooltip={cursorTooltip}
           labels={regionLabels}
           markers={mapMarkers}
+          wars={wars}
+          centroids={centroids}
           hoveredMarkerId={hoveredMarkerId}
           hoveredNationId={selectedRegionId}
           onMouseMove={onMouseMove}

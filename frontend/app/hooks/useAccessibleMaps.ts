@@ -7,6 +7,10 @@ import {
   type AccessibleMapEntry,
 } from "@/lib/map/api";
 import { getSession, isSessionValid } from "@/lib/characters/session";
+import {
+  isCharacterUiDev,
+  UI_DEV_SESSION_TOKEN,
+} from "@/lib/characters/uiDev";
 
 type AccessibleMapsState = {
   maps: AccessibleMapEntry[];
@@ -24,8 +28,12 @@ export function useAccessibleMaps(): AccessibleMapsState {
   const load = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const session = getSession();
-      const token = isSessionValid(session) ? session?.session_token : null;
+      const token = isCharacterUiDev()
+        ? UI_DEV_SESSION_TOKEN
+        : (() => {
+            const session = getSession();
+            return isSessionValid(session) ? session?.session_token : null;
+          })();
       const data = await fetchAccessibleMaps(token);
       setState({ maps: data.maps, loading: false, error: null });
     } catch {

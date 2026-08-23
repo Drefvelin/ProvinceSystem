@@ -3,6 +3,8 @@
 **Step:** 58 · **Repo:** SF  
 **Spec:** [01-planning-lock.md](./01-planning-lock.md) · [Wars.md](../../../../simplefactions/Documentation/Wars.md)
 
+> **Superseded (runtime):** shipped `CampaignPhase` FSM and defender hold/counter-push in this batch were replaced by [step 62.02+](../step-62/00-index.md) (`CampaignCapabilityService`, `CampaignPostBattleChoiceService`). Tables below document what 58.03 shipped; do not re-implement from this doc.
+
 ## Goal
 
 Pure progression logic: cursor movement, initiative spend, phase FSM, retake loop, defender hold/counter-push, and next-battle node resolution. No GUI, occupation zone apply, white peace accept, or WarManager hooks yet (58.04-58.06).
@@ -20,16 +22,17 @@ Pure progression logic: cursor movement, initiative spend, phase FSM, retake loo
 
 | Area | Behavior |
 |------|----------|
-| Offensive side | `INVASION` → attacker; `RETAKE` / `COUNTER_PUSH` → defender |
-| Cursor (invasion) | Win +1, lose -1; win at objective → `RETAKE`, holder attacker, no overshoot |
-| Cursor (retake) | Defender win → holder defender, phase invasion; attacker win → cursor -1 |
+| Offensive side (pools) | `INVASION` → attacker; `RETAKE` / `COUNTER_PUSH` → defender |
+| **`initiativeHolder`** | Winner of last fought battle; declare starts attacker |
+| Cursor (invasion) | Pushing side win +1, lose -1; win at objective → `RETAKE` |
+| Cursor (retake) | Defender win → phase invasion + defender choice; attacker win retake → cursor -1 |
 | Cursor (counter-push) | Defender win -1, lose +1 |
-| Initiative | -1 offensive side per fought battle; postponed = 0 |
+| Initiative fuel | -1 for side that held initiative entering each fought battle; postponed = 0 |
 | First battle | `campaignBattlesFought == 0` → node at `cursorIndex` (border B) |
 | Cadence | Later invasion targets: `cursorIndex + N` clamped to objective |
-| Attacker at 0 init | Yellow nodes: hold (cursor) + counter-push (left) |
-| Defender hold | No state change |
-| Defender counter-push | `campaignPhase = COUNTER_PUSH` |
+| Defender holds initiative | Yellow nodes: hold (cursor) + counter-push (left) until resolved |
+| Defender hold | `initiativeHolder` → attacker; stay `INVASION` |
+| Defender counter-push | `campaignPhase = COUNTER_PUSH`; holder stays defender |
 
 ## Files
 

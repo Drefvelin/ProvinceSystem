@@ -26,9 +26,10 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | 7 | Click → nation modal; Ctrl+click → drill | [37](./batches/step-37/00-index.md) |
 | 8 | Named capitals / guild settlements on map | [42](./batches/step-42/00-index.md) — **done** |
 | 9 | Forts + zone of control | [43](./batches/step-43/00-index.md) — **done** |
-| 10 | Wars / occupation / campaigns | [44](./batches/step-44/00-index.md) — **44.01 lock done**; SF P1–P9 then PS overlay |
+| 10 | Wars / occupation / campaigns | [44](./batches/step-44/00-index.md) - route line + battle pins **done** (step 66); occupation tint blocked on step 68 |
 | 11 | Daily map snapshots + changelog | [45](./batches/step-45/00-index.md) |
 | 12 | Nation / global wealth charts over time | [46](./batches/step-46/00-index.md) |
+| 13 | Staff web map title editor (county → empire) | [72](./batches/step-72/00-index.md) · [17-map-title-editor.md](./17-map-title-editor.md) — **done** |
 
 ## Architecture
 
@@ -100,7 +101,7 @@ Nation upload (`nation.json`) already carries `balance`, `provinces`, `relations
 - `capitals` — faction + guild named capitals with province id and map pixel coords
 - `settlements` — guild towns beyond distance threshold from faction capital
 - `forts` — fort id, province, ZOC province list
-- `wars` — belligerents, occupation zones, campaign line, objective province ([Wars.md](../../simplefactions/Documentation/Wars.md))
+- `wars` — belligerents, campaign route slice (step 66: axis line + battle schedule pins); full occupation zones in step 68 ([Wars.md](../../simplefactions/Documentation/Wars.md))
 - `events` — explicit chronicle events (war declared, province taken, capital moved, …)
 - `global_wealth` — optional aggregate for charts
 
@@ -119,6 +120,10 @@ Capitals must be **named in-game** via SF (`setcapital` / guild capital rules) b
 9. **[44](./batches/step-44/00-index.md)** — War layer (**44.01 planning lock done**; SF implementation P1–P9)
 10. **[45](./batches/step-45/00-index.md)** — Map chronicle (snapshots + log)
 11. **[46](./batches/step-46/00-index.md)** — Wealth history + charts
+
+## Map title editor (step 72) — **done**
+
+Staff-gated web editor for `county` / `duchy` / `kingdom` / `empire` JSON in `defines/{map}/`: click-combine territories, name titles, pick RGB colours, save, regen. Replaces Tkinter `county_editor.py` for lore staff. Full plan: [17-map-title-editor.md](./17-map-title-editor.md). Operator checklist: [STAGING.md](../STAGING.md) Step 72.
 
 ## Out of scope (v1 map platform)
 

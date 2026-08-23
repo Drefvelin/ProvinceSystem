@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 
 from api.map_access import (
     ensure_map_access,
+    ensure_map_staff_write,
     get_character_session,
     list_accessible_maps,
     STAFF_MAP_FORBIDDEN_DETAIL,
@@ -157,6 +158,33 @@ class MapAccessUnitTest(unittest.TestCase):
         ):
             ids = [item.id for item in list_accessible_maps(auth)]
         self.assertEqual(ids, ["main", "dev"])
+
+    def test_ui_dev_session_grants_staff_maps(self) -> None:
+        from api.map_access import UI_DEV_SESSION_TOKEN, is_character_ui_dev
+
+        auth = f"Bearer {UI_DEV_SESSION_TOKEN}"
+        with mock.patch(
+            "api.map_access.is_character_ui_dev",
+            return_value=True,
+        ):
+            self.assertTrue(is_character_ui_dev())
+            ids = [item.id for item in list_accessible_maps(auth)]
+            entry = ensure_map_access("dev", auth)
+            self.assertEqual(entry.id, "dev")
+            staff_entry = ensure_map_staff_write("dev", auth)
+            self.assertEqual(staff_entry.id, "dev")
+        self.assertEqual(ids, ["main", "dev"])
+
+    def test_ui_dev_session_ignored_when_flag_off(self) -> None:
+        from api.map_access import UI_DEV_SESSION_TOKEN
+
+        auth = f"Bearer {UI_DEV_SESSION_TOKEN}"
+        with mock.patch(
+            "api.map_access.is_character_ui_dev",
+            return_value=False,
+        ):
+            ids = [item.id for item in list_accessible_maps(auth)]
+        self.assertEqual(ids, ["main"])
 
 
 class MapAccessApiTest(unittest.TestCase):

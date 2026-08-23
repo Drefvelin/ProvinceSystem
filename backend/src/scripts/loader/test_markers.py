@@ -15,8 +15,13 @@ if str(_BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(_BACKEND_SRC))
 
 from scripts.loader.markers import (  # noqa: E402
+    build_campaign_line_points,
     build_markers_response,
+    build_province_name_index,
+    enrich_war_capital,
+    enrich_war_schedule_slots,
     enrich_settlements,
+    enrich_wars,
     load_raw_markers,
     resolve_settlement_map_xy,
     world_coords_to_map_xy,
@@ -88,6 +93,7 @@ class MarkersLoaderTest(unittest.TestCase):
         self.assertEqual(payload["settlements"], [])
         self.assertEqual(payload["installations"], [])
         self.assertEqual(payload["forts"], [])
+        self.assertEqual(payload["wars"], [])
         self.assertIsNone(payload["exported_at"])
 
     def test_build_markers_response_enriches_from_fixture_paths(self) -> None:
@@ -351,6 +357,174 @@ class MarkersLoaderTest(unittest.TestCase):
         self.assertEqual(fort["map_x"], 50)
         self.assertEqual(fort["map_y"], 61)
         self.assertNotIn("zoc_url", fort)
+
+    def test_load_raw_markers_passes_through_wars(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            markers_path = os.path.join(tmp, "map_markers.json")
+            with open(markers_path, "w", encoding="utf-8") as f:
+                f.write(
+                    '{"map_id":"main","wars":[{"id":"1","campaign_provinces":[5,10]}]}'
+                )
+            with mock.patch(
+                "scripts.loader.markers.input_file",
+                return_value=markers_path,
+            ):
+                payload = load_raw_markers("main")
+
+        self.assertEqual(len(payload["wars"]), 1)
+        self.assertEqual(payload["wars"][0]["id"], "1")
+
+    def test_enrich_war_schedule_adds_map_coords_and_province_name(self) -> None:
+        centroids = {"20": {"x": 300.4, "y": 400.6}}
+        name_index = build_province_name_index(
+            [{"province_id": 20, "name": "Border Hold"}],
+            [],
+        )
+        slots = [
+            {
+                "schedule_index": 0,
+                "leg": "invasion",
+                "province_id": 20,
+                "kind": "field",
+                "kind_label": "Field Battle",
+                "status": "next",
+            }
+        ]
+
+        out = enrich_war_schedule_slots(slots, centroids, name_index)
+
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["map_x"], 300)
+        self.assertEqual(out[0]["map_y"], 401)
+        self.assertEqual(out[0]["province_name"], "Border Hold")
+
+    def test_enrich_war_schedule_omits_slot_without_centroid(self) -> None:
+        slots = [{"province_id": 99, "kind": "field", "status": "next"}]
+        out = enrich_war_schedule_slots(slots, {}, {})
+        self.assertEqual(out, [])
+
+    def test_enrich_war_schedule_siege_uses_fort_installation_coords(self) -> None:
+        centroids = {
+            "705": {"x": 100.0, "y": 200.0},
+            "713": {"x": 1.0, "y": 2.0},
+        }
+        installations = [
+            {
+                "id": "Greenfort",
+                "name": "Greenfort",
+                "kind": "fort",
+                "province_id": 713,
+                "center_x": 1565,
+                "center_z": 2466,
+            }
+        ]
+        slots = [
+            {
+                "schedule_index": 1,
+                "leg": "invasion",
+                "province_id": 705,
+                "kind": "siege",
+                "kind_label": "Siege",
+                "status": "upcoming",
+                "fort_installation_id": "Greenfort",
+            }
+        ]
+
+        out = enrich_war_schedule_slots(slots, centroids, {}, installations)
+
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["map_x"], 1565)
+        self.assertEqual(out[0]["map_y"], 2466)
+
+    def test_enrich_war_schedule_passes_through_display_name(self) -> None:
+        centroids = {"20": {"x": 300.4, "y": 400.6}}
+        slots = [
+            {
+                "schedule_index": 0,
+                "leg": "invasion",
+                "province_id": 20,
+                "kind": "siege",
+                "kind_label": "Siege",
+                "status": "next",
+                "display_name": "Siege of Greenfort",
+            }
+        ]
+
+        out = enrich_war_schedule_slots(slots, centroids, {}, [])
+
+        self.assertEqual(out[0]["display_name"], "Siege of Greenfort")
+
+    def test_enrich_war_capital_prefers_world_coords(self) -> None:
+        capital = enrich_war_capital(
+            {"province_id": 5, "center_x": 100, "center_z": 200},
+            {"5": {"x": 1, "y": 2}},
+        )
+        assert capital is not None
+        self.assertEqual(capital["map_x"], 100)
+        self.assertEqual(capital["map_y"], 200)
+
+    def test_build_campaign_line_points_uses_capital_coords(self) -> None:
+        war = {
+            "campaign_provinces": [5, 10],
+            "attacker_capital": {
+                "province_id": 5,
+                "center_x": 100,
+                "center_z": 200,
+            },
+        }
+        centroids = {
+            "5": {"x": 1, "y": 2},
+            "10": {"x": 50.4, "y": 60.6},
+        }
+
+        points = build_campaign_line_points(war, centroids)
+
+        self.assertEqual(len(points), 2)
+        self.assertEqual(points[0]["province_id"], 5)
+        self.assertEqual(points[0]["map_x"], 100)
+        self.assertEqual(points[0]["map_y"], 200)
+        self.assertEqual(points[1]["map_x"], 50)
+        self.assertEqual(points[1]["map_y"], 61)
+
+    def test_build_markers_response_includes_enriched_wars(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            markers_path = os.path.join(tmp, "map_markers.json")
+            centroids_path = os.path.join(tmp, "province_centroids.json")
+            with open(markers_path, "w", encoding="utf-8") as f:
+                f.write(
+                    '{"map_id":"main","settlements":[{"province_id":20,"name":"Border Hold"}],'
+                    '"wars":[{"id":"1","campaign_provinces":[5,20],'
+                    '"campaign_battle_schedule":[{"schedule_index":0,"leg":"invasion",'
+                    '"province_id":20,"kind":"field","kind_label":"Field Battle","status":"next"}],'
+                    '"attacker_capital":{"province_id":5,"center_x":100,"center_z":200}}]}'
+                )
+            with open(centroids_path, "w", encoding="utf-8") as f:
+                f.write('{"5":{"x":1,"y":2},"20":{"x":300.4,"y":400.6}}')
+
+            with mock.patch(
+                "scripts.loader.markers.input_file",
+                return_value=markers_path,
+            ), mock.patch(
+                "scripts.loader.markers.defines_file",
+                return_value=centroids_path,
+            ):
+                payload = build_markers_response("main")
+
+        self.assertIn("wars", payload)
+        self.assertEqual(len(payload["wars"]), 1)
+        war = payload["wars"][0]
+        slot = war["campaign_battle_schedule"][0]
+        self.assertEqual(slot["map_x"], 300)
+        self.assertEqual(slot["province_name"], "Border Hold")
+        self.assertEqual(war["attacker_capital"]["map_x"], 100)
+        self.assertEqual(len(war["campaign_line_points"]), 2)
+        self.assertEqual(war["campaign_line_points"][0]["map_x"], 100)
+
+    def test_enrich_wars_skips_invalid_entries(self) -> None:
+        centroids = {"1": {"x": 10, "y": 20}}
+        out = enrich_wars(["bad", {"id": "1", "campaign_provinces": [1]}], centroids, {})
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["id"], "1")
 
 
 if __name__ == "__main__":

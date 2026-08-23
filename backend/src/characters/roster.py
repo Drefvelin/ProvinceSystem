@@ -271,6 +271,18 @@ def _sheet_from_character(raw: dict) -> dict[str, Any] | None:
             tkey = str(t.get("key") or "").strip().lower()
             if tkey:
                 entry["key"] = tkey
+            duration_ms = t.get("duration_remaining_ms")
+            if duration_ms is not None:
+                try:
+                    entry["duration_remaining_ms"] = int(duration_ms)
+                except (TypeError, ValueError):
+                    pass
+            fuel_percent = t.get("fuel_percent")
+            if fuel_percent is not None:
+                try:
+                    entry["fuel_percent"] = int(fuel_percent)
+                except (TypeError, ValueError):
+                    pass
             cleaned_traits.append(entry)
         if cleaned_traits:
             sheet["traits"] = cleaned_traits

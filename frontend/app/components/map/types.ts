@@ -102,6 +102,59 @@ export type FortMarker = {
   zoc_url?: string;
 };
 
+export type WarScheduleSlot = {
+  schedule_index: number;
+  leg: "invasion" | "counter";
+  province_id: number;
+  kind: string;
+  kind_label: string;
+  battle_type?: string;
+  required?: boolean;
+  status: "fought" | "next" | "upcoming";
+  province_name?: string;
+  map_x?: number;
+  map_y?: number;
+  fort_installation_id?: string | null;
+  port_installation_id?: string | null;
+  display_name?: string;
+};
+
+export type WarCapitalCoords = {
+  province_id: number;
+  center_x?: number;
+  center_z?: number;
+  map_x?: number;
+  map_y?: number;
+};
+
+export type WarLinePoint = {
+  province_id: number;
+  map_x: number;
+  map_y: number;
+};
+
+export type WarExport = {
+  id: string;
+  name?: string;
+  war_type?: string;
+  goal?: string;
+  status?: string;
+  attacker_leader_id?: string;
+  defender_leader_id?: string;
+  belligerents?: string[];
+  campaign_provinces?: number[];
+  cursor_index?: number;
+  objective_province_id?: number;
+  push_target?: string;
+  campaign_schedule_index?: number;
+  campaign_counter_schedule_index?: number;
+  campaign_battle_schedule?: WarScheduleSlot[];
+  campaign_counter_schedule?: WarScheduleSlot[];
+  attacker_capital?: WarCapitalCoords;
+  defender_capital?: WarCapitalCoords;
+  campaign_line_points?: WarLinePoint[];
+};
+
 export type MapMarkersResponse = {
   map_id: string;
   exported_at: string | null;
@@ -109,6 +162,7 @@ export type MapMarkersResponse = {
   settlements: SettlementMarker[];
   installations: InstallationMarker[];
   forts: FortMarker[];
+  wars?: WarExport[];
 };
 
 export const MAP_BOUNDS: Record<MapId, number> = {

@@ -38,22 +38,21 @@ Full locked order: [war-build-order.md](../../war-build-order.md).
 | [63](../step-63/00-index.md) | Forts & sieges |
 | [64](../step-64/00-index.md) | Naval & installations |
 | [65](../step-65/00-index.md) | Inter-battle raids |
-| [66](../step-66/00-index.md) | Raid war type |
-| [67](../step-67/00-index.md) | **Map export** → unblocks PS batches below |
+| [66](../step-66/00-index.md) | **War campaign map** (route + battle pins) → unblocks PS route layer |
+| [67](../step-67/00-index.md) | Raid war type |
+| [68](../step-68/00-index.md) | **Map export (full)** → occupation + chronicle |
 | [68](../step-68/00-index.md) | Declare codes (production gate, last) |
 
-## PS batches (after SF step 67)
+## PS batches
 
-| # | Batch | Summary |
-|---|-------|---------|
-| 1 | [01-planning-lock](./01-planning-lock.md) | **Done** |
-| 2 | 02-sf-war-export | Validate + document SF `wars[]` in `map_markers` upload |
-| 3 | 03-ps-war-overlay | Occupation tint compile or direct FE from markers API |
-| 4 | 04-frontend-war-mode | War layer on map viewer (toggle / auto when wars active) |
-| 5 | 05-docs-verify | STAGING Step 44, hub checklist |
-
-Batch files **02–05** are created when SF P9 starts.
+| # | Batch | Summary | Blocked by |
+|---|-------|---------|------------|
+| 1 | [01-planning-lock](./01-planning-lock.md) | **Done** | — |
+| 2 | [step 66](../step-66/00-index.md) batches 66.03–66.06 | Route line + battle pins on map viewer | SF 66.02 | **done** (2026-08-23) |
+| 3 | 03-ps-war-overlay | Occupation tint compile or direct FE from markers API | SF **68** |
+| 4 | 04-frontend-war-mode | War layer toggle; occupation overlay | 03 |
+| 5 | 05-docs-verify | STAGING Step 44, hub checklist | 04 |
 
 ## Status
 
-**Planning lock done.** SF **[step 56](../step-56/00-index.md)** is next. PS batches blocked until SF **[step 67](../step-67/00-index.md)** export.
+**Planning lock done.** Campaign route layer **shipped** ([step 66](../step-66/00-index.md), 2026-08-23). Occupation tint blocked until SF **[step 68](../step-68/00-index.md)**.

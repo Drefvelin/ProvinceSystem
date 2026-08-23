@@ -283,6 +283,9 @@ export function stageDisplayTitle(stage: CatalogStage): string {
   if (type === "selection" && target === "class") return "Class";
   if (type === "selection" && target === "race") return "Race";
   if (type === "selection" && target === "trait") {
+    const sid = String(stage.id || "").toLowerCase();
+    if (sid.includes("permanent_injury")) return "Backstory Injuries";
+    if (sid.includes("prosthetic")) return "Backstory Prosthetic";
     const key = String(stage.key || "Traits");
     return key.charAt(0).toUpperCase() + key.slice(1);
   }
@@ -301,6 +304,19 @@ export function traitsForKey(
   return (catalog.traits || []).filter(
     (t) => String(t.key || "").trim().toLowerCase() === k
   );
+}
+
+export function traitsForStage(
+  catalog: CreationCatalog,
+  stage: CatalogStage
+): CatalogTrait[] {
+  const key = String(stage.key || "").trim();
+  if (!key) return [];
+  let list = traitsForKey(catalog, key);
+  if (String(stage.filter || "").trim().toLowerCase() === "permanent-only") {
+    list = list.filter((t) => !t.has_duration);
+  }
+  return list;
 }
 
 /** Normalize catalog description fields to display lines. */
@@ -648,6 +664,31 @@ export function selectedTraitsForKey(
   return draft.traitIds.filter((id) => allowed.has(id));
 }
 
+/** Drop permanent injuries superseded by a selected prosthetic. */
+export function stripInjuriesReplacedByProsthetics(
+  traitIds: string[],
+  catalog: CreationCatalog
+): string[] {
+  const injuriesToRemove = new Set<string>();
+  for (const id of traitIds) {
+    const trait = (catalog.traits || []).find(
+      (t) =>
+        String(t.id || "").toLowerCase() === String(id || "").toLowerCase()
+    );
+    if (!trait || String(trait.key || "").trim().toLowerCase() !== "prosthetic") {
+      continue;
+    }
+    const replaces = String(trait.replaces_injury || "").trim();
+    if (replaces) {
+      injuriesToRemove.add(replaces);
+    }
+  }
+  if (injuriesToRemove.size === 0) {
+    return traitIds;
+  }
+  return traitIds.filter((id) => !injuriesToRemove.has(id));
+}
+
 export function setTraitsForKey(
   draft: WizardDraft,
   catalog: CreationCatalog,
@@ -656,7 +697,11 @@ export function setTraitsForKey(
 ): WizardDraft {
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
-  return { ...draft, traitIds: [...kept, ...selected] };
+  let traitIds = [...kept, ...selected];
+  if (key.trim().toLowerCase() === "prosthetic") {
+    traitIds = stripInjuriesReplacedByProsthetics(traitIds, catalog);
+  }
+  return { ...draft, traitIds };
 }
 
 export function draftHasEvilTrait(

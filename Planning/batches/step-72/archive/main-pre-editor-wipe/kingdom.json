@@ -1,0 +1,140 @@
+{
+    "KINGDOM_1": {
+        "name": "Revenor",
+        "titles": [
+            "DUCHY_1",
+            "DUCHY_2",
+            "DUCHY_3"
+        ],
+        "rgb": "140,69,56",
+        "overlay": {
+            "x": 3549,
+            "y": 1178,
+            "w": 2361,
+            "h": 2431
+        }
+    },
+    "KINGDOM_2": {
+        "name": "Domenia",
+        "titles": [
+            "DUCHY_4",
+            "DUCHY_5",
+            "DUCHY_6"
+        ],
+        "rgb": "62,111,130",
+        "overlay": {
+            "x": 3944,
+            "y": 0,
+            "w": 2456,
+            "h": 3608
+        }
+    },
+    "KINGDOM_3": {
+        "name": "Sabarissa",
+        "titles": [
+            "DUCHY_7",
+            "DUCHY_8",
+            "DUCHY_9"
+        ],
+        "rgb": "24,128,34",
+        "overlay": {
+            "x": 4723,
+            "y": 0,
+            "w": 1677,
+            "h": 3534
+        }
+    },
+    "Letzebierg": {
+        "name": "Letzebierg",
+        "rgb": "172,88,228",
+        "title-complete": "false",
+        "titles": [
+            "Bockfiels",
+            "Huelmes"
+        ],
+        "overlay": {
+            "x": 3107,
+            "y": 3130,
+            "w": 1906,
+            "h": 3270
+        }
+    },
+    "Nordbaum": {
+        "name": "Nordbaum",
+        "rgb": "179,121,175",
+        "title-complete": "false",
+        "titles": [
+            "Mandate_02",
+            "Schneedorf"
+        ],
+        "overlay": {
+            "x": 4482,
+            "y": 4795,
+            "w": 1327,
+            "h": 1535
+        }
+    },
+    "The_Kingdom_of_the_Burning_Eye": {
+        "name": "The Kingdom Of The Burning Eye",
+        "rgb": "248,210,163",
+        "title-complete": "false",
+        "titles": [
+            "The_Communion_of_Flame",
+            "Ra's_Land"
+        ],
+        "overlay": {
+            "x": 3786,
+            "y": 4619,
+            "w": 2457,
+            "h": 1781
+        }
+    },
+    "Lunareth": {
+        "name": "Lunareth",
+        "rgb": "47,73,199",
+        "title-complete": "false",
+        "titles": [
+            "Wyvern_Pass",
+            "Emberfall"
+        ],
+        "overlay": {
+            "x": 3126,
+            "y": 2929,
+            "w": 1453,
+            "h": 881
+        }
+    },
+    "Mizea": {
+        "name": "Mizea",
+        "rgb": "5,67,47",
+        "title-complete": "false",
+        "titles": [
+            "Dumayu",
+            "Duskvale"
+        ],
+        "overlay": {
+            "x": 3189,
+            "y": 3188,
+            "w": 2100,
+            "h": 2954
+        }
+    },
+    "Sudbaum": {
+        "name": "Sudbaum",
+        "rgb": "178,135,151",
+        "title-complete": "false",
+        "provinces": [
+            311
+        ],
+        "titles": [
+            "Trunk_of_The_Tree",
+            "Mandate_01"
+        ],
+        "overlay": {
+            "x": 4162,
+            "y": 4500,
+            "w": 1903,
+            "h": 1900
+        }
+    }
+}

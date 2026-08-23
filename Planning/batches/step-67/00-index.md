@@ -1,11 +1,11 @@
-# Step 67 — War map export
+# Step 67 — Raid war type
 
 **Repo:** SF · [war-build-order.md](../../war-build-order.md)  
-**Depends on:** [58](../step-58/00-index.md)–[62](../step-62/00-index.md) · **Next:** [44](../step-44/00-index.md) (PS)
+**Depends on:** [57](../step-57/00-index.md), [60](../step-60/00-index.md) · **Next:** [71](../step-71/00-index.md) (after [66](../step-66/00-index.md) map)
 
 ## Goal
 
-Export `wars[]` in `map_markers` upload: occupation, campaign line, objective, initiative, belligerents, chronicle events.
+One-battle border settlement raid, pillage, distance limit, no occupation tint.
 
 ## Status
 
