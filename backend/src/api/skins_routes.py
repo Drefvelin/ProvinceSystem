@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+from collections import defaultdict
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
@@ -18,6 +20,7 @@ from src.skins.codes import (
     CodeError,
     get_cosmetic_mint_status,
     get_session,
+    inspect_code,
     issue_code,
     list_active_codes,
     redeem_character_code,
@@ -78,6 +81,22 @@ logger = logging.getLogger("skins.routes")
 
 skins_router = APIRouter(prefix="/skins", tags=["skins"])
 
+_INSPECT_RATE_BUCKETS: dict[str, list[float]] = defaultdict(list)
+_INSPECT_RATE_LIMIT = 10
+_INSPECT_RATE_WINDOW_SEC = 60.0
+
+
+def _check_inspect_rate(client_ip: str) -> None:
+    """Light rate limit for unauthenticated code inspect (dev tooling)."""
+    now = time.monotonic()
+    key = (client_ip or "").strip() or "unknown"
+    bucket = _INSPECT_RATE_BUCKETS[key]
+    cutoff = now - _INSPECT_RATE_WINDOW_SEC
+    bucket[:] = [t for t in bucket if t > cutoff]
+    if len(bucket) >= _INSPECT_RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many inspect requests")
+    bucket.append(now)
+
 
 class IssueCodeBody(BaseModel):
     player_uuid: str = Field(..., min_length=1)
@@ -86,6 +105,10 @@ class IssueCodeBody(BaseModel):
 
 
 class RedeemBody(BaseModel):
+    code: str = Field(..., min_length=1)
+
+
+class InspectCodeBody(BaseModel):
     code: str = Field(..., min_length=1)
 
 
@@ -239,6 +262,17 @@ def plugin_codes_revoke(
     _require_plugin(x_plugin_key)
     try:
         return revoke_code(body.code)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/codes/inspect")
+def post_codes_inspect(body: InspectCodeBody, request: Request):
+    """Read-only code lookup for dev gate tooling. Does not redeem or consume codes."""
+    client_ip = request.client.host if request.client else ""
+    _check_inspect_rate(client_ip)
+    try:
+        return inspect_code(body.code)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

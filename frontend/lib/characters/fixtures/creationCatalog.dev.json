@@ -104,14 +104,11 @@
         "subtitle(§eTFMC has several classes to choose from)",
         "subtitle(§eYour class decides which weapons and skills you can use)",
         "subtitle(§eSelect a class on the next stage)",
-        "subtitle(§eYou will §cNOT §ebe able to change class after the creation)",
-        "subtitle(§eSet it now before you forget!)",
         "subtitle(§eUse #32ed73/rpcharacter next§e to move on)"
       ],
       "web_messages": [
         "title(Class)",
-        "subtitle(TFMC has several classes to choose from. Your class decides which weapons and skills you can use.)",
-        "subtitle(Pick a class on the next step. You will not be able to change it after creation, so set it now.)"
+        "subtitle(TFMC has several classes to choose from. Your class decides which weapons and skills you can use.)"
       ]
     },
     {

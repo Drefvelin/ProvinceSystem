@@ -349,6 +349,110 @@ def revoke_code(plaintext: str) -> dict:
     return {"ok": True, "code": code}
 
 
+SITE_STAFF_PERMISSION = "tfmc.map.staff"
+STAFF_TOKEN_CREATE_PERM = "tfmcweb.token.create"
+STAFF_TOKEN_CREATE_STAFF_PERM = "tfmcweb.token.create.staff"
+
+
+def _mask_player_uuid(player_uuid: str) -> str:
+    uuid = (player_uuid or "").strip().lower()
+    if not uuid:
+        return ""
+    if len(uuid) <= 8:
+        return uuid
+    return f"{uuid[:8]}..."
+
+
+def inspect_code(plaintext: str) -> dict:
+    """Read-only code lookup for dev tooling. Does not redeem or create sessions."""
+    code = (plaintext or "").strip()
+    if not code:
+        raise CodeError("code is required")
+
+    code_hash = hash_secret(code)
+    now = _utcnow()
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM codes WHERE code_hash = ?",
+            (code_hash,),
+        ).fetchone()
+
+        if row is None:
+            return {"valid": False, "error": "Invalid code"}
+
+        scope = _row_scope(row)
+        realm_id = _row_realm_id(row)
+        player_uuid = str(row["player_uuid"] or "").strip().lower()
+        revoked = bool(row["revoked"])
+        expired = _parse_iso(row["expires_at"]) < now
+        consumed = _code_is_consumed(conn, row["id"], scope)
+
+    from src.characters.rpc_player_meta import (
+        has_map_staff_access,
+        resolve_web_entitlements,
+    )
+
+    staff = _is_staff_scope(scope)
+    entitlements = resolve_web_entitlements(
+        player_uuid,
+        staff=staff,
+        realm_id=realm_id,
+    )
+    permission_flags = entitlements.get("permission_flags") or {}
+    if not isinstance(permission_flags, dict):
+        permission_flags = {}
+
+    if revoked:
+        status = "revoked"
+    elif expired:
+        status = "expired"
+    elif consumed:
+        status = "consumed"
+    else:
+        status = "active"
+
+    skin_kinds = entitlements.get("skin_kinds")
+    if not isinstance(skin_kinds, list):
+        skin_kinds = []
+
+    return {
+        "valid": True,
+        "status": status,
+        "scope": scope,
+        "realm_id": realm_id,
+        "staff": staff,
+        "created_at": row["created_at"],
+        "expires_at": row["expires_at"],
+        "revoked": revoked,
+        "consumed": consumed,
+        "expired": expired,
+        "player_uuid_masked": _mask_player_uuid(player_uuid),
+        "site_staff_access": has_map_staff_access(
+            player_uuid,
+            realm_id,
+            SITE_STAFF_PERMISSION,
+        ),
+        "staff_token_perms": {
+            STAFF_TOKEN_CREATE_PERM: bool(
+                permission_flags.get(STAFF_TOKEN_CREATE_PERM)
+            ),
+            STAFF_TOKEN_CREATE_STAFF_PERM: bool(
+                permission_flags.get(STAFF_TOKEN_CREATE_STAFF_PERM)
+            ),
+        },
+        "entitlements": {
+            "meta_synced": bool(entitlements.get("meta_synced")),
+            "max_3d_pair_bytes": int(entitlements.get("max_3d_pair_bytes") or 0),
+            "skin_kinds": [str(k) for k in skin_kinds],
+            "name_colour_stops": int(entitlements.get("name_colour_stops") or 0),
+            "allow_armor_3d_helmet": bool(
+                entitlements.get("allow_armor_3d_helmet")
+            ),
+        },
+    }
+
+
 def redeem_code(plaintext: str) -> dict:
     code = (plaintext or "").strip()
     if not code:
@@ -635,6 +739,9 @@ def _self_test() -> None:
     except LinkError:
         pass
 
+    invalid = inspect_code("NOT-A-REAL-CODE-XXXX")
+    assert invalid["valid"] is False and invalid.get("error")
+
     try:
         issue_code(uuid, "skin")
         raise AssertionError("expected unlinked mint to fail")
@@ -647,6 +754,11 @@ def _self_test() -> None:
 
     skin = issue_code(uuid, "skin")
     assert skin["scope"] == "skin" and skin["code"]
+    inspected_skin = inspect_code(skin["code"])
+    assert inspected_skin["valid"] is True
+    assert inspected_skin["status"] == "active"
+    assert inspected_skin["scope"] == "skin"
+    assert inspected_skin["staff"] is False
     session = redeem_code(skin["code"])
     assert session.get("session_token")
 
@@ -698,6 +810,25 @@ def _self_test() -> None:
     # default scope (ArmourShop back-compat)
     defaulted = issue_code(uuid)
     assert defaulted["scope"] == "skin"
+
+    staff_skin = issue_code(uuid, "skin_staff")
+    assert staff_skin["scope"] == "skin_staff"
+    inspected_staff = inspect_code(staff_skin["code"])
+    assert inspected_staff["valid"] is True
+    assert inspected_staff["staff"] is True
+    assert inspected_staff["scope"] == "skin_staff"
+
+    to_revoke = issue_code(uuid, "skin")
+    revoke_code(to_revoke["code"])
+    inspected_revoked = inspect_code(to_revoke["code"])
+    assert inspected_revoked["valid"] is True
+    assert inspected_revoked["status"] == "revoked"
+    assert inspected_revoked["revoked"] is True
+
+    inspected_consumed = inspect_code(char["code"])
+    assert inspected_consumed["valid"] is True
+    assert inspected_consumed["status"] == "consumed"
+    assert inspected_consumed["consumed"] is True
 
     try:
         unlink_by_uuid(uuid)

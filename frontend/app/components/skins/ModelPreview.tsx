@@ -432,6 +432,7 @@ export default function ModelPreview({
     ReturnType<typeof loadDrinkAssetImages>
   > | null>(null);
   const syncGenRef = useRef(0);
+  const layoutGenRef = useRef(0);
   const gripYRef = useRef(gripY);
   gripYRef.current = gripY;
   const showOuterLayerRef = useRef(true);
@@ -592,11 +593,13 @@ export default function ModelPreview({
     async (
       runtime: ViewerRuntime,
       content: ContentRefs,
-      resetOrbit: boolean
+      resetOrbit: boolean,
+      gen: number
     ): Promise<void> => {
       const { scene, camera, controls } = runtime;
       const onMannequin = isMannequinSlot(slot, gun);
       const leftHand = isLeftHandSlot(slot);
+      const isStale = () => gen !== layoutGenRef.current;
 
       if (content.floatingRoot) {
         if (content.itemRoot?.parent) {
@@ -625,15 +628,28 @@ export default function ModelPreview({
       if (onMannequin) {
         if (playerSkinFile) {
           const skin = await loadTextureFromFile(playerSkinFile);
+          if (isStale()) {
+            skin.texture.dispose();
+            return;
+          }
           content.steveTexture?.dispose();
           content.steveTexture = skin.texture;
         } else {
+          const steveTex = await loadSteveTexture();
+          if (isStale()) {
+            steveTex.dispose();
+            return;
+          }
           content.steveTexture?.dispose();
-          content.steveTexture = await loadSteveTexture();
+          content.steveTexture = steveTex;
         }
         const detected = inferArmModelFromTexture(content.steveTexture);
         setArmModel(detected);
         const steveRoot = createSteveMannequin(content.steveTexture, detected);
+        if (isStale()) {
+          disposeObject3D(steveRoot);
+          return;
+        }
 
         let pose: SteveArmPose;
         let chargeProgress: number | undefined;
@@ -705,6 +721,14 @@ export default function ModelPreview({
               : steveRoot.bones.itemSocketRight;
         socket.add(held);
         scene.add(steveRoot);
+        if (isStale()) {
+          scene.remove(steveRoot);
+          disposeObject3D(steveRoot);
+          content.steveRoot = null;
+          steveLiveRef.current = null;
+          heldItemRef.current = null;
+          return;
+        }
 
         focus.set(0, 14, 0);
         frameSize = 32;
@@ -714,12 +738,20 @@ export default function ModelPreview({
         floating.add(content.itemRoot);
         content.floatingRoot = floating;
         scene.add(floating);
+        if (isStale()) {
+          scene.remove(floating);
+          disposeObject3D(floating);
+          content.floatingRoot = null;
+          return;
+        }
 
         const box = new THREE.Box3().setFromObject(content.itemRoot);
         const size = box.getSize(new THREE.Vector3());
         focus = box.getCenter(new THREE.Vector3());
         frameSize = Math.max(size.x, size.y, size.z, 1);
       }
+
+      if (isStale()) return;
 
       if (resetOrbit || !orbitInitializedRef.current) {
         setDefaultOrbit(camera, controls, focus, frameSize);
@@ -877,13 +909,17 @@ export default function ModelPreview({
       orbitStateRef.current = saveOrbit(runtime.camera, runtime.controls);
     }
 
+    const gen = ++layoutGenRef.current;
+
     void (async () => {
       try {
         const resetOrbit = !orbitInitializedRef.current;
-        await applyLayout(runtime, content, resetOrbit);
+        await applyLayout(runtime, content, resetOrbit, gen);
+        if (gen !== layoutGenRef.current) return;
         setStatus("ready");
         reportError(null);
       } catch (err) {
+        if (gen !== layoutGenRef.current) return;
         const message =
           err instanceof Error ? err.message : "Could not update preview";
         reportError(message);

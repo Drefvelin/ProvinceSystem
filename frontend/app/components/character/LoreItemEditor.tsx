@@ -27,8 +27,15 @@ import {
   type NameStyle,
 } from "../../../lib/skins/namePreview";
 import {
+  getPlayerMeta,
+} from "../../../lib/skins/api";
+import { DEV_CATALOG_ENTITLEMENTS } from "../../../lib/skins/entitlementsDev";
+import { isCharacterUiDev } from "../../../lib/characters/uiDev";
+import {
+  assert3dPairBudgets,
   assertFileSize,
   expectedSizeForField,
+  pairBudgetHint,
   type SkinKind,
 } from "../../../lib/skins/sizes";
 
@@ -63,6 +70,7 @@ type Props = {
   item: LoreItemRow;
   sessionToken: string;
   nameColourStops?: number;
+  max3dPairBytes?: number;
   submitting?: boolean;
   refreshing?: boolean;
   deleting?: boolean;
@@ -172,6 +180,7 @@ export default function LoreItemEditor({
   item,
   sessionToken,
   nameColourStops = 0,
+  max3dPairBytes,
   submitting = false,
   refreshing = false,
   deleting = false,
@@ -214,6 +223,17 @@ export default function LoreItemEditor({
     unsigned: string | null;
     signed: string | null;
   }>({ unsigned: null, signed: null });
+  const [metaPairBytes, setMetaPairBytes] = useState<number>(0);
+
+  const resolvedPairBytes =
+    max3dPairBytes !== undefined && max3dPairBytes > 0
+      ? max3dPairBytes
+      : metaPairBytes > 0
+        ? metaPairBytes
+        : isCharacterUiDev()
+          ? DEV_CATALOG_ENTITLEMENTS.defaults.max_3d_pair_bytes
+          : 0;
+  const pairHint = pairBudgetHint(resolvedPairBytes);
 
   const baseline = useMemo(
     () => ({
@@ -275,6 +295,26 @@ export default function LoreItemEditor({
       if (modelRef.current) modelRef.current.value = "";
     }
   }, [allows3d, use3d]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMeta() {
+      const token = sessionToken.trim();
+      if (!token) return;
+      try {
+        const meta = await getPlayerMeta(token);
+        if (cancelled) return;
+        const pair = Math.max(0, Math.floor(meta.max_3d_pair_bytes ?? 0));
+        if (pair > 0) setMetaPairBytes(pair);
+      } catch {
+        // Keep prop or dev fallback if refresh fails.
+      }
+    }
+    void loadMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken]);
 
   useEffect(() => {
     const unsigned = unsignedFile
@@ -416,7 +456,9 @@ export default function LoreItemEditor({
       return;
     }
     try {
-      const expected = expectedSizeForField(flatKind, "texture");
+      const sizeKind =
+        use3d && threeDKind ? threeDKind : flatKind;
+      const expected = expectedSizeForField(sizeKind, "texture");
       if (expected) {
         await assertFileSize(file, expected, "Texture");
       }
@@ -492,6 +534,18 @@ export default function LoreItemEditor({
       return;
     }
     const effective3d = skinMode === "upload" && allows3d && use3d;
+    if (effective3d && threeDKind && textureFile && modelFile) {
+      try {
+        assert3dPairBudgets(
+          threeDKind,
+          { texture: textureFile, model: modelFile },
+          resolvedPairBytes
+        );
+      } catch (err) {
+        setLocalError(err instanceof Error ? err.message : "Invalid 3D files");
+        return;
+      }
+    }
     await onSubmit({
       displayName: displayName.trim(),
       lore,
@@ -764,6 +818,11 @@ export default function LoreItemEditor({
                 ) : null}
                 {allows3d && use3d ? (
                   <>
+                    {pairHint ? (
+                      <p className="text-xs text-[var(--tfmc-stone)]">
+                        {pairHint}
+                      </p>
+                    ) : null}
                     <input
                       ref={modelRef}
                       type="file"

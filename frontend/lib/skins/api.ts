@@ -142,6 +142,114 @@ export async function redeemCode(code: string): Promise<RedeemResult> {
   return out;
 }
 
+export type InspectCodeEntitlements = {
+  meta_synced: boolean;
+  max_3d_pair_bytes: number;
+  skin_kinds: string[];
+  name_colour_stops: number;
+  allow_armor_3d_helmet: boolean;
+};
+
+export type InspectCodeStaffTokenPerms = {
+  "tfmcweb.token.create": boolean;
+  "tfmcweb.token.create.staff": boolean;
+};
+
+export type InspectCodeResult =
+  | { valid: false; error: string }
+  | {
+      valid: true;
+      status: string;
+      scope: string;
+      realm_id: string;
+      staff: boolean;
+      created_at: string;
+      expires_at: string;
+      revoked: boolean;
+      consumed: boolean;
+      expired: boolean;
+      player_uuid_masked: string;
+      site_staff_access: boolean;
+      staff_token_perms: InspectCodeStaffTokenPerms;
+      entitlements: InspectCodeEntitlements;
+    };
+
+export async function inspectCode(code: string): Promise<InspectCodeResult> {
+  const res = await apiFetch(`${getApiBase()}/skins/codes/inspect`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: code.trim() }),
+  });
+
+  const data = await parseJson(res);
+
+  if (!res.ok) {
+    throw new SkinsApiError(
+      detailMessage(data, `Inspect failed (${res.status})`),
+      res.status
+    );
+  }
+
+  const body = data as Record<string, unknown>;
+  if (body.valid === false) {
+    return {
+      valid: false,
+      error: typeof body.error === "string" ? body.error : "Invalid code",
+    };
+  }
+
+  if (body.valid !== true) {
+    throw new SkinsApiError("Invalid inspect response from API", res.status);
+  }
+
+  const entRaw =
+    body.entitlements && typeof body.entitlements === "object"
+      ? (body.entitlements as Record<string, unknown>)
+      : {};
+  const skinKindsRaw = entRaw.skin_kinds;
+  const skinKinds: string[] = Array.isArray(skinKindsRaw)
+    ? skinKindsRaw.map((k) => String(k))
+    : [];
+
+  const permsRaw =
+    body.staff_token_perms && typeof body.staff_token_perms === "object"
+      ? (body.staff_token_perms as Record<string, unknown>)
+      : {};
+
+  return {
+    valid: true,
+    status: String(body.status || "unknown"),
+    scope: String(body.scope || ""),
+    realm_id: String(body.realm_id || ""),
+    staff: body.staff === true,
+    created_at: String(body.created_at || ""),
+    expires_at: String(body.expires_at || ""),
+    revoked: body.revoked === true,
+    consumed: body.consumed === true,
+    expired: body.expired === true,
+    player_uuid_masked: String(body.player_uuid_masked || ""),
+    site_staff_access: body.site_staff_access === true,
+    staff_token_perms: {
+      "tfmcweb.token.create": permsRaw["tfmcweb.token.create"] === true,
+      "tfmcweb.token.create.staff":
+        permsRaw["tfmcweb.token.create.staff"] === true,
+    },
+    entitlements: {
+      meta_synced: entRaw.meta_synced === true,
+      max_3d_pair_bytes: Math.max(
+        0,
+        Math.floor(Number(entRaw.max_3d_pair_bytes) || 0)
+      ),
+      skin_kinds: skinKinds,
+      name_colour_stops: Math.max(
+        0,
+        Math.floor(Number(entRaw.name_colour_stops) || 0)
+      ),
+      allow_armor_3d_helmet: entRaw.allow_armor_3d_helmet === true,
+    },
+  };
+}
+
 /** Fresh web entitlements from GET /characters/player-meta. */
 export type PlayerMeta = {
   name_colour_stops: number;
