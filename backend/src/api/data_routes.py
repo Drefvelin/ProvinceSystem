@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 import json, os, time
 
@@ -121,6 +121,7 @@ async def upload_region_data(
     map_name: str,
     mode: str,
     request: Request,
+    background_tasks: BackgroundTasks,
     authorization: str | None = Header(default=None),
 ):
     validate_map(map_name)
@@ -148,7 +149,7 @@ async def upload_region_data(
 
     _province_cache.pop(map_name, None)
 
-    if mode == "map_markers":
-        generate_zoc_overlays(map_name)
+    if mode_norm == "map_markers":
+        background_tasks.add_task(generate_zoc_overlays, map_name)
 
     return JSONResponse({"message": f"{mode} data saved for '{map_name}'"})
