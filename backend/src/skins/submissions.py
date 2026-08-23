@@ -996,6 +996,31 @@ def get_submission_for_owner(
     return _public_row(row)
 
 
+def list_submissions_for_player(
+    player_uuid: str,
+    realm_id: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    from src.skins.codes import normalize_realm_id
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return []
+    realm = normalize_realm_id(realm_id)
+    cap = max(1, min(int(limit or 50), 100))
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM submissions
+            WHERE player_uuid = ? AND realm_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (uuid, realm, cap),
+        ).fetchall()
+    return [_public_row(row) for row in rows]
+
+
 def _get_row(submission_id: str) -> sqlite3.Row | None:
     with connect() as conn:
         return conn.execute(

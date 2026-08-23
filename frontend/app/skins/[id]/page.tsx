@@ -10,10 +10,23 @@ import {
   type SubmissionPublic,
 } from "../../../lib/skins/api";
 import {
-  clearSession,
-  getSession,
-  isSessionValid,
+  clearSession as clearSkinsSession,
+  getSession as getSkinsSession,
+  isSessionValid as isSkinsSessionValid,
 } from "../../../lib/skins/session";
+import {
+  getSession as getProfileSession,
+  isSessionValid as isProfileSessionValid,
+} from "../../../lib/profile/session";
+
+function resolveOwnerToken(): string | null {
+  const skin = getSkinsSession();
+  if (isSkinsSessionValid(skin)) return skin!.session_token;
+  const profile = getProfileSession();
+  if (isProfileSessionValid(profile)) return profile!.session_token;
+  if (skin) clearSkinsSession();
+  return null;
+}
 
 export default function SubmissionStatusPage() {
   const params = useParams();
@@ -26,10 +39,9 @@ export default function SubmissionStatusPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const session = getSession();
-    if (!isSessionValid(session) || !session) {
-      if (session) clearSession();
-      setError("Session missing or expired. Redeem a code again.");
+    const token = resolveOwnerToken();
+    if (!token) {
+      setError("Session missing or expired. Log in on Profile or redeem a skin code.");
       setRow(null);
       setLoading(false);
       return;
@@ -41,7 +53,7 @@ export default function SubmissionStatusPage() {
       return;
     }
     try {
-      const data = await getSubmission(id, session.session_token);
+      const data = await getSubmission(id, token);
       setRow(data);
     } catch (err) {
       const message =
@@ -62,7 +74,7 @@ export default function SubmissionStatusPage() {
   }, [load]);
 
   function onSubmitAnother() {
-    clearSession();
+    clearSkinsSession();
     router.push("/skins");
   }
 

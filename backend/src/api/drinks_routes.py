@@ -175,12 +175,23 @@ async def post_submission(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+def _owner_session_from_auth(authorization: str | None):
+    row = _session_from_auth(authorization)
+    scope = str(row.get("scope") or "").strip().lower()
+    if scope in ("drink", "profile"):
+        return row
+    raise HTTPException(
+        status_code=403,
+        detail="Drink or profile session required",
+    )
+
+
 @drinks_router.get("/submissions/{submission_id}")
 def get_submission(
     submission_id: str,
     authorization: str | None = Header(default=None),
 ):
-    session = _require_drink_session(authorization)
+    session = _owner_session_from_auth(authorization)
     row = get_drink_submission_for_owner(submission_id, session["player_uuid"])
     if row is None:
         raise HTTPException(status_code=404, detail="Submission not found")

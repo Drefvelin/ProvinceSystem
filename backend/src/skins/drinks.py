@@ -954,6 +954,31 @@ def get_drink_submission_for_owner(
     return _public_row(row)
 
 
+def list_drink_submissions_for_player(
+    player_uuid: str,
+    realm_id: str | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    from src.skins.codes import normalize_realm_id
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return []
+    realm = normalize_realm_id(realm_id)
+    cap = max(1, min(int(limit or 50), 100))
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM drink_submissions
+            WHERE LOWER(player_uuid) = LOWER(?) AND realm_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (uuid, realm, cap),
+        ).fetchall()
+    return [_public_row(row) for row in rows]
+
+
 def list_pending_drinks() -> list[dict[str, Any]]:
     with connect() as conn:
         rows = conn.execute(

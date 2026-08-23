@@ -67,11 +67,11 @@ export type RedeemResult = {
   remember_me?: boolean;
 };
 
-export async function redeemCharacter(
+export async function redeemProfile(
   code: string,
   rememberMe = false
 ): Promise<RedeemResult> {
-  const res = await apiFetch(`${getApiBase()}/skins/character/redeem`, {
+  const res = await apiFetch(`${getApiBase()}/skins/profile/redeem`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -94,12 +94,20 @@ export async function redeemCharacter(
     session_token: body.session_token,
     player_uuid: body.player_uuid,
     expires_at: body.expires_at,
-    scope: typeof body.scope === "string" ? body.scope : "character",
+    scope: typeof body.scope === "string" ? body.scope : "profile",
     ...(typeof body.realm_id === "string" && body.realm_id.trim()
       ? { realm_id: body.realm_id.trim().toLowerCase() }
       : {}),
     remember_me: body.remember_me === true || rememberMe,
   };
+}
+
+/** @deprecated Use redeemProfile */
+export async function redeemCharacter(
+  code: string,
+  rememberMe = false
+): Promise<RedeemResult> {
+  return redeemProfile(code, rememberMe);
 }
 
 export async function logoutCharacter(sessionToken: string): Promise<void> {

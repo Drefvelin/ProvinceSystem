@@ -26,7 +26,7 @@ function uiDevSession(): CharacterSession {
     session_token: UI_DEV_SESSION_TOKEN,
     player_uuid: "00000000-0000-4000-8000-ui0000000001",
     expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "character",
+    scope: "profile",
   };
 }
 
@@ -79,7 +79,7 @@ export default function CharacterKitsPage() {
       return;
     }
     const s = getSession();
-    if (!s || !isSessionValid(s) || s.scope !== "character") {
+    if (!s || !isSessionValid(s) || s.scope !== "profile") {
       clearSession();
       router.replace("/character");
       return;

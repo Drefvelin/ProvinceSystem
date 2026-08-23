@@ -43,7 +43,7 @@ export default function CharacterCreatePage() {
         session_token: UI_DEV_SESSION_TOKEN,
         player_uuid: "00000000-0000-4000-8000-ui0000000001",
         expires_at: new Date(Date.now() + 86400000).toISOString(),
-        scope: "character",
+        scope: "profile",
       });
       setCatalog(creationCatalogDev as CreationCatalog);
       // UI-dev keeps age stages so the flow is visible; skip via ?skipAge=1.

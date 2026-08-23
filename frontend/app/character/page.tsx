@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import CharacterList from "../components/character/CharacterList";
-import CharacterRedeemForm from "../components/character/CharacterRedeemForm";
 import {
   CharactersApiError,
   getCreationCatalog,
@@ -32,7 +33,7 @@ function uiDevSession(): CharacterSession {
     session_token: UI_DEV_SESSION_TOKEN,
     player_uuid: "00000000-0000-4000-8000-ui0000000001",
     expires_at: new Date(Date.now() + 86400000).toISOString(),
-    scope: "character",
+    scope: "profile",
   };
 }
 
@@ -41,6 +42,7 @@ function hasPending(characters: CharacterListItem[]): boolean {
 }
 
 export default function CharacterPage() {
+  const router = useRouter();
   const uiDev = isCharacterUiDev();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<CharacterSession | null>(null);
@@ -136,10 +138,12 @@ export default function CharacterPage() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [loadList, session, uiDev]);
 
-  function onRedeemed(next: CharacterSession) {
-    setSessionState(next);
-    void loadList(next.session_token);
-  }
+  useEffect(() => {
+    if (!ready || uiDev) return;
+    if (!session || !isSessionValid(session)) {
+      router.replace("/profile");
+    }
+  }, [ready, session, uiDev, router]);
 
   function onRefresh() {
     if (!session) return;
@@ -203,7 +207,13 @@ export default function CharacterPage() {
 
       {valid ? (
         <div className="mt-4">
-          <p className="text-sm text-[var(--tfmc-stone)]">
+          <Link
+            href="/profile"
+            className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+          >
+            Back to profile
+          </Link>
+          <p className="mt-3 text-sm text-[var(--tfmc-stone)]">
             {uiDev
               ? "UI-dev session - no redeem required."
               : `Session expires ${formatExpiresIn(session.expires_at)} (${formatLocal(session.expires_at)})`}
@@ -227,16 +237,7 @@ export default function CharacterPage() {
           )}
         </div>
       ) : (
-        <>
-          <p className="char-rise-delay mt-3 text-[var(--tfmc-mist)]">
-            In-game, run{" "}
-            <code className="text-[var(--tfmc-cream)]">
-              /token create character
-            </code>{" "}
-            then paste the code here.
-          </p>
-          <CharacterRedeemForm onRedeemed={onRedeemed} />
-        </>
+        <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Redirecting to profile…</p>
       )}
     </main>
   );

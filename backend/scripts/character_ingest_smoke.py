@@ -150,8 +150,8 @@ def redeem_scope(client: TestClient, player: str, scope: str) -> str:
     if r.status_code != 200:
         fail(f"mint {scope}: {r.status_code} {r.text}")
     code = r.json()["code"]
-    if scope == "character":
-        r = client.post("/skins/character/redeem", json={"code": code})
+    if scope == "profile":
+        r = client.post("/skins/profile/redeem", json={"code": code})
     else:
         r = client.post("/skins/redeem", json={"code": code})
     if r.status_code != 200:
@@ -191,7 +191,7 @@ def main() -> None:
         fail(f"catalog put: {r.status_code} {r.text}")
 
     ensure_linked(client, player, discord_id)
-    token = redeem_scope(client, player, "character")
+    token = redeem_scope(client, player, "profile")
     auth = {"Authorization": f"Bearer {token}"}
 
     bad = valid_body(attributes={a: 0 for a in ATTRS})
@@ -424,7 +424,7 @@ def main() -> None:
     other = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
     other_discord = str(700000000000000000 + (uuid.uuid4().int % 99999999999999))
     ensure_linked(client, other, other_discord)
-    other_token = redeem_scope(client, other, "character")
+    other_token = redeem_scope(client, other, "profile")
     other_auth = {"Authorization": f"Bearer {other_token}"}
     r = client.put(
         "/characters/plugin/roster",

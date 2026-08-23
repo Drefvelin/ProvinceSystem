@@ -61,15 +61,15 @@ class RealmCodesTest(unittest.TestCase):
             normalize_realm_id("x" * 33)
 
     def test_mint_with_realm_redeem_session(self) -> None:
-        from skins.codes import get_session, issue_code, redeem_character_code
+        from skins.codes import get_session, issue_code, redeem_profile_code
 
         with mock.patch(
             "skins.discord_link.get_identity_status",
             return_value={"eligible": True},
         ):
-            issued = issue_code("player-realm-1", "character", realm_id="dev")
+            issued = issue_code("player-realm-1", "profile", realm_id="dev")
         self.assertEqual(issued["realm_id"], "dev")
-        session = redeem_character_code(issued["code"])
+        session = redeem_profile_code(issued["code"])
         self.assertEqual(session["realm_id"], "dev")
         loaded = get_session(session["session_token"])
         assert loaded is not None

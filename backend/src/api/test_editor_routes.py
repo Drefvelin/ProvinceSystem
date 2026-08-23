@@ -47,7 +47,7 @@ maps:
 
 def _staff_session(player: str) -> dict:
     return {
-        "scope": "character",
+        "scope": "profile",
         "player_uuid": player,
         "realm_id": "main",
     }

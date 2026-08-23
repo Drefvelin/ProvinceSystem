@@ -67,6 +67,7 @@ from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
 from src.api.maps_routes import maps_router
+from src.api.profile_routes import profile_router
 from src.api.skins_routes import skins_router
 from src.api.characters_routes import characters_router
 from src.api.drinks_routes import drinks_router
@@ -80,5 +81,6 @@ app.include_router(claim_router)
 app.include_router(regen_router)
 app.include_router(file_router)
 app.include_router(skins_router)
+app.include_router(profile_router)
 app.include_router(characters_router)
 app.include_router(drinks_router)

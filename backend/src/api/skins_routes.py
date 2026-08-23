@@ -23,7 +23,7 @@ from src.skins.codes import (
     inspect_code,
     issue_code,
     list_active_codes,
-    redeem_character_code,
+    redeem_profile_code,
     redeem_code,
     reset_cosmetic_mint_cooldowns,
     revoke_code,
@@ -112,7 +112,7 @@ class InspectCodeBody(BaseModel):
     code: str = Field(..., min_length=1)
 
 
-class CharacterRedeemBody(BaseModel):
+class ProfileRedeemBody(BaseModel):
     code: str = Field(..., min_length=1)
     remember_me: bool = False
 
@@ -277,11 +277,11 @@ def post_codes_inspect(body: InspectCodeBody, request: Request):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@skins_router.post("/character/redeem")
-def post_character_redeem(body: CharacterRedeemBody):
-    """Redeem a character-scoped code into a Bearer session (optional Remember me)."""
+@skins_router.post("/profile/redeem")
+def post_profile_redeem(body: ProfileRedeemBody):
+    """Redeem a profile-scoped code into a Bearer session (optional Remember me)."""
     try:
-        return redeem_character_code(body.code, remember_me=body.remember_me)
+        return redeem_profile_code(body.code, remember_me=body.remember_me)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

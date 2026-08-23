@@ -1818,3 +1818,64 @@ def mark_lore_items_applied(results: list) -> dict[str, Any]:
                 fail_n += 1
         conn.commit()
     return {"ok": True, "applied": ok_n, "failed": fail_n}
+
+
+def list_player_custom_items(
+    player_uuid: str,
+    realm_id: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Compact customise rows for profile dashboard (all characters)."""
+    from src.characters.roster import list_roster
+    from src.skins.codes import normalize_realm_id
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        return []
+    realm = normalize_realm_id(realm_id)
+    cap = max(1, min(int(limit or 100), 200))
+    roster = list_roster(uuid, realm)
+    name_by_id = {
+        str(c.get("id") or ""): str(c.get("name") or "").strip()
+        for c in roster
+        if c.get("id")
+    }
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM lore_item_customisations
+            WHERE LOWER(player_uuid) = LOWER(?)
+              AND realm_id = ?
+            ORDER BY updated_at DESC
+            LIMIT ?
+            """,
+            (uuid, realm, cap),
+        ).fetchall()
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        keys = _row_keys(row)
+        state = str(row["state"] if "state" in keys else STATE_DRAFT) or STATE_DRAFT
+        if state == STATE_DRAFT and not str(row["display_name"] or "").strip():
+            continue
+        cid = str(row["character_id"] or "")
+        kit_key = str(row["kit_key"] or "")
+        draft = _load_row(uuid, cid, kit_key) or {}
+        out.append(
+            {
+                "character_id": cid,
+                "character_name": name_by_id.get(cid) or cid,
+                "kit_key": kit_key,
+                "display_name": str(row["display_name"] or kit_key),
+                "state": state,
+                "submission_id": row["submission_id"],
+                "submission_status": draft.get("submission_status"),
+                "deny_reason": draft.get("deny_reason"),
+                "skin_slug": draft.get("skin_slug"),
+                "updated_at": row["updated_at"] if "updated_at" in keys else None,
+                "ready_at": draft.get("ready_at"),
+                "applied_at": draft.get("applied_at"),
+            }
+        )
+    return out

@@ -108,12 +108,12 @@ def main() -> None:
     ensure_linked(client, player)
     now = datetime.now(timezone.utc)
 
-    code1 = mint(client, player, "character")
-    r = client.post("/skins/character/redeem", json={"code": code1})
+    code1 = mint(client, player, "profile")
+    r = client.post("/skins/profile/redeem", json={"code": code1})
     if r.status_code != 200:
         fail(f"redeem default: {r.status_code} {r.text}")
     body = r.json()
-    if body.get("scope") != "character" or body.get("remember_me") is not False:
+    if body.get("scope") != "profile" or body.get("remember_me") is not False:
         fail(f"redeem default body: {body}")
     token1 = body["session_token"]
     exp1 = _parse_iso(body["expires_at"])
@@ -122,20 +122,20 @@ def main() -> None:
         fail(f"default TTL expected ~8h, got {delta1} expires_at={body['expires_at']}")
     print(f"OK redeem without remember_me -> ~8h ({delta1})")
 
-    r = client.post("/skins/character/redeem", json={"code": code1})
+    r = client.post("/skins/profile/redeem", json={"code": code1})
     if r.status_code != 400:
         fail(f"second redeem expected 400, got {r.status_code} {r.text}")
     print("OK second redeem of same code -> 400")
 
     skin_code = mint(client, player, "skin")
-    r = client.post("/skins/character/redeem", json={"code": skin_code})
+    r = client.post("/skins/profile/redeem", json={"code": skin_code})
     if r.status_code != 400:
         fail(f"skin on character redeem expected 400, got {r.status_code} {r.text}")
-    print("OK skin-scope code on character redeem -> 400")
+    print("OK skin-scope code on profile redeem -> 400")
 
-    code2 = mint(client, player, "character")
+    code2 = mint(client, player, "profile")
     r = client.post(
-        "/skins/character/redeem",
+        "/skins/profile/redeem",
         json={"code": code2, "remember_me": True},
     )
     if r.status_code != 200:

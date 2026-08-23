@@ -5,13 +5,13 @@ import { FormEvent, useEffect, useState } from "react";
 
 import {
   CharactersApiError,
-  redeemCharacter,
+  redeemProfile,
 } from "@/lib/characters/api";
 import {
   clearSession,
   setSession,
-  type CharacterSession,
-} from "@/lib/characters/session";
+  type ProfileSession,
+} from "@/lib/profile/session";
 import {
   isDevGateBypassCode,
   setDevGateBypass,
@@ -147,7 +147,7 @@ function InspectResultPanel({ result }: { result: InspectCodeResult }) {
         </div>
       </dl>
       <p className="mt-3 text-xs text-[var(--tfmc-stone)]">
-        Dev gate needs a character code plus tfmc.map.staff. Skin staff scope is
+        Dev gate needs a profile code plus tfmc.map.staff. Skin staff scope is
         for staff upload UI only.
       </p>
     </div>
@@ -200,12 +200,12 @@ export default function DevLandingPage({
 
     setSubmitting(true);
     try {
-      const result = await redeemCharacter(trimmed, false);
-      const session: CharacterSession = {
+      const result = await redeemProfile(trimmed, false);
+      const session: ProfileSession = {
         session_token: result.session_token,
         player_uuid: result.player_uuid,
         expires_at: result.expires_at,
-        scope: result.scope || "character",
+        scope: result.scope || "profile",
         ...(result.realm_id ? { realm_id: result.realm_id } : {}),
         remember_me: false,
       };

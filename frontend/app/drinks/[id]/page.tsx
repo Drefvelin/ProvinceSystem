@@ -10,10 +10,23 @@ import {
   type DrinkSubmissionPublic,
 } from "../../../lib/drinks/api";
 import {
-  clearSession,
-  getSession,
-  isSessionValid,
+  clearSession as clearDrinksSession,
+  getSession as getDrinksSession,
+  isSessionValid as isDrinksSessionValid,
 } from "../../../lib/drinks/session";
+import {
+  getSession as getProfileSession,
+  isSessionValid as isProfileSessionValid,
+} from "../../../lib/profile/session";
+
+function resolveOwnerToken(): string | null {
+  const drink = getDrinksSession();
+  if (isDrinksSessionValid(drink)) return drink!.session_token;
+  const profile = getProfileSession();
+  if (isProfileSessionValid(profile)) return profile!.session_token;
+  if (drink) clearDrinksSession();
+  return null;
+}
 
 export default function DrinkStatusPage() {
   const params = useParams();
@@ -26,10 +39,9 @@ export default function DrinkStatusPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const session = getSession();
-    if (!isSessionValid(session) || !session) {
-      if (session) clearSession();
-      setError("Session missing or expired. Redeem a code again.");
+    const token = resolveOwnerToken();
+    if (!token) {
+      setError("Session missing or expired. Log in on Profile or redeem a drink code.");
       setRow(null);
       setLoading(false);
       return;
@@ -41,7 +53,7 @@ export default function DrinkStatusPage() {
       return;
     }
     try {
-      const data = await getSubmission(id, session.session_token);
+      const data = await getSubmission(id, token);
       setRow(data);
     } catch (err) {
       const message =
@@ -62,7 +74,7 @@ export default function DrinkStatusPage() {
   }, [load]);
 
   function onSubmitAnother() {
-    clearSession();
+    clearDrinksSession();
     router.push("/drinks");
   }
 

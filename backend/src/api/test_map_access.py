@@ -123,7 +123,7 @@ class MapAccessUnitTest(unittest.TestCase):
     def test_main_realm_flag_grants_dev_map(self) -> None:
         player = "00000000-0000-4000-8000-000000000099"
         session = {
-            "scope": "character",
+            "scope": "profile",
             "player_uuid": player,
             "realm_id": "main",
         }
@@ -148,7 +148,7 @@ class MapAccessUnitTest(unittest.TestCase):
         with mock.patch(
             "api.map_access.get_character_session",
             return_value={
-                "scope": "character",
+                "scope": "profile",
                 "player_uuid": player,
                 "realm_id": "main",
             },
@@ -160,14 +160,14 @@ class MapAccessUnitTest(unittest.TestCase):
         self.assertEqual(ids, ["main", "dev"])
 
     def test_ui_dev_session_grants_staff_maps(self) -> None:
-        from api.map_access import UI_DEV_SESSION_TOKEN, is_character_ui_dev
+        from api import map_access
 
-        auth = f"Bearer {UI_DEV_SESSION_TOKEN}"
+        auth = f"Bearer {map_access.UI_DEV_SESSION_TOKEN}"
         with mock.patch(
             "api.map_access.is_character_ui_dev",
             return_value=True,
         ):
-            self.assertTrue(is_character_ui_dev())
+            self.assertTrue(map_access.is_character_ui_dev())
             ids = [item.id for item in list_accessible_maps(auth)]
             entry = ensure_map_access("dev", auth)
             self.assertEqual(entry.id, "dev")
@@ -222,7 +222,7 @@ class MapAccessApiTest(unittest.TestCase):
 
     def test_character_without_flag_dev_403(self) -> None:
         session = {
-            "scope": "character",
+            "scope": "profile",
             "player_uuid": self.player,
             "realm_id": "main",
         }
@@ -242,7 +242,7 @@ class MapAccessApiTest(unittest.TestCase):
 
     def test_character_with_flag_dev_ok(self) -> None:
         session = {
-            "scope": "character",
+            "scope": "profile",
             "player_uuid": self.player,
             "realm_id": "main",
         }
@@ -267,7 +267,7 @@ class MapAccessApiTest(unittest.TestCase):
 
     def test_accessible_maps_staff(self) -> None:
         session = {
-            "scope": "character",
+            "scope": "profile",
             "player_uuid": self.player,
             "realm_id": "main",
         }
@@ -323,7 +323,7 @@ class MapAccessApiTest(unittest.TestCase):
             self.skipTest("dev Greenfold ZOC fixture missing")
 
         session = {
-            "scope": "character",
+            "scope": "profile",
             "player_uuid": self.player,
             "realm_id": "main",
         }

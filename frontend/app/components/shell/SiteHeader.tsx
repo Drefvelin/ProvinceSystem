@@ -7,7 +7,7 @@ const staticLinks = [
   { href: "/map/main", label: "Map" },
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
-  { href: "/character", label: "Character" },
+  { href: "/profile", label: "Profile" },
 ] as const;
 
 export default function SiteHeader() {

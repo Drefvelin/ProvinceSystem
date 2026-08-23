@@ -153,13 +153,13 @@ def ensure_linked(client: TestClient, player: str, ign: str, discord_id: str) ->
 def redeem_character_session(client: TestClient, player: str) -> str:
     r = client.post(
         "/skins/codes",
-        json={"player_uuid": player, "scope": "character"},
+        json={"player_uuid": player, "scope": "profile"},
         headers={"X-Plugin-Key": PLUGIN},
     )
     if r.status_code != 200:
         fail(f"mint character: {r.status_code} {r.text}")
     code = r.json()["code"]
-    r = client.post("/skins/character/redeem", json={"code": code})
+    r = client.post("/skins/profile/redeem", json={"code": code})
     if r.status_code != 200:
         fail(f"redeem character: {r.status_code} {r.text}")
     token = r.json().get("session_token")

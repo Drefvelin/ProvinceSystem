@@ -12,7 +12,7 @@ from .db import connect
 
 SESSION_TTL_HOURS = 8
 CHARACTER_REMEMBER_TTL_DAYS = 30
-ALLOWED_SCOPES = frozenset({"skin", "drink", "character", "skin_staff"})
+ALLOWED_SCOPES = frozenset({"skin", "drink", "profile", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
 DEFAULT_REALM_ID = "main"
 _REALM_ID_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
@@ -57,7 +57,7 @@ def _normalize_scope(scope: str | None) -> str:
     if not raw:
         raw = "skin"
     if raw not in ALLOWED_SCOPES:
-        raise CodeError("scope must be 'skin', 'drink', 'skin_staff', or 'character'")
+        raise CodeError("scope must be 'skin', 'drink', 'skin_staff', or 'profile'")
     return raw
 
 
@@ -100,7 +100,7 @@ def _is_staff_scope(scope: str) -> bool:
 
 
 def _code_is_consumed(conn, code_id: int, scope: str) -> bool:
-    """True when the token was used for a submission (skin/drink) or redeemed (character)."""
+    """True when the token was used for a submission (skin/drink) or redeemed (profile)."""
     normalized = (scope or "").strip().lower()
     if normalized == "drink":
         row = conn.execute(
@@ -295,7 +295,7 @@ def list_active_codes() -> list[dict]:
                   )
                 )
                 OR (
-                  LOWER(c.scope) = 'character'
+                  LOWER(c.scope) = 'profile'
                   AND c.redeemed_at IS NULL
                 )
               )
@@ -479,7 +479,7 @@ def redeem_code(plaintext: str) -> dict:
         if scope not in REDEEMABLE_SKIN_SCOPES:
             if scope == "drink":
                 raise CodeError("This code is for drinks, not skins")
-            raise CodeError("This code is for character creation, not skins")
+            raise CodeError("This code is for profile login, not skins")
 
         _prepare_skin_drink_redeem(conn, row["id"])
 
@@ -527,8 +527,8 @@ def redeem_code(plaintext: str) -> dict:
     }
 
 
-def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
-    """Consume a character-scoped code and create a Bearer session."""
+def redeem_profile_code(plaintext: str, remember_me: bool = False) -> dict:
+    """Consume a profile-scoped code and create a Bearer session."""
     code = (plaintext or "").strip()
     if not code:
         raise CodeError("code is required")
@@ -552,8 +552,8 @@ def redeem_character_code(plaintext: str, remember_me: bool = False) -> dict:
         if _parse_iso(row["expires_at"]) < now:
             raise CodeError("Code has expired")
         scope = _row_scope(row)
-        if scope != "character":
-            raise CodeError("This code is for skins, not character creation")
+        if scope != "profile":
+            raise CodeError("This code is for skins, not profile login")
 
         session_token = secrets.token_urlsafe(32)
         if remember:
@@ -618,8 +618,8 @@ def redeem_drink_code(plaintext: str) -> dict:
         if scope != "drink":
             if scope in REDEEMABLE_SKIN_SCOPES:
                 raise CodeError("This code is for skins, not drinks")
-            if scope == "character":
-                raise CodeError("This code is for character creation, not drinks")
+            if scope == "profile":
+                raise CodeError("This code is for profile login, not drinks")
             raise CodeError("This code is not a drink token")
         if _code_is_consumed(conn, row["id"], scope):
             raise CodeError("Code has already been used")
@@ -762,36 +762,36 @@ def _self_test() -> None:
     session = redeem_code(skin["code"])
     assert session.get("session_token")
 
-    char = issue_code(uuid, "character")
-    assert char["scope"] == "character"
+    char = issue_code(uuid, "profile")
+    assert char["scope"] == "profile"
     try:
         redeem_code(char["code"])
-        raise AssertionError("expected character code skins redeem to fail")
+        raise AssertionError("expected profile code skins redeem to fail")
     except CodeError as e:
-        assert "character creation" in str(e).lower()
+        assert "profile login" in str(e).lower()
 
-    char_session = redeem_character_code(char["code"], remember_me=False)
-    assert char_session.get("scope") == "character"
+    char_session = redeem_profile_code(char["code"], remember_me=False)
+    assert char_session.get("scope") == "profile"
     assert char_session.get("remember_me") is False
     assert get_session(char_session["session_token"]) is not None
     exp1 = _parse_iso(char_session["expires_at"])
     assert timedelta(hours=7) < (exp1 - _utcnow()) < timedelta(hours=9)
 
     try:
-        redeem_character_code(char["code"])
-        raise AssertionError("expected second character redeem to fail")
+        redeem_profile_code(char["code"])
+        raise AssertionError("expected second profile redeem to fail")
     except CodeError as e:
         assert "already been redeemed" in str(e).lower()
 
     skin_for_char = issue_code(uuid, "skin")
     try:
-        redeem_character_code(skin_for_char["code"])
-        raise AssertionError("expected skin code on character redeem to fail")
+        redeem_profile_code(skin_for_char["code"])
+        raise AssertionError("expected skin code on profile redeem to fail")
     except CodeError as e:
         assert "skins" in str(e).lower()
 
-    char2 = issue_code(uuid, "character")
-    remembered = redeem_character_code(char2["code"], remember_me=True)
+    char2 = issue_code(uuid, "profile")
+    remembered = redeem_profile_code(char2["code"], remember_me=True)
     assert remembered.get("remember_me") is True
     exp30 = _parse_iso(remembered["expires_at"])
     assert timedelta(days=29) < (exp30 - _utcnow()) < timedelta(days=31)

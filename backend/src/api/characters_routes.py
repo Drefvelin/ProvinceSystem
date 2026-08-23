@@ -120,21 +120,21 @@ def _bearer_token(authorization: str | None) -> str:
     return token
 
 
-def _character_session_from_auth(authorization: str | None) -> dict:
+def _profile_session_from_auth(authorization: str | None) -> dict:
     token = _bearer_token(authorization)
     row = get_session(token)
     if row is None:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     scope = str(row.get("scope") or "").strip().lower()
-    if scope != "character":
+    if scope != "profile":
         raise HTTPException(
             status_code=401,
-            detail="Character session required (scope=character)",
+            detail="Profile session required (scope=profile)",
         )
     return row
 
 
-_FEATURE_SCOPES = frozenset({"skin", "skin_staff", "drink", "character"})
+_FEATURE_SCOPES = frozenset({"skin", "skin_staff", "drink", "profile"})
 
 
 def _feature_session_from_auth(authorization: str | None) -> dict:
@@ -234,7 +234,7 @@ def get_wardrobe_masked_template(
     """Session-gated masked body template for preview / client compose."""
     from fastapi.responses import FileResponse
 
-    _character_session_from_auth(authorization)
+    _profile_session_from_auth(authorization)
     try:
         path = resolve_masked_template_path()
     except WardrobeError as e:
@@ -247,7 +247,7 @@ def get_creation_catalog(
     authorization: str | None = Header(default=None),
 ):
     """Session-gated creation catalog for the website wizard."""
-    _character_session_from_auth(authorization)
+    _profile_session_from_auth(authorization)
     return get_catalog()
 
 
@@ -282,7 +282,7 @@ def get_character_kits(
     authorization: str | None = Header(default=None),
 ):
     """All kits + items + claimability for a roster character."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return list_character_kits(session["player_uuid"], character_id)
     except LoreItemError as e:
@@ -295,7 +295,7 @@ def get_lore_items(
     authorization: str | None = Header(default=None),
 ):
     """Editable kit parts + customise drafts for a claimable kit."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return list_lore_items(session["player_uuid"], character_id, kit_id)
     except LoreItemError as e:
@@ -311,7 +311,7 @@ def get_lore_item_skin_texture(
     """PNG preview for a pickable skin (own applied or staff i_tools)."""
     from fastapi.responses import FileResponse
 
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         path = resolve_pickable_texture(
             session["player_uuid"], submission_id, base_set
@@ -333,7 +333,7 @@ def get_lore_item_default_texture(
     """PNG for the catalog default skin (e.g. knife_skin) used in the editor preview."""
     from fastapi.responses import FileResponse
 
-    _character_session_from_auth(authorization)
+    _profile_session_from_auth(authorization)
     try:
         path = resolve_default_kit_texture(kit_key)
     except LoreItemError as e:
@@ -354,7 +354,7 @@ async def post_lore_item_customise(
     authorization: str | None = Header(default=None),
 ):
     """Store name/lore draft; optional existing skin or new handheld PNG upload."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     content_type = (request.headers.get("content-type") or "").lower()
 
     display_name: str | None = None
@@ -496,7 +496,7 @@ def delete_lore_item_customise_route(
     authorization: str | None = Header(default=None),
 ):
     """Wipe one kit-item customise draft (player). Does not delete skins."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return delete_lore_item_customise(
             session["player_uuid"],
@@ -514,7 +514,7 @@ def get_character_wardrobe(
     authorization: str | None = Header(default=None),
 ):
     """List wardrobe slots + active for a roster character."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return get_wardrobe(session["player_uuid"], character_id)
     except WardrobeError as e:
@@ -528,7 +528,7 @@ def patch_character_wardrobe_active(
     authorization: str | None = Header(default=None),
 ):
     """Set or clear the active swappable wardrobe slot."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return set_active_slot(session["player_uuid"], character_id, body.slot)
     except WardrobeError as e:
@@ -544,7 +544,7 @@ def get_character_wardrobe_texture(
     """Serve uploaded wardrobe PNG for preview (owner only)."""
     from fastapi.responses import FileResponse
 
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         path = resolve_slot_texture_path(
             session["player_uuid"], character_id, slot
@@ -572,7 +572,7 @@ async def post_character_wardrobe_slot(
     authorization: str | None = Header(default=None),
 ):
     """Upload a 64x64 PNG into a wardrobe slot (MineSkin sign in 30.03)."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
@@ -612,7 +612,7 @@ def patch_character_wardrobe_slot_name(
     authorization: str | None = Header(default=None),
 ):
     """Rename a filled wardrobe slot (no re-sign; does not set apply pending)."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return set_slot_display_name(
             session["player_uuid"],
@@ -631,7 +631,7 @@ def delete_character_wardrobe_slot(
     authorization: str | None = Header(default=None),
 ):
     """Clear one wardrobe slot (and PNG)."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return clear_slot(session["player_uuid"], character_id, slot)
     except WardrobeError as e:
@@ -654,7 +654,7 @@ async def post_character(
     authorization: str | None = Header(default=None),
 ):
     """Queue a web character create (validated against synced catalog)."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         body = await request.json()
     except Exception as e:
@@ -688,7 +688,7 @@ async def post_pending_create_wardrobe(
     authorization: str | None = Header(default=None),
 ):
     """Upload a signed wardrobe slot for a pending web create."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
@@ -727,7 +727,7 @@ def delete_pending_create_wardrobe(
     authorization: str | None = Header(default=None),
 ):
     """Clear a pending-create wardrobe slot draft."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     try:
         return clear_pending_create_wardrobe(
             session["player_uuid"], create_id, slot
@@ -742,7 +742,7 @@ def get_characters(
     authorization: str | None = Header(default=None),
 ):
     """List roster mirror + pending creates for the session player."""
-    session = _character_session_from_auth(authorization)
+    session = _profile_session_from_auth(authorization)
     return list_for_player(session["player_uuid"], session.get("realm_id"))
 
 
