@@ -1,5 +1,4 @@
-import type { TitleDraft } from "@/app/hooks/useEditorDraft";
-import type { TitleEntity } from "@/app/lib/titleProvinces";
+import type { EditorTitleEntry, TitleDraft } from "@/app/hooks/useEditorDraft";
 
 function arraysEqual(a: readonly number[], b: readonly number[]): boolean {
   if (a.length !== b.length) return false;
@@ -118,7 +117,7 @@ export function isCountyPaintDiffEmpty(diff: CountyPaintDiff): boolean {
 
 export function extractChildTierPaintSnapshot(
   draft: TitleDraft,
-  childDraft: Record<string, TitleEntity>,
+  childDraft: Record<string, EditorTitleEntry>,
   selectedId: string | null
 ): ChildTierPaintSnapshot {
   const childColors: Record<string, string> = {};

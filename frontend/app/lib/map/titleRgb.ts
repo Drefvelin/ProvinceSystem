@@ -45,7 +45,9 @@ export function hexToRgbString(hex: string): string | null {
   return toRgbString(r, g, b);
 }
 
-function normalizeUsedSet(usedRgbs: ReadonlySet<string> | string[]): Set<string> {
+function normalizeUsedSet(
+  usedRgbs: ReadonlySet<string> | readonly string[]
+): Set<string> {
   const used = new Set<string>();
   for (const item of usedRgbs) {
     const parsed = parseRgbString(item);
@@ -59,7 +61,7 @@ function normalizeUsedSet(usedRgbs: ReadonlySet<string> | string[]): Set<string>
 /** Port of county_editor.py tweak_rgb_near — find nearby unused map title rgb. */
 export function tweakRgbNear(
   baseRgb: string,
-  usedRgbs: ReadonlySet<string> | string[]
+  usedRgbs: ReadonlySet<string> | readonly string[]
 ): string {
   const base = parseRgbString(baseRgb);
   if (!base) return baseRgb.trim();

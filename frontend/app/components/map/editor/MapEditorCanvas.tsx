@@ -50,7 +50,7 @@ import {
 } from "@/app/lib/map/editor/paintTitleLayers";
 import type { EditorTier } from "@/lib/map/api";
 import type { TitleDraft } from "@/app/hooks/useEditorDraft";
-import type { TitleEntity, TitleLayers } from "@/app/lib/titleProvinces";
+import type { TitleLayers } from "@/app/lib/titleProvinces";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
@@ -189,7 +189,7 @@ export default function MapEditorCanvas({
     [childTierMode, draft]
   );
 
-  const childDraftForPaint = childDraft as Record<string, TitleEntity>;
+  const childDraftForPaint = childDraft;
 
   if (viewportCoordsRef) {
     viewportCoordsRef.current = {

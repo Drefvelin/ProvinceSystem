@@ -7,41 +7,42 @@ ProvinceSystem on the live box uses **production ports** only:
 | API | **8000** | 8000 | `https://www.tfminecraft.net/api/` |
 | UI (Next.js) | **3000** | 3000 | `https://www.tfminecraft.net/` |
 
-**Staging** (optional side stack) uses **18001** / **13001** via `docker-compose.staging.yml` — see [STAGING.md](./STAGING.md). Retire it when production replaces the old site.
-
 Plugins, Red bot, and MC servers on the same host talk to the API at **`http://127.0.0.1:8000`** (not 18001).
+
+**Staging** (optional, separate clone) uses **18001** / **13001** via `docker-compose.staging.yml` — see [STAGING.md](./STAGING.md) and section 6 below. Do **not** use staging scripts for production deploy.
 
 ---
 
-## 1. Purge the old production stack (7-month `provincesystem-*` containers)
+## Important: run compose from the repo root
 
-Find the compose project directory (if unsure):
+All `docker compose` commands must run from **`~/ProvinceSystem`** (the directory that contains `docker-compose.yml`), **not** from `~/ProvinceSystem/frontend`.
+
+```bash
+cd ~/ProvinceSystem
+docker compose build --no-cache
+docker compose up -d
+```
+
+---
+
+## 1. Purge the old production stack
+
+If old `provincesystem-*` containers are still running:
+
+```bash
+docker stop provincesystem-frontend-1 provincesystem-backend-1 2>/dev/null || true
+docker rm provincesystem-frontend-1 provincesystem-backend-1 2>/dev/null || true
+```
+
+Or from the old compose directory:
 
 ```bash
 docker inspect provincesystem-backend-1 --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'
-```
-
-Stop and remove the old stack:
-
-```bash
 cd <that-directory>
 docker compose down
 ```
 
-Or stop by container name from anywhere:
-
-```bash
-docker stop provincesystem-frontend-1 provincesystem-backend-1
-docker rm provincesystem-frontend-1 provincesystem-backend-1
-```
-
-Optional: remove old images
-
-```bash
-docker image prune -f
-```
-
-Confirm ports **8000** and **3000** are free before deploying:
+Confirm ports **8000** and **3000** are free:
 
 ```bash
 sudo ss -tlnp | grep -E ':8000|:3000'
@@ -49,17 +50,16 @@ sudo ss -tlnp | grep -E ':8000|:3000'
 
 ---
 
-## 2. Purge the staging stack (`tfmc-staging-*` on 18001 / 13001)
+## 2. Purge the staging stack (18001 / 13001)
 
-From your staging clone (`~/tfmc-staging`, `~/ProvinceSystem`, etc.):
+Only if `tfmc-staging-*` containers are still up:
 
 ```bash
-cd ~/tfmc-staging   # adjust path
-chmod +x scripts/staging-*.sh
-./scripts/staging-down.sh
+cd ~/tfmc-staging   # or wherever the staging clone lives
+docker compose -f docker-compose.staging.yml down --rmi local
 ```
 
-Aggressive cleanup (removes staging containers, local images, and named volumes for that compose file):
+Optional aggressive cleanup:
 
 ```bash
 docker compose -f docker-compose.staging.yml down --rmi local --volumes
@@ -69,45 +69,80 @@ Confirm staging ports are gone:
 
 ```bash
 sudo ss -tlnp | grep -E ':18001|:13001'
-docker ps --filter name=tfmc-staging
 ```
-
-You can keep the git clone for future testing or delete the folder. Production no longer needs `site-rework` running beside prod.
-
-**Point integrations at prod:** after purge, update TFMCWeb `api.base-url` and Red bot `api_base_url` to `http://127.0.0.1:8000` (see section 5).
 
 ---
 
-## 3. Production deploy (`docker-compose.yml`)
+## 3. One-time production setup
 
-### One-time server setup
+### 3a. `backend/.env` (required)
 
-1. Clone or use existing repo path (e.g. `~/ProvinceSystem`).
-2. Create **`backend/.env`** on the server (gitignored). Production example:
+`docker-compose.yml` loads **`backend/.env`** into the API container. Create it on the server before the first `docker compose up` (file is gitignored):
 
 ```bash
-# backend/.env — do NOT commit
-PLUGIN_KEY=<match TFMCWeb api.plugin-key>
-STAFF_KEY=<match Red bot staff_key>
-MINESKIN_API_KEY=<if used>
-# Do not set SKINS_DEV=1 on production
+cd ~/ProvinceSystem
+nano backend/.env
 ```
 
-3. Ensure data volumes exist under `backend/src/data`, `input`, `output`, `defines` (migrate/import from old stack if needed).
+Example (use your real production keys):
 
-### Deploy / redeploy
+```env
+PLUGIN_KEY=your-production-plugin-key
+STAFF_KEY=your-production-staff-key
+MINESKIN_API_KEY=
+```
 
-SSH in, `cd` to the production clone, then:
+- `PLUGIN_KEY` must match TFMCWeb `api.plugin-key` on every MC server.
+- `STAFF_KEY` must match Red bot `staff_key` in skinsreview / drinksreview / minecraftban.
+- Do **not** set `SKINS_DEV=1` on production.
+
+If `backend/.env` is missing, compose may warn or the backend may start without keys.
+
+### 3b. Do not let `frontend/.env` override the public API URL
+
+The Docker build log may show `Environments: .env`. If **`frontend/.env`** exists on the server with:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+```
+
+that value is baked into the client bundle and causes:
+
+- API calls from browsers to hit **localhost** (broken for visitors)
+- Chrome "use other apps on this device" permission prompts
+
+**Production:** either delete `frontend/.env` on the server, or set:
+
+```env
+NEXT_PUBLIC_API_URL=https://www.tfminecraft.net/api
+```
+
+The compose file also passes `NEXT_PUBLIC_API_URL` as a Docker build arg; avoid conflicting `frontend/.env` values.
+
+### 3c. Data directories
+
+Ensure `backend/src/data`, `input`, `output`, and `defines` exist and contain the data you need (copy from the old stack if migrating).
+
+---
+
+## 4. Production deploy / redeploy
+
+SSH in, then from **`~/ProvinceSystem`**:
 
 ```bash
+cd ~/ProvinceSystem
 git fetch origin
-git checkout main
+git checkout site-rework          # or main, whichever is production
 git reset --hard origin/site-rework
-chmod +x scripts/staging-*.sh
+
 docker compose down
 docker compose build --no-cache
-docker compose up -d --force-recreate
+docker compose up -d
 ```
+
+**Do not** run `./scripts/staging-*.sh` for production. Those only apply to `docker-compose.staging.yml` (ports 18001/13001).
+
+If `docker compose build` fails, fix the error and rebuild. Do not run `up` expecting a new frontend image until the build succeeds.
 
 Smoke checks on the host:
 
@@ -116,45 +151,43 @@ curl -s http://127.0.0.1:8000/ping
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
 ```
 
-Expected: `{"ok":true}` and HTTP `200` from the UI.
+Expected: `{"ok":true}` and HTTP `200`.
 
-Public checks (after nginx):
+Public check (after nginx):
 
 ```bash
 curl -s https://www.tfminecraft.net/api/ping
 ```
 
-### Frontend build args
+### Optional: Season 5 dev landing
 
-`docker-compose.yml` bakes **`NEXT_PUBLIC_API_URL=https://www.tfminecraft.net/api`** at build time so browser calls go through nginx `/api/` to the backend.
-
-Optional env on the frontend service (uncomment in compose when needed):
+In `docker-compose.yml`, uncomment on the frontend service:
 
 ```yaml
-- NEXT_PUBLIC_SITE_DEV_GATE=1   # Season 5 dev landing; staff code + tfmc.map.staff
+- NEXT_PUBLIC_SITE_DEV_GATE=1
 ```
 
-Rebuild the frontend after changing any `NEXT_PUBLIC_*` value.
+Then rebuild the frontend (`docker compose build --no-cache frontend && docker compose up -d`).
 
 ---
 
-## 4. nginx (`/etc/nginx/sites-enabled/tfminecraft.net`)
+## 5. nginx (`/etc/nginx/sites-enabled/tfminecraft.net`)
 
-Your existing layout is correct for the new site. No new `location` blocks are required.
+Existing layout is correct. No new `location` blocks needed.
 
 | Location | Upstream | Purpose |
 |----------|----------|---------|
-| `/` | `127.0.0.1:3000` | Next.js UI (/, /map, /skins, /drinks, /character, …) |
-| `/api/` | `127.0.0.1:8000/` | ProvinceSystem API (`/api/ping` → backend `/ping`, `/api/skins/...` → `/skins/...`) |
-| `/restart`, `/api/restart` | `127.0.0.1:8001` | Unrelated restart service — leave as-is |
+| `/` | `127.0.0.1:3000` | Next.js UI |
+| `/api/` | `127.0.0.1:8000/` | ProvinceSystem API |
+| `/restart`, `/api/restart` | `127.0.0.1:8001` | Unrelated restart service |
 
-**Recommended change:** expand CORS methods on `/api/`. The new site uses **PUT**, **PATCH**, and **DELETE** (character editor, map editor, logout, etc.). Update:
+**Recommended:** expand CORS methods on `/api/`:
 
 ```nginx
 add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
 ```
 
-**Optional cleanup:** FastAPI already sets CORS in `backend/server.py` for `https://www.tfminecraft.net`. You can remove the four `add_header Access-Control-*` lines from the `/api/` block and let the backend handle CORS to avoid duplicate headers.
+The new site uses PUT, PATCH, and DELETE (character editor, map editor, logout).
 
 After edits:
 
@@ -164,7 +197,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
-## 5. Same-host integrations (after port change)
+## 6. Same-host integrations
 
 | Component | Setting | Value |
 |-----------|---------|-------|
@@ -173,38 +206,40 @@ sudo nginx -t && sudo systemctl reload nginx
 | Red `skinsreview` | `api_base_url` | `http://127.0.0.1:8000` |
 | Red `drinksreview` | `api_base_url` | `http://127.0.0.1:8000` |
 | Red `minecraftban` | `api_base_url` | `http://127.0.0.1:8000` |
-| SimpleFactions | (none) | Uses TFMCWeb gateway — no direct API URL |
-
-Reload TFMCWeb (`/web reload` or restart) and Red cogs (`-reload …`).
+| SimpleFactions | (none) | Uses TFMCWeb gateway |
 
 ---
 
-## 6. Staging stack (optional, later)
+## 7. Staging stack (optional, later)
 
-Only if you need a side-by-side test clone again:
+Only for a **separate** test clone (`~/tfmc-staging`), not the live `~/ProvinceSystem` deploy:
 
 ```bash
 cd ~/tfmc-staging
 git fetch origin && git checkout site-rework && git reset --hard origin/site-rework
-./scripts/staging-down.sh && ./scripts/staging-up.sh
+chmod +x scripts/staging-*.sh
+./scripts/staging-down.sh
+./scripts/staging-up.sh
 curl -s http://127.0.0.1:18001/ping
 ```
 
-Browser from your PC (SSH tunnel):
+Full checklist: [STAGING.md](./STAGING.md).
 
-```bash
-ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 tfmc@188.40.119.246
-```
+---
 
-- UI: http://127.0.0.1:13001
-- API: http://127.0.0.1:18001
+## Troubleshooting
 
-Full staging checklist: [STAGING.md](./STAGING.md).
+| Symptom | Likely cause |
+|---------|----------------|
+| Build fails at `npm run build` | Pull latest code; TypeScript errors must be fixed before deploy |
+| Chrome asks to use apps on device | Frontend built with `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000` — fix `frontend/.env` or rebuild with compose build arg |
+| `env_file` / missing keys | Create `backend/.env` with `PLUGIN_KEY` and `STAFF_KEY` |
+| API 401 from bot / TFMCWeb | Keys in `backend/.env` do not match plugin/bot configs |
+| `version` obsolete warning | Harmless; removed from `docker-compose.yml` in newer commits |
 
 ---
 
 ## Notes
 
-- `reset --hard` drops local edits on the server clone. Re-create `backend/.env` if it lived only in the repo tree and was wiped (it should live only on the server, outside git).
+- `git reset --hard` does not delete `backend/.env` if it is gitignored and already on disk.
 - Does **not** update Paper jars (TFMCWeb, ArmourShop, etc.) — deploy those via AMP separately.
-- Old stack container names: `provincesystem-*`. New stack uses the compose project name from the directory (often `provincesystem` if the folder name matches).
