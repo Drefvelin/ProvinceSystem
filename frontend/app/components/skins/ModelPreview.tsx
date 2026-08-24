@@ -637,7 +637,7 @@ export default function ModelPreview({
         } else {
           const steveTex = await loadSteveTexture();
           if (isStale()) {
-            steveTex.dispose();
+            steveTex?.dispose();
             return;
           }
           content.steveTexture?.dispose();

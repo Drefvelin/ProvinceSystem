@@ -1,10 +1,8 @@
 export {
   type ProfileSession,
+  type ProfileSession as CharacterSession,
   getSession,
   setSession,
   clearSession,
   isSessionValid,
 } from "../profile/session";
-
-/** Back-compat alias while migrating imports. */
-export type CharacterSession = ProfileSession;
