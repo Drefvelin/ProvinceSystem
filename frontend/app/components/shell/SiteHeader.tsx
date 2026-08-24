@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { isSiteDevGateEnabled } from "@/lib/site/config";
+
 const staticLinks = [
   { href: "/", label: "Home" },
   { href: "/map/main", label: "Map" },
@@ -11,6 +13,8 @@ const staticLinks = [
 ] as const;
 
 export default function SiteHeader() {
+  const gateEnabled = isSiteDevGateEnabled();
+
   return (
     <header
       className="sticky top-0 z-[100] flex h-14 items-center border-b border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] px-4 backdrop-blur-md sm:px-6"
@@ -32,6 +36,14 @@ export default function SiteHeader() {
             {label}
           </Link>
         ))}
+        {gateEnabled ? (
+          <Link
+            href="/inspect"
+            className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+          >
+            Inspect
+          </Link>
+        ) : null}
       </nav>
     </header>
   );
