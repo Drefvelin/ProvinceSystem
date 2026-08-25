@@ -1,4 +1,8 @@
 fastapi
 uvicorn
+numpy
 pillow
 svgwrite
+python-multipart
+python-dotenv
+pyyaml

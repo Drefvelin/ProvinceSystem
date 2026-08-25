@@ -1,0 +1,10 @@
+maps:
+  - id: main
+    public: true
+    display_name: Adavaar
+    realm_id: main
+  - id: dev
+    public: false
+    display_name: Adavaar
+    realm_id: dev
+    staff_permission: tfmc.map.staff

@@ -1,53 +1,67 @@
 # ProvinceSystem
-ProvinceSystem is a two-part system for displaying nation borders for the TFMC server, consisting of a Python backend (image generation and data processing) and a Next.js frontend (interactive map display).
 
-The system is not designed to be run locally, so no startup guide is included. You can view the live map here:  
-https://www.tfminecraft.net/
+ProvinceSystem powers **[tfminecraft.net](https://www.tfminecraft.net/)** - the TFMC web hub: interactive political maps, donator cosmetics (skins and drinks), character creation, and identity services.
 
-## Why This Project Is Interesting
-This project uses an unusual but effective technique to generate natural-looking world borders for the TFMC Minecraft server.
+**Stack:** FastAPI backend + Next.js frontend, deployed with Docker Compose.
 
-- **Python Backend** - Receives JSON input from the [SimpleFactions](https://github.com/Drefvelin/simplefactions) plugin and generates multiple map layers used by the frontend. It also enriches the incoming JSON by reconstructing hierarchical structures (such as nested subjects) that are intentionally omitted to avoid redundancy.
-- **Next.js Frontend** - Renders the generated images and provides an interactive map. Players can drill down into subjects, hover to reveal region information, and explore multiple layers of territorial data.
+## What the site is
 
-This was my first major web project outside of university coursework. It allowed me to solve a real-world problem in my plugin ecosystem: generating and displaying dynamic borders without manual image editing. While there are architectural decisions I would now improve (such as containerization and production builds), the core ideas-image-based territory generation, data reconstruction, and an interactive web map-are both functional and technically interesting.
+| Route | Purpose |
+|-------|---------|
+| `/` | Hub landing and navigation |
+| `/map/{mapId}` | Interactive political map (pan/zoom, labels, settlements, wars) |
+| `/skins` | Redeem code, upload textures, track review status |
+| `/drinks` | BreweryX drink builder |
+| `/character` | Character creator, kits, wardrobe |
+| `/map/editor` | Staff map title editor (county through empire) |
 
-## Features
-- Python loaders that parse incoming JSON and compile it into in-memory representations, along with map generators that create image layers  
-  ([loader](backend/src/scripts/loader/), [mapgen](backend/src/scripts/mapgen/))
-- Banner generator that creates images from JSON data or generates random banners  
-  ([bannergen](backend/src/scripts/bannergen/))
-- Interactive frontend map composed of multiple layered PNGs, with drill-down logic and hover detection  
-  ([MapViewer.tsx](frontend/app/MapViewer.tsx), [MapEngineContext.tsx](frontend/app/core/MapEngineContext.tsx))
+Players authenticate with in-game tokens from TFMCWeb - no website passwords.
 
-## Technical Overview
-- **Python 3.x**, **FastAPI**, **Pillow** (image generation)
-- **Next.js**, **React**, **Node.js**
-- Uses **Nginx** for serving image files and exposing API endpoints
-- Communicates with the SimpleFactions plugin through REST
+## Documentation
 
-### Architecture
-- The backend receives JSON data from the Java plugin, compiles hierarchical faction relationships, and generates updated map layers.
-- Generated images are written directly into the frontend directory so that the Next.js application can serve and update them immediately.
-- The frontend loads these layers, composes them into a single rendered map, and provides hover and click interactions through a custom MapEngine.
+- **Product and technical docs:** [docs/README.md](./docs/README.md)
+- **Local development:** [docs/ops/local-dev.md](./docs/ops/local-dev.md)
+- **Production deploy:** [UPDATE.md](./UPDATE.md)
+- **Staging stack:** [STAGING.md](./STAGING.md)
 
-## Key Challenges Solved
+## Architecture (brief)
 
-### Image Transfer
-Sending images through API endpoints introduced CORS and middleware issues that were difficult to solve at the time. I opted for direct filesystem writes into the frontend directory, which ensured reliability and simplicity.  
-When switching TFMC to HTTPS, browsers initially refused to load updated images due to caching rules, so I configured Nginx endpoints to correctly serve the generated files and prevent stale data from persisting.
+```text
+SimpleFactions (plugin)
+        │  POST upload JSON, GET regenerate
+        ▼
+FastAPI ── mapgen/regiongen ──► backend/src/output/{map}/…
+        │  skins / drinks / characters / identity APIs
+        ▼
+Next.js  ◄── hub, /map, /skins, /drinks, /character
+```
 
-### Hover Detection and Drill-Down Logic
-I wanted an interactive map where hovering over a region would reveal its name and allow drilling into sub-regions. My first implementation used a single PNG, which made it impossible to determine which province was under the cursor.
+- Map generators write to `backend/src/output/`; the API serves assets via [`file_routes.py`](backend/src/api/file_routes.py) (not into `frontend/public`).
+- Cosmetics metadata in SQLite; pending uploads on disk under `backend/src/data/`.
+- Full detail: [docs/architecture.md](./docs/architecture.md)
 
-To solve this, I:
-- Generated a hidden “region-color” canvas with unique RGB values for each province.
-- Performed RGB lookups on hover to determine the active region.
-- Split the map into multiple per-region PNG layers instead of one monolithic image.
+## Key features
 
-This redesign enabled the drill-down mechanic and greatly improved clarity and performance.
+- Multi-layer interactive map with parchment terrain, nation labels, settlements, installations, fort ZOC, and war overlays
+- Skins pipeline: code → upload → Discord approve → ArmourShop pack apply
+- Drinks pipeline: code → brew form → Discord approve → DrinkBuilder + BreweryX
+- Web character creator with kits, lore customise, and MineSkin wardrobe
+- Staff map title editor and auth hardening (Bearer sessions, production env guard)
 
-## AI Tools
-I used **ChatGPT** extensively throughout this project. I was unfamiliar with technologies in the stack (FastAPI, Nginx, Next.js), so AI assistance helped me understand syntax and generate boilerplate code.
+## Integrations
 
-Almost every component includes some AI-assisted sections, but the architectural decisions, data model design, and overall system concept were my own. **ChatGPT** was also used to help refine this README.
+| Component | Role | Docs |
+|-----------|------|------|
+| SimpleFactions | Map upload, regen, province lookup | [docs/integrations/simplefactions.md](./docs/integrations/simplefactions.md) |
+| TFMCWeb | Discord link, scoped tokens, Survival gate | [docs/identity/tfmcweb.md](./docs/identity/tfmcweb.md) |
+| ArmourShop | Skins pack writer + apply | [docs/integrations/armourshop.md](./docs/integrations/armourshop.md) |
+| tfmc_bot | Discord review, link, moderation | [docs/integrations/discord-bot.md](./docs/integrations/discord-bot.md) |
+| RPCharacters | Character data + kits | [docs/characters/creator.md](./docs/characters/creator.md) |
+| DrinkBuilder | BreweryX recipes + `tfmc_drinks` IA | [docs/cosmetics/drinks.md](./docs/cosmetics/drinks.md) |
+
+## Technical overview
+
+- **Backend:** Python 3.x, FastAPI, Uvicorn, Pillow (mapgen), SQLite
+- **Frontend:** Next.js (App Router), React, Tailwind
+- **Deploy:** `docker-compose.yml` - backend `:8000`, frontend `:3000`; nginx terminates TLS on the live host
+- **Map code:** [loader](backend/src/scripts/loader/), [mapgen](backend/src/scripts/mapgen/), [MapViewer](frontend/app/components/MapViewer.tsx)

@@ -1,18 +1,48 @@
-# Use an official Node.js image
-FROM node:18-alpine
+# --- BUILD STAGE ---
+# Build context must be ProvinceSystem root (see docker-compose*.yml)
+# so ../shared/skins constants resolve (import → /shared/...).
+FROM node:22-alpine AS builder
 
-# Set working directory
-WORKDIR /app/frontend
+WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package.json package-lock.json ./
-RUN npm install
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
-# Copy the entire project
-COPY . .
+COPY frontend/ ./
+COPY shared /shared
 
-# Expose Next.js default port
+# Baked into the Next client bundle at build time
+ARG NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_DEV_GATE=0
+ENV NEXT_PUBLIC_SITE_DEV_GATE=$NEXT_PUBLIC_SITE_DEV_GATE
+ARG PS_PRODUCTION=0
+ENV PS_PRODUCTION=$PS_PRODUCTION
+
+RUN npm run build
+
+
+# --- RUNTIME STAGE ---
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+# Create non-root user WITH home directory
+RUN adduser -D appuser \
+    && mkdir -p /home/appuser/.npm \
+    && chown -R appuser:appuser /home/appuser
+
+ENV HOME=/home/appuser
+
+# Copy only what we need
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm ci
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.* ./
+
+USER appuser
+
 EXPOSE 3000
-
-# Start Next.js
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

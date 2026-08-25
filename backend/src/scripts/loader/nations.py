@@ -1,7 +1,11 @@
-import os
 import json
+from ..util.dirs import input_file, validate_map
 
-def load_nations():
-    file_path = os.path.join(os.path.dirname(__file__), "..", "..", "input", "nation.json")
-    with open(file_path, "r") as file:
+
+def load_nations(map_name: str) -> dict:
+    validate_map(map_name)
+
+    file_path = input_file(map_name, "nation.json")
+
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)

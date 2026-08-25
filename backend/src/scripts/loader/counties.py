@@ -1,7 +1,11 @@
-import os
 import json
+from ..util.dirs import defines_file, validate_map
 
-def load_counties():
-    county_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "defines", "county.json")
-    with open(county_file_path, "r") as file:
+
+def load_counties(map_name: str) -> dict:
+    validate_map(map_name)
+
+    file_path = defines_file(map_name, "county.json")
+
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)

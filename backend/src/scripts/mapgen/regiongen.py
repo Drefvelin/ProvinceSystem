@@ -1,206 +1,356 @@
-from PIL import Image, ImageEnhance
+from PIL import Image
 import os
-from ..util.border_paint import paint_borders
-from ..util.flood_fill import flood_fill
-from ..util.colour_mapping import build_color_mapping
-from ..util.colour_mapping import get_color_overrides
+import sys
+import time
 
-def is_overlord(rgb_tuple, overrides):
-    """
-    Checks if a given RGB tuple is an overlord (i.e., appears as a value in the overrides dictionary).
-    
-    :param rgb_tuple: The RGB tuple to check (e.g., (255, 0, 0))
-    :param overrides: The overrides dictionary mapping regions to their overlords.
-    :return: True if the RGB tuple is an overlord, False otherwise.
-    """
-    return rgb_tuple in overrides.values()
-
-def sanitize_filename(color_tuple):
-    """
-    Converts an RGB tuple to a safe filename (e.g., (255, 0, 0) -> "255_0_0").
-    """
-    return "_".join(map(str, color_tuple)).replace("(", "").replace(")", "").replace(",", "").replace(" ", "")
-
-def draw(x, y, new_img, new_image_path, pixel_color, color, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, first):
-    """
-    Fills and saves an image for a region.
-    """
-    try:
-        new_img_data = new_img.load()
-        flood_fill(x, y, pixel_color, color, visited_pixels, img_data, new_img_data, width, height)
-        painted_colour.add(color)
-        new_img.save(new_image_path, "PNG")
-        if is_overlord(color, overrides) and first:
-            nested_filename = sanitize_filename(color) + "_nested.png"
-            nested_image_path = os.path.join(output_folder, nested_filename)
-            nested_img = None
-            if not os.path.exists(nested_image_path):
-                nested_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                print(f"New overlord nested image saved: {nested_image_path}")
-            else:
-                nested_img = Image.open(nested_image_path)
-                print(f"Edited nested Overlord: {nested_image_path}")
-            nested_img_data = nested_img.load()
-            flood_fill(x, y, pixel_color, color, set(), img_data, nested_img_data, width, height)
-            nested_img.save(nested_image_path, "PNG")
-        if color in overrides:
-            overlord_color = overrides[color]
-            overlord_filename = sanitize_filename(overlord_color) + ".png"
-            overlord_image_path = os.path.join(output_folder, overlord_filename)
-            if overlord_color not in painted_colour:
-                overlord_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder, False)
-                print(f"New overlord image saved: {new_image_path}")
-            else:
-                overlord_img = Image.open(overlord_image_path)
-                draw(x, y, overlord_img, overlord_image_path, pixel_color, overlord_color, set(), img_data, width, height, painted_colour, overrides, output_folder, False)
-                print(f"Edited Overlord: {new_image_path}")
-
-    except Exception as e:
-        print(f"Error saving {new_image_path}: {e}")
-
-def lighten_image(image_path, hover_image_path):
-    """
-    Opens an image, increases brightness, and saves it as a hover version.
-    """
-    try:
-        img = Image.open(image_path).convert("RGBA")
-        enhancer = ImageEnhance.Brightness(img)
-        lighter_img = enhancer.enhance(1.4)  # Increase brightness by 40%
-        lighter_img.save(hover_image_path, "PNG")
-        print(f"Lightened image: {hover_image_path}")
-    except Exception as e:
-        print(f"Error lightening image {hover_image_path}: {e}")
+from ..util.border_paint import (
+    apply_region_borders,
+    border_color_for_fill,
+    border_thickness as default_border_thickness,
+    compute_border_owners,
+)
+from ..util.colour_mapping import build_color_mapping, get_color_overrides
+from ..util.display_colour import display_rgb, hover_rgb
+from ..util.overlay_metadata import (
+    merge_overlay_metadata,
+    rgb_tuple_to_str,
+    save_cropped,
+)
+from ..util.queue import load_queue, compile_queue, clear_mode
+from ..util.dirs import input_file, validate_map, map_image
+from .geometry_cache import MapGeometryCache
 
 
-def generate_regions(mode, borders, frontend_save, queued_regen=False):
-    """
-    Generate separate images for each region (county, duchy, kingdom).
-    """
-    # Load province map
-    image_path = os.path.join(os.path.dirname(__file__), "..", "..", "input", "provinces.png")
-    original_img = Image.open(image_path).convert("RGBA")
-    img_data = original_img.load()
-    width, height = original_img.size
+def log_progress(message: str):
+    sys.stdout.write("\r" + message)
+    sys.stdout.flush()
 
-    # Load color mappings for mode (county, duchy, kingdom)
-    province_to_color = build_color_mapping(mode)
-    overrides = get_color_overrides(mode)
 
-    # Create output folder
-    output_folder = os.path.join(os.path.dirname(__file__), "..", "..", "output", "regions", mode)
-    os.makedirs(output_folder, exist_ok=True)
-    if queued_regen:
-        from ..util.queue import load_queue, compile_queue
-        compile_queue()
-        queue = load_queue(mode)
-        print(queue)
-        queued = set(queue)
-        for file_name in os.listdir(output_folder):
-            base_name = file_name.replace("_hover", "").replace("_nested", "")
-            if base_name.endswith(".png"):
-                base_name = base_name[:-4]
-            if base_name in queued:
-                file_path = os.path.join(output_folder, file_name)
-                try:
-                    # Make sure to close any open file before removing
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)
-                except PermissionError:
-                    print(f"Could not delete {file_path}. Is it open in another program?")
+def sanitize_filename(color):
+    return "_".join(map(str, color))
+
+
+def build_overlord_chains(overrides):
+    """
+    overrides: vassal_rgb -> direct_overlord_rgb
+    returns:   vassal_rgb -> [overlord, grand_overlord, ...]
+    """
+    chains = {}
+    for vassal in overrides:
+        cur = vassal
+        seen = {vassal}
+        chain = []
+
+        while cur in overrides:
+            nxt = overrides[cur]
+            if nxt in seen:
+                break
+            chain.append(nxt)
+            seen.add(nxt)
+            cur = nxt
+
+        chains[vassal] = chain
+
+    return chains
+
+
+def generate_regions(
+    map_name: str,
+    mode: str,
+    borders: bool,
+    queued_regen: bool = False,
+    border_thickness: int = default_border_thickness,
+    border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    cache: MapGeometryCache | None = None,
+):
+    if cache is not None:
+        from .regiongen_numpy import generate_regions_numpy
+
+        return generate_regions_numpy(
+            map_name,
+            mode,
+            borders,
+            cache,
+            queued_regen=queued_regen,
+            border_thickness=border_thickness,
+            border_color=border_color,
+        )
+
+    start_time = time.perf_counter()
+    validate_map(map_name)
+
+    img_path = input_file(map_name, "provinces.png")
+    if cache is not None:
+        provinces_rgba = cache.provinces_rgba
+        width, height = cache.width, cache.height
     else:
-        for file_name in os.listdir(output_folder):
-            file_path = os.path.join(output_folder, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+        src_img = Image.open(img_path).convert("RGBA")
+        provinces_rgba = None
+        src = src_img.load()
+        width, height = src_img.size
 
-    painted_colour = set()
-    visited_pixels = set()
+    province_to_color = build_color_mapping(map_name, mode)
+    if not province_to_color:
+        print(f"No mapping for mode '{mode}', skipping.")
+        return
 
-    # === STEP 1: Generate normal images ===
+    overrides = get_color_overrides(map_name, mode)
+    has_nesting = bool(overrides)
+    overlord_chains = build_overlord_chains(overrides)
+    overlord_colors = set(overrides.values())
+
+    trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
+
+    output_dir = os.path.abspath(
+        os.path.join(
+            os.path.dirname(img_path),
+            "..", "..", "output", map_name, "regions", mode
+        )
+    )
+    os.makedirs(output_dir, exist_ok=True)
+
+    # ------------------------------------------------------------
+    # Queue handling
+    # ------------------------------------------------------------
+    queued = None
+    if queued_regen:
+        compile_queue(map_name)
+        queued = set(load_queue(map_name, mode))
+
+        for fn in os.listdir(output_dir):
+            base = (
+                fn.replace("_hover", "")
+                  .replace("_nested", "")
+                  .replace(".png", "")
+            )
+            if base in queued:
+                os.remove(os.path.join(output_dir, fn))
+    else:
+        for fn in os.listdir(output_dir):
+            os.remove(os.path.join(output_dir, fn))
+
+    # ------------------------------------------------------------
+    # Scan province pixels
+    # ------------------------------------------------------------
+    province_pixels = {}
+    total_pixels = width * height
+    processed = 0
+    last_update = time.time()
+
     for y in range(height):
         for x in range(width):
-            pixel_color = img_data[x, y][:3]
-            if pixel_color in province_to_color and (x, y) not in visited_pixels:
-                color_code = province_to_color[pixel_color]
-                if queued_regen and sanitize_filename(color_code) not in queued:
-                    continue
-                filename = sanitize_filename(color_code) + ".png"
-                new_image_path = os.path.join(output_folder, filename)
+            if cache is not None:
+                rgb = tuple(int(v) for v in provinces_rgba[y, x, :3])
+            else:
+                rgb = src[x, y][:3]
+            if rgb in province_to_color:
+                province_pixels.setdefault(rgb, []).append((x, y))
 
-                if color_code not in painted_colour:
-                    new_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))  # Transparent image
-                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, True)
-                    print(f"New image saved: {new_image_path}")
-                    
+            processed += 1
+            if time.time() - last_update > 0.1:
+                log_progress(
+                    f"Scanning pixels: {processed:,}/{total_pixels:,} "
+                    f"({processed / total_pixels * 100:5.1f}%)"
+                )
+                last_update = time.time()
 
-                else:
-                    new_img = Image.open(new_image_path)
-                    draw(x, y, new_img, new_image_path, pixel_color, color_code, visited_pixels, img_data, width, height, painted_colour, overrides, output_folder, True)
-                    print(f"Edited: {new_image_path}")
+    print()
 
-    # === STEP 2: Generate hover versions by lightening existing images ===
-    for file_name in os.listdir(output_folder):
-        # Skip already-hover files
-        if "_hover" in file_name:
+    # ------------------------------------------------------------
+    # Region buffers
+    # ------------------------------------------------------------
+    region_imgs = {}
+    region_px = {}
+    light_cache = {}
+
+    def ensure_region(color):
+        if color in region_imgs:
+            return
+
+        base = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        nested = nested_hover = None
+        if color in overlord_colors:
+            nested = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            nested_hover = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        region_imgs[color] = (base, hover, nested, nested_hover)
+        region_px[color] = (
+            base.load(),
+            hover.load(),
+            nested.load() if nested else None,
+            nested_hover.load() if nested_hover else None,
+        )
+
+    # ------------------------------------------------------------
+    # Paint regions
+    # ------------------------------------------------------------
+    total_regions = len(province_pixels)
+    current = 0
+
+    for prov_rgb, pixels in province_pixels.items():
+        owner = province_to_color[prov_rgb]
+        name = sanitize_filename(owner)
+
+        if queued and name not in queued:
             continue
 
-        # Split base and extension
-        base_name, ext = os.path.splitext(file_name)
+        current += 1
+        log_progress(
+            f"Building regions: {current}/{total_regions} "
+            f"({current / total_regions * 100:5.1f}%) → {name}"
+        )
 
-        # Determine hover filename
-        if "_nested" in base_name:
-            hover_filename = base_name + "_hover" + ext  # results in something like 255_0_0_nested_hover.png
+        ensure_region(owner)
+
+        if owner not in light_cache:
+            light_cache[owner] = hover_rgb(owner)
+
+        paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
+        pr, pg, pb = display_rgb(paint_rgb)
+        lr, lg, lb = light_cache[owner]
+
+        base_px, hover_px, nested_px, nested_hover_px = region_px[owner]
+
+        for x, y in pixels:
+            base_px[x, y] = (pr, pg, pb, 255)
+            hover_px[x, y] = (lr, lg, lb, 255)
+            if nested_px:
+                nested_px[x, y] = (pr, pg, pb, 255)
+                nested_hover_px[x, y] = (lr, lg, lb, 255)
+
+        # Paint into all ancestors
+        for anc in overlord_chains.get(owner, []):
+            ensure_region(anc)
+            if anc not in light_cache:
+                light_cache[anc] = hover_rgb(anc)
+
+            ar, ag, ab = display_rgb(anc)
+            alr, alg, alb = light_cache[anc]
+            anc_base, anc_hover, _, _ = region_px[anc]
+
+            for x, y in pixels:
+                anc_base[x, y] = (ar, ag, ab, 255)
+                anc_hover[x, y] = (alr, alg, alb, 255)
+
+    print()
+
+    # ------------------------------------------------------------
+    # Borders
+    # ------------------------------------------------------------
+    if borders and region_imgs:
+
+        total = len(region_imgs)
+        if not has_nesting:
+            # FAST PATH
+            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
+            border_owners = compute_border_owners(ref.load(), width, height)
+
+            for i, (color, (base, hover, _, _)) in enumerate(region_imgs.items(), start=1):
+                log_progress(
+                    f"Painting borders (fast): {i}/{total} "
+                    f"({i / total * 100:5.1f}%)"
+                )
+
+                display_color = display_rgb(color)
+                base_stroke = border_color_for_fill(display_color)
+                hover_stroke = border_color_for_fill(hover_rgb(color))
+
+                apply_region_borders(
+                    base.load(), color, border_owners,
+                    width, height, base_stroke, border_thickness
+                )
+                apply_region_borders(
+                    hover.load(), color, border_owners,
+                    width, height, hover_stroke, border_thickness
+                )
         else:
-            hover_filename = base_name + "_hover" + ext  # results in 255_0_0_hover.png
+            # SAFE PATH
+            for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+                log_progress(
+                    f"Painting borders (nested): {i}/{total} "
+                    f"({i / total * 100:5.1f}%)"
+                )
 
-        if queued_regen and base_name not in queued and not base_name.replace("_nested", "") in queued:
+                display_color = display_rgb(color)
+                base_stroke = border_color_for_fill(display_color)
+                hover_stroke = border_color_for_fill(hover_rgb(color))
+                base_bo = compute_border_owners(base.load(), width, height, include_outer=True)
+                apply_region_borders(
+                    base.load(), display_color, base_bo,
+                    width, height, base_stroke, border_thickness
+                )
+                apply_region_borders(
+                    hover.load(), display_color, base_bo,
+                    width, height, hover_stroke, border_thickness
+                )
+
+                if nested:
+                    nested_bo = compute_border_owners(nested.load(), width, height, include_outer=True)
+                    apply_region_borders(
+                        nested.load(), display_color, nested_bo,
+                        width, height, base_stroke, border_thickness
+                    )
+                    apply_region_borders(
+                        nested_hover.load(), display_color, nested_bo,
+                        width, height, hover_stroke, border_thickness
+                    )
+
+    print()
+
+    # ------------------------------------------------------------
+    # Save outputs (cropped) + collect bbox metadata
+    # ------------------------------------------------------------
+    metadata_by_rgb: dict[str, dict] = {}
+    total_outputs = len(region_imgs)
+    for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+        name = sanitize_filename(color)
+        if queued and name not in queued:
             continue
 
-        # Define paths
-        normal_image_path = os.path.join(output_folder, file_name)
-        hover_image_path = os.path.join(output_folder, hover_filename)
+        log_progress(
+            f"Saving images: {i}/{total_outputs} "
+            f"({i / total_outputs * 100:5.1f}%) → {name}"
+        )
 
-        if os.path.exists(normal_image_path) and ext.lower() in [".png", ".jpg", ".jpeg"]:
-            lighten_image(normal_image_path, hover_image_path)
-        else:
-            print(f"Skipping non-image file: {normal_image_path}")
+        overlay_meta = save_cropped(base, os.path.join(output_dir, f"{name}.png"))
+        save_cropped(hover, os.path.join(output_dir, f"{name}_hover.png"))
 
+        region_meta: dict = {}
+        if overlay_meta:
+            region_meta["overlay"] = overlay_meta
 
+        if nested:
+            nested_meta = save_cropped(
+                nested, os.path.join(output_dir, f"{name}_nested.png")
+            )
+            save_cropped(
+                nested_hover,
+                os.path.join(output_dir, f"{name}_nested_hover.png"),
+            )
+            if nested_meta:
+                region_meta["overlay_nested"] = nested_meta
 
-    # === STEP 3: Paint Borders ===
-    if borders:
-        for file_name in os.listdir(output_folder):
-            new_image_path = os.path.join(output_folder, file_name)
-            base_name, ext = os.path.splitext(file_name)
-            clean_name = base_name.replace("_hover", "").replace("_nested", "")
-            if queued_regen and clean_name not in queued:
-                continue
-            if os.path.exists(new_image_path):
-                new_img = Image.open(new_image_path).convert("RGBA")
-                new_img_data = new_img.load()
-                paint_borders(True, False, new_img_data, width, height)
-                new_img.save(new_image_path, "PNG")
-                print(f"Borders painted for {new_image_path}")
-            else:
-                print(f"Warning: {new_image_path} not found for border painting.")
-    if frontend_save:
-        DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "public", "data", "regions", f"{mode}")
-        os.makedirs(DIR, exist_ok=True)
-        for file_name in os.listdir(DIR):
-            file_path = os.path.join(DIR, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        for file_name in os.listdir(output_folder):
-            new_image_path = os.path.join(output_folder, file_name)
-            if os.path.exists(new_image_path):
-                new_img = Image.open(new_image_path).convert("RGBA")
-                new_img_data = new_img.load()
-                frontend_image_path = os.path.join(DIR, f"{file_name}")
-                new_img.save(frontend_image_path, "PNG")
-                print(f"Region copied for the frontend and saved as {frontend_image_path}")
-            else:
-                print(f"Warning: {new_image_path} not found for frontend copy.")
+        if region_meta:
+            metadata_by_rgb[rgb_tuple_to_str(color)] = region_meta
+
+        base.close()
+        hover.close()
+        if nested:
+            nested.close()
+            nested_hover.close()
+
+    print()
+
+    merge_overlay_metadata(map_name, mode, metadata_by_rgb)
+
     if queued_regen:
-        from ..util.queue import clear_mode
-        clear_mode(mode)
+        clear_mode(map_name, mode)
+
+    elapsed = time.perf_counter() - start_time
+    print(
+        f"Region generation for mode '{mode}' "
+        f"took {elapsed:.2f} seconds "
+        f"(nesting={'yes' if has_nesting else 'no'})"
+    )

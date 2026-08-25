@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { Fraunces, Source_Sans_3 } from "next/font/google";
+import SiteDevGate from "./components/site/SiteDevGate";
+import "./internal/globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "TFMC Map Viewer",
-  description: "View and interact with the dynamic TFMC world map.",
+  title: "TFMC",
+  description: "Maps, skins, and server tools for TFMC.",
   icons: {
-    icon: "/server-icon.png", // Or "/your-icon-name.png"
+    icon: "/server-icon.png",
   },
 };
 
@@ -28,9 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fraunces.variable} ${sourceSans.variable} min-h-dvh antialiased`}
       >
-        {children}
+        <SiteDevGate>{children}</SiteDevGate>
       </body>
     </html>
   );

@@ -1,7 +1,90 @@
 # Now, after all provinces are painted, paint the borders
-border_color = (0, 0, 0, 255)  # Solid black for kingdom borders
+border_color = (0, 0, 0, 255)  # Solid black for kingdom borders (legacy paint_borders)
 duchy_border_color = (255, 255, 255, 255)  # White for duchy borders
 border_thickness = 5  # Adjustable thickness
+
+# Step 39.04 adaptive ink borders
+INK_DARK = (42, 31, 20, 255)
+INK_LIGHT = (232, 220, 200, 255)
+LUMINANCE_THRESHOLD = 0.55
+
+
+def relative_luminance(rgb: tuple[int, int, int]) -> float:
+    r, g, b = rgb
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+
+
+def border_color_for_fill(
+    fill_rgb: tuple[int, int, int],
+    threshold: float = LUMINANCE_THRESHOLD,
+) -> tuple[int, int, int, int]:
+    """Uniform ink-dark stroke for washed fills.
+
+    Per-fill adaptation (cream on dark, dark on light) clashes at shared
+    nation edges after parchment_wash_rgb normalises fills to a mid band.
+    """
+    del fill_rgb, threshold
+    return INK_DARK
+
+def compute_border_owners(img_data, width, height, include_outer=True):
+    """
+    include_outer=True: count borders against transparent pixels as borders too.
+    """
+    borders = {}
+
+    for y in range(height):
+        for x in range(width):
+            c = img_data[x, y]
+            if c[3] == 0:
+                continue
+            c_rgb = c[:3]
+
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if not (0 <= nx < width and 0 <= ny < height):
+                    # edge of image counts as outer border
+                    if include_outer:
+                        borders.setdefault((x, y), set()).add(c_rgb)
+                    continue
+
+                n = img_data[nx, ny]
+                if n[3] == 0:
+                    if include_outer:
+                        borders.setdefault((x, y), set()).add(c_rgb)
+                    continue
+
+                n_rgb = n[:3]
+                if n_rgb != c_rgb:
+                    borders.setdefault((x, y), set()).update((c_rgb, n_rgb))
+                    borders.setdefault((nx, ny), set()).update((c_rgb, n_rgb))
+    return borders
+
+def apply_region_borders(
+    img_data,
+    region_color,
+    border_owners,
+    width,
+    height,
+    color=(0, 0, 0, 255),
+    thickness=2,
+    soften: bool = False,
+):
+    """
+    Paints borders for a given region_color.
+    Because compute_border_owners stores border points on both sides,
+    the dilation extends outward as well as inward.
+    """
+    t = thickness
+    for (x, y), owners in border_owners.items():
+        if region_color not in owners:
+            continue
+
+        for dy in range(-t, t + 1):
+            ny = y + dy
+            if 0 <= ny < height:
+                for dx in range(-t, t + 1):
+                    nx = x + dx
+                    if 0 <= nx < width:
+                        img_data[nx, ny] = color
 
 def paint_borders(outline, between, new_img_data, height, width):
     borders = set()

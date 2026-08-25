@@ -1,0 +1,874 @@
+"""Lore-item API smoke — run from backend/: python scripts/lore_items_smoke.py
+
+Catalog + roster kit claimable → character session → list/customise + PNG bridge.
+Granted → 403; pending-create UUID no longer a customise target.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import struct
+import sys
+import uuid
+import zlib
+from pathlib import Path
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+
+os.environ.setdefault("SKINS_DEV", "1")
+
+from fastapi.testclient import TestClient
+
+from server import app
+from src.skins.db import connect, migrate
+
+PLUGIN = "dev-plugin-key"
+STAFF = "dev-staff-key"
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+CATALOG = {
+    "stages": [
+        {"id": "info_welcome", "type": "info", "order": 0, "messages": ["Welcome"]},
+        {
+            "id": "attributes_selection_stage",
+            "type": "attributes",
+            "order": 1,
+            "points": 12,
+            "max_rank": 2,
+            "key": "attributes",
+        },
+    ],
+    "attribute_point_buy": {
+        "pool": 12,
+        "max_rank": 2,
+        "cost_for_rank": [1, 2],
+        "attributes": [
+            "strength",
+            "dexterity",
+            "constitution",
+            "intelligence",
+            "wisdom",
+            "charisma",
+        ],
+        "abbreviations": {
+            "strength": "str",
+            "dexterity": "dex",
+            "constitution": "con",
+            "intelligence": "int",
+            "wisdom": "wis",
+            "charisma": "cha",
+        },
+    },
+    "races": [{"id": "human", "name": "Human", "key": "race"}],
+    "traits": [{"id": "str1", "name": "Strength +1", "key": "attributes", "cost": 0}],
+    "classes": [{"id": "warrior", "name": "Warrior", "display_order": 1}],
+    "validation": {"name_max": 24, "age_min": 16},
+    "slot_limits": {"hard_cap": 10, "default": 1},
+    "editable_kit": [
+        {
+            "kit_key": "iron_hunting_knife",
+            "path": "m.tools.IRON_HUNTING_KNIFE",
+            "amount": 1,
+            "kit_id": "starter",
+            "skin_png": "knife_skin",
+            "base_set": "knives",
+            "preview": {
+                "display_name": "Iron Hunting Knife",
+                "lore": ["A starter blade."],
+                "material": "IRON_SWORD",
+                "custom_model_data": 1001,
+            },
+        }
+    ],
+    "kits": [
+        {
+            "id": "starter",
+            "display_name": "Starter",
+            "cooldown_hours": 48,
+            "once_per_character": True,
+            "items": [
+                {
+                    "path": "m.tools.IRON_HUNTING_KNIFE",
+                    "amount": 1,
+                    "editable": True,
+                },
+                {"path": "m.currency.GOLD_COIN", "amount": 32},
+            ],
+        }
+    ],
+}
+
+
+def fail(msg: str) -> None:
+    print(f"FAIL: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def make_png(w: int, h: int, fill: int = 160) -> bytes:
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    pixel = bytes([fill & 0xFF]) * (w * 3)
+    raw = b"".join(b"\x00" + pixel for _ in range(h))
+    return (
+        PNG_MAGIC
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def ensure_linked(client: TestClient, player: str, ign: str, discord_id: str) -> None:
+    r = client.post(
+        "/skins/discord/link/start",
+        json={"player_uuid": player, "minecraft_name": ign},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"link start: {r.status_code} {r.text}")
+    body = r.json()
+    if body.get("already_linked"):
+        return
+    r = client.post(
+        "/skins/discord/link/complete",
+        json={
+            "code": body["code"],
+            "discord_user_id": discord_id,
+            "discord_username": "LoreSmokeDiscord",
+        },
+        headers={"X-Staff-Key": STAFF},
+    )
+    if r.status_code != 200:
+        fail(f"link complete: {r.status_code} {r.text}")
+
+
+def redeem_character_session(client: TestClient, player: str) -> str:
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player, "scope": "profile"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"mint character: {r.status_code} {r.text}")
+    code = r.json()["code"]
+    r = client.post("/skins/profile/redeem", json={"code": code})
+    if r.status_code != 200:
+        fail(f"redeem character: {r.status_code} {r.text}")
+    token = r.json().get("session_token")
+    if not token:
+        fail(f"redeem missing session_token: {r.json()}")
+    return token
+
+
+def redeem_skin_session(client: TestClient, player: str) -> str:
+    r = client.post(
+        "/skins/codes",
+        json={"player_uuid": player, "scope": "skin"},
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"mint skin: {r.status_code} {r.text}")
+    code = r.json()["code"]
+    r = client.post("/skins/redeem", json={"code": code})
+    if r.status_code != 200:
+        fail(f"redeem skin: {r.status_code} {r.text}")
+    token = r.json().get("session_token")
+    if not token:
+        fail(f"skin redeem missing session_token: {r.json()}")
+    return token
+
+
+def main() -> None:
+    migrate()
+    client = TestClient(app)
+    suffix = uuid.uuid4().hex[:8]
+    player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
+    char_id = f"lore_smoke_{suffix}"
+    ign = f"LoreSm{suffix[:6]}"
+    discord_id = f"8{uuid.uuid4().int % 10**17:017d}"
+
+    r = client.put(
+        "/characters/plugin/creation-catalog",
+        json=CATALOG,
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"PUT catalog: {r.status_code} {r.text}")
+    print("OK PUT creation catalog with editable_kit")
+
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [
+                {
+                    "id": char_id,
+                    "name": "Lore Smoke",
+                    "status": "ALIVE",
+                    "kit_status": "eligible",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"PUT roster: {r.status_code} {r.text}")
+    print("OK PUT roster kit_status=eligible")
+
+    r = client.get(f"/characters/lore-items?character_id={char_id}")
+    if r.status_code != 401:
+        fail(f"GET without auth expected 401, got {r.status_code} {r.text}")
+    print("OK GET lore-items without auth -> 401")
+
+    ensure_linked(client, player, ign, discord_id)
+    skin_token = redeem_skin_session(client, player)
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}",
+        headers={"Authorization": f"Bearer {skin_token}"},
+    )
+    if r.status_code != 401:
+        fail(f"GET with skin scope expected 401, got {r.status_code} {r.text}")
+    print("OK GET lore-items with skin scope -> 401")
+
+    token = redeem_character_session(client, player)
+    auth = {"Authorization": f"Bearer {token}"}
+
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"GET lore-items expected 200, got {r.status_code} {r.text}")
+    body = r.json()
+    items = body.get("items") or []
+    if len(items) != 1:
+        fail(f"expected 1 editable item, got: {body}")
+    knife = items[0]
+    if knife.get("kit_key") != "iron_hunting_knife":
+        fail(f"kit_key mismatch: {knife}")
+    if knife.get("base_set") != "knives" or knife.get("skin_png") != "knife_skin":
+        fail(f"base_set/skin_png mismatch: {knife}")
+    if "category" in knife:
+        fail(f"must not include category: {knife}")
+    print("OK GET lore-items -> knife editable")
+
+    r = client.get(
+        "/characters/lore-items?character_id=missing_char",
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"missing character expected 403, got {r.status_code} {r.text}")
+    print("OK GET missing character -> 403")
+
+    # Historical ineligible is still claimable for customise
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [
+                {
+                    "id": char_id,
+                    "name": "Lore Smoke",
+                    "status": "ALIVE",
+                    "kit_status": "ineligible",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"PUT roster ineligible: {r.status_code} {r.text}")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"ineligible kit expected 200, got {r.status_code} {r.text}")
+    print("OK GET kit_status=ineligible -> 200 (claimable)")
+
+    # Granted blocks customise
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [
+                {
+                    "id": char_id,
+                    "name": "Lore Smoke",
+                    "status": "ALIVE",
+                    "kit_status": "granted",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"PUT roster granted: {r.status_code} {r.text}")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}",
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"granted kit expected 403, got {r.status_code} {r.text}")
+    print("OK GET kit_status=granted -> 403")
+
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"DELETE on granted kit expected 403, got {r.status_code} {r.text}")
+    print("OK DELETE kit_status=granted -> 403")
+
+    r = client.put(
+        "/characters/plugin/roster",
+        json={
+            "player_uuid": player,
+            "characters": [
+                {
+                    "id": char_id,
+                    "name": "Lore Smoke",
+                    "status": "ALIVE",
+                    "kit_status": "eligible",
+                }
+            ],
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"PUT roster re-eligible: {r.status_code} {r.text}")
+
+    # Pending create UUID is no longer a valid customise target
+    create_id = f"create_{suffix}"
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO character_creates (
+                id, player_uuid, client_request_id, payload, status,
+                character_id, error, created_at, applied_at
+            ) VALUES (?, ?, ?, ?, 'pending', NULL, NULL, ?, NULL)
+            """,
+            (
+                create_id,
+                player,
+                str(uuid.uuid4()),
+                json.dumps({"name": "Create Knife"}),
+                "2026-01-01T00:00:00Z",
+            ),
+        )
+        conn.commit()
+    r = client.get(
+        f"/characters/lore-items?character_id={create_id}",
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"GET lore-items for pending create expected 403, got {r.status_code} {r.text}")
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={create_id}&kit_id=starter",
+        json={"display_name": "Create Blade", "lore": ["From create."]},
+        headers=auth,
+    )
+    if r.status_code != 403:
+        fail(f"POST customise on pending create expected 403, got {r.status_code} {r.text}")
+    print("OK pending-create customise rejected")
+
+    r = client.get(
+        f"/characters/kits?character_id={char_id}",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"GET kits expected 200, got {r.status_code} {r.text}")
+    kits_body = r.json()
+    kits = kits_body.get("kits") or []
+    if len(kits) != 1 or kits[0].get("id") != "starter":
+        fail(f"expected starter kit in list: {kits_body}")
+    if not kits[0].get("claimable"):
+        fail(f"starter should be claimable: {kits[0]}")
+    items = kits[0].get("items") or []
+    if len(items) < 2:
+        fail(f"expected all kit items, got: {items}")
+    editable_items = [i for i in items if i.get("editable")]
+    if len(editable_items) != 1 or editable_items[0].get("kit_key") != "iron_hunting_knife":
+        fail(f"editable knife missing: {items}")
+    print("OK GET /characters/kits")
+
+    r = client.get(
+        f"/characters/plugin/lore-items/claim-status?player_uuid={player}&character_id={char_id}",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"claim-status expected 200, got {r.status_code} {r.text}")
+    status_body = r.json()
+    if status_body.get("pending_skin") is not False:
+        fail(f"expected pending_skin false initially: {status_body}")
+    if status_body.get("pending_pack") is not False:
+        fail(f"expected pending_pack false initially: {status_body}")
+    print("OK GET plugin lore-items claim-status")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Trailblade §cHack",
+            "lore": ["A custom line."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"bad charset expected 400, got {r.status_code} {r.text}")
+    print("OK POST bad charset -> 400")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Trailblade",
+            "lore": ["A custom line."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"POST name+lore expected 200, got {r.status_code} {r.text}")
+    customise = r.json()
+    if not customise.get("ok"):
+        fail(f"customise missing ok: {customise}")
+    preview = customise.get("preview") or {}
+    if preview.get("display_name") != "Trailblade":
+        fail(f"preview name overlay failed: {preview}")
+    lore = preview.get("lore") or []
+    if "A starter blade." not in lore and not any(
+        "A starter blade." in str(x) for x in lore
+    ):
+        fail(f"preview lore merge failed (base): {lore}")
+    if not any("A custom line." in str(x) for x in lore):
+        fail(f"preview lore merge failed (custom): {lore}")
+    draft = customise.get("draft") or {}
+    if draft.get("display_name") != "Trailblade":
+        fail(f"draft not stored: {draft}")
+    print("OK POST name+lore stores + overlays preview")
+
+    # Player delete one kit-item customise (keeps skins; idempotent)
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"DELETE customise expected 200, got {r.status_code} {r.text}")
+    deleted_body = r.json()
+    if not deleted_body.get("ok") or int(deleted_body.get("deleted") or 0) < 1:
+        fail(f"DELETE expected deleted>=1: {deleted_body}")
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT 1 FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if row is not None:
+        fail("DELETE should remove lore_item_customisations row")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"list after DELETE: {r.status_code} {r.text}")
+    knife = next(
+        (
+            i
+            for i in (r.json().get("items") or [])
+            if i.get("kit_key") == "iron_hunting_knife"
+        ),
+        None,
+    )
+    if not knife:
+        fail(f"knife missing after DELETE: {r.json()}")
+    d = knife.get("draft") or {}
+    if d.get("display_name") or d.get("state") not in (None, "", "draft"):
+        # empty draft or default draft-only is fine; custom name must be gone
+        if str(d.get("display_name") or "").strip() == "Trailblade":
+            fail(f"draft should be cleared after DELETE: {d}")
+    r = client.delete(
+        f"/characters/lore-items/iron_hunting_knife/customise"
+        f"?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"idempotent DELETE expected 200, got {r.status_code} {r.text}")
+    if r.json().get("deleted") != 0:
+        fail(f"idempotent DELETE expected deleted=0: {r.json()}")
+    print("OK DELETE customise wipes row; second DELETE deleted=0")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Trailblade",
+            "lore": ["A custom line."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"re-POST name+lore after DELETE expected 200, got {r.status_code} {r.text}")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        data={
+            "display_name": "Trailblade",
+            "lore": json.dumps(["A custom line."]),
+        },
+        files={"texture": ("bad.png", b"not-a-png", "image/png")},
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"invalid PNG expected 400, got {r.status_code} {r.text}")
+    print("OK POST invalid PNG -> 400")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        data={
+            "display_name": "Trailblade Skin",
+            "lore": json.dumps(["A custom line."]),
+        },
+        files={"texture": ("knife.png", make_png(32, 32), "image/png")},
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"oversized PNG expected 400, got {r.status_code} {r.text}")
+    print("OK POST oversized PNG -> 400")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        data={
+            "display_name": f"Trail Knife {suffix}",
+            "lore": json.dumps(["Forged on the road."]),
+        },
+        files={"texture": ("knife.png", make_png(16, 16, fill=90), "image/png")},
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"POST valid PNG expected 200, got {r.status_code} {r.text}")
+    uploaded = r.json()
+    draft = uploaded.get("draft") or {}
+    sub_id = draft.get("submission_id")
+    if not sub_id:
+        fail(f"expected submission_id after PNG upload: {uploaded}")
+    if draft.get("submission_status") != "pending":
+        fail(f"expected pending submission: {draft}")
+    if draft.get("existing_skin_id") is not None:
+        fail(f"existing_skin_id should clear on upload: {draft}")
+
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT base_set, staff, status, kind FROM submissions WHERE id = ?",
+            (sub_id,),
+        ).fetchone()
+    if row is None:
+        fail(f"submission row missing for {sub_id}")
+    if str(row["base_set"] or "") != "knives":
+        fail(f"submission base_set expected knives, got {row['base_set']}")
+    if int(row["staff"] or 0) != 0:
+        fail(f"submission must not be staff: {dict(row)}")
+    if str(row["status"]) != "pending":
+        fail(f"submission status expected pending: {dict(row)}")
+    if str(row["kind"]) != "handheld":
+        fail(f"submission kind expected handheld: {dict(row)}")
+    with connect() as conn:
+        lore_row = conn.execute(
+            """
+            SELECT state, submission_id FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if lore_row is None or str(lore_row["state"]) != "pending_skin":
+        fail(f"expected pending_skin state after upload: {lore_row}")
+    print(
+        f"OK POST valid 16x16 PNG -> pending handheld knives submission id={sub_id}"
+    )
+
+    # Name/lore while skin still pending keeps pending_skin
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Ready Blade",
+            "lore": ["Line one."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"POST name+lore while pending expected 200, got {r.status_code} {r.text}")
+    body = r.json()
+    if body.get("state") != "pending_skin":
+        fail(f"expected pending_skin while submission pending: {body}")
+    print("OK POST name+lore while upload pending -> stays pending_skin")
+
+    # Skin deny → purge submission; customise denied; name/lore kept; not claim-ready
+    from src.skins.submissions import deny_submission
+
+    denied = deny_submission(str(sub_id), "Needs a cleaner silhouette")
+    if denied.get("status") != "denied":
+        fail(f"deny_submission expected denied: {denied}")
+    if "cleaner silhouette" not in str(denied.get("deny_reason") or ""):
+        fail(f"deny response should include reason: {denied}")
+    with connect() as conn:
+        gone = conn.execute(
+            "SELECT 1 FROM submissions WHERE id = ?",
+            (sub_id,),
+        ).fetchone()
+        lore_denied = conn.execute(
+            """
+            SELECT state, submission_id, display_name, lore_json,
+                   ready_at, existing_skin_id, skin_slug, deny_reason
+            FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if gone is not None:
+        fail(f"deny should purge submissions row: {sub_id}")
+    if lore_denied is None or str(lore_denied["state"]) != "denied":
+        fail(f"expected denied customise state: {lore_denied}")
+    if str(lore_denied["submission_id"] or "") != str(sub_id):
+        fail(f"deny should keep submission_id: {lore_denied}")
+    if str(lore_denied["display_name"] or "") != "Ready Blade":
+        fail(f"deny should keep display_name: {lore_denied}")
+    if "cleaner silhouette" not in str(lore_denied["deny_reason"] or ""):
+        fail(f"deny should store deny_reason on lore row: {lore_denied}")
+    if lore_denied["ready_at"] is not None:
+        fail(f"deny should clear ready_at: {lore_denied}")
+    if lore_denied["existing_skin_id"] is not None or lore_denied["skin_slug"] is not None:
+        fail(f"deny should clear skin refs: {lore_denied}")
+    r = client.get(
+        f"/characters/plugin/lore-items/claim-status"
+        f"?player_uuid={player}&character_id={char_id}&kit_id=starter",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"claim-status after deny: {r.status_code} {r.text}")
+    claim = r.json()
+    if claim.get("pending_skin") or claim.get("pending_pack") or claim.get("ready"):
+        fail(f"denied customise must not be pending/ready: {claim}")
+    r = client.get(
+        f"/characters/lore-items?character_id={char_id}&kit_id=starter",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"list after deny: {r.status_code} {r.text}")
+    knife = next(
+        (
+            i
+            for i in (r.json().get("items") or [])
+            if i.get("kit_key") == "iron_hunting_knife"
+        ),
+        None,
+    )
+    if not knife:
+        fail(f"knife missing after deny: {r.json()}")
+    d = knife.get("draft") or {}
+    if d.get("state") != "denied" or d.get("submission_status") != "denied":
+        fail(f"draft should show denied: {d}")
+    if "cleaner silhouette" not in str(d.get("deny_reason") or ""):
+        fail(f"expected deny_reason on draft: {d}")
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={"display_name": "Ready Blade", "lore": ["Line one."]},
+        headers=auth,
+    )
+    if r.status_code != 400:
+        fail(f"denied resubmit without skin expected 400, got {r.status_code} {r.text}")
+    print("OK deny skin -> purged; customise denied; name/lore kept; resubmit needs skin")
+
+    # Clear denied row to exercise ready-without-skin path
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE lore_item_customisations
+            SET submission_id = NULL, state = 'draft', skin_slug = NULL,
+                existing_skin_id = NULL, ready_at = NULL, deny_reason = NULL
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        )
+        conn.commit()
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Ready Blade",
+            "lore": ["Line one."],
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"POST name+lore ready expected 200, got {r.status_code} {r.text}")
+    body = r.json()
+    if body.get("state") != "ready":
+        fail(f"expected state=ready after name/lore: {body}")
+    print("OK POST name+lore -> state=ready")
+
+    r = client.get(
+        "/characters/plugin/lore-items/pending",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"plugin pending lore expected 200, got {r.status_code} {r.text}")
+    pending_items = r.json().get("items") or []
+    match = [
+        i
+        for i in pending_items
+        if i.get("character_id") == char_id
+        and i.get("kit_key") == "iron_hunting_knife"
+    ]
+    if not match:
+        fail(f"plugin pending missing ready row: {pending_items}")
+    print("OK GET plugin lore-items pending includes ready row")
+
+    # Existing applied skin → ready with skin_slug
+    applied_id = f"{ign.lower()}_applied_knife_{suffix}"
+    now = "2026-01-01T00:00:00Z"
+    with connect() as conn:
+        code_row = conn.execute(
+            "SELECT id FROM codes WHERE player_uuid = ? ORDER BY id DESC LIMIT 1",
+            (player,),
+        ).fetchone()
+        if code_row is None:
+            fail("no codes row for smoke player")
+        code_id = int(code_row["id"])
+        conn.execute(
+            """
+            INSERT INTO submissions (
+                id, player_uuid, code_id, kind, slug, display_name,
+                base_set, status, dir_path, created_at, applied_at, staff
+            ) VALUES (?, ?, ?, 'handheld', ?, 'Applied Knife', 'knives',
+                      'applied', ?, ?, ?, 0)
+            """,
+            (
+                applied_id,
+                player,
+                code_id,
+                applied_id,
+                f"skins/{applied_id}",
+                now,
+                now,
+            ),
+        )
+        conn.commit()
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        json={
+            "display_name": "Picked Blade",
+            "lore": ["Picked lore."],
+            "existing_skin_id": applied_id,
+        },
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"POST existing skin expected 200, got {r.status_code} {r.text}")
+    picked = r.json()
+    if picked.get("state") != "ready":
+        fail(f"pick existing expected ready: {picked}")
+    if picked.get("skin_slug") != applied_id:
+        fail(f"skin_slug mismatch: {picked}")
+    print("OK POST existing applied skin -> ready + skin_slug")
+
+    # mark_applied promotion path: pending_skin -> ready
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE lore_item_customisations
+            SET state = 'pending_skin', submission_id = ?, skin_slug = NULL,
+                ready_at = NULL
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (sub_id, player, char_id, "iron_hunting_knife"),
+        )
+        conn.execute(
+            """
+            UPDATE submissions
+            SET status = 'approved', applied_at = NULL, reviewed_at = ?
+            WHERE id = ?
+            """,
+            (now, sub_id),
+        )
+        conn.commit()
+
+    r = client.get(
+        f"/characters/plugin/lore-items/claim-status"
+        f"?player_uuid={player}&character_id={char_id}&kit_id=starter",
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"claim-status after approve: {r.status_code} {r.text}")
+    claim_approved = r.json()
+    if claim_approved.get("pending_skin") is not False:
+        fail(
+            "approved-not-applied should not set pending_skin "
+            f"(staff approval done): {claim_approved}"
+        )
+    if claim_approved.get("pending_pack") is not True:
+        fail(
+            "approved-not-applied should set pending_pack=true: "
+            f"{claim_approved}"
+        )
+    print("OK claim-status pending_pack=true while submission approved")
+
+    from src.skins.submissions import mark_applied
+
+    applied = mark_applied([sub_id])
+    if sub_id not in applied:
+        fail(f"mark_applied did not apply {sub_id}: {applied}")
+    with connect() as conn:
+        promoted = conn.execute(
+            """
+            SELECT state, skin_slug FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if promoted is None or str(promoted["state"]) != "ready":
+        fail(f"mark_applied should promote customise to ready: {promoted}")
+    if str(promoted["skin_slug"]) != sub_id:
+        fail(f"promoted skin_slug expected {sub_id}: {promoted}")
+    print("OK mark_applied promotes pending_skin -> ready")
+
+    r = client.post(
+        "/characters/plugin/lore-items/applied",
+        json={
+            "results": [
+                {
+                    "player_uuid": player,
+                    "character_id": char_id,
+                    "kit_key": "iron_hunting_knife",
+                    "ok": True,
+                }
+            ]
+        },
+        headers={"X-Plugin-Key": PLUGIN},
+    )
+    if r.status_code != 200:
+        fail(f"plugin applied lore expected 200, got {r.status_code} {r.text}")
+    with connect() as conn:
+        done = conn.execute(
+            """
+            SELECT state FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (player, char_id, "iron_hunting_knife"),
+        ).fetchone()
+    if done is None or str(done["state"]) != "applied":
+        fail(f"expected applied state after plugin ack: {done}")
+    print("OK POST plugin lore-items applied -> state=applied")
+    print("lore_items_smoke: all checks passed")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,11 @@
-import os
 import json
+from ..util.dirs import defines_file, validate_map
 
-def load_empires():
-    empire_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "defines", "empire.json")
-    with open(empire_file_path, "r") as file:
+
+def load_empires(map_name: str) -> dict:
+    validate_map(map_name)
+
+    file_path = defines_file(map_name, "empire.json")
+
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)

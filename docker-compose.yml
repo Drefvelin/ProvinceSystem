@@ -1,22 +1,36 @@
-version: '3.8'
-
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend
+      - ./backend/src/output:/app/src/output
+      - ./backend/src/input:/app/src/input
+      - ./backend/src/defines:/app/src/defines
+      - ./backend/src/data:/app/src/data
+    env_file:
+      - backend/.env
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Public URL browsers use (nginx /api/ → backend :8000). Override at build time if needed.
+        NEXT_PUBLIC_API_URL: https://www.tfminecraft.net/api
+        # Season 5 maintenance landing; staff redeem character code + tfmc.map.staff
+        NEXT_PUBLIC_SITE_DEV_GATE: "1"
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app/frontend
-      - /app/frontend/node_modules
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
     depends_on:
       - backend
+    security_opt:
+      - no-new-privileges:true
+    restart: always

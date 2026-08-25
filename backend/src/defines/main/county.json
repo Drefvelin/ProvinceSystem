@@ -1,0 +1,10 @@
+{
+  "COUNTY_1": {
+    "name": "Elvaris",
+    "rgb": "180,80,80",
+    "provinces": [
+      1,
+      2
+    ]
+  }
+}

@@ -1,26 +1,90 @@
+import logging
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.map_routes import router as map_router
-from src.api.data_routes import router as data_router
-from src.api.banner_routes import router as banner_router
-from src.api.claim_routes import router as claim_router
-from src.api.regen_routes import router as regen_router
+# Load backend/.env (gitignored) before any env-based auth/signing.
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+from src.api.prod_guard import assert_production_safe
+
+assert_production_safe()
+
+# --------------------
+# Logging (warnings+)
+# --------------------
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(message)s"
+)
+logger = logging.getLogger("startup")
 
 app = FastAPI()
 
-# CORS middleware
+# --------------------
+# Startup confirmation
+# --------------------
+@app.on_event("startup")
+async def startup_log():
+    from src.skins.db import migrate
+
+    migrate()
+    logger.warning("ProvinceSystem API started on http://0.0.0.0:8000")
+
+# --------------------------------
+# CORS MUST BE ADDED BEFORE ROUTERS
+# --------------------------------
+origins = [
+    "https://www.tfminecraft.net",
+    "https://tfminecraft.net",  # optional
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:13001",
+    "http://127.0.0.1:13001",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],  # required for images
 )
 
-# Register routers
+@app.get("/ping")
+def ping():
+    return {"ok": True}
+
+# --------------------
+# Routers (AFTER CORS)
+# --------------------
+from src.api.editor_routes import editor_router
+from src.api.map_routes import map_router
+from src.api.data_routes import data_router
+from src.api.banner_routes import banner_router
+from src.api.claim_routes import claim_router
+from src.api.regen_routes import regen_router
+from src.api.file_routes import file_router
+from src.api.maps_routes import maps_router
+from src.api.profile_routes import profile_router
+from src.api.skins_routes import skins_router
+from src.api.characters_routes import characters_router
+from src.api.drinks_routes import drinks_router
+
 app.include_router(map_router)
+app.include_router(editor_router)
 app.include_router(data_router)
+app.include_router(maps_router)
 app.include_router(banner_router)
 app.include_router(claim_router)
 app.include_router(regen_router)
+app.include_router(file_router)
+app.include_router(skins_router)
+app.include_router(profile_router)
+app.include_router(characters_router)
+app.include_router(drinks_router)

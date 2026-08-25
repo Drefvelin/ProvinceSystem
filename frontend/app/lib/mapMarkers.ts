@@ -1,0 +1,258 @@
+import type { CSSProperties } from "react";
+
+import type { MapMode } from "../components/map/types";
+import { LABEL_HALO, LABEL_INK, LABEL_MAP_MODES } from "./mapLabels";
+
+export const MARKER_HOVER_EXPAND = 0.05;
+export const MARKER_HOVER_SCALE = 1 + MARKER_HOVER_EXPAND;
+export const MARKER_HOVER_TRANSITION = "transform 150ms ease-out";
+export const MARKER_VISIBILITY_TRANSITION = "opacity 200ms ease-out";
+
+export const MARKER_SMALL_PX = 100;
+export const MARKER_LARGE_PX = 160;
+export const MARKER_LABEL_FONT_SMALL = 48;
+export const MARKER_LABEL_FONT_LARGE = 72;
+export const MARKER_LABEL_GAP = -28;
+export const MARKER_LABEL_COLOR = "#000000";
+export const MARKER_LABEL_MIN_SCREEN_PX = 9;
+export const INSTALLATION_ICON_SCALE = 0.75;
+export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
+export const MARKER_LAYER_Z_BELOW_LABELS = 14;
+export const MARKER_LAYER_Z_HOVERED = 17;
+
+export type MapMarkerSize = "small" | "large";
+
+export const INSTALLATION_MARKER_KINDS = new Set(["fort", "port", "airport"]);
+export const BATTLE_MARKER_KIND = "battle";
+
+export type MapMarker = {
+  id: string;
+  kind: string;
+  markerSize?: MapMarkerSize;
+  mapX: number;
+  mapY: number;
+  label: string;
+  title: string;
+  /** Installation pins hide their label until hovered. */
+  showLabelOnlyOnHover?: boolean;
+  /** Optional base scale for highlighted pins (e.g. next campaign battle). */
+  baseScale?: number;
+  /** Optional ring behind icon for next campaign battle. */
+  highlightRing?: boolean;
+};
+
+export function isBattleMarkerKind(kind: string | undefined): boolean {
+  return kind === BATTLE_MARKER_KIND;
+}
+
+export function isInstallationMarkerKind(kind: string | undefined): boolean {
+  return kind != null && INSTALLATION_MARKER_KINDS.has(kind);
+}
+
+export function isMarkerMapMode(mapType: MapMode): boolean {
+  return LABEL_MAP_MODES.has(mapType);
+}
+
+export function markerVisibilityScreenPx(
+  marker: MapMarker,
+  displayScale: number
+): number {
+  if (displayScale <= 0) return 0;
+  const { size, fontSize } = markerDimensions(marker.markerSize);
+  if (marker.showLabelOnlyOnHover || isInstallationMarkerKind(marker.kind) || isBattleMarkerKind(marker.kind)) {
+    return size * markerIconScale(marker.kind) * displayScale;
+  }
+  return fontSize * displayScale;
+}
+
+export function shouldShowMapMarker(
+  marker: MapMarker,
+  displayScale: number
+): boolean {
+  return (
+    markerVisibilityScreenPx(marker, displayScale) >= MARKER_LABEL_MIN_SCREEN_PX
+  );
+}
+
+export function filterVisibleMapMarkers(
+  markers: MapMarker[],
+  displayScale: number
+): MapMarker[] {
+  return markers.filter((marker) => shouldShowMapMarker(marker, displayScale));
+}
+
+export function markerIconScale(kind: string | undefined): number {
+  if (isBattleMarkerKind(kind) || isInstallationMarkerKind(kind)) {
+    return BATTLE_ICON_SCALE;
+  }
+  return 1;
+}
+
+export function markerLabelHaloShadow(fontSize: number): string {
+  const inner = Math.max(1, Math.round(fontSize * 0.04));
+  const mid = Math.max(3, Math.round(fontSize * 0.09));
+  const outer = Math.max(5, Math.round(fontSize * 0.14));
+  return [
+    `0 0 ${inner}px ${LABEL_HALO}`,
+    `0 0 ${mid}px color-mix(in srgb, ${LABEL_HALO} 75%, transparent)`,
+    `0 0 ${outer}px color-mix(in srgb, ${LABEL_HALO} 42%, transparent)`,
+  ].join(", ");
+}
+
+export function markerLabelTextStyle(options: {
+  fontSize: number;
+  highlighted: boolean;
+}): CSSProperties {
+  const { fontSize, highlighted } = options;
+  const base: CSSProperties = {
+    fontSize,
+    lineHeight: 1,
+    fontFamily: "var(--font-fraunces), serif",
+    fontWeight: 500,
+    color: highlighted ? LABEL_INK : MARKER_LABEL_COLOR,
+  };
+
+  if (!highlighted) {
+    return base;
+  }
+
+  return {
+    ...base,
+    textShadow: markerLabelHaloShadow(fontSize),
+  };
+}
+
+export function resolveMarkerImageSrc(
+  kind: string | undefined,
+  markerSize: MapMarkerSize | undefined
+): string {
+  if (kind === "fort") return "/fort.png";
+  if (kind === "port") return "/port.png";
+  if (kind === "airport") return "/airport.png";
+  if (kind === BATTLE_MARKER_KIND) return "/battle.png";
+
+  const large = markerSize === "large";
+  if (kind === "faction_capital" || kind === "guild_capital") {
+    return large ? "/capital_settlement_large.png" : "/capital_settlement_small.png";
+  }
+  return large ? "/settlement_large.png" : "/settlement_small.png";
+}
+
+export function markerDimensions(markerSize: MapMarkerSize | undefined): {
+  size: number;
+  fontSize: number;
+} {
+  if (markerSize === "large") {
+    return {
+      size: MARKER_LARGE_PX,
+      fontSize: MARKER_LABEL_FONT_LARGE,
+    };
+  }
+  return {
+    size: MARKER_SMALL_PX,
+    fontSize: MARKER_LABEL_FONT_SMALL,
+  };
+}
+
+export type MapMarkerLayout = {
+  mapX: number;
+  mapY: number;
+  imageX: number;
+  imageY: number;
+  size: number;
+  iconSize: number;
+  fontSize: number;
+  textY: number;
+};
+
+export function markerLayout(
+  mapX: number,
+  mapY: number,
+  markerSize: MapMarkerSize | undefined,
+  kind?: string
+): MapMarkerLayout {
+  const { size, fontSize } = markerDimensions(markerSize);
+  const iconSize = size * markerIconScale(kind);
+  const imageY = mapY - size / 2;
+  return {
+    mapX,
+    mapY,
+    imageX: mapX - size / 2,
+    imageY,
+    size,
+    iconSize,
+    fontSize,
+    textY: imageY + size + MARKER_LABEL_GAP,
+  };
+}
+
+export function markerHitBounds(
+  layout: MapMarkerLayout,
+  label: string,
+  includeLabel = true
+): { x: number; y: number; w: number; h: number } {
+  if (!includeLabel) {
+    const iconSize = layout.iconSize;
+    const offset = (layout.size - iconSize) / 2;
+    return {
+      x: layout.imageX + offset,
+      y: layout.imageY + offset,
+      w: iconSize,
+      h: iconSize,
+    };
+  }
+
+  const labelWidth = Math.max(layout.size, label.length * layout.fontSize * 0.55);
+  const labelHeight = layout.fontSize * 1.2;
+  const left = layout.mapX - labelWidth / 2;
+  const top = layout.imageY;
+  const bottom = Math.max(
+    layout.imageY + layout.size,
+    layout.textY + labelHeight
+  );
+  return {
+    x: left,
+    y: top,
+    w: labelWidth,
+    h: bottom - top,
+  };
+}
+
+export function pickMapMarkerAt(
+  markers: MapMarker[],
+  x: number,
+  y: number
+): MapMarker | null {
+  for (let i = markers.length - 1; i >= 0; i--) {
+    const marker = markers[i];
+    const layout = markerLayout(
+      marker.mapX,
+      marker.mapY,
+      marker.markerSize,
+      marker.kind
+    );
+    const bounds = markerHitBounds(
+      layout,
+      marker.label,
+      !marker.showLabelOnlyOnHover
+    );
+    if (
+      x >= bounds.x &&
+      x < bounds.x + bounds.w &&
+      y >= bounds.y &&
+      y < bounds.y + bounds.h
+    ) {
+      return marker;
+    }
+  }
+  return null;
+}
+
+export function markerHoverTransform(
+  mapX: number,
+  mapY: number,
+  hovered: boolean
+): string {
+  const scale = hovered ? MARKER_HOVER_SCALE : 1;
+  return `translate(${mapX} ${mapY}) scale(${scale}) translate(${-mapX} ${-mapY})`;
+}
