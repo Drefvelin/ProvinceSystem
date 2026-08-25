@@ -42,6 +42,7 @@ from src.skins.size_limits import SizeLimitError, assert_3d_pair_budgets
 from src.text_validation import TextValidationError, assert_display_name, assert_prose
 
 ACTIVE_STATUSES = ("pending", "approved", "applied")
+_BLOCK_STATUSES = ("pending", "approved")
 ALLOWED_STYLES = frozenset(
     {"bold", "italic", "underline", "underlined", "strikethrough", "strike"}
 )
@@ -538,6 +539,20 @@ def check_player_conflicts(
     return {"ok": len(conflicts) == 0, "conflicts": conflicts}
 
 
+def _assert_no_active_submission_for_code(code_id: int) -> None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT 1 FROM submissions
+            WHERE code_id = ? AND status IN (?, ?)
+            LIMIT 1
+            """,
+            (int(code_id), *_BLOCK_STATUSES),
+        ).fetchone()
+    if row is not None:
+        raise SubmissionError("This code already has an active submission")
+
+
 def create_submission(
     session_row,
     kind: str,
@@ -577,6 +592,8 @@ def create_submission(
         )
     except TextValidationError as e:
         raise SubmissionError(str(e)) from e
+
+    _assert_no_active_submission_for_code(int(session_row["code_id"]))
 
     grip_y = parse_grip_y(grip_preset)
     if kind == "large_handheld":
@@ -976,7 +993,18 @@ def create_submission(
 
 def _rollback_submission(submission_id: str) -> None:
     with connect() as conn:
+        row = conn.execute(
+            "SELECT code_id FROM submissions WHERE id = ?",
+            (submission_id,),
+        ).fetchone()
+        if row is None:
+            return
+        code_id = row["code_id"]
         conn.execute("DELETE FROM submissions WHERE id = ?", (submission_id,))
+        conn.execute(
+            "UPDATE codes SET redeemed_at = NULL WHERE id = ?",
+            (code_id,),
+        )
         conn.commit()
     out = SKINS_DIR / submission_id
     if out.exists():

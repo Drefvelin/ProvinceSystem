@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 import json
 import os
 
+from .internal_access import require_localhost
 from ..scripts.util.auth import HASHED_KEY
 from ..scripts.util.queue import raw_queue_path
 
@@ -10,6 +11,8 @@ claim_router = APIRouter()
 
 @claim_router.post("/{map}/{hashed_key}/api/queue/upload")
 async def upload_queue(map: str, hashed_key: str, request: Request):
+    require_localhost(request)
+
     # 1. Validate hash
     if hashed_key != HASHED_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")

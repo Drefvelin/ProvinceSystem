@@ -1,5 +1,6 @@
 import type { SkinsCatalog } from "./catalog";
 import { EMPTY_ENTITLEMENTS, parseEntitlements } from "./catalog";
+import { getSession } from "@/lib/characters/session";
 
 export type { CatalogCategory, CatalogScroll, SkinsCatalog } from "./catalog";
 
@@ -174,10 +175,21 @@ export type InspectCodeResult =
       entitlements: InspectCodeEntitlements;
     };
 
-export async function inspectCode(code: string): Promise<InspectCodeResult> {
+export async function inspectCode(
+  code: string,
+  sessionToken?: string
+): Promise<InspectCodeResult> {
+  const token = (sessionToken || getSession()?.session_token || "").trim();
+  if (!token) {
+    throw new SkinsApiError("Sign in required to inspect codes", 401);
+  }
+
   const res = await apiFetch(`${getApiBase()}/skins/codes/inspect`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ code: code.trim() }),
   });
 

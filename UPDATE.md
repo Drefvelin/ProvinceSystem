@@ -1,5 +1,7 @@
 # Production deploy (AMP host)
 
+**Product docs:** [docs/README.md](./docs/README.md)
+
 ProvinceSystem on the live box uses **production ports** only:
 
 | Service | Host port | Container | Public URL (nginx) |
@@ -87,14 +89,16 @@ nano backend/.env
 Example (use your real production keys):
 
 ```env
-PLUGIN_KEY=dev-plugin-key
-STAFF_KEY=your-dev-staff-key
-MINESKIN_API_KEY=msk_i61s0B91_AxauAAIA41nwIrahEn1MezBlRe9_PBn7IkyZyYGnK-0Qehqx0mAQEi4GoR5PWTpA
+PS_PRODUCTION=1
+PLUGIN_KEY=your-production-plugin-key
+STAFF_KEY=your-production-staff-key
+MINESKIN_API_KEY=your-mineskin-api-key
 ```
 
+- `PS_PRODUCTION=1` enables the production startup guard. See [docs/identity/auth-security.md](./docs/identity/auth-security.md).
 - `PLUGIN_KEY` must match TFMCWeb `api.plugin-key` on every MC server.
 - `STAFF_KEY` must match Red bot `staff_key` in skinsreview / drinksreview / minecraftban.
-- Do **not** set `SKINS_DEV=1` on production.
+- Do **not** set `SKINS_DEV=1` or `CHARACTER_UI_DEV=1` on production.
 
 If `backend/.env` is missing, compose may warn or the backend may start without keys.
 
@@ -207,6 +211,8 @@ sudo nginx -t && sudo systemctl reload nginx
 | Red `drinksreview` | `api_base_url` | `http://127.0.0.1:8000` |
 | Red `minecraftban` | `api_base_url` | `http://127.0.0.1:8000` |
 | SimpleFactions | (none) | Uses TFMCWeb gateway |
+
+TFMCWeb and SimpleFactions must use **loopback** API URLs on the game host, not the public site hostname. See [docs/integrations/simplefactions.md](./docs/integrations/simplefactions.md).
 
 ---
 

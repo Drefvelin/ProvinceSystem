@@ -9,6 +9,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
+from src.api.map_access import require_site_staff
 from src.skins.auth import (
     AuthError,
     HEADER_PLUGIN_KEY,
@@ -18,6 +19,7 @@ from src.skins.auth import (
 )
 from src.skins.codes import (
     CodeError,
+    REDEEMABLE_SKIN_SCOPES,
     get_cosmetic_mint_status,
     get_session,
     inspect_code,
@@ -203,6 +205,17 @@ def _session_from_auth(authorization: str | None):
     return row
 
 
+def _skin_session_from_auth(authorization: str | None):
+    row = _session_from_auth(authorization)
+    scope = str(row.get("scope") or "").strip().lower()
+    if scope not in REDEEMABLE_SKIN_SCOPES:
+        raise HTTPException(
+            status_code=403,
+            detail="Skin session required (scope=skin or skin_staff)",
+        )
+    return row
+
+
 def _require_plugin(x_plugin_key: str | None) -> None:
     try:
         require_plugin_key(x_plugin_key)
@@ -276,10 +289,15 @@ def plugin_codes_revoke(
 
 
 @skins_router.post("/codes/inspect")
-def post_codes_inspect(body: InspectCodeBody, request: Request):
+def post_codes_inspect(
+    body: InspectCodeBody,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
     """Read-only code lookup for dev gate tooling. Does not redeem or consume codes."""
     client_ip = request.client.host if request.client else ""
     _check_inspect_rate(client_ip)
+    require_site_staff(authorization)
     try:
         return inspect_code(body.code)
     except CodeError as e:
@@ -488,7 +506,7 @@ def get_submissions_check(
     display_name: str | None = None,
     submission_id: str | None = None,
 ):
-    session = _session_from_auth(authorization)
+    session = _skin_session_from_auth(authorization)
     return check_player_conflicts(
         session["player_uuid"],
         display_name=display_name,
@@ -501,7 +519,7 @@ async def post_submissions(
     request: Request,
     authorization: str | None = Header(default=None),
 ):
-    session = _session_from_auth(authorization)
+    session = _skin_session_from_auth(authorization)
     form = await request.form()
 
     kind = str(form.get("kind") or "")

@@ -1,7 +1,7 @@
 """Submission id helpers (IGN + display name) and armor field constants.
 
 Upload filenames are ignored for identity — the API assigns stems.
-See Planning/07-naming-conventions.md.
+See docs/cosmetics/naming.md.
 """
 
 from __future__ import annotations

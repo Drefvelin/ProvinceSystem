@@ -8,6 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 # Load backend/.env (gitignored) before any env-based auth/signing.
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
+from src.api.prod_guard import assert_production_safe
+
+assert_production_safe()
+
 # --------------------
 # Logging (warnings+)
 # --------------------

@@ -69,6 +69,34 @@ def get_character_session(authorization: str | None) -> dict | None:
     return get_profile_session(authorization)
 
 
+def get_feature_session(authorization: str | None) -> dict | None:
+    """Any valid skins/drinks/profile Bearer session."""
+    token = parse_bearer(authorization)
+    if not token:
+        return None
+    if is_character_ui_dev() and _is_ui_dev_session_token(token):
+        return _ui_dev_profile_session()
+    return get_session(token)
+
+
+def require_site_staff(authorization: str | None) -> dict:
+    if _ui_dev_staff_bypass(authorization):
+        return _ui_dev_profile_session()
+    session = get_feature_session(authorization)
+    if session is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid Authorization Bearer token",
+        )
+    if not has_map_staff_access(
+        str(session.get("player_uuid") or ""),
+        _session_realm_id(session),
+        EDITOR_STAFF_PERMISSION,
+    ):
+        raise HTTPException(status_code=403, detail=STAFF_MAP_PERMISSION_DETAIL)
+    return session
+
+
 def _session_realm_id(session: dict) -> str:
     return str(session.get("realm_id") or "main").strip().lower() or "main"
 

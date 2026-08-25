@@ -1,7 +1,7 @@
 """Display autofill + validation for 3D skin model JSON.
 
 Player-submitted display tabs win; defaults fill missing keys.
-See Planning/batches/step-13/00-index.md.
+See docs/cosmetics/skins.md.
 """
 
 from __future__ import annotations

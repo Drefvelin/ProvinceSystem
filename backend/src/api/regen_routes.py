@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import JSONResponse
 import secrets
 
+from .internal_access import require_localhost
 from ..scripts.util.auth import HASHED_KEY
 from ..scripts.util.regeneration import run_regeneration
 from ..scripts.util.task_lock import get_map_lock
@@ -14,8 +15,11 @@ async def regenerate_map(
     map: str,
     hashed_key: str,
     regen_type: str,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    request: Request,
 ):
+    require_localhost(request)
+
     # 1. Auth
     if not secrets.compare_digest(hashed_key, HASHED_KEY):
         raise HTTPException(status_code=401, detail="Invalid API key")
