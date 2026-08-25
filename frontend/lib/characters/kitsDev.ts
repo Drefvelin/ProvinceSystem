@@ -46,6 +46,7 @@ export function uiDevCharacterKits(
             editable: true,
             kit_key: "writable_book",
             skin_png: "journal_skin",
+            skin_png_signed: "journal_skin_signed",
             base_set: "books",
             preview: {
               display_name: "Journal",

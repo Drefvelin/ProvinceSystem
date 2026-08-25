@@ -1378,7 +1378,17 @@ curl -s -X POST http://127.0.0.1:18001/skins/codes \
 ssh -L 13001:127.0.0.1:13001 -L 18001:127.0.0.1:18001 user@amp-host
 ```
 
-Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID). The site shows **Submitting…** until the composite review sheet is built, then the status page displays that sheet. Wait for `#bot-feed` (or `/skinsreview post <id>`) — Discord gets the same `review_sheet.png`, not raw 16×16 files.
+Open `http://127.0.0.1:13001/skins`, redeem the code, upload (**Discord must already be linked** for that UUID). The site shows **Submitting…** until the composite review sheet is built, then the status page displays that sheet. Wait for `#bot-feed` (or `/skinsreview post <id>`) - Discord gets the same `review_sheet.png`, not raw 16×16 files.
+
+3D tiles on that sheet need Node + Playwright Chromium on the API host:
+
+```bash
+cd ProvinceSystem/backend/render
+npm install
+npx playwright install chromium
+```
+
+If Chromium is missing, the sheet still builds with 2D textures only (`SHEET_RENDER_DISABLE=1` to skip).
 
 ## Step 8 — Flow 2 apply (armor / melee)
 

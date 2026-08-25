@@ -5,7 +5,7 @@
 **Next:** [step 67](../step-67/00-index.md) (pillage war type — rename from "raid war")  
 **Type:** Gameplay feature (installation-to-installation timed assaults between main battles)
 
-**Status:** planned
+**Status:** done
 
 ## Problem
 
@@ -39,6 +39,7 @@ flowchart LR
   signup --> damage[71.09 damage embargo]
   damage --> intruder[71.10 intruder]
   intruder --> verify[71.11 docs tests]
+  verify --> vehicleRepair[71.12 vehicle repair]
 ```
 
 ## Batches
@@ -53,9 +54,10 @@ flowchart LR
 | **71.06** | [06-raid-warbands.md](./06-raid-warbands.md) | Ephemeral atk/def warbands; leader promotion; defender auto-add on login | done |
 | **71.07** | [07-raid-battle-runtime.md](./07-raid-battle-runtime.md) | `campaign_raid_template`, timer end, TP, horn/title, no capture point | done |
 | **71.08** | [08-campaign-warband-lock.md](./08-campaign-warband-lock.md) | Block campaign warband signup 19-20; open 20-21 | done |
-| **71.09** | [09-damage-repair-embargo.md](./09-damage-repair-embargo.md) | Installation vulnerability gating; 48h target repair lock from fight start | planned |
-| **71.10** | [10-intruder-province.md](./10-intruder-province.md) | Non-participants in target province take damage + warning | planned |
-| **71.11** | [11-docs-verify.md](./11-docs-verify.md) | `Wars.md`, `Installations.md`, `AGENTS.md`, 78 doc amendments, `mvn test` | planned |
+| **71.09** | [09-damage-repair-embargo.md](./09-damage-repair-embargo.md) | Installation vulnerability gating; 48h target repair lock from fight start | done |
+| **71.10** | [10-intruder-province.md](./10-intruder-province.md) | Non-participants in target province take damage + warning | done |
+| **71.11** | [11-docs-verify.md](./11-docs-verify.md) | `Wars.md`, `Installations.md`, `AGENTS.md`, 78 doc amendments, `mvn test` | done |
+| **71.12** | [12-vehicle-repair-embargo.md](./12-vehicle-repair-embargo.md) | Berthed vehicle repair lock in battle/raid; 48h target berth + repair embargo | done |
 
 ## Locked decisions (71.01)
 
@@ -73,6 +75,7 @@ flowchart LR
 | Defender TP | **None** at start; respawn at **target** center |
 | Campaign warband signup | **Blocked** 19-20; **open** 20-21 |
 | Repair embargo | **Target only**; from fight start; **48h**; repeat raids allowed |
+| Vehicle repair / berth | Berthed vehicles cannot repair while installation is in **any** battle/raid; 48h **target** also blocks repair and personal-to-installation berth |
 | Damage gating | Vulnerable during raid/battle only; bomb protect otherwise |
 | Intruders | Damage + normal death outside raid participant set |
 | Picks (78) | Battle vehicles + intel only; **not** raid target filter |
@@ -94,9 +97,10 @@ cd simplefactions && mvn test
 ## Done when
 
 - [x] Planning lock and index exist (71.01)
-- [ ] Leaders can launch campaign raid source → target during call window
-- [ ] Muster, join, ephemeral warbands, fight timer work end-to-end
+- [x] Leaders can launch campaign raid source → target during call window
+- [x] Muster, join, ephemeral warbands, fight timer work end-to-end
 - [x] Campaign warband signup blocked during raid window
-- [ ] Installation damage gating + repair embargo on target
-- [ ] Intruder province penalty active during fight
-- [ ] Docs updated (including 78 raid-target clarification); `mvn test` green
+- [x] Installation damage gating + repair embargo on target
+- [x] Intruder province penalty active during fight
+- [x] Docs updated (including 78 raid-target clarification); `mvn test` green
+- [x] Berthed vehicle repair and berth blocked during battle/raid and 48h target embargo

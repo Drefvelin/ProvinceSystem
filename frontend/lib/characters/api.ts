@@ -136,6 +136,7 @@ export type EditableKitRow = {
   path: string;
   amount: number;
   skin_png: string;
+  skin_png_signed?: string;
   base_set: string;
   kit_id?: string;
   preview?: EditableKitPreview;
@@ -531,6 +532,7 @@ export type LoreItemRow = {
   kit_key: string;
   path: string;
   skin_png: string;
+  skin_png_signed?: string;
   base_set: string;
   /** Flat upload skin kind from kits.yml (e.g. handheld). */
   "2d_template"?: string;
@@ -557,6 +559,7 @@ export type CharacterKitItem = {
   kit_key?: string;
   preview?: EditableKitPreview;
   skin_png?: string;
+  skin_png_signed?: string;
   base_set?: string;
   customise?: LoreItemDraft;
 };
@@ -628,9 +631,14 @@ export function loreItemSkinTextureUrl(
   return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs}`;
 }
 
-export function loreItemDefaultTextureUrl(kitKey: string): string {
+export function loreItemDefaultTextureUrl(
+  kitKey: string,
+  variant?: "unsigned" | "signed"
+): string {
   const key = encodeURIComponent(kitKey.trim());
-  return `${getApiBase()}/characters/lore-items/${key}/default-texture`;
+  const qs =
+    variant === "signed" ? "?variant=signed" : "";
+  return `${getApiBase()}/characters/lore-items/${key}/default-texture${qs}`;
 }
 
 export async function listLoreItems(

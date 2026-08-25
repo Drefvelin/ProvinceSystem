@@ -118,7 +118,8 @@ Steps **63–65**, **70**, **66**, **71**, **67**, and **68** extend the loop. O
 | 66.04 FE campaign line | **done** (2026-08-23) |
 | 66.05 FE battle markers | **done** (2026-08-23) |
 | 66.06 docs verify | **done** (2026-08-23) |
-| 67–68, 71 | planned ([71](./batches/step-71/00-index.md) planning lock **71.01** 2026-08-25) |
+| 67–68 | planned |
+| 71 | **done** — [Campaign raids](./batches/step-71/00-index.md) |
 | 78.01 planning lock | **done** (2026-08-24) |
 | 78.02-78.07 schedule, picks, GUI, intel, vehicles, raids | **done** (2026-08-24) |
 | 78.09 pick eligibility | **done** (2026-08-24) |
@@ -133,6 +134,10 @@ Steps **63–65**, **70**, **66**, **71**, **67**, and **68** extend the loop. O
 | 71.06 raid warbands | **done** (2026-08-25) |
 | 71.07 raid battle runtime | **done** (2026-08-25) |
 | 71.08 campaign warband signup lock | **done** (2026-08-25) |
+| 71.09 damage gating and repair embargo | **done** (2026-08-25) |
+| 71.10 intruder province penalty | **done** (2026-08-25) |
+| 71.11 docs verify | **done** (2026-08-25) |
+| 71.12 vehicle repair and berth embargo | **done** (2026-08-25) |
 | 61.01 planning lock | **done** (2026-08-20) |
 | 61.01b levy & vassal lock | **done** (2026-08-20) |
 | 61.02 war commitment | **done** (2026-08-20) |

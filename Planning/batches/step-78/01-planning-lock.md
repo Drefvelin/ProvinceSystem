@@ -139,6 +139,8 @@ vehicle battle-eligible iff
 
 ## Raid target rules (78.07; launch in 71)
 
+> **Campaign raids (step 71 shipped):** `CampaignRaidEligibilityService` targets any operational enemy port/airport/fort. The committed-pick rules below apply to **`RaidTargetService`** (78.07 API) only, not campaign raid launch.
+
 During **raid window** on battle day, a raid may target installation `I` iff:
 
 1. `I` is operational.

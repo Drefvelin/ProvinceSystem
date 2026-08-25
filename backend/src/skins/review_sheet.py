@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from .db import SKINS_DIR, connect
 from .name_preview import render_name_preview_png
 from .naming import ARMOR_FIELDS
+from .preview_3d import ensure_preview_tiles
 from .storage import (
     BOOK_KIND,
     BOW_KINDS,
@@ -26,6 +27,7 @@ from .storage import (
 TILE_DISPLAY = 128
 ITEM_DISPLAY = 256
 BOW_DISPLAY = 128
+PREVIEW_DISPLAY = 192
 PAD = 12
 LABEL_H = 18
 TIER_CAPTION_H = 28
@@ -414,6 +416,51 @@ def _book_body(
     return out
 
 
+_PREVIEW_LABELS = {
+    "model": "3D model",
+    "hat": "hat",
+    "carry": "carry",
+    "aim": "aim",
+    "reload": "reload",
+    "body": "full body",
+    "book_unsigned": "3D unsigned",
+    "book_signed": "3D signed",
+}
+
+
+def _preview_tiles_row(tiles: list[tuple[str, Path]]) -> Image.Image | None:
+    if not tiles:
+        return None
+    n = len(tiles)
+    cols = min(n, 4)
+    rows = (n + cols - 1) // cols
+    cell_w = PREVIEW_DISPLAY + PAD * 2
+    cell_h = PREVIEW_DISPLAY + LABEL_H + PAD * 2
+    width = cols * cell_w
+    height = rows * cell_h + PAD
+    canvas = Image.new("RGB", (width, height), BG)
+    draw = ImageDraw.Draw(canvas)
+    font = _font(12)
+    for i, (view, path) in enumerate(tiles):
+        col, row = i % cols, i // cols
+        x0 = col * cell_w + PAD
+        y0 = row * cell_h + PAD
+        tile = _scale_nn(_load_rgba(path), PREVIEW_DISPLAY)
+        _paste_centered(
+            canvas, tile, (x0, y0, x0 + PREVIEW_DISPLAY, y0 + PREVIEW_DISPLAY)
+        )
+        label = _PREVIEW_LABELS.get(view, view)
+        bbox = draw.textbbox((0, 0), label, font=font)
+        tw = bbox[2] - bbox[0]
+        draw.text(
+            (x0 + (PREVIEW_DISPLAY - tw) // 2, y0 + PREVIEW_DISPLAY + 2),
+            label,
+            fill=LABEL_COLOR,
+            font=font,
+        )
+    return canvas
+
+
 def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
     kind = row["kind"]
     slug = row["slug"]
@@ -460,7 +507,19 @@ def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
         name_styles=styles,
         caption=caption,
     )
-    return _stack_vertical([header, body], min_width=header.width)
+    parts = [header, body]
+    preview_tiles = ensure_preview_tiles(
+        kind,
+        slug,
+        out_dir,
+        tiers=_parse_tiers_json(row["tiers"] if "tiers" in row.keys() else None)
+        if kind == "armor_set"
+        else [],
+    )
+    preview_row = _preview_tiles_row(preview_tiles)
+    if preview_row is not None:
+        parts.append(preview_row)
+    return _stack_vertical(parts, min_width=header.width)
 
 
 def build_review_sheet(submission_id: str) -> bytes | None:

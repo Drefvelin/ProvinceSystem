@@ -11,7 +11,7 @@
 |-------|------------|
 | No way to commit installations for a campaign battle | Step 65 deferred per-battle installation pick UI |
 | Berthable vehicles have no battle eligibility rule | Step 77 documented only; no battle hook |
-| Raid targets undefined | Step 71 planned without committed-installation filter |
+| Raid targets undefined | Step 71 planned without committed-installation filter (superseded: 71 uses operational-enemy eligibility) |
 | Battle and raid hours overlap | Current window 20-24 UTC; raids need separate 19-20 CET slot before main battle |
 
 ## Goal
@@ -21,7 +21,7 @@
 3. **Post-lock visibility** — enemy sees committed installations only after lock.
 4. **Schedule** — main campaign battle **21-24 CET**; inter-battle raids **19-20 CET** (config in UTC).
 5. **Vehicle eligibility** — berthable vehicles at a **committed** port/airport or the **active siege fort** (owner faction); trains/non-berthable always OK (step 77 rule).
-6. **Raids (71)** — may only target enemy installations in that faction's committed set for the current battle day.
+6. **Raids (71)** — `RaidTargetService` (78.07) filters by committed set for legacy API; **campaign raids (71 shipped)** use `CampaignRaidEligibilityService` (any operational enemy installation).
 
 Planning lock: [01-planning-lock.md](./01-planning-lock.md).
 
@@ -40,7 +40,7 @@ flowchart LR
   siege --> verify[78.08 docs tests]
 ```
 
-**Note:** Step **71** (raid battle launch) builds on **78.07** for target filtering and raid window config from **78.02**.
+**Note:** Step **71** (campaign raid launch, shipped) uses `CampaignRaidEligibilityService` for targets and raid window config from **78.02**. **78.07** `RaidTargetService` remains for committed-set filtering (legacy/tests).
 
 ## Batches
 
@@ -63,7 +63,7 @@ flowchart LR
 |----------|-------|
 | Who picks | **Faction leader only** (each faction on a side independently) |
 | Lock time | **`vote_close_hour`** (16 UTC default); same moment as hour vote tally |
-| Empty pick | **Nothing in play** — no berthable vehicle pool; installation not raid-targetable |
+| Empty pick | **Nothing in play** — no berthable vehicle pool for campaign battles (`RaidTargetService` committed filter only; not campaign raid targets) |
 | Pre-lock visibility | **Hidden** from enemy |
 | Post-lock visibility | Enemy sees committed installations |
 | Pick limit | **None** — any subset of own eligible operational installations |
@@ -94,5 +94,5 @@ cd simplefactions && mvn test
 - [x] Leaders can pick installations in campaign GUI until vote close
 - [x] Enemy sees commits only after lock
 - [x] Berthable vehicles require committed installation or siege fort for campaign battle use
-- [x] Raid target filter uses committed sets (71 can launch)
+- [x] `RaidTargetService` committed-set filter shipped (78.07); campaign raids (71) use separate eligibility
 - [x] Docs + full `mvn test` green

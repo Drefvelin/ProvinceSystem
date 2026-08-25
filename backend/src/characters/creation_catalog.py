@@ -164,6 +164,9 @@ def _normalize_editable_kit(raw: list) -> list[dict[str, Any]]:
             "skin_png": str(row.get("skin_png") or "").strip(),
             "base_set": str(row.get("base_set") or "").strip(),
         }
+        signed = str(row.get("skin_png_signed") or "").strip()
+        if signed:
+            entry["skin_png_signed"] = signed
         two_d = str(row.get("2d_template") or "").strip()
         if two_d:
             entry["2d_template"] = two_d

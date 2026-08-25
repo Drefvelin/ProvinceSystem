@@ -2,7 +2,7 @@
 
 **Depends on:** [71.10](./10-intruder-province.md)  
 **Repo:** `simplefactions` + planning  
-**Status:** planned
+**Status:** done
 
 ## Goal
 
@@ -41,8 +41,8 @@ cd simplefactions; mvn test
 
 ## Done when
 
-- [ ] Player docs describe campaign raid rules accurately
-- [ ] Step 78 raid-target docs clarified
-- [ ] `AGENTS.md` lists campaign raid services
-- [ ] Step 71 marked done in index + war-build-order
-- [ ] `mvn test` green
+- [x] Player docs describe campaign raid rules accurately
+- [x] Step 78 raid-target docs clarified
+- [x] `AGENTS.md` lists campaign raid services
+- [x] Step 71 marked done in index + war-build-order
+- [x] `mvn test` green

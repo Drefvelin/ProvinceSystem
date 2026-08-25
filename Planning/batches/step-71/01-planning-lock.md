@@ -210,6 +210,8 @@ Reuse `installations.yml` `radius` (80) for bomb/explosion/block-break protectio
 | Blocks | Place and break (non-staff) |
 | Repeat raids | **Allowed** on same installation even if embargo active |
 | End of raid | Embargo **continues** until expiry |
+| Berthed vehicles (71.12) | Cannot **repair** while installation is in any battle/raid (source and target). After raid, **target only** keeps 48h vehicle repair lock. Personal vehicles are not gated. |
+| Berth (71.12) | `/faction transfervehicle` blocked when destination is in battle/raid or under 48h target lock |
 
 Persist per installation: `raidRepairLockUntil` map on war JSON or installation-scoped store (71.09).
 

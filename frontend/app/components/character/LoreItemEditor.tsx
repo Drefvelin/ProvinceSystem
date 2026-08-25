@@ -219,6 +219,9 @@ export default function LoreItemEditor({
   );
   const [localError, setLocalError] = useState<string | null>(null);
   const [previewTexture, setPreviewTexture] = useState<File | null>(null);
+  const [previewTextureSigned, setPreviewTextureSigned] = useState<File | null>(
+    null
+  );
   const [bookPreviewUrls, setBookPreviewUrls] = useState<{
     unsigned: string | null;
     signed: string | null;
@@ -343,16 +346,48 @@ export default function LoreItemEditor({
 
   useEffect(() => {
     let dead = false;
-    let objectUrl: string | null = null;
+
+    async function fetchAsFile(
+      url: string,
+      filename: string
+    ): Promise<File | null> {
+      const res = await fetch(url, { headers: authHeaders(sessionToken) });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return new File([blob], filename, {
+        type: blob.type || "image/png",
+      });
+    }
 
     async function loadPreview() {
       try {
-        if (skinMode === "upload" && isBook && unsignedFile) {
-          if (!dead) setPreviewTexture(unsignedFile);
+        if (skinMode === "upload" && isBook) {
+          if (!dead) {
+            setPreviewTexture(unsignedFile);
+            setPreviewTextureSigned(signedFile);
+          }
+          if (unsignedFile && signedFile) return;
+          if (!unsignedFile && (item.skin_png || item.kit_key)) {
+            const file = await fetchAsFile(
+              loreItemDefaultTextureUrl(item.kit_key),
+              `${String(item.skin_png || item.kit_key).trim() || "default"}.png`
+            );
+            if (!dead && !unsignedFile) setPreviewTexture(file);
+          }
+          if (!signedFile && item.kit_key) {
+            const file = await fetchAsFile(
+              loreItemDefaultTextureUrl(item.kit_key, "signed"),
+              `${String(item.skin_png_signed || "journal_skin_signed").trim()}.png`
+            );
+            if (!dead && !signedFile) setPreviewTextureSigned(file);
+          }
           return;
         }
         if (skinMode === "upload" && textureFile) {
-          if (!dead) setPreviewTexture(textureFile);
+          if (!dead) {
+            setPreviewTexture(textureFile);
+            setPreviewTextureSigned(null);
+          }
           return;
         }
         let url: string | null = null;
@@ -365,37 +400,39 @@ export default function LoreItemEditor({
           filename = `${String(item.skin_png || item.kit_key).trim() || "default"}.png`;
         }
         if (!url) {
-          if (!dead) setPreviewTexture(null);
+          if (!dead) {
+            setPreviewTexture(null);
+            setPreviewTextureSigned(null);
+          }
           return;
         }
-        const res = await fetch(url, { headers: authHeaders(sessionToken) });
-        if (!res.ok) {
-          if (!dead) setPreviewTexture(null);
-          return;
+        const file = await fetchAsFile(url, filename);
+        if (!dead) {
+          setPreviewTexture(file);
+          setPreviewTextureSigned(null);
         }
-        const blob = await res.blob();
-        const file = new File([blob], filename, {
-          type: blob.type || "image/png",
-        });
-        if (!dead) setPreviewTexture(file);
       } catch {
-        if (!dead) setPreviewTexture(null);
+        if (!dead) {
+          setPreviewTexture(null);
+          setPreviewTextureSigned(null);
+        }
       }
     }
 
     void loadPreview();
     return () => {
       dead = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [
     skinMode,
     isBook,
     textureFile,
     unsignedFile,
+    signedFile,
     pickedSkinId,
     item.kit_key,
     item.skin_png,
+    item.skin_png_signed,
     item.base_set,
     sessionToken,
   ]);
@@ -881,7 +918,34 @@ export default function LoreItemEditor({
           </ul>
         )}
 
-        {isBook && skinMode === "upload" && (unsignedFile || signedFile) ? null : previewTexture ? (
+        {isBook ? (
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                Unsigned (writable)
+              </p>
+              {previewTexture ? (
+                <ModelPreview kind="book" textureFile={previewTexture} />
+              ) : (
+                <p className="text-sm text-[var(--tfmc-mist)]">
+                  Unsigned cover preview unavailable.
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                Signed (written)
+              </p>
+              {previewTextureSigned ? (
+                <ModelPreview kind="book" textureFile={previewTextureSigned} />
+              ) : (
+                <p className="text-sm text-[var(--tfmc-mist)]">
+                  Signed cover preview unavailable.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : previewTexture ? (
           <div className="mt-6">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
               {skinMode === "upload" && textureFile

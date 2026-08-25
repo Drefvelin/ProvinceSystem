@@ -1094,34 +1094,54 @@ export default function UploadForm({
             </label>
           ))}
           {isBookKind(kind) ? (
-            <div className="flex flex-wrap gap-4">
-              {(
-                [
-                  ["unsigned", "Unsigned", bookPreviewUrls.unsigned],
-                  ["signed", "Signed", bookPreviewUrls.signed],
-                ] as const
-              ).map(([key, label, url]) => (
-                <div key={key} className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--tfmc-stone)]">
-                    {label}
-                  </span>
-                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)]">
-                    {url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={url}
-                        alt={`${label} cover preview`}
-                        className="h-full w-full object-contain"
-                        style={{ imageRendering: "pixelated" }}
-                      />
-                    ) : (
-                      <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">
-                        No file
-                      </span>
-                    )}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap gap-4">
+                {(
+                  [
+                    ["unsigned", "Unsigned", bookPreviewUrls.unsigned],
+                    ["signed", "Signed", bookPreviewUrls.signed],
+                  ] as const
+                ).map(([key, label, url]) => (
+                  <div key={key} className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[var(--tfmc-stone)]">
+                      {label}
+                    </span>
+                    <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,black)]">
+                      {url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={url}
+                          alt={`${label} cover preview`}
+                          className="h-full w-full object-contain"
+                          style={{ imageRendering: "pixelated" }}
+                        />
+                      ) : (
+                        <span className="px-2 text-center text-[10px] text-[var(--tfmc-mist)]">
+                          No file
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                {files.unsigned ? (
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                      Unsigned 3D
+                    </p>
+                    <ModelPreview kind="book" textureFile={files.unsigned} />
+                  </div>
+                ) : null}
+                {files.signed ? (
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--tfmc-stone)]">
+                      Signed 3D
+                    </p>
+                    <ModelPreview kind="book" textureFile={files.signed} />
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
           {isModel3dKind(kind) || isGunKind(kind) || isFlatPreviewKind(kind) ? (

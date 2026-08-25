@@ -328,6 +328,7 @@ def get_lore_item_skin_texture(
 @characters_router.get("/lore-items/{kit_key}/default-texture")
 def get_lore_item_default_texture(
     kit_key: str,
+    variant: str | None = None,
     authorization: str | None = Header(default=None),
 ):
     """PNG for the catalog default skin (e.g. knife_skin) used in the editor preview."""
@@ -335,7 +336,7 @@ def get_lore_item_default_texture(
 
     _profile_session_from_auth(authorization)
     try:
-        path = resolve_default_kit_texture(kit_key)
+        path = resolve_default_kit_texture(kit_key, variant)
     except LoreItemError as e:
         raise _lore_http(e) from e
     return FileResponse(

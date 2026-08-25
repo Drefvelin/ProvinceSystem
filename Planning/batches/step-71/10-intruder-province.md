@@ -2,7 +2,7 @@
 
 **Depends on:** [71.07](./07-raid-battle-runtime.md)  
 **Repo:** `simplefactions`  
-**Status:** planned
+**Status:** done
 
 ## Goal
 

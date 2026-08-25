@@ -46,6 +46,7 @@ from src.skins.moderation import (
     ModerationError,
     ack_moderation,
     enqueue_ban_event,
+    enqueue_bird_mail,
     list_undelivered_moderation,
     record_warning,
 )
@@ -178,6 +179,14 @@ class BanEventBody(BaseModel):
     reason: str | None = None
     duration: str | None = None
     staff_name: str | None = None
+
+
+class BirdMailBody(BaseModel):
+    player_uuid: str | None = None
+    discord_user_id: str | None = None
+    addressee_character: str = Field(..., min_length=1)
+    sender_minecraft_name: str | None = None
+    contents_preview: str | None = None
 
 
 class ModerationAckBody(BaseModel):
@@ -425,6 +434,24 @@ def post_moderation_ban_event(
             reason=body.reason,
             duration=body.duration,
             staff_name=body.staff_name,
+        )
+    except ModerationError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@skins_router.post("/moderation/bird-mail")
+def post_moderation_bird_mail(
+    body: BirdMailBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    _require_plugin(x_plugin_key)
+    try:
+        return enqueue_bird_mail(
+            player_uuid=body.player_uuid,
+            discord_user_id=body.discord_user_id,
+            addressee_character=body.addressee_character,
+            sender_minecraft_name=body.sender_minecraft_name,
+            contents_preview=body.contents_preview,
         )
     except ModerationError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

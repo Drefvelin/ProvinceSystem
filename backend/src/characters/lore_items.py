@@ -872,7 +872,7 @@ def store_plugin_kit_skin(name: str, data: bytes) -> dict[str, Any]:
     return {"ok": True, "name": stem, "path": f"assets/kit_skins/{stem}.png"}
 
 
-def resolve_default_kit_texture(kit_key: str):
+def resolve_default_kit_texture(kit_key: str, variant: str | None = None):
     """Path to catalog default skin PNG for an editable kit_key. Raises LoreItemError."""
     from pathlib import Path
 
@@ -880,7 +880,9 @@ def resolve_default_kit_texture(kit_key: str):
     if not key:
         raise LoreItemError("kit_key is required", status_code=400)
     editable = _editable_by_key(key)
-    skin_png = str(editable.get("skin_png") or "").strip()
+    want_signed = (variant or "").strip().lower() == "signed"
+    field = "skin_png_signed" if want_signed else "skin_png"
+    skin_png = str(editable.get(field) or "").strip()
     if not skin_png:
         raise LoreItemError("no default texture for this item", status_code=404)
     stem = skin_png[:-4] if skin_png.lower().endswith(".png") else skin_png
@@ -951,6 +953,7 @@ def _build_item(
         "kit_key": kit_key,
         "path": str(editable.get("path") or ""),
         "skin_png": str(editable.get("skin_png") or ""),
+        "skin_png_signed": str(editable.get("skin_png_signed") or ""),
         "base_set": base_set,
         "2d_template": str(editable.get("2d_template") or "").strip()
         or "handheld",
@@ -1097,6 +1100,9 @@ def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str,
                     if ed.get("preview"):
                         entry["preview"] = _base_preview(ed)
                     entry["skin_png"] = str(ed.get("skin_png") or "")
+                    signed = str(ed.get("skin_png_signed") or "")
+                    if signed:
+                        entry["skin_png_signed"] = signed
                     entry["base_set"] = str(ed.get("base_set") or "")
                 entry["customise"] = _load_draft(uuid, cid, kit_key)
             items_out.append(entry)

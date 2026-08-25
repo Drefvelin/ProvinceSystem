@@ -22,7 +22,7 @@ Expose raid target allowlist from committed sets for **step 71** launch.
 
 ## Note
 
-Step **71** wires launch UI and battle templates; this batch only provides the filter API.
+Step **71** wires launch UI and battle templates. **Campaign raid launch (71 shipped)** uses `CampaignRaidEligibilityService`, not this committed-set filter. `RaidTargetService` remains for legacy/tests; prefer eligibility service for new raid flows.
 
 ## Verify
 

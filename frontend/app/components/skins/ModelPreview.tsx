@@ -135,7 +135,8 @@ function isFlatKind(kind?: DisplayKind): boolean {
     kind === "large_handheld" ||
     kind === "bow" ||
     kind === "large_bow" ||
-    kind === "crossbow"
+    kind === "crossbow" ||
+    kind === "book"
   );
 }
 

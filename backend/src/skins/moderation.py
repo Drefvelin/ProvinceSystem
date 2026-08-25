@@ -176,6 +176,58 @@ def enqueue_ban_event(
     return {"ok": True, "mirrored": True, "notification_id": notice_id}
 
 
+_ADDRESSEE_MAX = 256
+_CONTENTS_MAX = 500
+
+
+def enqueue_bird_mail(
+    *,
+    player_uuid: str | None = None,
+    discord_user_id: str | None = None,
+    addressee_character: str,
+    sender_minecraft_name: str | None = None,
+    contents_preview: str | None = None,
+) -> dict:
+    """Enqueue bird mail Discord DM. No outbox if unlinked."""
+    discord_id = (discord_user_id or "").strip() or None
+    if not discord_id:
+        return {"ok": True, "mirrored": False, "notification_id": None}
+
+    uuid = (player_uuid or "").strip() or None
+    character = (addressee_character or "").strip()
+    if not character:
+        raise ModerationError("addressee_character is required")
+    if len(character) > _ADDRESSEE_MAX:
+        raise ModerationError(
+            f"addressee_character cannot exceed {_ADDRESSEE_MAX} characters"
+        )
+
+    try:
+        sender = assert_optional_display_name(
+            sender_minecraft_name, max_len=_MC_NAME_MAX, field="sender minecraft name"
+        )
+        contents = (
+            assert_prose(
+                contents_preview,
+                min_len=1,
+                max_len=_CONTENTS_MAX,
+                field="contents preview",
+            )
+            if (contents_preview or "").strip()
+            else None
+        )
+    except TextValidationError as e:
+        raise ModerationError(str(e)) from e
+
+    payload = {
+        "addressee_character": character,
+        "sender_minecraft_name": sender,
+        "contents_preview": contents,
+    }
+    notice_id = _enqueue("bird_mail", discord_id, uuid, payload)
+    return {"ok": True, "mirrored": True, "notification_id": notice_id}
+
+
 def list_undelivered_moderation() -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
@@ -271,11 +323,20 @@ def _self_test() -> None:
     )
     assert banned["mirrored"]
 
+    bird = enqueue_bird_mail(
+        player_uuid=uuid,
+        discord_user_id=discord_id,
+        addressee_character="Test Character",
+        sender_minecraft_name="Sender",
+        contents_preview="Hello from the bird.",
+    )
+    assert bird["mirrored"]
+
     notices = list_undelivered_moderation()
     ours = [n for n in notices if n.get("player_uuid") == uuid]
-    assert len(ours) >= 2
+    assert len(ours) >= 3
     ack = ack_moderation([n["id"] for n in ours])
-    assert len(ack["acked"]) >= 2
+    assert len(ack["acked"]) >= 3
     left = [n for n in list_undelivered_moderation() if n.get("player_uuid") == uuid]
     assert not left
     print("moderation self-test OK")
