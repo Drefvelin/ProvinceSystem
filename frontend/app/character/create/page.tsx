@@ -126,6 +126,17 @@ export default function CharacterCreatePage() {
         setWardrobeSkinSlots(
           Math.max(1, Math.min(3, Number(list.wardrobe_skin_slots) || 1))
         );
+        if (list.web_creator_allowed === false) {
+          const minGroup = (list.web_creator_min_group_id || "").trim();
+          const rank = minGroup
+            ? minGroup.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+            : "donator";
+          setError(
+            `Web creator requires ${rank} rank or higher. Join the lobby once so your rank syncs, then try again.`
+          );
+          setCatalog(null);
+          return;
+        }
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
           clearSession();

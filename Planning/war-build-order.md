@@ -27,9 +27,11 @@ Build and test the automated war system **without declare codes** first. Staff/t
 | **[70b](./batches/step-70b/00-index.md)** | Campaign schedule simplicity | SF (+ PS optional) | 70, 66 | Cadence 3; schedule-only GUI; counter wilderness battles; export align |
 | **[70c](./batches/step-70c/00-index.md)** | Geographic route GUI | SF | 70b | Axis-left-to-right row; no pagination; border-B marker; cap 4/leg |
 | **[70d](./batches/step-70d/00-index.md)** | Chronological leg schedules (`placeBattle`) | SF | 70c | FB→DT / (B−1)→AC lists; axis-order insert; **done** |
+| **[75](./batches/step-75/00-index.md)** | War package reorganization | SF | 70d stable | Repackage `War/schedule` + battle engine; `AGENTS.md`; no gameplay change — **done** (2026-08-24) |
 | **[66](./batches/step-66/00-index.md)** | War campaign map | SF + PS | 70, 58, 42 | Smooth campaign line + battle pins on web map (`wars[]` route slice) |
-| **[71](./batches/step-71/00-index.md)** | Inter-battle raids | SF | 65, 70, 66 | Naval/air/fort raids between campaign battles |
-| **[67](./batches/step-67/00-index.md)** | Raid war type | SF | 57, 60 | One-battle border settlement raid |
+| **[78](./batches/step-78/00-index.md)** | Battle installation picks | SF | 77, 59, 58 | Leader picks, lock at vote close, raid/battle CET windows, vehicle eligibility, raid target filter — **done** (2026-08-24) |
+| **[71](./batches/step-71/00-index.md)** | Campaign raids (inter-battle) | SF | 78, 59, 61c, 64 | Installation assaults 19-20 CET; one per side/day; timer fights; damage gating |
+| **[67](./batches/step-67/00-index.md)** | Pillage war type | SF | 57, 60 | One-battle border settlement pillage (rename from "raid war") |
 | **[68](./batches/step-68/00-index.md)** | War map export (full) | SF | 58–63, 66 | Occupation, chronicle; extends `wars[]` beyond step 66 route |
 | **[44](./batches/step-44/00-index.md)** | War map layer | PS | 66, 68 | Occupation tint on website (route ships in 66) |
 | **[69](./batches/step-69/00-index.md)** | Declare codes & ticket gate | SF | 63+ (full loop tested) | Ticket → code → in-game declare; production gate |
@@ -53,7 +55,10 @@ flowchart TB
   s64 --> s65[65 naval and invasions]
   s65 --> s70[70 per-side caps and initiative]
   s70 --> s66[66 war campaign map]
-  s66 --> s71[71 inter-battle raids]
+  s77[77 vehicle config v2] --> s78[78 installation picks]
+  s59 --> s78
+  s66 --> s78
+  s78 --> s71[71 campaign raids]
   s57 --> s67[67 raid war type]
   s58 --> s68[68 war map export full]
   s62 --> s68
@@ -113,7 +118,21 @@ Steps **63–65**, **70**, **66**, **71**, **67**, and **68** extend the loop. O
 | 66.04 FE campaign line | **done** (2026-08-23) |
 | 66.05 FE battle markers | **done** (2026-08-23) |
 | 66.06 docs verify | **done** (2026-08-23) |
-| 67–68, 71 | planned (index stubs) |
+| 67–68, 71 | planned ([71](./batches/step-71/00-index.md) planning lock **71.01** 2026-08-25) |
+| 78.01 planning lock | **done** (2026-08-24) |
+| 78.02-78.07 schedule, picks, GUI, intel, vehicles, raids | **done** (2026-08-24) |
+| 78.09 pick eligibility | **done** (2026-08-24) |
+| 78.10 siege fort in-play | **done** (2026-08-24) |
+| 78.08 docs verify | **done** (2026-08-24) |
+| 78 | **done** — [Battle installation picks](./batches/step-78/00-index.md) |
+| 71.01 planning lock | **done** (2026-08-25) |
+| 71.02 campaign raid state | **done** (2026-08-25) |
+| 71.03 source/target eligibility | **done** (2026-08-25) |
+| 71.04 launch GUI | **done** (2026-08-25) |
+| 71.05 muster / raid join | **done** (2026-08-25) |
+| 71.06 raid warbands | **done** (2026-08-25) |
+| 71.07 raid battle runtime | **done** (2026-08-25) |
+| 71.08 campaign warband signup lock | **done** (2026-08-25) |
 | 61.01 planning lock | **done** (2026-08-20) |
 | 61.01b levy & vassal lock | **done** (2026-08-20) |
 | 61.02 war commitment | **done** (2026-08-20) |
@@ -145,3 +164,4 @@ Steps **63–65**, **70**, **66**, **71**, **67**, and **68** extend the loop. O
 | 70 | **done** (2026-08-23) — [Per-side battle caps & initiative](./batches/step-70/00-index.md) |
 | 70b | **done** (2026-08-23) — [Campaign schedule simplicity](./batches/step-70b/00-index.md) |
 | 70d | **done** (2026-08-23) — [Chronological leg schedules](./batches/step-70d/00-index.md) |
+| 75 | **done** (2026-08-24) — [War package reorganization](./batches/step-75/00-index.md) |

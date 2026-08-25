@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import BackToGateButton from "./components/site/BackToGateButton";
+
 export default function HubPage() {
   return (
     <main className="relative flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center overflow-hidden px-6">
@@ -55,6 +57,7 @@ export default function HubPage() {
           >
             Profile
           </Link>
+          <BackToGateButton />
         </div>
       </div>
     </main>

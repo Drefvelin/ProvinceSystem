@@ -48,6 +48,8 @@ export default function CharacterPage() {
   const [session, setSessionState] = useState<CharacterSession | null>(null);
   const [characters, setCharacters] = useState<CharacterListItem[]>([]);
   const [maxSlots, setMaxSlots] = useState(3);
+  const [webCreatorAllowed, setWebCreatorAllowed] = useState(true);
+  const [webCreatorLockLabel, setWebCreatorLockLabel] = useState("");
   const [listError, setListError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
@@ -77,6 +79,18 @@ export default function CharacterPage() {
           } catch {
             setMaxSlots(3);
           }
+        }
+        setWebCreatorAllowed(list.web_creator_allowed !== false);
+        const minGroup = (list.web_creator_min_group_id || "").trim();
+        if (list.web_creator_allowed === false) {
+          const rank = minGroup
+            ? minGroup.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+            : "donator";
+          setWebCreatorLockLabel(
+            `Web creator requires ${rank} rank or higher. Join the lobby once so your rank syncs, then try again.`
+          );
+        } else {
+          setWebCreatorLockLabel("");
         }
       } catch (err) {
         if (err instanceof CharactersApiError && err.status === 401) {
@@ -229,6 +243,8 @@ export default function CharacterPage() {
               characters={characters}
               aliveCount={aliveCount}
               maxSlots={maxSlots}
+              webCreatorAllowed={webCreatorAllowed}
+              webCreatorLockLabel={webCreatorLockLabel}
               onLogout={onLogout}
               loggingOut={loggingOut}
               onRefresh={uiDev ? undefined : onRefresh}
