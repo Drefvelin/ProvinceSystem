@@ -2,7 +2,6 @@
 
 import { clearSession } from "@/lib/profile/session";
 import { isCharacterUiDev } from "@/lib/characters/uiDev";
-import { clearDevGateBypass } from "@/lib/site/devGateBypass";
 import { isSiteDevGateEnabled } from "@/lib/site/config";
 
 export default function BackToGateButton() {
@@ -11,7 +10,6 @@ export default function BackToGateButton() {
   }
 
   function returnToGate() {
-    clearDevGateBypass();
     clearSession();
     window.location.assign("/");
   }

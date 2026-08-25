@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { isSiteDevGateEnabled } from "@/lib/site/config";
+import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 
 const staticLinks = [
   { href: "/", label: "Home" },
@@ -13,7 +13,8 @@ const staticLinks = [
 ] as const;
 
 export default function SiteHeader() {
-  const gateEnabled = isSiteDevGateEnabled();
+  const { state } = useSiteStaffAccess({ enabled: true });
+  const showInspect = state === "staff";
 
   return (
     <header
@@ -36,7 +37,7 @@ export default function SiteHeader() {
             {label}
           </Link>
         ))}
-        {gateEnabled ? (
+        {showInspect ? (
           <Link
             href="/inspect"
             className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"

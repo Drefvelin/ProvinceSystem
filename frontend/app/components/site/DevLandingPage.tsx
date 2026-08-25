@@ -12,11 +12,6 @@ import {
   setSession,
   type ProfileSession,
 } from "@/lib/profile/session";
-import {
-  isDevGateBypassCode,
-  setDevGateBypass,
-} from "@/lib/site/devGateBypass";
-import CodeInspector from "./CodeInspector";
 import { SITE_DISCORD_URL } from "@/lib/site/config";
 import { hasSiteStaffAccess } from "@/lib/site/staffAccess";
 
@@ -81,14 +76,6 @@ export default function DevLandingPage({
     const trimmed = code.trim();
     if (!trimmed) {
       setStaffError("Enter a code");
-      return;
-    }
-
-    if (isDevGateBypassCode(trimmed)) {
-      setDevGateBypass();
-      onStaffVerified();
-      const returnPath = pathname && pathname !== "/" ? pathname : "/";
-      router.replace(returnPath);
       return;
     }
 
@@ -197,10 +184,6 @@ export default function DevLandingPage({
               ) : null}
             </>
           )}
-        </div>
-
-        <div className="hub-fade-delay mt-8 w-full border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-8">
-          <CodeInspector />
         </div>
       </div>
     </main>

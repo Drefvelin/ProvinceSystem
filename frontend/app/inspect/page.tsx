@@ -4,19 +4,27 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import CodeInspector from "@/app/components/site/CodeInspector";
-import { isSiteDevGateEnabled } from "@/lib/site/config";
+import { useSiteStaffAccess } from "@/app/hooks/useSiteStaffAccess";
 
 export default function InspectPage() {
   const router = useRouter();
-  const gateEnabled = isSiteDevGateEnabled();
+  const { state } = useSiteStaffAccess({ enabled: true });
 
   useEffect(() => {
-    if (!gateEnabled) {
+    if (state === "unauthenticated" || state === "denied") {
       router.replace("/");
     }
-  }, [gateEnabled, router]);
+  }, [state, router]);
 
-  if (!gateEnabled) {
+  if (state === "loading") {
+    return (
+      <main className="mx-auto w-full max-w-md px-6 py-10">
+        <p className="text-sm text-[var(--tfmc-mist)]">Checking access…</p>
+      </main>
+    );
+  }
+
+  if (state !== "staff") {
     return null;
   }
 
