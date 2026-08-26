@@ -1,5 +1,7 @@
 import random
 
+from .patterns_catalog import POOLS
+
 # Heraldic tinctures (Minecraft dyes). Metals sit on colors and vice versa.
 METALS = ["WHITE", "YELLOW", "LIGHT_GRAY"]
 COLORS = [
@@ -8,55 +10,40 @@ COLORS = [
 ]
 ALL_TINCTURES = METALS + COLORS
 
-# Pairs that read as one muddy color when used as the two main tinctures.
 MUDDY_PAIRS = {
     frozenset({"GRAY", "BLACK"}),
     frozenset({"WHITE", "LIGHT_GRAY"}),
 }
 
-CHARGES = [
-    "STAR", "CIRCLE", "RHOMBUS", "CRESCENT", "CROWN", "MOON",
-    "HEART", "FLOWER", "SUN", "SHIELD", "SWORD", "HAMMER", "GLOBE",
-]
-
-# Prefer colored fields with metal ordinaries/charges, like CK3.
 FIELD_COLOR_WEIGHT = 3
 FIELD_METAL_WEIGHT = 1
 
-# Each template: BASE + optional ordinary + optional extra field + optional charge.
-# Max 3 layers total (tricolor uses extra instead of a charge).
+# ordinary: fixed pattern name | None
+# ordinary_pool: pool key from patterns_catalog.POOLS
+# extra: second fixed field layer (tricolor)
+# charge: bool - add a charge layer when room remains
+# charge_pool: "mixed" (tfmc-heavy) | "tfmc" | "vanilla"
 TEMPLATES = [
-    {"weight": 18, "ordinary": None, "extra": None, "charge": True},
-    {"weight": 10, "ordinary": "HALF_VERTICAL", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "HALF_VERTICAL", "extra": None, "charge": False},
-    {"weight": 8, "ordinary": "HALF_HORIZONTAL", "extra": None, "charge": True},
-    {"weight": 5, "ordinary": "HALF_HORIZONTAL", "extra": None, "charge": False},
-    {"weight": 6, "ordinary": "HALF_VERTICAL_RIGHT", "extra": None, "charge": True},
-    {"weight": 4, "ordinary": "HALF_HORIZONTAL_BOTTOM", "extra": None, "charge": True},
-    {"weight": 8, "ordinary": "STRIPE_TOP", "extra": None, "charge": True},
-    {"weight": 8, "ordinary": "STRIPE_CENTER", "extra": None, "charge": True},
-    {"weight": 8, "ordinary": "STRIPE_MIDDLE", "extra": None, "charge": True},
-    {"weight": 4, "ordinary": "STRIPE_BOTTOM", "extra": None, "charge": True},
-    {"weight": 4, "ordinary": "STRIPE_LEFT", "extra": None, "charge": True},
-    {"weight": 4, "ordinary": "STRIPE_RIGHT", "extra": None, "charge": True},
-    {"weight": 10, "ordinary": "CROSS", "extra": None, "charge": False},
-    {"weight": 6, "ordinary": "CROSS", "extra": None, "charge": True},
-    {"weight": 8, "ordinary": "STRAIGHT_CROSS", "extra": None, "charge": False},
-    {"weight": 5, "ordinary": "STRAIGHT_CROSS", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "STRIPE_DOWNLEFT", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "STRIPE_DOWNRIGHT", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "TRIANGLE_BOTTOM", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "TRIANGLE_TOP", "extra": None, "charge": True},
-    {"weight": 3, "ordinary": "TRIANGLE_BOTTOM", "extra": None, "charge": False},
-    {"weight": 3, "ordinary": "TRIANGLE_TOP", "extra": None, "charge": False},
-    {"weight": 8, "ordinary": "BORDER", "extra": None, "charge": True},
-    {"weight": 4, "ordinary": "CURLY_BORDER", "extra": None, "charge": True},
+  # Solid field + emblem (tfmc-heavy)
+    {"weight": 20, "ordinary": None, "charge": True, "charge_pool": "mixed"},
+    # Tfmc borders + emblem
+    {"weight": 12, "ordinary_pool": "tfmc_border", "charge": True, "charge_pool": "mixed"},
+    # Tfmc bold fields
+    {"weight": 10, "ordinary_pool": "tfmc_field", "charge": True, "charge_pool": "mixed"},
+    {"weight": 8, "ordinary_pool": "tfmc_field", "charge": False},
+    # Vanilla partitions + tfmc emblem
+    {"weight": 12, "ordinary_pool": "vanilla_partition", "charge": True, "charge_pool": "mixed"},
+    {"weight": 6, "ordinary_pool": "vanilla_partition", "charge": False},
+    # Vanilla borders + emblem
+    {"weight": 8, "ordinary_pool": "vanilla_border", "charge": True, "charge_pool": "mixed"},
+    # Crosses (reduced weight, often without center charge)
+    {"weight": 5, "ordinary_pool": "vanilla_cross", "charge": False},
+    {"weight": 3, "ordinary_pool": "vanilla_cross", "charge": True, "charge_pool": "mixed"},
+    # Tricolor layouts (no charge)
     {"weight": 7, "ordinary": "HALF_VERTICAL", "extra": "HALF_VERTICAL_RIGHT", "charge": False},
     {"weight": 5, "ordinary": "STRIPE_TOP", "extra": "STRIPE_BOTTOM", "charge": False},
-    {"weight": 6, "ordinary": "DIAGONAL_LEFT", "extra": None, "charge": True},
-    {"weight": 6, "ordinary": "DIAGONAL_RIGHT", "extra": None, "charge": True},
-    {"weight": 3, "ordinary": "DIAGONAL_UP_LEFT", "extra": None, "charge": True},
-    {"weight": 3, "ordinary": "DIAGONAL_UP_RIGHT", "extra": None, "charge": True},
+    # Tfmc field + tfmc-only emblem
+    {"weight": 8, "ordinary_pool": "tfmc_field", "charge": True, "charge_pool": "tfmc"},
 ]
 
 minecraft_dye_colors = {
@@ -83,10 +70,6 @@ def color_distance(c1, c2):
     return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
 
-def _is_metal(tincture):
-    return tincture in METALS
-
-
 def _other_class(tincture):
     return METALS if tincture in COLORS else COLORS
 
@@ -101,7 +84,6 @@ def _pick_field():
 
 
 def _pick_tincture(pool, used, adjacent):
-    """Pick from pool: unused first, never muddy vs adjacent layers, else contrast fallback."""
     candidates = [
         c for c in pool
         if c not in used and not any(_is_muddy(c, other) for other in adjacent)
@@ -128,6 +110,24 @@ def _pick_tincture(pool, used, adjacent):
     return random.choice(leftover) if leftover else random.choice(ALL_TINCTURES)
 
 
+def _pick_pattern_from_pool(pool_name: str) -> str:
+    return random.choice(POOLS[pool_name])
+
+
+def _pick_charge(pool_name: str) -> str:
+    if pool_name == "tfmc":
+        return random.choice(POOLS["tfmc_charge"])
+    if pool_name == "vanilla":
+        return random.choice(POOLS["vanilla_small_charge"])
+    # mixed: tfmc-heavy with rare noisy icons
+    roll = random.random()
+    if roll < 0.05:
+        return random.choice(POOLS["noisy"])
+    if roll < 0.80:
+        return random.choice(POOLS["tfmc_charge"])
+    return random.choice(POOLS["vanilla_small_charge"])
+
+
 def generate_random_banner():
     template = random.choices(
         TEMPLATES,
@@ -140,21 +140,28 @@ def generate_random_banner():
     layers = [f"{field}.BASE"]
 
     ordinary_color = None
-    if template["ordinary"]:
+    ordinary_pattern = None
+    if template.get("ordinary_pool"):
+        ordinary_pattern = _pick_pattern_from_pool(template["ordinary_pool"])
+    elif template.get("ordinary"):
+        ordinary_pattern = template["ordinary"]
+
+    if ordinary_pattern:
         ordinary_color = _pick_tincture(_other_class(field), used, [field])
         used.append(ordinary_color)
-        layers.append(f"{ordinary_color}.{template['ordinary']}")
+        layers.append(f"{ordinary_color}.{ordinary_pattern}")
 
-    if template["extra"]:
+    if template.get("extra"):
         extra_bg = ordinary_color or field
         extra_color = _pick_tincture(_other_class(extra_bg), used, [extra_bg, field])
         used.append(extra_color)
         layers.append(f"{extra_color}.{template['extra']}")
 
-    if template["charge"] and len(layers) < 3:
+    if template.get("charge") and len(layers) < 3:
         sits_on = ordinary_color or field
         charge_color = _pick_tincture(_other_class(sits_on), used, [sits_on])
-        charge = random.choice(CHARGES)
+        charge_pool = template.get("charge_pool", "mixed")
+        charge = _pick_charge(charge_pool)
         layers.append(f"{charge_color}.{charge}")
 
     return layers
