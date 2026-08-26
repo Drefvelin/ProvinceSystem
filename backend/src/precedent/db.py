@@ -96,6 +96,15 @@ def insert_case(
         conn.close()
 
 
+# Empirical: cosine distance rarely exceeds ~0.65 even between unrelated real
+# cases (general-purpose text embeddings compress everything into a narrow
+# band), so a nearest-K search on an off-topic query still returns "matches"
+# in the 0.6-0.65 range that overlap with genuinely weak-but-real matches.
+# Cut those off entirely rather than force a top-3 slot on something that
+# isn't actually relevant.
+_MAX_RELEVANT_DISTANCE = 0.60
+
+
 def search_similar(embedding: list[float], limit: int = 3) -> list[dict[str, Any]]:
     conn = _connect()
     try:
@@ -105,10 +114,11 @@ def search_similar(embedding: list[float], limit: int = 3) -> list[dict[str, Any
                 SELECT id, logged_by, players, summary, rule, ruling, punishment,
                        created_at, embedding <=> %s::vector AS distance
                 FROM precedent_cases
+                WHERE embedding <=> %s::vector < %s
                 ORDER BY embedding <=> %s::vector
                 LIMIT %s
                 """,
-                (embedding, embedding, limit),
+                (embedding, embedding, _MAX_RELEVANT_DISTANCE, embedding, limit),
             )
             return [dict(row) for row in cur.fetchall()]
     finally:
