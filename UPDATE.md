@@ -136,8 +136,8 @@ SSH in, then from **`~/ProvinceSystem`**:
 ```bash
 cd ~/ProvinceSystem
 git fetch origin
-git checkout site-rework
-git reset --hard origin/site-rework
+git checkout main
+git reset --hard origin/main
 docker compose down
 docker compose build --no-cache
 docker compose up -d
@@ -222,7 +222,7 @@ Only for a **separate** test clone (`~/tfmc-staging`), not the live `~/ProvinceS
 
 ```bash
 cd ~/tfmc-staging
-git fetch origin && git checkout site-rework && git reset --hard origin/site-rework
+git fetch origin && git checkout main && git reset --hard origin/main
 chmod +x scripts/staging-*.sh
 ./scripts/staging-down.sh
 ./scripts/staging-up.sh
