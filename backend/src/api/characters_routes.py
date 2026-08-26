@@ -893,3 +893,16 @@ def plugin_patch_wardrobe_active(
         return set_active_slot_for_plugin(player_uuid, character_id, body.slot)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
+
+
+@characters_router.post("/plugin/wardrobe/{player_uuid}/{character_id}/active")
+def plugin_post_wardrobe_active(
+    player_uuid: str,
+    character_id: str,
+    body: WardrobeActiveBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """POST alias for plugin clients that cannot send PATCH (Java HttpURLConnection)."""
+    return plugin_patch_wardrobe_active(
+        player_uuid, character_id, body, x_plugin_key
+    )
