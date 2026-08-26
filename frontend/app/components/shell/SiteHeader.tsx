@@ -9,6 +9,7 @@ const staticLinks = [
   { href: "/map/main", label: "Map" },
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
+  { href: "/wiki", label: "Guide" },
   { href: "/profile", label: "Profile" },
 ] as const;
 
