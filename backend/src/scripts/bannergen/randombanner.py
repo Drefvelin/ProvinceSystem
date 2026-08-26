@@ -1,142 +1,160 @@
 import random
-import json
 
-# All Minecraft dye colors
-dye_colors = [
-    "WHITE", "ORANGE", "LIGHT_BLUE", "YELLOW", "LIME",
-    "GRAY", "LIGHT_GRAY", "CYAN", "BLUE", "BROWN", "GREEN", "RED", "BLACK"
+# Heraldic tinctures (Minecraft dyes). Metals sit on colors and vice versa.
+METALS = ["WHITE", "YELLOW", "LIGHT_GRAY"]
+COLORS = [
+    "RED", "BLUE", "GREEN", "BLACK", "BROWN", "ORANGE", "CYAN",
+    "PURPLE", "MAGENTA", "PINK", "LIME", "LIGHT_BLUE", "GRAY",
+]
+ALL_TINCTURES = METALS + COLORS
+
+# Pairs that read as one muddy color when used as the two main tinctures.
+MUDDY_PAIRS = {
+    frozenset({"GRAY", "BLACK"}),
+    frozenset({"WHITE", "LIGHT_GRAY"}),
+}
+
+CHARGES = [
+    "STAR", "CIRCLE", "RHOMBUS", "CRESCENT", "CROWN", "MOON",
+    "HEART", "FLOWER", "SUN", "SHIELD", "SWORD", "HAMMER", "GLOBE",
 ]
 
-# All pattern types (excluding BASE)
-pattern_types = [
-    "SQUARE_BOTTOM_LEFT", "SQUARE_BOTTOM_RIGHT", "SQUARE_TOP_LEFT", "SQUARE_TOP_RIGHT",
-    "STRIPE_BOTTOM", "STRIPE_TOP", "STRIPE_LEFT", "STRIPE_RIGHT",
-    "STRIPE_CENTER", "STRIPE_MIDDLE", "STRIPE_DOWNRIGHT", "STRIPE_DOWNLEFT", "SMALL_STRIPES",
-    "CROSS", "STRAIGHT_CROSS", "TRIANGLE_BOTTOM", "TRIANGLE_TOP", "TRIANGLES_BOTTOM",
-    "TRIANGLES_TOP", "DIAGONAL_LEFT", "DIAGONAL_RIGHT", "DIAGONAL_UP_LEFT",
-    "DIAGONAL_UP_RIGHT", "CIRCLE", "RHOMBUS", "HALF_VERTICAL", "HALF_HORIZONTAL",
-    "HALF_VERTICAL_RIGHT", "HALF_HORIZONTAL_BOTTOM", "BORDER", "CURLY_BORDER",
-    "GRADIENT", "GRADIENT_UP", "BRICKS", "CREEPER", "SKULL", "FLOWER", "MOJANG", "GLOBE", "PIGLIN",
-    
-    "ARCS", "ARROW_DOWN", "ARROW_UP", "ARROWS_DOWN", "ARROWS_UP", "BLAM", "BOLTS", "BURN",
-    "CASTLE", "CHECKER", "CHEQUERED", "CIRCLE_TILES", "CLOVER", "CLUB", "CLUBS", "COGS",
-    "COMPANION", "CRESCENT", "CROWN", "CURTAINS", "DIAGONAL_BORDER", "DIAMOND", "DIAMONDS",
-    "DOVETAIL", "EARTH", "FANCY", "FIRE", "FORK_BOTTOM", "FORK_TOP", "GONFALON", "HAMMER",
-    "HEART", "HEARTS", "MOON", "PALACE", "PEACE", "PUMPKIN", "QUARTER_BOTTOM_LEFT",
-    "QUARTER_BOTTOM_RIGHT", "QUARTER_TOP_LEFT", "QUARTER_TOP_RIGHT", "REVOLUTION", "RIBS",
-    "RING", "SHIELD", "SMALL_STRIPE_LEFT", "SMALL_STRIPE_RIGHT", "SMALL_STRIPES_DOWNLEFT",
-    "SMALL_STRIPES_DOWNRIGHT", "SMALL_STRIPES_HORIZONTAL", "SPADE", "SPADES", "STAR", "SUN",
-    "SUNBURST", "SWORD", "TATTER", "TATTERED", "TRIDENT", "WATER", "WIND", "YIN_YANG"
-]
+# Prefer colored fields with metal ordinaries/charges, like CK3.
+FIELD_COLOR_WEIGHT = 3
+FIELD_METAL_WEIGHT = 1
 
-# Backgrounds – Large area fill
-background_patterns = [
-    "DIAGONAL_LEFT", "DIAGONAL_RIGHT", "DIAGONAL_UP_LEFT", "DIAGONAL_UP_RIGHT",
-    "TRIANGLE_BOTTOM", "TRIANGLE_TOP", "TRIANGLES_BOTTOM", "TRIANGLES_TOP",
-    "SQUARE_BOTTOM_LEFT", "SQUARE_BOTTOM_RIGHT", "SQUARE_TOP_LEFT", "SQUARE_TOP_RIGHT",
-    "HALF_VERTICAL", "HALF_HORIZONTAL", "HALF_VERTICAL_RIGHT", "HALF_HORIZONTAL_BOTTOM",
-    "GRADIENT", "GRADIENT_UP", "QUARTER_BOTTOM_LEFT", "QUARTER_BOTTOM_RIGHT", 
-    "QUARTER_TOP_LEFT", "QUARTER_TOP_RIGHT"
+# Each template: BASE + optional ordinary + optional extra field + optional charge.
+# Max 3 layers total (tricolor uses extra instead of a charge).
+TEMPLATES = [
+    {"weight": 18, "ordinary": None, "extra": None, "charge": True},
+    {"weight": 10, "ordinary": "HALF_VERTICAL", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "HALF_VERTICAL", "extra": None, "charge": False},
+    {"weight": 8, "ordinary": "HALF_HORIZONTAL", "extra": None, "charge": True},
+    {"weight": 5, "ordinary": "HALF_HORIZONTAL", "extra": None, "charge": False},
+    {"weight": 6, "ordinary": "HALF_VERTICAL_RIGHT", "extra": None, "charge": True},
+    {"weight": 4, "ordinary": "HALF_HORIZONTAL_BOTTOM", "extra": None, "charge": True},
+    {"weight": 8, "ordinary": "STRIPE_TOP", "extra": None, "charge": True},
+    {"weight": 8, "ordinary": "STRIPE_CENTER", "extra": None, "charge": True},
+    {"weight": 8, "ordinary": "STRIPE_MIDDLE", "extra": None, "charge": True},
+    {"weight": 4, "ordinary": "STRIPE_BOTTOM", "extra": None, "charge": True},
+    {"weight": 4, "ordinary": "STRIPE_LEFT", "extra": None, "charge": True},
+    {"weight": 4, "ordinary": "STRIPE_RIGHT", "extra": None, "charge": True},
+    {"weight": 10, "ordinary": "CROSS", "extra": None, "charge": False},
+    {"weight": 6, "ordinary": "CROSS", "extra": None, "charge": True},
+    {"weight": 8, "ordinary": "STRAIGHT_CROSS", "extra": None, "charge": False},
+    {"weight": 5, "ordinary": "STRAIGHT_CROSS", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "STRIPE_DOWNLEFT", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "STRIPE_DOWNRIGHT", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "TRIANGLE_BOTTOM", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "TRIANGLE_TOP", "extra": None, "charge": True},
+    {"weight": 3, "ordinary": "TRIANGLE_BOTTOM", "extra": None, "charge": False},
+    {"weight": 3, "ordinary": "TRIANGLE_TOP", "extra": None, "charge": False},
+    {"weight": 8, "ordinary": "BORDER", "extra": None, "charge": True},
+    {"weight": 4, "ordinary": "CURLY_BORDER", "extra": None, "charge": True},
+    {"weight": 7, "ordinary": "HALF_VERTICAL", "extra": "HALF_VERTICAL_RIGHT", "charge": False},
+    {"weight": 5, "ordinary": "STRIPE_TOP", "extra": "STRIPE_BOTTOM", "charge": False},
+    {"weight": 6, "ordinary": "DIAGONAL_LEFT", "extra": None, "charge": True},
+    {"weight": 6, "ordinary": "DIAGONAL_RIGHT", "extra": None, "charge": True},
+    {"weight": 3, "ordinary": "DIAGONAL_UP_LEFT", "extra": None, "charge": True},
+    {"weight": 3, "ordinary": "DIAGONAL_UP_RIGHT", "extra": None, "charge": True},
 ]
-
-# Stripes – Linear lines
-stripe_patterns = [
-    "STRIPE_BOTTOM", "STRIPE_TOP", "STRIPE_LEFT", "STRIPE_RIGHT", "STRIPE_CENTER",
-    "STRIPE_MIDDLE", "STRIPE_DOWNRIGHT", "STRIPE_DOWNLEFT", "SMALL_STRIPES",
-    "SMALL_STRIPE_LEFT", "SMALL_STRIPE_RIGHT", "SMALL_STRIPES_DOWNLEFT", "SMALL_STRIPES_DOWNRIGHT",
-    "SMALL_STRIPES_HORIZONTAL", "CROSS", "STRAIGHT_CROSS", "BORDER", "CURLY_BORDER"
-]
-
-# Ornaments – Smaller or iconographic
-ornament_patterns = list(set(pattern_types) - set(background_patterns) - set(stripe_patterns))
 
 minecraft_dye_colors = {
-    "white":     (255, 255, 255),
-    "orange":    (216, 127, 51),
+    "white": (255, 255, 255),
+    "orange": (216, 127, 51),
+    "magenta": (178, 76, 216),
     "light_blue": (102, 153, 216),
-    "yellow":    (229, 229, 51),
-    "lime":      (127, 204, 25),
-    "gray":      (76, 76, 76),
+    "yellow": (229, 229, 51),
+    "lime": (127, 204, 25),
+    "pink": (242, 127, 165),
+    "gray": (76, 76, 76),
     "light_gray": (153, 153, 153),
-    "cyan":      (76, 127, 153),
-    "blue":      (51, 76, 178),
-    "brown":     (102, 76, 51),
-    "green":     (102, 127, 51),
-    "red":       (153, 51, 51),
-    "black":     (25, 25, 25),
+    "cyan": (76, 127, 153),
+    "purple": (127, 63, 178),
+    "blue": (51, 76, 178),
+    "brown": (102, 76, 51),
+    "green": (102, 127, 51),
+    "red": (153, 51, 51),
+    "black": (25, 25, 25),
 }
+
 
 def color_distance(c1, c2):
     return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
-def get_contrasting_color(used_colors, all_colors, dye_rgb_map):
-    threshold = 100  # Higher = stronger contrast
 
-    contrasting = [
-        color for color in all_colors
-        if all(color_distance(dye_rgb_map[color.lower()], dye_rgb_map[used.lower()]) > threshold for used in used_colors)
+def _is_metal(tincture):
+    return tincture in METALS
+
+
+def _other_class(tincture):
+    return METALS if tincture in COLORS else COLORS
+
+
+def _is_muddy(a, b):
+    return frozenset({a, b}) in MUDDY_PAIRS
+
+
+def _pick_field():
+    pool = COLORS * FIELD_COLOR_WEIGHT + METALS * FIELD_METAL_WEIGHT
+    return random.choice(pool)
+
+
+def _pick_tincture(pool, used, adjacent):
+    """Pick from pool: unused first, never muddy vs adjacent layers, else contrast fallback."""
+    candidates = [
+        c for c in pool
+        if c not in used and not any(_is_muddy(c, other) for other in adjacent)
     ]
+    if candidates:
+        return random.choice(candidates)
 
+    unused = [c for c in pool if c not in used]
+    if unused:
+        return random.choice(unused)
+
+    rgb = minecraft_dye_colors
+    threshold = 100
+    contrasting = [
+        c for c in ALL_TINCTURES
+        if all(
+            color_distance(rgb[c.lower()], rgb[u.lower()]) > threshold
+            for u in used
+        )
+    ]
     if contrasting:
         return random.choice(contrasting)
-    else:
-        # fallback to any unused color
-        unused = [c for c in all_colors if c not in used_colors]
-        return random.choice(unused) if unused else random.choice(all_colors)
+    leftover = [c for c in ALL_TINCTURES if c not in used]
+    return random.choice(leftover) if leftover else random.choice(ALL_TINCTURES)
 
-def get_similar_color(used_colors, all_colors, dye_rgb_map, threshold=80):
-    color_usage = {color: used_colors.count(color) for color in all_colors}
-
-    # Build a weighted list of similar colors with weights decreasing on repeated use
-    weighted_similar = []
-    for color in all_colors:
-        if any(color_distance(dye_rgb_map[color.lower()], dye_rgb_map[used.lower()]) < threshold for used in used_colors):
-            usage_count = color_usage.get(color, 0)
-            weight = max(1, 3 - usage_count)  # First use = weight 3, second = 2, third+ = 1
-            weighted_similar.extend([color] * weight)
-
-    if weighted_similar:
-        return random.choice(weighted_similar)
-    else:
-        # fallback to unused or any available color
-        unused = [c for c in all_colors if c not in used_colors]
-        return random.choice(unused) if unused else random.choice(all_colors)
 
 def generate_random_banner():
-    used_colors = []
-    base_color = random.choice(dye_colors)
-    used_colors.append(base_color)
-    patterns = [f"{base_color}.BASE"]
+    template = random.choices(
+        TEMPLATES,
+        weights=[t["weight"] for t in TEMPLATES],
+        k=1,
+    )[0]
 
-    # Background (80% chance)
-    if random.random() < 0.8:
-        bg_color = get_similar_color(used_colors, dye_colors, minecraft_dye_colors)
-        bg_pattern = random.choice(background_patterns)
-        patterns.append(f"{bg_color}.{bg_pattern}")
-        used_colors.append(bg_color)
+    field = _pick_field()
+    used = [field]
+    layers = [f"{field}.BASE"]
 
-    # Stripe (60% chance)
-    if random.random() < 0.6:
-        stripe_color = get_similar_color(used_colors, dye_colors, minecraft_dye_colors)
-        stripe_pattern = random.choice(stripe_patterns)
-        patterns.append(f"{stripe_color}.{stripe_pattern}")
-        used_colors.append(stripe_color)
+    ordinary_color = None
+    if template["ordinary"]:
+        ordinary_color = _pick_tincture(_other_class(field), used, [field])
+        used.append(ordinary_color)
+        layers.append(f"{ordinary_color}.{template['ordinary']}")
 
-    # Ornaments
-    ornament_count = random.choices([1, 2, 3], weights=[60, 30, 10])[0]
-    used_ornaments = set()
+    if template["extra"]:
+        extra_bg = ordinary_color or field
+        extra_color = _pick_tincture(_other_class(extra_bg), used, [extra_bg, field])
+        used.append(extra_color)
+        layers.append(f"{extra_color}.{template['extra']}")
 
-    for _ in range(ornament_count):
-        while True:
-            ornament = random.choice(ornament_patterns)
-            if ornament not in used_ornaments:
-                used_ornaments.add(ornament)
-                break
-        ornament_color = get_similar_color(used_colors, dye_colors, minecraft_dye_colors)
-        if random.random() < 0.6 or _ == 0:
-            ornament_color = get_contrasting_color(used_colors, dye_colors, minecraft_dye_colors)
-        patterns.append(f"{ornament_color}.{ornament}")
-        used_colors.append(ornament_color)
+    if template["charge"] and len(layers) < 3:
+        sits_on = ordinary_color or field
+        charge_color = _pick_tincture(_other_class(sits_on), used, [sits_on])
+        charge = random.choice(CHARGES)
+        layers.append(f"{charge_color}.{charge}")
 
-    return patterns
-
+    return layers
