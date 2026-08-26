@@ -1,0 +1,128 @@
+TFMC Rules S4
+Moderation System
+READ THIS: → TFMC Useful Information ←
+The TFMC Staff Team will hand out bans and warnings as they see fit, they maintain absolute authority over the servers moderation and have the final say on any and all matters.
+This is a general guide and is not representative of each ban/warning.
+Warnings may be given for minor rule breaks
+Bans may be given for minor/severe rule breaks
+1st Ban		-		24hr
+2nd Ban		-		48hr
+3rd Ban		-		1 week 
+4th Ban		-		Permanent (Appeal Possible)
+The rules are kept as short as possible. We are trusting you to behave, however changes to the ruleset may occur if needed.
+
+For those new to Roleplay, “IC” means in-character, aka the RP chat and what you do in game. “OOC” is out-of-character, this is stuff like the in game OOC chats, and general third party chats like discord (with the exception of RP channels on the TFMC discord server)
+Community Rules(1)
+(1.1) - Do not bully, harass, threaten or discriminate against any member of the community. [Potential Permanent Ban]
+(1.2) - Do not attempt to threaten or harm server infrastructure.
+(1.3) - Do not spam discord channels/tickets/DM’s.
+(1.4) - Do not attempt to bend the rules to suit you, use common sense!
+(1.5) - Do not trauma dump in any channel; this is an RP server, the community is not your therapist.
+(1.6) - Selling anything in game for donator perks, or real world currency, is forbidden. [Permanent Ban]
+(1.7) - Do not stir OOC drama in the community, if you have a complaint use the ticket system. [Potential Permanent Ban].
+Roleplay Rules(2)
+(2.1) - Be careful with sensitive RP topics; if a player tells you they are uncomfortable with     the current RP, you must change it immediately.
+(2.2) - Do not engage in ERP (Erotic Roleplay). [Permanent Ban]
+(2.3) - Only engage in Romance RP if you are above the age of 18 IRL (romantic gestures, relationships, marriages, etc. which are not of an erotic nature) [Permanent Ban]
+(2.4) - Do not powergame by forcing scenarios on others in which only you can win.
+(2.5) - Do not metagame by using information outside of RP to influence RP (e.g Discord).
+(2.6) - Kill on Sight (KOS) is only allowed if one of these conditions are met:
+The Player you are targeting has been warned that you will kill them on sight the next time you see them.
+You are currently at war with each other.
+You have been hired to assassinate the Player.
+(2.7) - Initiating PVP with another player is only allowed if the KOS conditions have been met or you have RP reason to attack and the other side is aware that a fight is about to start. The opponent needs at least a 10 second clear warning that you are about to attack. Use the /tfmc pvp start command. You are allowed to engage your opponent if they make a clear attempt to flee or escape during the warning period.
+(2.8) - Communicate in English.
+Character Rules(3)
+(3.1) - Remain in character at all times while on the server, except when using global/local OOC channels. This includes RP channels in the discord.
+(3.3) - All characters must value their lives in all roleplay scenarios unless discussed with the Staff Team. 
+(3.4) - All characters must be aged and roleplayed as 18+.
+(3.5) - Upon roleplay death, your character loses memory of all notable events leading up to that point, including location, cause and reason. Returning to your AngelChest after you died in RP is not allowed unless stated otherwise (such as in some war cases).
+(3.6) - Permanent character death or injury can be decided by the player and staff team when appropriate. The TFMC Staff Team may intervene when a player does not wish to perma their character.
+(3.7) - Always act according to your character’s traits. Do what makes sense for your character; doing something that does not fit your character is FailRP and is bannable.
+(3.8) - Your skin should match your character’s appearance/race.
+If you wish to hide your identity (player head), do so by using the in-game masks.
+Gameplay Rules(4)
+(4.1) - Do not use hacked or modified clients that give you an unfair advantage. Clients such as Badlion, performance enhancing/quality of life mods, and immersion mods are allowed. Mods that give any advantage, or automatic scripts such as autofishers and auto-voters are not allowed. [Permanent Ban]
+Any kind of AFK grinding is forbidden! (AFK-ing at furnaces or similar is not counted)
+(4.2) - Do not grief any builds unless agreed upon with the build owner or staff. Griefing includes building or breaking blocks to get past things like walls. Building or breaking to get into a building or area otherwise locked off has to be arranged with the owner of said building or area. Also, do not grief livestock or pets. Griefing rules apply to all worlds (main, tutorial)
+Exception: Players engaging in thievery or banditry are allowed to break clay pots to check for hidden loot, provided they replace the pots immediately.
+(4.3) - Builds must make sense within the setting of the factions and wider world. When using easy placing in Litematica you must ensure there are no floating blocks left at the end of the building session. Litematica is the only allowed mod for building (easy place).
+(4.4) - Do not build mob farms or AFK grinders. The use of redstone is limited. Ask staff in a ticket if you are unsure!
+Notable exceptions:
+      -    You are allowed to collect eggs from chickens with hoppers
+Simple autosmelters (not the ones with minecart rails)
+Some redstone doors
+(4.5) - Bounties have to be announced in “Character Updates” on the Discord by the character to declare it, and the bounty target has to be pinged. Not logging on while you are being targeted because you are avoiding being killed is powergaming and bannable. Bounties can be collected by anyone, if it fits their RP; however, KOS is not allowed for bounties, and you have to at least try to capture the target.
+Bounties last indefinitely unless stated otherwise, but will end early if the character to post the bounty dies/is swapped-off. Bounties cannot be posted anonymously.
+(4.6) - Doors can only be locked if it makes sense for that door to have a lock, i.e, you can lock your front door and the access to a vault or valuables room within the building. You cannot, however, lock every door in the house in an effort to make break-ins more difficult. If staff deems your lock as only a hindrance to thief RP, without any other RP reasoning, staff will break the door. Continued breaking of this rule will result in a ban.
+(4.7) - Loading multiple crossbows/muskets or other reloadable ranged weapons to “rapid fire” in quick succession is not allowed; the reload time is there for balance. Breaking this rule may result in a ban.
+The only exception to this is the flintlock pistol where you can carry 2 loaded pistols at once. I.e you can carry a loaded crossbow, a loaded musket and 2 loaded pistols. You cannot however, shoot a bow and quickly change to a crossbow to shoot again. 
+(4.8) - Fairplay Xaero’s Maps are the ONLY accepted map mods. Showing caves and entities is not allowed. [Potential Permanent Ban]
+(4.9) - When using Discord pings or DMs to set up a meeting in the game, a minimum of 20 minutes are required from when the ping is sent to when the meeting can start. Starting before this, this is ruled as acting on OOC information (metagaming).
+Note: Exception is given to trades, provided that the trade in question was mentioned in #auction-house. If someone wants to buy iron in #auction-house, and you DM them to set up a meeting, you do not have to wait 20 minutes.
+(4.10) - Do not build artificial islands in the ocean as your base.
+(4.11) - All chests must be accessible without breaking or placing blocks. This means no buried chests for valuables to outright prevent thieves from getting to them. Hiding possessions in unreasonable places without any reasoning is not allowed, and staff will destroy the contents. Repeated offences might result in a ban.
+(4.12) - When you are holding a prisoner, they can only be held for a maximum of 2 hours, during which time there must always be a prison guard present for them to roleplay with.
+(4.13) - All buildings' rooms need to be fully accessible with lockpicking. (see Rule 6.1)
+(4.14) - Playing with hitboxes (F3 + B) is not allowed on the server. Any player caught using hitboxes to gain an advantage will be banned. [Potential Permanent Ban]
+War Rules(5)
+Wars can be declared at any time but they are fought on the weekend unless otherwise agreed.
+(5.1) - For a war to be declared, there needs to be good RP reasoning behind the declaration. You have to post an ultimatum in #rp-announcements with the conditions the defender can fulfil to avoid the war. The default ruleset of a war is this:
+No gear or class limitations, you can bring whatever you have
+All vehicles (siege weapons, ships, planes etc)
+No looting of chests, angelchests can be looted.
+Win Conditions and Battles:
+After declaration comes a 24-48 hour preparation time where you can try to hire mercenaries. You are allowed to raid the enemy lands 1 time. You can also use this time to negotiate to avoid the war.
+For the first engagement the sides meet in an open battlefield (land, sea and air).
+Whoever wins the first engagement will go on to attack the enemy victory point within 24 hours after the battle. (you can also negotiate to end the war earlier if you want during this time)
+Victory Points:
+Defender victory point is either the land that is being claimed or if it's not a land war the victory point is the capital.
+Attacker victory point is the closest settlement to the claimed land, if it's not a land war then the victory point is also the capital.
+Spoils of war:
+The winning side gets to enforce their war goals on the opposing side (vassalization, reparations, return of an item etc)
+If the default rules are not ideal for you it is possible to discuss with the leader of the opposite side in OOC and plan out the war. The things that need to be set are as follows:
+When the war takes place
+Win conditions (capture points for example)
+Where the fighting will take place (specific areas, anywhere etc.)
+(5.2) - Before sending the ultimatum, a “War Ticket” must be raised with staff, where you include the war reason as well as the demands. The staff team will then review the details and make sure they are fair, if they are you are free to post the ultimatum and the opposite side will be added to the war ticket to begin discussions for the war rules. If one side says “default” then the default ruleset will be used. The relation a faction needs to have with the opposing faction has to be -50 before the war ticket can be made. 
+Note: All pacts, vassalizations or alliances have to be already established before the war is declared using the plugin. Any pact made after war is declared won’t be accepted for the ongoing war. This excludes mercenaries. Do not make alliance or vassalage pacts while in a war.
+(5.3) - Factions are themselves responsible for adhering to the war plan they have agreed on, proof of breaking the war plan may result in a warning or ban, repeated offences will get you banned from participating in wars.
+(5.4) - A castle or base may have Obsidian inside the walls to defend against cannonfire. However, unless the obsidian fits the build, please don't make it visible 
+(5.5) - During a siege you are not allowed to break or place blocks to get inside a base, use proper siege equipment. Likewise, running in with TNT is also banned. TNT Cannons are banned. Do not use siege weapons to get into a base outside a war.
+(5.6) - Do not repair holes in your wall during a siege.
+(5.7) - Mercenaries have to have a minimum price of 40 denars per soldier. (Value can be adjusted) However, as a mercenary you should always try to get the most money possible.
+(5.8) - In order to act as mercenaries in war all members of your faction must be mercenaries and have being a mercenary as part of their rp. 
+(5.9) - No use of pets in wars.
+Note: Depending on how many engineers you have it could take upwards of an hour to build all your siege equipment, as such it is expected that you spend time to build an actual siege camp with tents and whatnot. This massively improves RP.
+Season Specific(6)
+(6.1) - Construction of redstone doors is allowed for places that would fit a higher security door, like the vault of a faction or a secret room, but not for main entrances to a faction's base. The redstone door needs to be able to be opened by everyone, and there have to be some clues on how to open it. There are plenty of ways to do it, and it doesn’t matter as long as it fits the RP. Consult with staff if you want to check if your door is within fair play.
+Example: A riddle for a combination door, the key item being somewhere in the area for a key door, or a button/pressure plate placed somewhere to open the door. 
+(6.2) - Using two or more Mage Weapons is not allowed for PvP and PvE.
+(6.3) - Do not steal vehicles owned by someone else.
+(6.4) - In order to shoot down planes or other flying vehicles without warning you have to be at war or have declared your territory to have a closed airspace in #rp-announcements.
+(6.5) - Use vehicles in a realistic fashion, that means no hovering with planes to bomb more accurately or landing vertically. Use common sense, this one should be pretty obvious how to follow.
+(6.6) - Do not place down more nodes for a faction and use the transfer option to switch between them. Any faction caught doing this will have all its nodes deleted without refund.
+(6.7) - Do not steal from any kind of node at all, both the input and the output. 
+(6.8) - Do not log out or AFK within Dungeon Crawls (accessed via Unknown Keys) in an attempt to circumvent the looting cooldown.
+Evil Roleplay(7)
+(7.1) - You can only do Evil RP if your current character has an Evil Archetype trait (assassin, bandit or thief). You can only do Evil RP that fits your traits. Avoid simplistic Evil characters with no real story goals.
+(7.2) - Do not steal without a justified reason. Leave clues and ensure fun roleplay can arise after stealing/lockpicking. Leaving clues means, for example, leaving a note with some descriptions of your character's appearance so that the search for the thief/burglar is not completely impossible. You may NOT leave the same clue twice, but are encouraged to leave a common feature or “calling card” to connect multiple thefts. The clue for theft must relate to your character specifically, not something like “has a beard” or “black hair” - those are too broad. Clues for lockpicking may be generic and/or repeated only if nothing is stolen or copied; if both lockpicking and theft are conducted in the same scenario, leave the clue at the container that was stolen from.
+When entering a building to rob, it's mandatory to do so with the use of lockpicks. Crawling through trapdoors, parkour, the use of magic/skills or any other type of action to avoid lockpicking a door won’t be allowed. All buildings need to be fully accessible by lockpicking.
+If Staff deem a clue to be insufficient or lacking, the affected player(s) will be directly informed who the culprit is.
+(7.3) - You are only allowed to steal using Chest Lockpicks, taking items directly from a chest is forbidden!
+(7.4) - After having targeted a faction location in a theft scenario, you are not allowed to steal from the same faction for 4 days. 
+When robbing a faction, the 4-day cooldown counts for all locked chests and storages owned by the faction. Vassals and overlords are seen as separate; consult the map. (7.5) - When robbing someone, you can demand they do /pouch to show you their money amount. You are allowed to rob any amount of the total, you cannot rob any items other than the money.
+(7.6) - When being robbed, everyone has the choice to comply with the robbery or attempt any action that would help their character escape from the robbery situation. This includes fighting off the robber/robbers, escaping, trying to hide, yelling for help, or anything else that could be considered resisting. There will be only one attempt possible per robbery, and it has to make sense for said character to attempt this escape.
+If said attempt fails, it will be mandatory to comply with the rest of the robbery. If a robbery turns into a fight anyone who dies must use /ac unlock to allow the other side to loot them.
+(7.7) - You are not allowed to demand things such as land, a diplomatic announcement, or other diplomatic demands during a robbery or kidnapping. Robberies and kidnappings are for money and ransoms. Making these demands is deemed powergaming.
+(7.8) - The use of masks hides the complete identity of the character using them; this includes their race, their looks, their voice, or anything else that could be used to identify said character. However, masks can only be used when actively engaging in a RP scenario that would justify the use of a mask, and they cannot be used to constantly hide one’s identity while roaming around the map. If masks are used as part of the character and worn at all times, the mask will be considered part of the character and will not work for hiding identity purposes.
+Only items called masks can be used as a mask. A player using a mask will be regarded as possibly doing any type of Evil RP. You can get masks by using the command /tfmc masks
+(7.9) - Character updates done for assassinations don’t reveal the identity of the assassin IC. The knowledge of who is doing it is only OOC, so that the person being targeted can defend themselves in a reasonable way and not just get instantly killed by the assassin. This means that the information you have IC is that someone might try to kill you, but not who is going to do it. The identity of the assassin can only be revealed when the assassin gets caught or when the people who would know IC reveal it for any reason.
+(7.10) - After having targeted a player in an Evil RP scenario, you are not allowed to go after the same player for 2 days. Repeated targeting of a player without RP reasoning is not allowed. This rule exists to protect players from being constantly targeted; using this rule to avoid RP isn’t allowed.
+If you have already been targeted, it does not mean you are safe. The perpetrator can still take action if they find you doing Evil RP, which would directly affect them in any way. Your actions still have consequences, even if you have a cooldown.
+(7.11) - Assassinations contracts need to open a ticket to be allowed by the staff team. Once approved, the staff team will post an anonymous character update mentioning the target of the assassination. The identity of the assassins won’t be mentioned and needs to be discovered. Assassinations automatically fail if the person is not killed within 4 days. Not logging on while you are being targeted because you are avoiding being killed is powergaming and bannable. (Leaving for IRL things is okay, of course, but in that case, the assassination will be postponed until you are back).
+Each assassination contract can have a maximum of 2 assassins on it. The assassins cannot change during the contract and only one of those can play as an assassin. If the assassins give up the contract, no one else can take it up. The assassins can initiate PvP with the target of the assassination without any rp interaction (KOS). During the 4 days that the contract is active, the assassins have one try each day to kill the target (repeated camping of a location is not allowed, nor other attempts at different types of Evil RP). If the assassins are discovered before they find their target, normal rules apply. Staff can and will force a permanent character death if the target is successfully killed by the assassin.
+
+After the first attempt at the assassination fails, the target of the assassination and any other players tasked with their defence (like players of the faction) can react with KOS to any suspicious people that they find exclusively in their main claims while the assassination contract is active, although they have to post a kingdom/character update about it and it would only apply to masked people. This means that while the identity of the assassins is still not known, the target doesn’t have to act dumb about masked people constantly trying to kill them. 
+
+If an assassin is captured in RP and their mask is taken away, their identity is exposed. Fighting to death to avoid exposing your identity might be punished (non value of life). 

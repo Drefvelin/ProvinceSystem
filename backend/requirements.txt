@@ -6,3 +6,7 @@ svgwrite
 python-multipart
 python-dotenv
 pyyaml
+httpx
+anthropic
+psycopg2-binary
+pgvector

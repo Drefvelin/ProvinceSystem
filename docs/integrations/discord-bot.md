@@ -12,6 +12,7 @@
 | Drinks review | `drinksreview` cog - same pattern for `/drinks` submissions |
 | Link | `/linkdiscord <code>` completes MC ↔ Discord bind |
 | Moderation | Ban/warn DMs, **Banned** role add/clear, guild leave/join for 1h grace |
+| Precedent | `/case-log` (staff) logs a case, `/precedent <info>` (staff+helper) searches precedent — see [precedent.md](./precedent.md) |
 
 The bot does **not** execute in-game bans (Essentials owns MC bans).
 
@@ -22,6 +23,7 @@ Bot calls ProvinceSystem with `X-Staff-Key`. Full route list:
 - Skins: [cosmetics/skins.md](../cosmetics/skins.md) (staff pending, approve/deny, notifications, file download)
 - Drinks: [cosmetics/drinks.md](../cosmetics/drinks.md) (staff pending, approve/deny)
 - Identity: [identity/tfmcweb.md](../identity/tfmcweb.md) (link complete, guild events)
+- Precedent: [precedent.md](./precedent.md) (log case, search precedent)
 
 Player-facing mint and link **start** run in-game via TFMCWeb, not the bot.
 
