@@ -39,12 +39,20 @@ export default function SiteHeader() {
           </Link>
         ))}
         {showInspect ? (
-          <Link
-            href="/inspect"
-            className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
-          >
-            Inspect
-          </Link>
+          <>
+            <Link
+              href="/precedent"
+              className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+            >
+              Precedent
+            </Link>
+            <Link
+              href="/inspect"
+              className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+            >
+              Inspect
+            </Link>
+          </>
         ) : null}
       </nav>
     </header>
