@@ -23,6 +23,7 @@ import {
   labelArcPathD,
   labelPathCenterOffset,
   labelsForProvinces,
+  labelControlProvinces,
   orientLabelEndpoints,
   pixelDiameterEndpoints,
   provincesForNationLabel,
@@ -553,6 +554,38 @@ describe("label visibility helpers", () => {
     expect(
       provincesForNationLabel("vassalA", empireRegionData, overviewMapObjects)
     ).toBeNull();
+  });
+
+  it("moves occupied provinces from de jure owner to occupier for labels", () => {
+    const occupiedData = {
+      loyalists: {
+        name: "Lantan",
+        provinces: [1, 2, 3],
+      },
+      rebels: {
+        name: "Lantan Rebels",
+        provinces: [10, 11, 12],
+        occupied_held: [3],
+      },
+    };
+    const overview: LabelMapObject[] = [
+      { id: "loyalists", visible: true },
+      { id: "rebels", visible: true },
+    ];
+    expect(labelControlProvinces("loyalists", occupiedData, [1, 2, 3])).toEqual([
+      1, 2,
+    ]);
+    expect(labelControlProvinces("rebels", occupiedData, [10, 11, 12])).toEqual([
+      10, 11, 12, 3,
+    ]);
+    expect(provincesForNationLabel("loyalists", occupiedData, overview)).toEqual({
+      provinces: [1, 2],
+      scope: "full",
+    });
+    expect(provincesForNationLabel("rebels", occupiedData, overview)).toEqual({
+      provinces: [10, 11, 12, 3],
+      scope: "full",
+    });
   });
 });
 

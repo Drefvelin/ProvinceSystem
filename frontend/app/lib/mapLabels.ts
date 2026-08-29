@@ -65,6 +65,7 @@ export type NationRegionInput = {
   subjects?: string[];
   rgb?: string;
   size?: number;
+  occupied_held?: number[];
 };
 
 export type LabelMapObject = {
@@ -440,6 +441,33 @@ export function fullRealmProvinces(
   return provinces;
 }
 
+export function labelControlProvinces(
+  nationId: string,
+  regionData: Record<string, NationRegionInput>,
+  deJure: number[]
+): number[] {
+  const occupiedByOther = new Set<number>();
+  for (const [id, region] of Object.entries(regionData)) {
+    if (id === nationId) continue;
+    for (const provinceId of region.occupied_held ?? []) {
+      occupiedByOther.add(provinceId);
+    }
+  }
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const provinceId of deJure) {
+    if (occupiedByOther.has(provinceId) || seen.has(provinceId)) continue;
+    seen.add(provinceId);
+    out.push(provinceId);
+  }
+  for (const provinceId of regionData[nationId]?.occupied_held ?? []) {
+    if (seen.has(provinceId)) continue;
+    seen.add(provinceId);
+    out.push(provinceId);
+  }
+  return out;
+}
+
 export function provincesForNationLabel(
   nationId: string,
   regionData: Record<string, NationRegionInput>,
@@ -450,12 +478,20 @@ export function provincesForNationLabel(
   const region = regionData[nationId];
 
   if (isDrilledSuzerainView(nationId, mapObjects) && region?.subjects?.length) {
-    const directProvinces = directHoldingProvinces(nationId, regionData);
+    const directProvinces = labelControlProvinces(
+      nationId,
+      regionData,
+      directHoldingProvinces(nationId, regionData)
+    );
     if (!directProvinces.length) return null;
     return { provinces: directProvinces, scope: "direct" };
   }
 
-  const fullProvinces = fullRealmProvinces(nationId, regionData);
+  const fullProvinces = labelControlProvinces(
+    nationId,
+    regionData,
+    fullRealmProvinces(nationId, regionData)
+  );
   if (!fullProvinces.length) return null;
   return { provinces: fullProvinces, scope: "full" };
 }
@@ -555,7 +591,11 @@ export function computeNationLabels(
 
   for (const [nationId, region] of Object.entries(regionData)) {
     const name = region.name?.trim();
-    const provinces = region.provinces;
+    const provinces = labelControlProvinces(
+      nationId,
+      regionData,
+      region.provinces
+    );
     if (!name || !provinces?.length) continue;
 
     labels.push(
@@ -678,7 +718,11 @@ export function computeRegionLabelGeometry(
       const rawName = region?.name?.trim();
       if (!rawName) continue;
 
-      const fullProvinces = fullRealmProvinces(nationId, regionData);
+      const fullProvinces = labelControlProvinces(
+        nationId,
+        regionData,
+        fullRealmProvinces(nationId, regionData)
+      );
       if (!fullProvinces.length) continue;
 
       const full = labelsForProvinces(
@@ -693,7 +737,11 @@ export function computeRegionLabelGeometry(
 
       let direct: NationLabelSpec[] = [];
       if (region?.subjects?.length) {
-        const directProvinces = directHoldingProvinces(nationId, regionData);
+        const directProvinces = labelControlProvinces(
+          nationId,
+          regionData,
+          directHoldingProvinces(nationId, regionData)
+        );
         if (directProvinces.length) {
           direct = labelsForProvinces(
             nationId,

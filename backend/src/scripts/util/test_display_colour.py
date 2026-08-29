@@ -76,7 +76,10 @@ class DisplayColourTests(unittest.TestCase):
             self.assertGreaterEqual(channel, 0)
             self.assertLessEqual(channel, 255)
         self.assertNotEqual(occupied, home)
-        self.assertLess(_rgb_distance(occupied, PAPER_HIGH), _rgb_distance(home, PAPER_HIGH))
+        self.assertLess(
+            _rgb_distance(occupied, PAPER_HIGH),
+            _rgb_distance(home, PAPER_HIGH) * 0.7,
+        )
 
 
 def _rgb_distance(a, b):

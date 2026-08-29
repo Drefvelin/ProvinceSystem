@@ -36,6 +36,7 @@ export type RegionRecord = Record<
     size?: number;
     subject_size?: number;
     provinces?: number[];
+    occupied_held?: number[];
     overlay?: OverlayBBox;
     overlay_nested?: OverlayBBox;
   }

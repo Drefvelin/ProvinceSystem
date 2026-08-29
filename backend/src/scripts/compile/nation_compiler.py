@@ -108,6 +108,14 @@ def process_nations(map: str):
         if "size" not in nations[nation_id]:
             calculate_size(nation_id)
 
+        nations[nation_id]["occupied_held"] = []
+
+    occupied_held = _occupied_held_by_nation(map, nations)
+    for nation_id, province_ids in occupied_held.items():
+        if nation_id in nations and isinstance(nations[nation_id], dict):
+            nations[nation_id]["occupied_held"] = province_ids
+
+    for nation_id in nations:
         nation = nations[nation_id]
         rgb = nation["rgb"].split(",")
         banner_id = f"{rgb[0]}_{rgb[1]}_{rgb[2]}"
@@ -126,3 +134,24 @@ def process_nations(map: str):
         json.dump(nations, f, indent=4)
 
     print(f"✅ Nations compiled for map '{map}'")
+
+
+def _occupied_held_by_nation(map_name: str, nations: dict) -> dict[str, list[int]]:
+    held: dict[str, list[int]] = {nation_id: [] for nation_id in nations}
+    path = input_file(map_name, "province_data.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError:
+        return held
+    if not isinstance(data, list):
+        return held
+    for pdata in data:
+        if not isinstance(pdata, dict):
+            continue
+        occupier = pdata.get("occupied_by")
+        province_id = pdata.get("id")
+        if occupier not in held or not isinstance(province_id, int):
+            continue
+        held[occupier].append(province_id)
+    return held
