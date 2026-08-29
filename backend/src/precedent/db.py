@@ -102,24 +102,80 @@ def insert_case(
 # in the 0.6-0.65 range that overlap with genuinely weak-but-real matches.
 # Cut those off entirely rather than force a top-3 slot on something that
 # isn't actually relevant.
-_MAX_RELEVANT_DISTANCE = 0.60
+#
+# Public (imported by precedent_routes.py and returned to callers as
+# `max_distance`) so consumers like the Discord bot can read the live cutoff
+# instead of hardcoding a copy of it.
+MAX_RELEVANT_DISTANCE = 0.60
 
 
-def search_similar(embedding: list[float], limit: int = 3) -> list[dict[str, Any]]:
+def search_similar(
+    embedding: list[float],
+    limit: int = 3,
+    players: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Nearest-K search under the relevance cutoff. `players`, if given, is a soft
+    boost: rows whose `players` array overlaps (case-insensitively) are ranked
+    first among already-relevant matches, but rows are never excluded for lack
+    of a player match (an empty/typo'd filter degrades to pure distance order).
+    """
     conn = _connect()
     try:
         with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            lowered = [p.strip().lower() for p in (players or []) if p.strip()]
             cur.execute(
                 """
                 SELECT id, logged_by, players, summary, rule, ruling, punishment,
                        created_at, embedding <=> %s::vector AS distance
                 FROM precedent_cases
                 WHERE embedding <=> %s::vector < %s
-                ORDER BY embedding <=> %s::vector
+                ORDER BY
+                    (EXISTS (
+                        SELECT 1 FROM unnest(players) AS p WHERE lower(p) = ANY(%s::text[])
+                    )) DESC,
+                    embedding <=> %s::vector
                 LIMIT %s
                 """,
-                (embedding, embedding, _MAX_RELEVANT_DISTANCE, embedding, limit),
+                (embedding, embedding, MAX_RELEVANT_DISTANCE, lowered, embedding, limit),
             )
             return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def delete_case(case_id: str) -> bool:
+    """Delete a case by id. Returns True if a row was deleted, False if not found."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("DELETE FROM precedent_cases WHERE id = %s", (case_id,))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_case(case_id: str) -> dict[str, Any] | None:
+    conn = _connect()
+    try:
+        with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, logged_by, players, summary, rule, ruling, punishment, created_at
+                FROM precedent_cases WHERE id = %s
+                """,
+                (case_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def ping_db() -> None:
+    """Cheap reachability check: connect and run SELECT 1. No embedding/Claude cost."""
+    conn = _connect()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("SELECT 1")
     finally:
         conn.close()
