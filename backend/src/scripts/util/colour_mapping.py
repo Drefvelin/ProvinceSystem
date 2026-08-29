@@ -120,6 +120,9 @@ def build_color_mapping(map_name: str, mode: str):
         delattr(build_color_mapping, "trade_strength")
     if hasattr(build_color_mapping, "trade_mixed"):
         delattr(build_color_mapping, "trade_mixed")
+    if hasattr(build_color_mapping, "occupation_provinces"):
+        delattr(build_color_mapping, "occupation_provinces")
+    build_color_mapping.occupation_provinces = set()
 
     if mode == "empire":
         kingdom_to_empire = {
@@ -187,6 +190,13 @@ def build_color_mapping(map_name: str, mode: str):
                     if pid == province_id:
                         province_to_color[rgb] = nation_color
 
+        build_color_mapping.occupation_provinces = apply_occupation_remap(
+            province_to_color,
+            provinces,
+            nations,
+            _load_province_data(map_name),
+        )
+
     elif mode == "trade":
         guilds = load_guilds(map_name)
         province_meta = load_province_metadata(map_name)
@@ -230,6 +240,46 @@ def build_color_mapping(map_name: str, mode: str):
             build_color_mapping.trade_mixed[prov_rgb] = mixed or base_color
 
     return province_to_color
+
+
+def _load_province_data(map_name: str) -> list:
+    path = input_file(map_name, "province_data.json")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def apply_occupation_remap(
+    province_to_color: dict,
+    provinces: dict,
+    nations: dict,
+    province_data: list | None,
+) -> set:
+    """Paint occupied provinces as the occupier nation. Returns remapped province RGBs."""
+    occupied = set()
+    if not province_data or not nations:
+        return occupied
+
+    rgb_by_id = {pid: rgb for rgb, pid in provinces.items()}
+    for pdata in province_data:
+        if not isinstance(pdata, dict):
+            continue
+        occupier_id = pdata.get("occupied_by")
+        if not occupier_id or occupier_id not in nations:
+            continue
+        occupier = nations[occupier_id]
+        if not isinstance(occupier, dict) or "rgb" not in occupier:
+            continue
+        prov_rgb = rgb_by_id.get(pdata.get("id"))
+        if prov_rgb is None:
+            continue
+        occupier_color = tuple(int(part) for part in occupier["rgb"].split(","))
+        province_to_color[prov_rgb] = occupier_color
+        occupied.add(prov_rgb)
+    return occupied
 
 
 def get_overlord_rgb(nation: str, nations: dict):

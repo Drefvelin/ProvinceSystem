@@ -12,6 +12,7 @@ FILL_SATURATION_MAX = 0.48
 FILL_LIGHTNESS_MIN = 0.42
 FILL_LIGHTNESS_MAX = 0.58
 PARCHMENT_BLEND = 0.08
+OCCUPATION_PARCHMENT_BLEND = 0.35
 
 HOVER_LIGHTNESS_BUMP = 0.10
 HOVER_SATURATION_BUMP = 0.05
@@ -61,6 +62,13 @@ def parchment_wash_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
 def display_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
     """Display colour for region overlays (parchment wash, faithful hue)."""
     return parchment_wash_rgb(rgb)
+
+
+def occupation_display_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Quieter wash for occupied land of the same occupier nation."""
+    washed = parchment_wash_rgb(rgb)
+    muted = _lerp_rgb(washed, PAPER_HIGH, OCCUPATION_PARCHMENT_BLEND)
+    return tuple(_clamp_byte(channel) for channel in muted)
 
 
 def hover_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:

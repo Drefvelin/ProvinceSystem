@@ -1,7 +1,13 @@
 import colorsys
 import unittest
 
-from .display_colour import display_rgb, hover_rgb, parchment_wash_rgb
+from .display_colour import (
+    PAPER_HIGH,
+    display_rgb,
+    hover_rgb,
+    occupation_display_rgb,
+    parchment_wash_rgb,
+)
 
 
 class DisplayColourTests(unittest.TestCase):
@@ -60,6 +66,21 @@ class DisplayColourTests(unittest.TestCase):
         _, base_l, _ = colorsys.rgb_to_hls(*(c / 255.0 for c in base))
         _, hover_l, _ = colorsys.rgb_to_hls(*(c / 255.0 for c in hover))
         self.assertGreater(hover_l, base_l)
+
+    def test_occupation_display_is_uint8_and_closer_to_parchment(self):
+        raw = (200, 20, 20)
+        occupied = occupation_display_rgb(raw)
+        home = display_rgb(raw)
+        for channel in occupied:
+            self.assertIsInstance(channel, int)
+            self.assertGreaterEqual(channel, 0)
+            self.assertLessEqual(channel, 255)
+        self.assertNotEqual(occupied, home)
+        self.assertLess(_rgb_distance(occupied, PAPER_HIGH), _rgb_distance(home, PAPER_HIGH))
+
+
+def _rgb_distance(a, b):
+    return sum((a[i] - b[i]) ** 2 for i in range(3))
 
 
 if __name__ == "__main__":

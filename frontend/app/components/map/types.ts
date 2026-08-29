@@ -153,6 +153,8 @@ export type WarExport = {
   attacker_capital?: WarCapitalCoords;
   defender_capital?: WarCapitalCoords;
   campaign_line_points?: WarLinePoint[];
+  occupied_by_attacker?: number[];
+  occupied_by_defender?: number[];
 };
 
 export type MapMarkersResponse = {

@@ -10,7 +10,7 @@ from ..util.border_paint import (
     compute_border_owners,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
-from ..util.display_colour import display_rgb, hover_rgb
+from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
 from ..util.overlay_metadata import (
     merge_overlay_metadata,
     rgb_tuple_to_str,
@@ -100,6 +100,7 @@ def generate_regions(
     overlord_colors = set(overrides.values())
 
     trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
+    occupation_provinces = getattr(build_color_mapping, "occupation_provinces", None) or set()
 
     output_dir = os.path.abspath(
         os.path.join(
@@ -207,8 +208,11 @@ def generate_regions(
         if owner not in light_cache:
             light_cache[owner] = hover_rgb(owner)
 
-        paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
-        pr, pg, pb = display_rgb(paint_rgb)
+        if occupation_provinces and prov_rgb in occupation_provinces:
+            pr, pg, pb = occupation_display_rgb(owner)
+        else:
+            paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
+            pr, pg, pb = display_rgb(paint_rgb)
         lr, lg, lb = light_cache[owner]
 
         base_px, hover_px, nested_px, nested_hover_px = region_px[owner]

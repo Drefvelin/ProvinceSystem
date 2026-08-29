@@ -16,7 +16,7 @@ from ..util.border_paint import (
     compute_border_owners,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
-from ..util.display_colour import display_rgb, hover_rgb
+from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
 from ..util.overlay_metadata import (
     crop_to_content,
     merge_overlay_metadata,
@@ -235,6 +235,7 @@ def generate_regions_numpy(
     overlord_chains = _build_overlord_chains(overrides)
     overlord_colors = set(overrides.values())
     trade_mixed = getattr(build_color_mapping, "trade_mixed", None)
+    occupation_provinces = getattr(build_color_mapping, "occupation_provinces", None) or set()
 
     img_path = input_file(map_name, "provinces.png")
     output_dir = os.path.abspath(
@@ -294,8 +295,11 @@ def generate_regions_numpy(
             f"({current / max(province_count, 1) * 100:5.1f}%) → {name}"
         )
 
-        paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
-        base = display_rgb(paint_rgb)
+        if occupation_provinces and prov_rgb in occupation_provinces:
+            base = occupation_display_rgb(owner)
+        else:
+            paint_rgb = trade_mixed.get(prov_rgb, owner) if trade_mixed else owner
+            base = display_rgb(paint_rgb)
         hover = hover_rgb(owner)
 
         ensure_region(owner).paint_flat(

@@ -20,7 +20,7 @@ SKIP_TERRAINS = {"water", "sea"}
 # Color interpolation helpers
 # -----------------------------
 def lerp(a: int, b: int, t: float) -> int:
-    return int(a + (b - a) * t)
+    return min(255, max(0, int(a + (b - a) * t)))
 
 
 def lerp_color(c1, c2, t: float):
@@ -35,9 +35,9 @@ def prosperity_to_color(norm: float):
     """
     norm ∈ [0, 1]
     """
-    if norm <= 0.5:
+    if norm <= 0.33:
         return lerp_color((120, 0, 0), (220, 0, 0), norm / 0.33)
-    if norm <= 0.80:
+    if norm <= 0.66:
         return lerp_color((220, 0, 0), (230, 180, 0), (norm - 0.33) / 0.33)
     return lerp_color((230, 180, 0), (120, 220, 120), (norm - 0.66) / 0.34)
 

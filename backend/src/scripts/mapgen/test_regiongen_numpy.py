@@ -73,6 +73,19 @@ class TestRegiongenNumpy(unittest.TestCase):
 
         np.testing.assert_array_equal(reference, canvas)
 
+    def test_occupation_fill_paints_occupier_buffer(self):
+        from ..util.display_colour import hover_rgb, occupation_display_rgb
+
+        occupier = (200, 10, 10)
+        fill = occupation_display_rgb(occupier)
+        hover = hover_rgb(occupier)
+        buf = RegionBuffer(with_nested=False)
+        mask = np.zeros((4, 4), dtype=bool)
+        mask[1, 1] = True
+        buf.paint_flat(mask, fill, hover)
+        self.assertEqual(tuple(buf.base[0, 0, :3]), fill)
+        self.assertEqual(tuple(buf.hover[0, 0, :3]), hover)
+
     def test_finalize_buffer_layer_preserves_map_overlay(self):
         height, width = 100, 120
         buf = RegionBuffer(with_nested=False)
