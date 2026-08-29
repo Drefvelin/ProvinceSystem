@@ -50,3 +50,5 @@ backend/src/data/skins/**
 # deploy
 
 __deploy_temp__/
+# local agent config
+.claude/
