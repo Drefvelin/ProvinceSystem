@@ -114,7 +114,7 @@ export async function fetchMapApi(
       method: options.method ?? "GET",
       headers,
       body: options.body,
-      cache: options.cache,
+      cache: options.cache ?? "no-store",
     });
   } catch {
     throw new MapAccessError("Request failed. Please try again.", 0, "");

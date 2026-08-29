@@ -171,6 +171,31 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(200, response.status_code)
             self.assertTrue(os.path.isfile(county_path))
 
+    async def test_upload_empty_duchy_skips_write(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            duchy_path = os.path.join(tmp, "duchy.json")
+            with open(duchy_path, "w", encoding="utf-8") as handle:
+                handle.write('{"keep": true}')
+            request = _request_with_host("172.18.0.1")
+            request.json = AsyncMock(return_value={})
+            with patch("src.api.data_routes.validate_map"), patch(
+                "src.api.data_routes.defines_file",
+                return_value=duchy_path,
+            ) as defines:
+                response = await upload_region_data(
+                    "main",
+                    "duchy",
+                    request,
+                    BackgroundTasks(),
+                )
+
+            self.assertEqual(200, response.status_code)
+            defines.assert_not_called()
+            with open(duchy_path, encoding="utf-8") as handle:
+                self.assertEqual(handle.read(), '{"keep": true}')
+
 
 if __name__ == "__main__":
     unittest.main()

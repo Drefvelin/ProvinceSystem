@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, 
 from fastapi.responses import FileResponse, JSONResponse
 import json, os, time
 
+from .http_headers import add_no_cache
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
@@ -89,11 +90,13 @@ async def get_province_label_grid_bin(
     ensure_map_access(map_name, authorization)
     path = defines_file(map_name, "province_label_grid.bin.gz")
     if not os.path.exists(path):
-        return JSONResponse({"error": "Data not found"}, 404)
-    return FileResponse(
-        path,
-        media_type="application/gzip",
-        filename="province_label_grid.bin.gz",
+        return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
+    return add_no_cache(
+        FileResponse(
+            path,
+            media_type="application/gzip",
+            filename="province_label_grid.bin.gz",
+        )
     )
 
 @data_router.get("/{map_name}/data/markers")
@@ -102,7 +105,7 @@ async def get_map_markers(
     authorization: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
-    return JSONResponse(build_markers_response(map_name))
+    return add_no_cache(JSONResponse(build_markers_response(map_name)))
 
 @data_router.get("/{map_name}/data/{file}")
 async def get_map_name_data(
@@ -113,9 +116,9 @@ async def get_map_name_data(
     ensure_map_access(map_name, authorization)
     path = defines_file(map_name, f"{file}.json")
     if not os.path.exists(path):
-        return JSONResponse({"error": "Data not found"}, 404)
+        return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
     with open(path, encoding="utf-8") as f:
-        return JSONResponse(json.load(f))
+        return add_no_cache(JSONResponse(json.load(f)))
 
 @data_router.post("/{map_name}/data/upload/{mode}")
 async def upload_region_data(
@@ -132,6 +135,8 @@ async def upload_region_data(
     if mode_norm in TITLE_TIERS:
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Title data must be a JSON object")
+        if not payload:
+            return JSONResponse({"message": f"{mode} upload skipped (empty) for '{map_name}'"})
         try:
             payload = validate_title_tier(mode_norm, payload, map_name)
         except TitleValidationError as exc:

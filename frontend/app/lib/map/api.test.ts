@@ -34,6 +34,7 @@ describe("map api", () => {
       "http://api.test/dev/data/nation",
       expect.objectContaining({
         headers: { Authorization: "Bearer abc-token" },
+        cache: "no-store",
       })
     );
   });
@@ -53,6 +54,7 @@ describe("map api", () => {
       "http://api.test/main/data/markers",
       expect.objectContaining({
         headers: { Authorization: "Bearer token-1" },
+        cache: "no-store",
       })
     );
   });

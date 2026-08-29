@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Header, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 import os, time
 
+from .http_headers import add_cors, add_no_cache
 from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, parchment_image
 from ..scripts.util.imagechecker import find_province
@@ -31,18 +32,6 @@ def get_province_meta_cached(map_name: str) -> dict[int, dict]:
         }
 
     return _PROVINCE_META_CACHE[map_name]["data"]
-
-def add_cors(r: Response):
-    r.headers["Access-Control-Allow-Origin"] = "*"
-    r.headers["Access-Control-Allow-Headers"] = "*"
-    r.headers["Access-Control-Allow-Methods"] = "*"
-    return r
-
-def add_no_cache(r: Response):
-    r.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    return r
 
 def _resolve_base_map_path(map_name: str, base: str) -> str | None:
     use_satellite = base.lower() in ("satellite", "colour", "color")

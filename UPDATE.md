@@ -143,6 +143,10 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
+```bash
+docker compose logs -f backend --since 1m
+```
+
 **Do not** run `./scripts/staging-*.sh` for production. Those only apply to `docker-compose.staging.yml` (ports 18001/13001).
 
 If `docker compose build` fails, fix the error and rebuild. Do not run `up` expecting a new frontend image until the build succeeds.

@@ -10,7 +10,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
 from .data_routes import clear_province_cache
-from .file_routes import add_cors
+from .http_headers import add_cors, add_no_cache
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from .map_access import ensure_map_staff_write
 from .regen_routes import _regen_start_message
@@ -136,7 +136,7 @@ async def get_editor_province_pick(
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Province pick map not found")
 
-    return add_cors(FileResponse(path, media_type="image/png"))
+    return add_no_cache(add_cors(FileResponse(path, media_type="image/png")))
 
 
 @editor_router.get("/{map_name}/editor/province-index")
@@ -166,6 +166,6 @@ async def get_editor_province_index(
 
     payload = serialize_province_id_grid(width, height, ids)
     body = gzip.compress(payload)
-    return add_cors(
-        Response(content=body, media_type="application/octet-stream")
+    return add_no_cache(
+        add_cors(Response(content=body, media_type="application/octet-stream"))
     )

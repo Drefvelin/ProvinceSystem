@@ -70,6 +70,8 @@ Desktop pan/zoom on `/map/{id}`:
 
 Keep **one** full-resolution lookup surface (the existing mapdata canvas).
 
+Live map assets (pick PNGs, region overlays, banners, ZOC, and defines JSON such as `nation.json`) are served with `Cache-Control: no-store` so regen updates reach browsers without heuristic image cache. If a reverse proxy uses `proxy_cache`, it must honour origin `Cache-Control`. After deploy, users who already cached an old PNG may need one hard reload.
+
 Improvements:
 
 1. **Restore card fields** - pass through size/subjects.
