@@ -594,7 +594,7 @@ export function computeNationLabels(
     const provinces = labelControlProvinces(
       nationId,
       regionData,
-      region.provinces
+      region.provinces ?? []
     );
     if (!name || !provinces?.length) continue;
 
