@@ -305,7 +305,9 @@ class MapAccessApiTest(unittest.TestCase):
             "exported_at": "2026-08-15T20:00:00Z",
             "settlements": [],
         }
-        with mock.patch("src.api.data_routes.generate_zoc_overlays") as zocgen:
+        with mock.patch("src.api.data_routes.require_localhost"), mock.patch(
+            "src.api.data_routes.generate_zoc_overlays"
+        ) as zocgen:
             r = self.client.post("/main/data/upload/map_markers", json=payload)
         self.assertEqual(r.status_code, 200)
         self.assertIn("map_markers", r.json()["message"])

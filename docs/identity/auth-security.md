@@ -71,14 +71,16 @@ When `CHARACTER_UI_DEV=1` and token is `ui-dev-session`, staff map/editor checks
 
 Never expose these as `NEXT_PUBLIC_*` env vars.
 
-## Localhost-only internal routes
+## Internal plugin routes (IP, not staff tokens)
 
 [`internal_access.py`](../../backend/src/api/internal_access.py) defines `require_localhost(request)`:
 
-- Allows only `127.0.0.1` and `::1`.
-- Used for internal queue upload and regen callers on the same host as the API.
+- Allows loopback (`127.0.0.1`, `::1`) and private TCP peers (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) so Paper on the Docker host can reach a published API (peer is often `172.18.0.1`).
+- Rejects the request if `X-Forwarded-For` or `X-Real-IP` is set, so public nginx `/api/` cannot use the same Docker gateway IP to regen or overwrite map JSON.
+- Used for hashed queue upload, plugin regen, and all `POST /{map}/data/upload/{mode}` (including title tiers). No Bearer session is required on that upload path.
+- Website title editor write/regen still uses `ensure_map_staff_write()` (staff Bearer + `tfmc.map.staff`).
 
-**Production rule:** TFMCWeb `api.base-url` on the game host must be loopback (e.g. `http://127.0.0.1:18001` on staging), not the public site hostname. SimpleFactions regen and queue upload inherit that URL through TFMCWeb's gateway.
+**Production rule:** TFMCWeb `api.base-url` on the game host must be loopback (e.g. `http://127.0.0.1:8000`), not the public website hostname. SimpleFactions regen and uploads inherit that URL through TFMCWeb's gateway. Hitting the public `/api/` hostname adds forwarded-for headers and is rejected.
 
 ## Production startup guard
 
@@ -106,7 +108,7 @@ Pass `PS_PRODUCTION` as a Docker build arg for production frontend images.
 | `PS_PRODUCTION` | **Do not set** | Set `PS_PRODUCTION=1` |
 | Dev flags | `SKINS_DEV=1` OK | `SKINS_DEV` and `CHARACTER_UI_DEV` must be unset |
 | API keys | Compose dev defaults OK | Real `PLUGIN_KEY` / `STAFF_KEY` required |
-| Internal queue/regen | Loopback `127.0.0.1:18001` | Same: never public hostname |
+| Internal queue/regen/plugin upload | Loopback `api.base-url` (Docker NAT private peer OK; not public hostname) | Same |
 | Code inspect | Staff Bearer + `tfmc.map.staff` | Same |
 | Frontend build | `NEXT_PUBLIC_CHARACTER_UI_DEV` unset for prod images | Pass `PS_PRODUCTION=1` build arg |
 

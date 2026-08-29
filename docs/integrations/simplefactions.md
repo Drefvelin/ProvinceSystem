@@ -24,7 +24,7 @@ Primary client: `Workspace/simplefactions/.../REST/RestServer.java` - delegates 
 | Call | Purpose |
 |------|---------|
 | `GET {api}/{mapRef}/map/province/{x},{z}` | Resolve province under player |
-| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue / `map_markers` JSON |
+| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue / `map_markers` / title-tier JSON (internal IP; no staff token) |
 | `GET {api}/{mapRef}/{hashedKey}/api/regenerate/{type}` | `textonly`, queued, or `fullregen` |
 | `GET {api}/generator/banner` | Random banner patterns |
 
@@ -40,7 +40,7 @@ SimpleFactions **soft-depends** on TFMCWeb. With `enable-map: true` and TFMCWeb 
 
 ### Loopback URL rule
 
-On the game host, `api.base-url` must point at **loopback** (e.g. `http://127.0.0.1:18001` on staging), not the public website hostname. Queue upload and regen inherit this URL. See [identity/auth-security.md](../identity/auth-security.md).
+On the game host, `api.base-url` must point at **loopback** (e.g. `http://127.0.0.1:8000`), not the public website hostname. Uploads and regen inherit this URL. Docker NAT then shows a private peer (often `172.18.0.1`), which the API treats as internal. Calling the public `/api/` host adds `X-Forwarded-For` and is rejected. See [identity/auth-security.md](../identity/auth-security.md).
 
 ## Queue upload and regen flow
 
@@ -63,6 +63,7 @@ Common `mode` values on `POST /{map}/data/upload/{mode}`:
 - `guilds` - guild layer data
 - `queue` - pending region RGB jobs
 - `map_markers` - settlements, capitals, forts
+- `county` / `duchy` / `kingdom` / `empire` - de jure title JSON (same IP gate; validated payload)
 
 War and chronicle extensions follow the export schema in [`docs/assets/map-export-schema.json`](../assets/map-export-schema.json). SF-side export details: [`simplefactions/docs/map-export.md`](../../../simplefactions/docs/map-export.md).
 

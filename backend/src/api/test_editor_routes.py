@@ -303,6 +303,16 @@ class EditorRoutesApiTest(unittest.TestCase):
         )
         self.assertEqual(r.status_code, 403)
 
+    def test_upload_county_internal_peer_no_auth_200(self) -> None:
+        payload = {
+            "COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"},
+        }
+        with mock.patch("src.api.data_routes.require_localhost"):
+            r = self.client.post("/main/data/upload/county", json=payload)
+        self.assertEqual(r.status_code, 200)
+        written = json.loads((self.map_dir / "county.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["COUNTY_1"]["name"], "A")
+
     def test_get_editor_provinces_staff(self) -> None:
         staff_session_patch, staff_access_patch = self._staff_patches()
         with staff_session_patch, staff_access_patch:

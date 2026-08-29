@@ -47,8 +47,8 @@ flowchart TD
   end
 
   subgraph ps [ProvinceSystem API]
-    Write["POST staff title write"]
-    Upload["POST /data/upload/{tier} guarded"]
+    Write["POST /editor/titles staff Bearer"]
+    Upload["POST /data/upload/{tier} plugin IP"]
     Regen["GET regen fullregen:county etc."]
     Defines["defines/{map}/*.json"]
     Mapgen[mapgen + regiongen]
@@ -87,9 +87,9 @@ Same as staff map viewer:
 
 1. Character page redeem → Bearer session.
 2. `permission_flags["tfmc.map.staff"]` on `rpc_player_meta` for map `realm_id`.
-3. Editor route and all write/upload/regen-trigger endpoints return **403** without permission.
+3. Editor route write and editor regen-trigger endpoints return **403** without permission.
 
-`POST /data/upload/{mode}` for title tiers is gated by dedicated staff routes.
+SimpleFactions `POST /data/upload/{mode}` (including title tiers) is not staff Bearer; it uses the same internal IP check as plugin regen. Staff saves go through `POST /{map}/editor/titles/{tier}`.
 
 ## Entry and nav
 

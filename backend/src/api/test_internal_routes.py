@@ -22,9 +22,19 @@ from fastapi import BackgroundTasks, HTTPException
 from src.scripts.util.auth import HASHED_KEY
 
 
-def _request_with_host(host: str) -> MagicMock:
+class _Headers(dict):
+    def get(self, key, default=None):
+        lowered = {str(name).lower(): value for name, value in self.items()}
+        return lowered.get(str(key).lower(), default)
+
+
+def _request_with_host(host: str, forwarded_for: str | None = None) -> MagicMock:
     request = MagicMock()
     request.client = MagicMock(host=host)
+    headers = _Headers()
+    if forwarded_for is not None:
+        headers["X-Forwarded-For"] = forwarded_for
+    request.headers = headers
     return request
 
 
@@ -91,6 +101,75 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(body["success"])
         self.assertEqual("main", body["map"])
         self.assertEqual("fullregen", body["regen_type"])
+
+    async def test_regenerate_allows_docker_bridge(self) -> None:
+        from src.api.regen_routes import regenerate_map
+
+        request = _request_with_host("172.18.0.1")
+        tasks = BackgroundTasks()
+
+        with patch("src.api.regen_routes.validate_map"), patch(
+            "src.api.regen_routes.run_regeneration"
+        ):
+            response = await regenerate_map(
+                "main",
+                HASHED_KEY,
+                "fullregen",
+                tasks,
+                request,
+            )
+
+        self.assertEqual(200, response.status_code)
+
+    async def test_regenerate_rejects_forwarded_for(self) -> None:
+        from src.api.regen_routes import regenerate_map
+
+        request = _request_with_host("172.18.0.1", forwarded_for="8.8.8.8")
+        with self.assertRaises(HTTPException) as ctx:
+            await regenerate_map(
+                "main",
+                HASHED_KEY,
+                "fullregen",
+                BackgroundTasks(),
+                request,
+            )
+        self.assertEqual(403, ctx.exception.status_code)
+
+    async def test_upload_region_rejects_remote(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        request = _request_with_host("8.8.8.8")
+        with self.assertRaises(HTTPException) as ctx:
+            await upload_region_data("main", "nation", request, BackgroundTasks())
+        self.assertEqual(403, ctx.exception.status_code)
+
+    async def test_upload_county_allows_docker_bridge_without_auth(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            county_path = os.path.join(tmp, "county.json")
+            request = _request_with_host("172.18.0.1")
+            request.json = AsyncMock(
+                return_value={
+                    "COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"},
+                }
+            )
+            with patch("src.api.data_routes.validate_map"), patch(
+                "src.api.data_routes.validate_title_tier",
+                return_value={"COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"}},
+            ), patch(
+                "src.api.data_routes.defines_file",
+                return_value=county_path,
+            ):
+                response = await upload_region_data(
+                    "main",
+                    "county",
+                    request,
+                    BackgroundTasks(),
+                )
+
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(os.path.isfile(county_path))
 
 
 if __name__ == "__main__":

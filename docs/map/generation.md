@@ -37,7 +37,7 @@ Primary client: `Workspace/simplefactions/.../REST/RestServer.java` - delegates 
 | Call | Purpose |
 |------|---------|
 | `GET {api}/{mapRef}/map/province/{x},{z}` | Resolve province under player |
-| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue / `map_markers` JSON |
+| `POST {api}/{mapRef}/data/upload/{mode}` | Push nation / provinces / guilds / queue / `map_markers` / titles (internal IP) |
 | `GET {api}/{mapRef}/{hashedKey}/api/regenerate/{type}` | `textonly`, queued, or `fullregen` |
 | `GET {api}/generator/banner` | Random banner patterns |
 

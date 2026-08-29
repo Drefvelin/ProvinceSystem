@@ -2,7 +2,8 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, 
 from fastapi.responses import FileResponse, JSONResponse
 import json, os, time
 
-from .map_access import ensure_map_access, ensure_map_staff_write
+from .internal_access import require_localhost
+from .map_access import ensure_map_access
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 from ..scripts.loader.markers import build_markers_response
@@ -122,14 +123,13 @@ async def upload_region_data(
     mode: str,
     request: Request,
     background_tasks: BackgroundTasks,
-    authorization: str | None = Header(default=None),
 ):
+    require_localhost(request)
     validate_map(map_name)
     payload = await request.json()
 
     mode_norm = (mode or "").strip().lower()
     if mode_norm in TITLE_TIERS:
-        ensure_map_staff_write(map_name, authorization)
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Title data must be a JSON object")
         try:
