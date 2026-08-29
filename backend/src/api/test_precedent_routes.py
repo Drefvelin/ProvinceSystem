@@ -60,6 +60,146 @@ class PrecedentRoutesTest(unittest.TestCase):
         res = self.client.get("/precedent/staff/ping")
         self.assertEqual(res.status_code, 401)
 
+    def test_list_cases_no_auth(self) -> None:
+        res = self.client.get("/precedent/staff/cases")
+        self.assertEqual(res.status_code, 401)
+
+    def test_update_case_no_auth(self) -> None:
+        res = self.client.put(
+            "/precedent/staff/case/abc", json={"logged_by": "x", "summary": "s"}
+        )
+        self.assertEqual(res.status_code, 401)
+
+    def test_bad_staff_key_does_not_fall_through_to_session(self) -> None:
+        """A wrong key must fail, not silently retry as an unauthenticated session."""
+        res = self.client.get(
+            "/precedent/staff/cases", headers={"X-Staff-Key": "wrong-key"}
+        )
+        self.assertEqual(res.status_code, 401)
+
+    # --- session (website) auth ---
+
+    @mock.patch("src.api.precedent_routes.count_cases", return_value=0)
+    @mock.patch("src.api.precedent_routes.list_cases", return_value=[])
+    @mock.patch(
+        "src.api.precedent_routes.require_site_staff",
+        return_value={"player_uuid": "staff-uuid"},
+    )
+    def test_list_cases_accepts_site_staff_session(
+        self, mock_staff, mock_list, mock_count
+    ) -> None:
+        res = self.client.get(
+            "/precedent/staff/cases", headers={"Authorization": "Bearer sess-token"}
+        )
+        self.assertEqual(res.status_code, 200)
+        mock_staff.assert_called_once_with("Bearer sess-token")
+
+    @mock.patch(
+        "src.api.precedent_routes.get_linked_minecraft_name", return_value="SteveMC"
+    )
+    @mock.patch("src.api.precedent_routes.insert_case", return_value="new-id")
+    @mock.patch("src.api.precedent_routes.embed", return_value=[0.1])
+    @mock.patch(
+        "src.api.precedent_routes.require_site_staff",
+        return_value={"player_uuid": "staff-uuid"},
+    )
+    def test_web_log_case_overrides_logged_by_with_session_identity(
+        self, mock_staff, mock_embed, mock_insert, mock_name
+    ) -> None:
+        res = self.client.post(
+            "/precedent/staff/log",
+            json={"logged_by": "SomeoneElse", "summary": "s"},
+            headers={"Authorization": "Bearer sess-token"},
+        )
+        self.assertEqual(res.status_code, 200)
+        _, kwargs = mock_insert.call_args
+        self.assertEqual(kwargs.get("logged_by"), "SteveMC")
+
+    @mock.patch("src.api.precedent_routes.insert_case", return_value="new-id")
+    @mock.patch("src.api.precedent_routes.embed", return_value=[0.1])
+    def test_bot_log_case_keeps_caller_supplied_logged_by(
+        self, mock_embed, mock_insert
+    ) -> None:
+        res = self.client.post(
+            "/precedent/staff/log",
+            json={"logged_by": "WrenPlays", "summary": "s"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        _, kwargs = mock_insert.call_args
+        self.assertEqual(kwargs.get("logged_by"), "WrenPlays")
+
+    # --- list cases ---
+
+    @mock.patch("src.api.precedent_routes.count_cases", return_value=42)
+    @mock.patch(
+        "src.api.precedent_routes.list_cases",
+        return_value=[
+            {
+                "id": "1",
+                "logged_by": "x",
+                "players": [],
+                "summary": "s",
+                "rule": "",
+                "ruling": "",
+                "punishment": "",
+                "created_at": None,
+            }
+        ],
+    )
+    def test_list_cases_returns_envelope_with_total(self, mock_list, mock_count) -> None:
+        res = self.client.get("/precedent/staff/cases", headers=_HEADERS)
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["total"], 42)
+        self.assertEqual(body["cases"][0]["id"], "1")
+
+    @mock.patch("src.api.precedent_routes.count_cases", return_value=0)
+    @mock.patch("src.api.precedent_routes.list_cases", return_value=[])
+    def test_list_cases_clamps_limit(self, mock_list, mock_count) -> None:
+        res = self.client.get(
+            "/precedent/staff/cases?limit=99999&offset=-5", headers=_HEADERS
+        )
+        self.assertEqual(res.status_code, 200)
+        _, kwargs = mock_list.call_args
+        self.assertEqual(kwargs.get("limit"), 1000)
+        self.assertEqual(kwargs.get("offset"), 0)
+
+    # --- update case ---
+
+    @mock.patch("src.api.precedent_routes.update_case", return_value=True)
+    @mock.patch("src.api.precedent_routes.embed", return_value=[0.9])
+    def test_update_case_reembeds_before_saving(self, mock_embed, mock_update) -> None:
+        res = self.client.put(
+            "/precedent/staff/case/1",
+            json={"logged_by": "Staffer", "summary": "Edited summary"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {"updated": True, "id": "1"})
+        # The embedded text must be the NEW text, or the row rots out of search.
+        self.assertIn("Edited summary", mock_embed.call_args.args[0])
+        _, kwargs = mock_update.call_args
+        self.assertEqual(kwargs.get("embedding"), [0.9])
+
+    @mock.patch("src.api.precedent_routes.update_case", return_value=False)
+    @mock.patch("src.api.precedent_routes.embed", return_value=[0.9])
+    def test_update_case_not_found(self, mock_embed, mock_update) -> None:
+        res = self.client.put(
+            "/precedent/staff/case/missing",
+            json={"logged_by": "Staffer", "summary": "s"},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 404)
+
+    def test_update_case_rejects_oversized_summary(self) -> None:
+        res = self.client.put(
+            "/precedent/staff/case/1",
+            json={"logged_by": "Staffer", "summary": "x" * 1001},
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 422)
+
     # --- log case ---
 
     @mock.patch("src.api.precedent_routes.insert_case", return_value="new-id")
@@ -72,6 +212,32 @@ class PrecedentRoutesTest(unittest.TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json(), {"id": "new-id"})
+
+    @mock.patch("src.api.precedent_routes.insert_case", return_value="new-id")
+    @mock.patch("src.api.precedent_routes.embed", return_value=[0.1])
+    def test_log_case_embeds_summary_only(self, mock_embed, mock_insert) -> None:
+        """Queries are incident descriptions, so only the summary is indexed.
+
+        Embedding the rule/ruling/punishment too filled the stored vector with
+        text no query can contain, holding even exact matches away from the
+        top of the similarity scale.
+        """
+        res = self.client.post(
+            "/precedent/staff/log",
+            json={
+                "logged_by": "Staffer",
+                "summary": "Used xray to find diamonds",
+                "rule": "4.1",
+                "ruling": "Upheld",
+                "punishment": "10y",
+            },
+            headers=_HEADERS,
+        )
+        self.assertEqual(res.status_code, 200)
+        embedded = mock_embed.call_args.args[0]
+        self.assertEqual(embedded, "Used xray to find diamonds")
+        for leaked in ("4.1", "Upheld", "10y", "Rule:", "Punishment:"):
+            self.assertNotIn(leaked, embedded)
 
     def test_log_case_rejects_oversized_summary(self) -> None:
         res = self.client.post(
