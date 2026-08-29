@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any
 
 import psycopg2
@@ -113,16 +114,29 @@ def search_similar(
     embedding: list[float],
     limit: int = 3,
     players: list[str] | None = None,
+    query_text: str = "",
 ) -> list[dict[str, Any]]:
-    """Nearest-K search under the relevance cutoff. `players`, if given, is a soft
-    boost: rows whose `players` array overlaps (case-insensitively) are ranked
-    first among already-relevant matches, but rows are never excluded for lack
-    of a player match (an empty/typo'd filter degrades to pure distance order).
+    """Nearest-K search under the relevance cutoff, applying two soft boosts that
+    only reorder rows already inside the cutoff (never exclude or bypass it):
+
+    - `players`: rows whose `players` array overlaps (case-insensitively).
+    - `query_text`: rows whose summary/rule/ruling/punishment lexically contain
+      any word from the query (Postgres full-text search, OR'd word-by-word).
+      This exists because embedding distance alone can rank a short,
+      exact-wording case (e.g. a one-line "Xray" summary) below a longer,
+      only-thematically-related one for a query like "player xraying" -- the
+      literal word match rescues it into the top-`limit` slots it would
+      otherwise lose on distance alone. Words are OR'd (any one word matching
+      is enough), not AND'd, so a short summary matching only "xray" out of
+      "player xraying" still gets boosted.
+
+    An empty/typo'd `players` or `query_text` degrades to pure distance order.
     """
     conn = _connect()
     try:
         with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             lowered = [p.strip().lower() for p in (players or []) if p.strip()]
+            words = [w for w in re.findall(r"\w+", query_text or "") if len(w) > 2]
             cur.execute(
                 """
                 SELECT id, logged_by, players, summary, rule, ruling, punishment,
@@ -133,10 +147,25 @@ def search_similar(
                     (EXISTS (
                         SELECT 1 FROM unnest(players) AS p WHERE lower(p) = ANY(%s::text[])
                     )) DESC,
+                    (EXISTS (
+                        SELECT 1 FROM unnest(%s::text[]) AS w
+                        WHERE to_tsvector(
+                                  'english',
+                                  summary || ' ' || rule || ' ' || ruling || ' ' || punishment
+                              ) @@ plainto_tsquery('english', w)
+                    )) DESC,
                     embedding <=> %s::vector
                 LIMIT %s
                 """,
-                (embedding, embedding, MAX_RELEVANT_DISTANCE, lowered, embedding, limit),
+                (
+                    embedding,
+                    embedding,
+                    MAX_RELEVANT_DISTANCE,
+                    lowered,
+                    words,
+                    embedding,
+                    limit,
+                ),
             )
             return [dict(row) for row in cur.fetchall()]
     finally:

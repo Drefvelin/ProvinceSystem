@@ -138,7 +138,7 @@ def staff_search_precedent(
     try:
         migrate()
         vector = embed(body.query, input_type="query")
-        matches = search_similar(vector, limit=3, players=body.players)
+        matches = search_similar(vector, limit=3, players=body.players, query_text=body.query)
         synthesis = synthesize(body.query, matches)
     except (PrecedentDBError, EmbeddingError, SynthesisError) as e:
         logger.exception("staff_search_precedent failed")

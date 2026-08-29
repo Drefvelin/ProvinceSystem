@@ -11,9 +11,11 @@ similar incidents get similar rulings. Bot never decides punishments — it's ad
    summary, ruling, punishment) → cog POSTs to ProvinceSystem → ProvinceSystem embeds
    the case text (Voyage AI) and stores it in Supabase Postgres (`pgvector`).
 2. Staff run `/precedent <case info>` → cog POSTs the free-text query → ProvinceSystem
-   embeds it, runs a pgvector cosine-similarity search for the 3 closest past cases,
-   and asks Claude to synthesize what precedent suggests → cog posts an embed with the
-   3 matches + the synthesis.
+   embeds it, runs a pgvector cosine-similarity search for the 3 closest past cases
+   (boosted, not filtered, by exact-word matches on the query and by any `players`
+   given, so a short exact-wording case like a one-line "Xray" summary isn't crowded
+   out by a longer only-thematically-related one), and asks Claude to synthesize what
+   precedent suggests → cog posts an embed with the 3 matches + the synthesis.
 
 Helper role can run `/precedent` and `/case-view` (read-only) but not `/case-log`
 or `/case-delete`, matching the staff/helper split already used by

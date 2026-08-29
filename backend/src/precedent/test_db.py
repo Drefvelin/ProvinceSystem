@@ -128,6 +128,23 @@ class SearchSimilarTest(unittest.TestCase):
         args = cursor.execute.call_args.args
         self.assertIn([], args[1])
 
+    @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)
+    @mock.patch("precedent.db.register_vector")
+    @mock.patch("precedent.db.psycopg2.connect")
+    def test_search_query_text_tokenized_for_lexical_boost(
+        self, mock_connect, mock_register
+    ) -> None:
+        cursor = mock.MagicMock()
+        cursor.fetchall.return_value = []
+        conn = _make_conn(cursor)
+        mock_connect.return_value = conn
+
+        db.search_similar([0.1], limit=3, query_text="Player Xraying! a to")
+
+        args = cursor.execute.call_args.args
+        # "a"/"to" are too short (<=2 chars) to be useful tsquery terms and are dropped.
+        self.assertIn(["Player", "Xraying"], args[1])
+
 
 class DeleteCaseTest(unittest.TestCase):
     @mock.patch.dict("os.environ", {"SUPABASE_DB_URL": "postgres://x"}, clear=True)

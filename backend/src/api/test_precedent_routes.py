@@ -114,6 +114,7 @@ class PrecedentRoutesTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         _, kwargs = mock_search.call_args
         self.assertEqual(kwargs.get("players"), ["Alice"])
+        self.assertEqual(kwargs.get("query_text"), "q")
 
     @mock.patch("src.api.precedent_routes.synthesize", return_value="synthesis text")
     @mock.patch("src.api.precedent_routes.search_similar", return_value=[])
