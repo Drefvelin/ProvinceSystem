@@ -10,6 +10,14 @@ export type MapViewportProps = {
   cursorClassName: string;
   isPanning: boolean;
   children: ReactNode;
+  /**
+   * Full-bleed mode: the container takes its size from CSS layout (flex/grid
+   * `h-full`) instead of a square `aspect-ratio` locked to the map's own
+   * dimensions. Use this when the map fills an arbitrary rectangle of the
+   * screen; `computeFitScale`'s "contain" fit then picks the scale that shows
+   * the whole map inside whatever rectangle results.
+   */
+  fill?: boolean;
 };
 
 export default function MapViewport({
@@ -20,11 +28,14 @@ export default function MapViewport({
   cursorClassName,
   isPanning,
   children,
+  fill = false,
 }: MapViewportProps) {
   const { w: mapW, h: mapH } = mapSize;
 
   const outerStyle: CSSProperties | undefined =
-    mapW > 0 && mapH > 0 ? { aspectRatio: `${mapW} / ${mapH}` } : undefined;
+    !fill && mapW > 0 && mapH > 0
+      ? { aspectRatio: `${mapW} / ${mapH}` }
+      : undefined;
 
   const innerStyle: CSSProperties = {
     width: mapW,
@@ -37,7 +48,7 @@ export default function MapViewport({
   return (
     <div
       ref={viewportRef}
-      className={`relative w-full overflow-hidden ${cursorClassName}${
+      className={`relative overflow-hidden ${fill ? "h-full w-full" : "w-full"} ${cursorClassName}${
         isPanning ? " select-none" : ""
       }`}
       style={outerStyle}

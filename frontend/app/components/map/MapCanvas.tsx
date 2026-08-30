@@ -25,10 +25,14 @@ import {
 } from "./overlayStyle";
 import LabelLayer from "./LabelLayer";
 import MapMarkerLayer from "./MapMarkerLayer";
+import PaintLayer from "./PaintLayer";
+import PaintTextEditor from "./PaintTextEditor";
+import type { UseMapPaintResult } from "../../hooks/useMapPaint";
 import WarCampaignLineLayer from "./WarCampaignLineLayer";
 import MapAuthImage from "./MapAuthImage";
 import MapViewport from "./MapViewport";
 import { useMapViewport } from "../../hooks/useMapViewport";
+import type { FitMode } from "../../lib/mapViewportMath";
 import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
@@ -50,6 +54,13 @@ function mapInteractionCursor(
   if (isPanning) return "cursor-grabbing";
   if (isHoveringClickable) return "cursor-pointer";
   return "cursor-grab";
+}
+
+function paintToolCursor(tool: UseMapPaintResult["tool"]): string {
+  if (tool === "eraser") return "cursor-cell";
+  if (tool === "move") return "cursor-move";
+  if (tool === "text") return "cursor-text";
+  return "cursor-crosshair";
 }
 
 function applyNaturalMapSize(
@@ -147,6 +158,14 @@ type MapCanvasProps = {
   onMouseLeave: () => void;
   onClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   isHoveringClickable?: boolean;
+  /** Full-bleed mode: fills its container instead of sizing to the map itself
+   * as a bordered card. See `MapViewport`'s `fill` prop. */
+  fill?: boolean;
+  /** "cover" (default) fills the viewport, cropping the map; "contain" shows
+   * the whole map, leaving empty space on the shorter axis. */
+  fitMode?: FitMode;
+  /** War-planning annotation layer. See `useMapPaint`. */
+  paint?: UseMapPaintResult;
 };
 
 export default function MapCanvas({
@@ -169,13 +188,16 @@ export default function MapCanvas({
   onMouseLeave,
   onClick,
   isHoveringClickable = false,
+  fill = false,
+  fitMode = "cover",
+  paint,
 }: MapCanvasProps) {
   const [mapSize, setMapSize] = useState({
     w: MAP_BOUNDS[mapId],
     h: MAP_BOUNDS[mapId],
   });
 
-  const viewport = useMapViewport({ mapSize });
+  const viewport = useMapViewport({ mapSize, fitMode });
   const appliedNaturalSizeRef = useRef<{ w: number; h: number } | null>(null);
 
   const syncNaturalMapSize = (img: HTMLImageElement) => {
@@ -223,13 +245,20 @@ export default function MapCanvas({
     ? overlayPathFromHoverUrl(hoveredOverlay.url)
     : null;
 
-  const interactionCursor = mapInteractionCursor(
-    viewport.isPanning,
-    isHoveringClickable
-  );
+  const paintEnabled = paint?.enabled ?? false;
+  const interactionCursor =
+    paintEnabled && !viewport.isPanning
+      ? paintToolCursor(paint!.tool)
+      : mapInteractionCursor(viewport.isPanning, isHoveringClickable);
 
   return (
-    <div className={`relative max-w-full overflow-hidden ${panelClass}`}>
+    <div
+      className={
+        fill
+          ? "relative h-full w-full overflow-hidden"
+          : `relative max-w-full overflow-hidden ${panelClass}`
+      }
+    >
       {cursorTooltip?.text && (
         <div
           className="pointer-events-none fixed z-50 rounded-md bg-[var(--tfmc-forest-deep)] px-3 py-1.5 shadow-lg"
@@ -255,6 +284,7 @@ export default function MapCanvas({
         transformTransition={viewport.transformTransition}
         cursorClassName={interactionCursor}
         isPanning={viewport.isPanning}
+        fill={fill}
       >
         <MapAuthImage
           mapId={mapId}
@@ -359,11 +389,35 @@ export default function MapCanvas({
         />
         <canvas
           ref={canvasRef}
-          className={`pointer-events-auto absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
+          className={`${
+            paintEnabled ? "pointer-events-none" : "pointer-events-auto"
+          } absolute inset-0 z-20 h-full w-full opacity-0 ${interactionCursor}`}
           onMouseMove={onMouseMove}
           onMouseLeave={onMouseLeave}
           onClick={onClick}
         />
+        {paint ? (
+          <PaintLayer
+            enabled={paint.enabled}
+            visible={paint.visible}
+            shapes={paint.shapes}
+            draft={paint.draft}
+            selectedId={paint.selectedId}
+            handlers={paint.handlers}
+            mapW={mapSize.w}
+            mapH={mapSize.h}
+            displayScale={viewport.displayScale}
+            cursorClassName={interactionCursor}
+          />
+        ) : null}
+        {paint?.textEditor ? (
+          <PaintTextEditor
+            editor={paint.textEditor}
+            onChange={paint.setTextValue}
+            onCommit={paint.commitText}
+            onCancel={paint.cancelText}
+          />
+        ) : null}
       </MapViewport>
     </div>
   );

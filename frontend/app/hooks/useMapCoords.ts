@@ -48,10 +48,17 @@ function getLegacyMapCoords(
   };
 }
 
-function getViewportMapCoords(
-  event: React.MouseEvent,
+/**
+ * Client (viewport-relative page) coordinates -> map pixels, unrounded.
+ * Returns null when the point falls outside the map. Callers that index into
+ * pixel data (province picking) floor the result themselves; the paint layer
+ * wants the sub-pixel value so strokes stay smooth when zoomed in.
+ */
+export function screenPointToMap(
+  clientX: number,
+  clientY: number,
   viewport: MapPickViewport
-): MapCoords | null {
+): { x: number; y: number } | null {
   const { viewportElement, displayScale, translateX, translateY, mapSize } =
     viewport;
 
@@ -60,13 +67,12 @@ function getViewportMapCoords(
   }
 
   const viewportRect = viewportElement.getBoundingClientRect();
-  const viewportX = event.clientX - viewportRect.left;
-  const viewportY = event.clientY - viewportRect.top;
-
-  const point = screenToMap(viewportX, viewportY, displayScale, {
-    x: translateX,
-    y: translateY,
-  });
+  const point = screenToMap(
+    clientX - viewportRect.left,
+    clientY - viewportRect.top,
+    displayScale,
+    { x: translateX, y: translateY }
+  );
 
   if (
     point.x < 0 ||
@@ -76,6 +82,16 @@ function getViewportMapCoords(
   ) {
     return null;
   }
+
+  return point;
+}
+
+function getViewportMapCoords(
+  event: React.MouseEvent,
+  viewport: MapPickViewport
+): MapCoords | null {
+  const point = screenPointToMap(event.clientX, event.clientY, viewport);
+  if (!point) return null;
 
   return {
     x: Math.floor(point.x),
