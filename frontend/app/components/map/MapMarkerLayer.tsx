@@ -4,6 +4,7 @@ import type { MapMode } from "./types";
 import {
   MARKER_HOVER_SCALE,
   MARKER_HOVER_TRANSITION,
+  MARKER_ICON_HOVER_GLOW,
   MARKER_LABEL_GAP,
   MARKER_LAYER_Z_BELOW_LABELS,
   MARKER_LAYER_Z_HOVERED,
@@ -121,6 +122,10 @@ function MapMarkerLayer({
                 // Smooth upscaling turns them to mush, so scale them
                 // nearest-neighbour like the paint stamps do.
                 imageRendering: "pixelated",
+                // Hover feedback lives on the icon, not the label, so the
+                // pixel art keeps its edges instead of being washed out.
+                filter: hovered ? MARKER_ICON_HOVER_GLOW : undefined,
+                transition: "filter 150ms ease-out",
               }}
               draggable={false}
             />
