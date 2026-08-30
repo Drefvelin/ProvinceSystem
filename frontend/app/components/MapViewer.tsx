@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useMapEngine } from "../core/MapEngineContext";
 import { useMapHover } from "../hooks/useMapHover";
 import type { MapPickViewport } from "../hooks/useMapCoords";
+import useMapPaint from "../hooks/useMapPaint";
 import { useMapModeData } from "../hooks/useMapModeData";
 import { useMapGeometry } from "../hooks/useMapGeometry";
 import { useMapMarkers } from "../hooks/useMapMarkers";
 import { isMarkerMapMode } from "../lib/mapMarkers";
+import type { FitMode } from "../lib/mapViewportMath";
 import {
   installationToMapMarker,
 } from "../lib/installationMarkers";
@@ -37,6 +39,7 @@ import MapAccessGate, {
 import MapCanvas from "./map/MapCanvas";
 import MapPageLayout from "./map/MapPageLayout";
 import MapToolbar from "./map/MapToolbar";
+import PaintToolbar from "./map/PaintToolbar";
 import {
   MapDesktopSidePanel,
   MapDrillStackBar,
@@ -67,6 +70,9 @@ import { editorUrl } from "@/lib/map/editorAccess";
 const editTitlesLinkClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] no-underline transition hover:brightness-110 hover:border-[var(--tfmc-accent)]";
 
+const fitModeLabelClass = (active: boolean) =>
+  `text-xs transition ${active ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`;
+
 type MapViewerProps = {
   mapId: MapId;
 };
@@ -81,6 +87,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   const [accessChecked, setAccessChecked] = useState(mapId === "main");
 
   const [mapType, setMapType] = useState<MapMode>("nation");
+  const [fitMode, setFitMode] = useState<FitMode>("contain");
   const [hoveredOverlay, setHoveredOverlay] = useState<HoverOverlay | null>(
     null
   );
@@ -137,6 +144,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   }, [mapId, authToken]);
 
   const guildNameCacheRef = useGuildCache(mapId, authToken);
+  const paint = useMapPaint({ mapId, viewportCoordsRef });
 
   const {
     mapObjects,
@@ -243,8 +251,11 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setPendingDrillId(null);
   }, [pendingDrillId, regionData, drillDownRegion]);
 
+  // The pick canvas only needs its own image, so it is deliberately not gated
+  // on `loading`/`geometryReady` — hover goes live as soon as the pick image
+  // decodes instead of waiting for every region/geometry JSON.
   useEffect(() => {
-    if (!accessChecked || gateReason || loading || (mapId === "main" && !geometryReady)) {
+    if (!accessChecked || gateReason) {
       return;
     }
 
@@ -254,7 +265,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const drawImage = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const ctx = canvas.getContext("2d");
+      // getImageData runs per hover frame; keep the backing store CPU-side.
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
       const path = `/${mapId}/mapdata/${mapType}`;
@@ -279,8 +291,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
+        // only touch the dimensions when the pick image actually changed size.
+        if (canvas.width !== img.width || canvas.height !== img.height) {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
@@ -302,15 +318,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       cancelled = true;
       revokeMapBlobUrl(blobUrl);
     };
-  }, [
-    mapId,
-    mapType,
-    loading,
-    geometryReady,
-    accessChecked,
-    gateReason,
-    authToken,
-  ]);
+  }, [mapId, mapType, accessChecked, gateReason, authToken]);
 
   const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable } = useMapHover({
     mapId,
@@ -333,6 +341,27 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     forts,
     setHoveredMarkerId,
   });
+
+  // Paint mode owns left-click and pointer tracking; the pick canvas is
+  // pointer-events-none while it is on, but guard here too so no stale hover
+  // state survives the switch.
+  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (paint.enabled) return;
+    onMouseMove(event);
+  };
+
+  useEffect(() => {
+    if (!paint.enabled) return;
+    onHoverLeave();
+    setHoveredMarkerId(null);
+    setCursorTooltip(null);
+    setHoveredOverlay(null);
+    setHoveredFortZoc(null);
+    setRegionInfo(null);
+    lastProvinceIdRef.current = null;
+    // onHoverLeave is stable enough for this one-shot cleanup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paint.enabled]);
 
   function handleMapTypeChange(mode: MapMode) {
     resetMapObjects();
@@ -398,6 +427,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   };
 
   const handleMapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (paint.enabled) return;
     if (event.button !== 0) return;
     if (!selectedRegionId || !regionData) return;
 
@@ -450,6 +480,11 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     );
   }
 
+  // Do not render the map until region data is in hand. Mounting MapCanvas
+  // early (to start the base-map download sooner) meant the region overlays
+  // rendered before regionData settled, and a failed overlay request is made
+  // permanent by MapCanvas's onError handler setting display:none — borders
+  // then stay invisible until something forces a remount.
   if (loading || (mapId === "main" && !geometryReady)) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
@@ -471,12 +506,20 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
             </Link>
           ) : null
         }
-        mapModeSelector={
+        mapModeSelectorMobile={
           <MapToolbar
             mapId={mapId}
             mapType={mapType}
             onMapTypeChange={handleMapTypeChange}
             variant="bar"
+          />
+        }
+        mapModeSelectorDesktop={
+          <MapToolbar
+            mapId={mapId}
+            mapType={mapType}
+            onMapTypeChange={handleMapTypeChange}
+            variant="sidebar"
           />
         }
         drillStackBar={
@@ -495,6 +538,31 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
             sessionToken={authToken}
           />
         }
+        fitModeToggle={
+          <div className="flex items-center gap-1.5">
+            <span className={fitModeLabelClass(fitMode === "cover")}>Width</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={fitMode === "contain"}
+              aria-label="Toggle between filling the width and fitting the height"
+              onClick={() =>
+                setFitMode((mode) => (mode === "cover" ? "contain" : "cover"))
+              }
+              className="relative h-4 w-8 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--tfmc-forest)_60%,transparent)] transition-colors"
+            >
+              <span
+                className="absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-[var(--tfmc-cream)]"
+                style={{
+                  transform: `translateX(${fitMode === "contain" ? 16 : 0}px)`,
+                  transition: "transform 150ms ease",
+                }}
+              />
+            </button>
+            <span className={fitModeLabelClass(fitMode === "contain")}>Height</span>
+          </div>
+        }
+        paintPanel={<PaintToolbar paint={paint} />}
       >
         <MapCanvas
           mapId={mapId}
@@ -512,10 +580,13 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           centroids={centroids}
           hoveredMarkerId={hoveredMarkerId}
           hoveredNationId={selectedRegionId}
-          onMouseMove={onMouseMove}
+          onMouseMove={handleCanvasMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleMapClick}
           isHoveringClickable={isHoveringClickable}
+          fill
+          fitMode={fitMode}
+          paint={paint}
         />
       </MapPageLayout>
 

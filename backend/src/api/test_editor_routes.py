@@ -355,9 +355,8 @@ class EditorRoutesApiTest(unittest.TestCase):
                 headers={"Authorization": self.auth},
             )
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(
-            r.headers.get("content-type"), "application/octet-stream"
-        )
+        # The route now streams the .gz file itself instead of rebuilding it.
+        self.assertEqual(r.headers.get("content-type"), "application/gzip")
         self.assertTrue(len(r.content) > 8)
         import gzip
         import struct
@@ -367,6 +366,24 @@ class EditorRoutesApiTest(unittest.TestCase):
         self.assertEqual(width, 2)
         self.assertEqual(height, 2)
         self.assertEqual(len(payload), 8 + width * height * 2)
+
+    def test_get_editor_province_index_revalidates_with_304(self) -> None:
+        staff_session_patch, staff_access_patch = self._staff_patches()
+        with staff_session_patch, staff_access_patch:
+            first = self.client.get(
+                "/main/editor/province-index",
+                headers={"Authorization": self.auth},
+            )
+            self.assertEqual(first.status_code, 200)
+            etag = first.headers["etag"]
+            self.assertNotIn("no-store", first.headers["Cache-Control"])
+
+            second = self.client.get(
+                "/main/editor/province-index",
+                headers={"Authorization": self.auth, "If-None-Match": etag},
+            )
+        self.assertEqual(second.status_code, 304)
+        self.assertEqual(second.content, b"")
 
     def test_get_editor_province_index_missing_grid_404(self) -> None:
         from src.scripts.province_id_grid import GRID_FILENAME

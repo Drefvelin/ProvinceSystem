@@ -70,79 +70,213 @@ export function labelCorridorMargin(
   return Math.max(LABEL_MIN_INSET_PX, textBand + LABEL_INSET_PADDING_PX);
 }
 
-export function buildComponentMask(
+export type GridSubRect = {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+
+type GridStats = {
+  maxProvinceId: number;
+  /** Per province id: [minX, minY, maxX, maxY], -1 in slot 0 when absent. */
+  bounds: Int32Array;
+};
+
+const gridStatsCache = new WeakMap<Uint16Array, GridStats>();
+
+function computeGridStats(grid: ProvinceLabelGrid): GridStats {
+  const { cells, gridWidth, gridHeight } = grid;
+
+  let maxProvinceId = 0;
+  for (let i = 0; i < cells.length; i += 1) {
+    if (cells[i] > maxProvinceId) maxProvinceId = cells[i];
+  }
+
+  const bounds = new Int32Array((maxProvinceId + 1) * 4);
+  bounds.fill(-1);
+
+  for (let gy = 0; gy < gridHeight; gy += 1) {
+    const row = gy * gridWidth;
+    for (let gx = 0; gx < gridWidth; gx += 1) {
+      const b = cells[row + gx] * 4;
+      if (bounds[b] < 0) {
+        bounds[b] = gx;
+        bounds[b + 1] = gy;
+        bounds[b + 2] = gx;
+        bounds[b + 3] = gy;
+        continue;
+      }
+      if (gx < bounds[b]) bounds[b] = gx;
+      if (gy < bounds[b + 1]) bounds[b + 1] = gy;
+      if (gx > bounds[b + 2]) bounds[b + 2] = gx;
+      if (gy > bounds[b + 3]) bounds[b + 3] = gy;
+    }
+  }
+
+  return { maxProvinceId, bounds };
+}
+
+/** Cached per-grid province id extents; one full grid scan shared by all labels. */
+export function getGridStats(grid: ProvinceLabelGrid): GridStats {
+  const cached = gridStatsCache.get(grid.cells);
+  if (cached) return cached;
+  const stats = computeGridStats(grid);
+  gridStatsCache.set(grid.cells, stats);
+  return stats;
+}
+
+export function fullGridRect(grid: ProvinceLabelGrid): GridSubRect {
+  return { x0: 0, y0: 0, x1: grid.gridWidth - 1, y1: grid.gridHeight - 1 };
+}
+
+/**
+ * Grid-space bounding box of the cells owned by `provinceIds`, padded so that
+ * every cell the distance transform can reach (and every clearance sample the
+ * corridor search takes near the blob) stays inside it. Returns null when none
+ * of the ids occur in the grid.
+ */
+export function componentSubRect(
   grid: ProvinceLabelGrid,
   provinceIds: number[]
-): Uint8Array {
-  const allowed = new Set(provinceIds);
-  const { cells } = grid;
-  const mask = new Uint8Array(grid.gridWidth * grid.gridHeight);
+): GridSubRect | null {
+  const { bounds, maxProvinceId } = getGridStats(grid);
 
-  for (let i = 0; i < cells.length; i += 1) {
-    if (allowed.has(cells[i])) {
-      mask[i] = 1;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+
+  for (const provinceId of provinceIds) {
+    if (!(provinceId >= 0) || provinceId > maxProvinceId) continue;
+    const b = provinceId * 4;
+    if (bounds[b] < 0) continue;
+    if (bounds[b] < x0) x0 = bounds[b];
+    if (bounds[b + 1] < y0) y0 = bounds[b + 1];
+    if (bounds[b + 2] > x1) x1 = bounds[b + 2];
+    if (bounds[b + 3] > y1) y1 = bounds[b + 3];
+  }
+
+  if (x1 < x0 || y1 < y0) return null;
+
+  const cellScale = Math.min(grid.scaleX, grid.scaleY);
+  const pad = Math.max(
+    1,
+    Math.ceil(cellScale > 0 ? LABEL_MIN_INSET_PX / cellScale : 1)
+  );
+
+  return {
+    x0: Math.max(0, x0 - pad),
+    y0: Math.max(0, y0 - pad),
+    x1: Math.min(grid.gridWidth - 1, x1 + pad),
+    y1: Math.min(grid.gridHeight - 1, y1 + pad),
+  };
+}
+
+export function buildComponentMask(
+  grid: ProvinceLabelGrid,
+  provinceIds: number[],
+  rect?: GridSubRect
+): Uint8Array {
+  const { cells, gridWidth, gridHeight } = grid;
+  const { maxProvinceId } = getGridStats(grid);
+
+  const allowed = new Uint8Array(maxProvinceId + 1);
+  for (const provinceId of provinceIds) {
+    if (!(provinceId >= 0) || provinceId > maxProvinceId) continue;
+    allowed[provinceId] = 1;
+  }
+
+  const mask = new Uint8Array(gridWidth * gridHeight);
+  const r = rect ?? fullGridRect(grid);
+
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    const row = gy * gridWidth;
+    for (let gx = r.x0; gx <= r.x1; gx += 1) {
+      const idx = row + gx;
+      if (allowed[cells[idx]] === 1) {
+        mask[idx] = 1;
+      }
     }
   }
 
   return mask;
 }
 
-/** Multi-source BFS clearance from blob border, in map pixels (conservative). */
+/**
+ * Multi-source BFS clearance from blob border, in map pixels (conservative).
+ *
+ * When `rect` is given the work is confined to that sub-rect; cells outside it
+ * are left at 0, which is exactly what the full-grid version produces for
+ * unmasked cells. Clearance-0 border seeding uses TRUE grid edges only - a
+ * sub-rect border that is interior to the grid must never seed, or labels move.
+ */
 export function distanceTransform(
   mask: Uint8Array,
-  grid: ProvinceLabelGrid
+  grid: ProvinceLabelGrid,
+  rect?: GridSubRect
 ): Float32Array {
   const { gridWidth, gridHeight, scaleX, scaleY } = grid;
   const cellScale = Math.min(scaleX, scaleY);
-  const size = gridWidth * gridHeight;
-  const dist = new Float32Array(size);
-  dist.fill(-1);
+  const dist = new Float32Array(gridWidth * gridHeight);
+  const r = rect ?? fullGridRect(grid);
 
-  const queue: number[] = [];
-  for (let idx = 0; idx < size; idx += 1) {
-    if (mask[idx] === 0) {
-      dist[idx] = 0;
-      queue.push(idx);
-      continue;
-    }
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    const row = gy * gridWidth;
+    dist.fill(-1, row + r.x0, row + r.x1 + 1);
+  }
 
-    const x = idx % gridWidth;
-    const y = (idx / gridWidth) | 0;
-    const onGridEdge =
-      x === 0 ||
-      x === gridWidth - 1 ||
-      y === 0 ||
-      y === gridHeight - 1;
-    if (onGridEdge) {
-      dist[idx] = 0;
-      queue.push(idx);
+  const rectArea = (r.x1 - r.x0 + 1) * (r.y1 - r.y0 + 1);
+  const queue = new Int32Array(rectArea);
+  let tail = 0;
+
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    const row = gy * gridWidth;
+    // TRUE grid edge rows, not sub-rect rows.
+    const onEdgeRow = gy === 0 || gy === gridHeight - 1;
+    for (let gx = r.x0; gx <= r.x1; gx += 1) {
+      const idx = row + gx;
+      if (mask[idx] === 0) {
+        dist[idx] = 0;
+        queue[tail++] = idx;
+        continue;
+      }
+      // TRUE grid edge columns, not sub-rect columns.
+      if (onEdgeRow || gx === 0 || gx === gridWidth - 1) {
+        dist[idx] = 0;
+        queue[tail++] = idx;
+      }
     }
   }
 
   let head = 0;
-  while (head < queue.length) {
+  while (head < tail) {
     const idx = queue[head++];
     const x = idx % gridWidth;
     const y = (idx / gridWidth) | 0;
     const nextDist = dist[idx] + 1;
 
-    if (x > 0) pushNeighbor(idx - 1, nextDist);
-    if (x + 1 < gridWidth) pushNeighbor(idx + 1, nextDist);
-    if (y > 0) pushNeighbor(idx - gridWidth, nextDist);
-    if (y + 1 < gridHeight) pushNeighbor(idx + gridWidth, nextDist);
+    if (x > r.x0) pushNeighbor(idx - 1, nextDist);
+    if (x < r.x1) pushNeighbor(idx + 1, nextDist);
+    if (y > r.y0) pushNeighbor(idx - gridWidth, nextDist);
+    if (y < r.y1) pushNeighbor(idx + gridWidth, nextDist);
   }
 
   function pushNeighbor(neighbor: number, nextDist: number) {
     if (mask[neighbor] === 0 || dist[neighbor] >= 0) return;
     dist[neighbor] = nextDist;
-    queue.push(neighbor);
+    queue[tail++] = neighbor;
   }
 
-  for (let idx = 0; idx < size; idx += 1) {
-    if (mask[idx] === 1 && dist[idx] >= 0) {
-      dist[idx] *= cellScale;
-    } else {
-      dist[idx] = 0;
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    const row = gy * gridWidth;
+    for (let gx = r.x0; gx <= r.x1; gx += 1) {
+      const idx = row + gx;
+      if (mask[idx] === 1 && dist[idx] >= 0) {
+        dist[idx] *= cellScale;
+      } else {
+        dist[idx] = 0;
+      }
     }
   }
 
@@ -273,13 +407,15 @@ function collectCandidates(
   grid: ProvinceLabelGrid,
   mask: Uint8Array,
   dist: Float32Array,
-  minClearance: number
+  minClearance: number,
+  rect?: GridSubRect
 ): CandidatePoint[] {
   const { gridWidth, gridHeight, scaleX, scaleY } = grid;
   const points: CandidatePoint[] = [];
+  const r = rect ?? fullGridRect(grid);
 
-  for (let gy = 0; gy < gridHeight; gy += 1) {
-    for (let gx = 0; gx < gridWidth; gx += 1) {
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    for (let gx = r.x0; gx <= r.x1; gx += 1) {
       const idx = gy * gridWidth + gx;
       if (mask[idx] === 0) continue;
       if (dist[idx] < minClearance) continue;
@@ -338,17 +474,25 @@ function tryFindSegment(
 export function findLabelAnchor(
   mask: Uint8Array,
   dist: Float32Array,
-  grid: ProvinceLabelGrid
+  grid: ProvinceLabelGrid,
+  rect?: GridSubRect
 ): { x: number; y: number } | null {
   let bestIdx = -1;
   let bestClearance = -1;
 
-  for (let idx = 0; idx < mask.length; idx += 1) {
-    if (mask[idx] === 0) continue;
-    const clearance = dist[idx];
-    if (clearance > bestClearance) {
-      bestClearance = clearance;
-      bestIdx = idx;
+  const { gridWidth, gridHeight } = grid;
+  const r = rect ?? fullGridRect(grid);
+
+  for (let gy = r.y0; gy <= r.y1; gy += 1) {
+    const row = gy * gridWidth;
+    for (let gx = r.x0; gx <= r.x1; gx += 1) {
+      const idx = row + gx;
+      if (mask[idx] === 0) continue;
+      const clearance = dist[idx];
+      if (clearance > bestClearance) {
+        bestClearance = clearance;
+        bestIdx = idx;
+      }
     }
   }
 
@@ -416,9 +560,10 @@ export function tryRadialSegment(
   grid: ProvinceLabelGrid,
   text: string,
   marginScale: number,
-  anchor?: { x: number; y: number }
+  anchor?: { x: number; y: number },
+  rect?: GridSubRect
 ): LabelEndpoints | null {
-  const center = anchor ?? findLabelAnchor(mask, dist, grid);
+  const center = anchor ?? findLabelAnchor(mask, dist, grid, rect);
   if (!center) return null;
 
   const anchorClearance = clearanceAt(grid, dist, center.x, center.y);
@@ -504,14 +649,16 @@ export function insetLabelEndpoints(
   grid: ProvinceLabelGrid,
   seed: LabelEndpoints
 ): LabelEndpoints | null {
-  const mask = buildComponentMask(grid, componentIds);
-  const dist = distanceTransform(mask, grid);
+  const rect = componentSubRect(grid, componentIds) ?? fullGridRect(grid);
+  const mask = buildComponentMask(grid, componentIds, rect);
+  const dist = distanceTransform(mask, grid, rect);
   const cellScale = Math.min(grid.scaleX, grid.scaleY);
   const candidates = collectCandidates(
     grid,
     mask,
     dist,
-    Math.min(LABEL_MIN_INSET_PX, cellScale)
+    Math.min(LABEL_MIN_INSET_PX, cellScale),
+    rect
   );
   candidates.push(
     { x: seed.x1, y: seed.y1 },
@@ -528,7 +675,15 @@ export function insetLabelEndpoints(
   }
 
   for (const marginScale of [1, 0.75, 0.5]) {
-    const radial = tryRadialSegment(mask, dist, grid, text, marginScale);
+    const radial = tryRadialSegment(
+      mask,
+      dist,
+      grid,
+      text,
+      marginScale,
+      undefined,
+      rect
+    );
     if (radial) {
       return radial;
     }

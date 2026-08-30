@@ -52,3 +52,7 @@ backend/src/data/skins/**
 __deploy_temp__/
 # local agent config
 .claude/
+
+# Local build stamp for derived artifacts (see regeneration.py).
+# Machine-local: most artifacts it tracks live under the ignored output/ dir.
+backend/src/defines/*/derived_sources.json

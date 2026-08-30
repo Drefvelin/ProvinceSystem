@@ -1,8 +1,13 @@
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 import json, os, time
 
-from .http_headers import add_no_cache
+from .http_headers import (
+    add_no_cache,
+    conditional_file_response,
+    conditional_json_response,
+    make_etag,
+)
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
@@ -85,55 +90,87 @@ def build_compiled_provinces(map_name: str):
 async def get_compiled_provinces(
     map_name: str,
     authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
     now = time.time()
     cached = _province_cache.get(map_name)
 
-    if cached and now - cached["ts"] < CACHE_TTL:
-        return JSONResponse(cached["data"])
+    if not cached or now - cached["ts"] >= CACHE_TTL:
+        data = build_compiled_provinces(map_name)
+        # Serialize once per rebuild and keep the bytes: the ETag is a hash of
+        # the body, so a TTL rollover that produces identical data keeps the
+        # same tag and the client revalidates into a 304 instead of
+        # re-downloading ~185KB it already has.
+        cached = {
+            "ts": now,
+            "data": data,
+            "body": json.dumps(data, sort_keys=True, ensure_ascii=False),
+        }
+        _province_cache[map_name] = cached
 
-    data = build_compiled_provinces(map_name)
-    _province_cache[map_name] = {"ts": now, "data": data}
-    return JSONResponse(data)
+    return conditional_json_response(
+        body=cached["body"],
+        if_none_match=if_none_match,
+    )
 
 @data_router.get("/{map_name}/data/province_label_grid_bin")
 async def get_province_label_grid_bin(
     map_name: str,
     authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
     path = defines_file(map_name, "province_label_grid.bin.gz")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
-    return add_no_cache(
-        FileResponse(
-            path,
-            media_type="application/gzip",
-            filename="province_label_grid.bin.gz",
-        )
+    return conditional_file_response(
+        path,
+        media_type="application/gzip",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
     )
 
 @data_router.get("/{map_name}/data/markers")
 async def get_map_markers(
     map_name: str,
     authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
-    return add_no_cache(JSONResponse(build_markers_response(map_name)))
+    # Markers are assembled from several files (map_markers.json, centroids, zoc
+    # overlays), so there is no single file to stat and no cache entry to key
+    # on. Hash the built payload instead: still cheap next to the JSON encode,
+    # and the tag changes the instant any input does, so a marker upload is
+    # picked up as immediately as it was under no-store.
+    payload = build_markers_response(map_name)
+    return conditional_json_response(
+        body=json.dumps(payload, sort_keys=True, ensure_ascii=False),
+        if_none_match=if_none_match,
+    )
 
 @data_router.get("/{map_name}/data/{file}")
 async def get_map_name_data(
     map_name: str,
     file: str,
     authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
     path = defines_file(map_name, f"{file}.json")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
-    with open(path, encoding="utf-8") as f:
-        return add_no_cache(JSONResponse(json.load(f)))
+    # The response body was always the file verbatim; parsing and re-encoding it
+    # only cost CPU. Streaming the file lets the shared ETag/Last-Modified
+    # helper turn an unchanged geometry blob into a 304.
+    return conditional_file_response(
+        path,
+        media_type="application/json",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
+    )
 
 @data_router.post("/{map_name}/data/upload/{mode}")
 async def upload_region_data(

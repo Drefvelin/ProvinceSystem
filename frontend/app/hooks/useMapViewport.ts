@@ -24,6 +24,8 @@ import {
 
   clampUserScale,
 
+  computeCenteredTransform,
+
   computeDisplayScale,
 
   computeFitScale,
@@ -33,6 +35,8 @@ import {
   viewportTransformStyle,
 
   zoomAtPoint,
+
+  type FitMode,
 
   type Size,
 
@@ -47,6 +51,8 @@ export type UseMapViewportOptions = {
   mapSize: Size;
 
   enabled?: boolean;
+
+  fitMode?: FitMode;
 
 };
 
@@ -138,6 +144,8 @@ export function useMapViewport({
 
   enabled = true,
 
+  fitMode = "cover",
+
 }: UseMapViewportOptions): UseMapViewportResult {
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -167,6 +175,12 @@ export function useMapViewport({
   const mapSizeRef = useRef(mapSize);
 
   mapSizeRef.current = mapSize;
+
+
+
+  const fitModeRef = useRef(fitMode);
+
+  fitModeRef.current = fitMode;
 
 
 
@@ -206,9 +220,9 @@ export function useMapViewport({
 
   const fitScale = useMemo(
 
-    () => computeFitScale(viewportSize, mapSize),
+    () => computeFitScale(viewportSize, mapSize, fitMode),
 
-    [viewportSize, mapSize]
+    [viewportSize, mapSize, fitMode]
 
   );
 
@@ -230,7 +244,7 @@ export function useMapViewport({
 
     const map = mapSizeRef.current;
 
-    const nextFitScale = computeFitScale(viewport, map);
+    const nextFitScale = computeFitScale(viewport, map, fitModeRef.current);
 
     const clampedUserScale = clampUserScale(next.userScale);
 
@@ -270,7 +284,16 @@ export function useMapViewport({
 
     clearResetAnimation();
 
-    setTransform(INITIAL_TRANSFORM);
+    // Same centered position the view opens with, not the raw (0,0) sentinel
+    // — that would land on cover-fit's cropped axis pinned to its edge.
+    setTransform(
+      computeCenteredTransform(
+        viewportSizeRef.current,
+        mapSizeRef.current,
+        INITIAL_TRANSFORM.userScale,
+        fitModeRef.current
+      )
+    );
 
     setIsPanning(false);
 
@@ -360,9 +383,54 @@ export function useMapViewport({
 
     if (!enabled || viewportSize.w <= 0 || viewportSize.h <= 0) return;
 
-    setTransform((current) => applyClampedTransform(current));
+    setTransform((current) => {
+      // Only the untouched initial transform gets centered — once the user
+      // has panned or zoomed, a later resize (window resize, sidebar
+      // toggling) must reclamp their position, not recenter over it.
+      const isUntouched =
+        current.userScale === INITIAL_TRANSFORM.userScale &&
+        current.translateX === INITIAL_TRANSFORM.translateX &&
+        current.translateY === INITIAL_TRANSFORM.translateY;
+
+      if (isUntouched) {
+        return computeCenteredTransform(
+          viewportSizeRef.current,
+          mapSizeRef.current,
+          INITIAL_TRANSFORM.userScale,
+          fitModeRef.current
+        );
+      }
+
+      return applyClampedTransform(current);
+    });
 
   }, [applyClampedTransform, enabled, mapSize, viewportSize]);
+
+
+
+  const previousFitModeRef = useRef(fitMode);
+
+  useEffect(() => {
+    // Toggling fit mode is a deliberate "show it the other way" action, not a
+    // resize — it always snaps to the new mode's centered view, even if the
+    // user had already panned around. The effect above only recenters an
+    // untouched transform; it would otherwise reclamp a user's pan into the
+    // new fit scale, landing somewhere arbitrary rather than the clean
+    // centered view the toggle promises.
+    if (previousFitModeRef.current === fitMode) return;
+    previousFitModeRef.current = fitMode;
+
+    if (!enabled) return;
+
+    setTransform(
+      computeCenteredTransform(
+        viewportSizeRef.current,
+        mapSizeRef.current,
+        INITIAL_TRANSFORM.userScale,
+        fitMode
+      )
+    );
+  }, [enabled, fitMode]);
 
 
 
@@ -412,7 +480,9 @@ export function useMapViewport({
 
             cursor,
 
-            event.deltaY
+            event.deltaY,
+
+            fitModeRef.current
 
           )
 
@@ -612,7 +682,7 @@ export function useMapViewport({
 
       const current = transformRef.current;
 
-      const currentFitScale = computeFitScale(viewport, map);
+      const currentFitScale = computeFitScale(viewport, map, fitModeRef.current);
 
       const currentDisplayScale = computeDisplayScale(
 

@@ -114,7 +114,10 @@ export async function fetchMapApi(
       method: options.method ?? "GET",
       headers,
       body: options.body,
-      cache: options.cache ?? "no-store",
+      // "no-cache" revalidates on every request but reuses the stored body on a
+      // 304, so an unchanged 34 MB base map costs a header round-trip instead of
+      // a full re-download. "no-store" would refetch the bytes every time.
+      cache: options.cache ?? "no-cache",
     });
   } catch {
     throw new MapAccessError("Request failed. Please try again.", 0, "");
@@ -145,7 +148,14 @@ export async function fetchMapBlobUrl(
   path: string,
   sessionToken: string
 ): Promise<string> {
-  const res = await fetchMapApi(path, { sessionToken });
+  const res = await fetchMapApi(path, {
+    sessionToken,
+    // `fetch` defaults to `Accept: */*`, which the API reads as "cannot display
+    // WebP" and answers with the full-size PNG. Public maps render through a
+    // plain <img> and get this from the browser; authenticated maps come through
+    // here, so they have to ask for it explicitly.
+    headers: { Accept: "image/webp,image/png,*/*" },
+  });
   if (!res.ok) {
     let data: unknown = null;
     try {

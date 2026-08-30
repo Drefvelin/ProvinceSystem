@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 # Load backend/.env (gitignored) before any env-based auth/signing.
 load_dotenv(Path(__file__).resolve().parent / ".env")
@@ -56,6 +57,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],  # required for images
+)
+
+# ------------------------------------------------
+# GZip (JSON only - never re-compress binary bodies)
+# ------------------------------------------------
+# The geometry/metadata JSON this API serves is large and highly compressible;
+# the PNG/WebP/gzip bodies are already compressed, so re-deflating them burns
+# CPU for nothing (and would undo the WebP savings).
+#
+# Least invasive option: no wrapper class and no router split - Starlette's own
+# GZipMiddleware already skips any response whose content-type is in
+# exclude_content_types. Passing the tuple explicitly rather than leaning on the
+# library default also means an unpinned Starlette that predates the option
+# fails loudly at startup (TypeError on the unknown kwarg) instead of silently
+# re-compressing images.
+EXCLUDED_FROM_GZIP = (
+    "application/gzip",
+    "application/x-gzip",
+    "application/zip",
+    "audio/*",
+    "font/woff",
+    "font/woff2",
+    "image/avif",
+    "image/gif",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "text/event-stream",
+    "video/*",
+)
+
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,
+    exclude_content_types=EXCLUDED_FROM_GZIP,
 )
 
 @app.get("/ping")
