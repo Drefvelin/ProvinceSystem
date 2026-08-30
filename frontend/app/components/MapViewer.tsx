@@ -480,10 +480,20 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     );
   }
 
-  // Data/geometry loading no longer unmounts the map: MapCanvas stays in the
-  // tree so the base map <img> starts downloading immediately, and the loading
-  // screen is drawn over it instead.
-  const mapLoading = loading || (mapId === "main" && !geometryReady);
+  // Do not render the map until region data is in hand. Mounting MapCanvas
+  // early (to start the base-map download sooner) meant the region overlays
+  // rendered before regionData settled, and a failed overlay request is made
+  // permanent by MapCanvas's onError handler setting display:none — borders
+  // then stay invisible until something forces a remount.
+  if (loading || (mapId === "main" && !geometryReady)) {
+    return (
+      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
+        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
+          Loading map…
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -579,14 +589,6 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           paint={paint}
         />
       </MapPageLayout>
-
-      {mapLoading && (
-        <div className="fixed inset-x-0 bottom-0 top-[var(--tfmc-header-h)] z-40 flex items-center justify-center bg-[var(--tfmc-forest-deep)]">
-          <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-            Loading map…
-          </p>
-        </div>
-      )}
 
       <NationDetailModal
         open={modalOpen}
