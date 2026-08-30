@@ -26,10 +26,10 @@ describe("resolveWarWaypoints", () => {
   it("resolves waypoints from campaign_line_points", () => {
     const waypoints = resolveWarWaypoints(sampleWar());
     expect(waypoints).toEqual([
-      { x: 100, y: 100 },
-      { x: 200, y: 150 },
-      { x: 300, y: 120 },
-      { x: 400, y: 200 },
+      { x: 100, y: 100, provinceId: 10 },
+      { x: 200, y: 150, provinceId: 20 },
+      { x: 300, y: 120, provinceId: 30 },
+      { x: 400, y: 200, provinceId: 40 },
     ]);
   });
 
@@ -46,9 +46,9 @@ describe("resolveWarWaypoints", () => {
       }
     );
     expect(waypoints).toEqual([
-      { x: 50, y: 60 },
-      { x: 150, y: 160 },
-      { x: 250, y: 260 },
+      { x: 50, y: 60, provinceId: 10 },
+      { x: 150, y: 160, provinceId: 20 },
+      { x: 250, y: 260, provinceId: 30 },
     ]);
   });
 
@@ -66,7 +66,7 @@ describe("resolveWarWaypoints", () => {
         },
       })
     );
-    expect(waypoints[0]).toEqual({ x: 80, y: 90 });
+    expect(waypoints[0]).toEqual({ x: 80, y: 90, provinceId: 10 });
     expect(waypoints).toHaveLength(3);
   });
 
@@ -81,6 +81,46 @@ describe("resolveWarWaypoints", () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it("overlays siege slot coords onto the matching province waypoint", () => {
+    const waypoints = resolveWarWaypoints(
+      sampleWar({
+        campaign_battle_schedule: [
+          {
+            schedule_index: 0,
+            leg: "invasion",
+            province_id: 20,
+            kind: "siege",
+            kind_label: "Siege",
+            status: "next",
+            map_x: 210,
+            map_y: 160,
+          },
+        ],
+      })
+    );
+    expect(waypoints[1]).toEqual({ x: 210, y: 160, provinceId: 20 });
+  });
+
+  it("overlays field battle coords onto the matching province waypoint", () => {
+    const waypoints = resolveWarWaypoints(
+      sampleWar({
+        campaign_battle_schedule: [
+          {
+            schedule_index: 0,
+            leg: "invasion",
+            province_id: 30,
+            kind: "field",
+            kind_label: "Field Battle",
+            status: "upcoming",
+            map_x: 250,
+            map_y: 180,
+          },
+        ],
+      })
+    );
+    expect(waypoints[2]).toEqual({ x: 250, y: 180, provinceId: 30 });
   });
 });
 
@@ -186,7 +226,7 @@ describe("warLineStrokeStyle", () => {
     const progressed = warLineStrokeStyle("progressed");
     const remaining = warLineStrokeStyle("remaining");
     expect(progressed.dashColor).toBe("#ffffff");
-    expect(remaining.dashColor).toBe("#c4c4c4");
+    expect(remaining.dashColor).toBe("#5a5a5a");
     expect(progressed.dashWidth).toBe(8);
     expect(progressed.dashArray).toBe("12 16");
     expect(progressed.opacity).toBe(1);
@@ -223,5 +263,31 @@ describe("buildWarCampaignPathPair", () => {
     expect(pair.progressedD).not.toBe(pair.remainingD);
     expect(pair.progressedD.includes("400 200")).toBe(false);
     expect(pair.remainingD.includes("100 100")).toBe(false);
+  });
+
+  it("caps progressed white at the next battle when occupation is further", () => {
+    const pair = buildWarCampaignPathPair(
+      sampleWar({
+        campaign_provinces: [10, 20, 30, 40],
+        cursor_index: 1,
+        occupied_by_attacker: [40],
+        campaign_battle_schedule: [
+          {
+            schedule_index: 0,
+            leg: "invasion",
+            province_id: 20,
+            kind: "field",
+            kind_label: "Field Battle",
+            status: "next",
+            map_x: 200,
+            map_y: 150,
+          },
+        ],
+      })
+    );
+    expect(pair.progressedD.includes("400 200")).toBe(false);
+    expect(pair.progressedD.includes("300 120")).toBe(false);
+    expect(pair.remainingD.includes("200 150")).toBe(true);
+    expect(pair.progressedD.includes("200 150")).toBe(true);
   });
 });

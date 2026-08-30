@@ -486,6 +486,57 @@ class MarkersLoaderTest(unittest.TestCase):
         self.assertEqual(points[1]["map_x"], 50)
         self.assertEqual(points[1]["map_y"], 61)
 
+    def test_enrich_war_schedule_field_uses_settlement_coords(self) -> None:
+        centroids = {"20": {"x": 300.4, "y": 400.6}}
+        settlements = [
+            {
+                "province_id": 20,
+                "name": "Rivendell",
+                "center_x": 1200,
+                "center_z": 3400,
+            }
+        ]
+        slots = [
+            {
+                "schedule_index": 0,
+                "leg": "invasion",
+                "province_id": 20,
+                "kind": "field",
+                "kind_label": "Field Battle",
+                "status": "next",
+            }
+        ]
+
+        out = enrich_war_schedule_slots(slots, centroids, {}, None, settlements)
+
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["map_x"], 1200)
+        self.assertEqual(out[0]["map_y"], 3400)
+
+    def test_build_campaign_line_points_uses_slot_coords(self) -> None:
+        war = {
+            "campaign_provinces": [5, 20],
+            "campaign_battle_schedule": [
+                {
+                    "province_id": 20,
+                    "status": "next",
+                    "map_x": 210,
+                    "map_y": 160,
+                }
+            ],
+        }
+        centroids = {
+            "5": {"x": 1, "y": 2},
+            "20": {"x": 300.4, "y": 400.6},
+        }
+
+        points = build_campaign_line_points(war, centroids)
+
+        self.assertEqual(len(points), 2)
+        self.assertEqual(points[0]["map_x"], 1)
+        self.assertEqual(points[1]["map_x"], 210)
+        self.assertEqual(points[1]["map_y"], 160)
+
     def test_build_markers_response_includes_enriched_wars(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             markers_path = os.path.join(tmp, "map_markers.json")

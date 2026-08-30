@@ -180,10 +180,28 @@ def build_installation_index(installations: list) -> dict[str, dict]:
     return index
 
 
+def build_settlement_index_by_province(settlements: list) -> dict[int, dict]:
+    index: dict[int, dict] = {}
+    if not isinstance(settlements, list):
+        return index
+    for entry in settlements:
+        if not isinstance(entry, dict):
+            continue
+        province_id = _finite_int(entry.get("province_id"))
+        if province_id is None or province_id in index:
+            continue
+        index[province_id] = entry
+    return index
+
+
+_SLOT_STATUS_RANK = {"next": 0, "fought": 1, "upcoming": 2}
+
+
 def resolve_schedule_slot_map_xy(
     entry: dict,
     centroids: dict,
     installation_index: dict[str, dict],
+    settlement_index: dict[int, dict] | None = None,
 ) -> tuple[int, int] | None:
     fort_id = entry.get("fort_installation_id")
     if isinstance(fort_id, str) and fort_id.strip():
@@ -204,6 +222,14 @@ def resolve_schedule_slot_map_xy(
     province_id = _finite_int(entry.get("province_id"))
     if province_id is None:
         return None
+
+    if settlement_index:
+        settlement = settlement_index.get(province_id)
+        if settlement is not None:
+            map_xy = resolve_marker_map_xy(settlement, centroids)
+            if map_xy is not None:
+                return map_xy
+
     return resolve_province_map_xy(province_id, centroids)
 
 
@@ -212,12 +238,14 @@ def enrich_war_schedule_slots(
     centroids: dict,
     name_index: dict[int, str],
     installations: list | None = None,
+    settlements: list | None = None,
 ) -> list[dict]:
     enriched: list[dict] = []
     if not isinstance(slots, list):
         return enriched
 
     installation_index = build_installation_index(installations or [])
+    settlement_index = build_settlement_index_by_province(settlements or [])
 
     for entry in slots:
         if not isinstance(entry, dict):
@@ -226,7 +254,9 @@ def enrich_war_schedule_slots(
         if province_id is None:
             continue
 
-        map_xy = resolve_schedule_slot_map_xy(entry, centroids, installation_index)
+        map_xy = resolve_schedule_slot_map_xy(
+            entry, centroids, installation_index, settlement_index
+        )
         if map_xy is None:
             logger.warning(
                 "Dropping war schedule slot for province %s: no map coordinates",
@@ -279,6 +309,31 @@ def _capital_coords_for_province(
     return None, None
 
 
+def _slot_map_xy_for_province(
+    war: dict, province_id: int
+) -> tuple[int, int] | None:
+    best: tuple[int, int] | None = None
+    best_rank = 99
+    for key in ("campaign_battle_schedule", "campaign_counter_schedule"):
+        slots = war.get(key)
+        if not isinstance(slots, list):
+            continue
+        for slot in slots:
+            if not isinstance(slot, dict):
+                continue
+            if _finite_int(slot.get("province_id")) != province_id:
+                continue
+            map_x = _finite_int(slot.get("map_x"))
+            map_y = _finite_int(slot.get("map_y"))
+            if map_x is None or map_y is None:
+                continue
+            rank = _SLOT_STATUS_RANK.get(slot.get("status"), 3)
+            if rank < best_rank:
+                best = (map_x, map_y)
+                best_rank = rank
+    return best
+
+
 def build_campaign_line_points(war: dict, centroids: dict) -> list[dict]:
     provinces = war.get("campaign_provinces")
     if not isinstance(provinces, list):
@@ -290,21 +345,25 @@ def build_campaign_line_points(war: dict, centroids: dict) -> list[dict]:
         if province_id is None:
             continue
 
-        center_x, center_z = _capital_coords_for_province(war, province_id)
-        map_xy = resolve_province_map_xy(
-            province_id,
-            centroids,
-            center_x=center_x,
-            center_z=center_z,
-        )
-        if map_xy is None:
-            logger.warning(
-                "Skipping campaign line point for province %s: no map coordinates",
+        slot_xy = _slot_map_xy_for_province(war, province_id)
+        if slot_xy is not None:
+            map_x, map_y = slot_xy
+        else:
+            center_x, center_z = _capital_coords_for_province(war, province_id)
+            map_xy = resolve_province_map_xy(
                 province_id,
+                centroids,
+                center_x=center_x,
+                center_z=center_z,
             )
-            continue
+            if map_xy is None:
+                logger.warning(
+                    "Skipping campaign line point for province %s: no map coordinates",
+                    province_id,
+                )
+                continue
+            map_x, map_y = map_xy
 
-        map_x, map_y = map_xy
         points.append(
             {
                 "province_id": province_id,
@@ -320,6 +379,7 @@ def enrich_war(
     centroids: dict,
     name_index: dict[int, str],
     installations: list | None = None,
+    settlements: list | None = None,
 ) -> dict:
     row = dict(war)
 
@@ -328,6 +388,7 @@ def enrich_war(
         centroids,
         name_index,
         installations,
+        settlements,
     )
     row["campaign_battle_schedule"] = invasion
 
@@ -338,6 +399,7 @@ def enrich_war(
             centroids,
             name_index,
             installations,
+            settlements,
         )
         if counter:
             row[counter_key] = counter
@@ -365,6 +427,7 @@ def enrich_wars(
     centroids: dict,
     name_index: dict[int, str],
     installations: list | None = None,
+    settlements: list | None = None,
 ) -> list[dict]:
     enriched: list[dict] = []
     if not isinstance(wars, list):
@@ -373,7 +436,9 @@ def enrich_wars(
     for entry in wars:
         if not isinstance(entry, dict):
             continue
-        enriched.append(enrich_war(entry, centroids, name_index, installations))
+        enriched.append(
+            enrich_war(entry, centroids, name_index, installations, settlements)
+        )
     return enriched
 
 
@@ -477,5 +542,6 @@ def build_markers_response(map_name: str) -> dict:
             centroids,
             name_index,
             raw["installations"],
+            raw["settlements"],
         ),
     }
