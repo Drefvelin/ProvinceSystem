@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import os
 import json
 import sys
@@ -10,11 +11,28 @@ from ..compile.nation_compiler import process_nations
 from ..compile.trade_compiler import process_trade
 from ..mapgen.geometry_cache import MapGeometryCache
 from ..mapgen.mapgen import create_map
-from ..mapgen.parchmentgen import create_parchment_base
+from ..mapgen.parchmentgen import (
+    create_map_preview,
+    create_parchment_base,
+    map_preview_path,
+)
 from ..mapgen.infestationgen import create_infestation_map
 from ..mapgen.prosperitygen import create_prosperity_map
 from ..mapgen.regiongen import generate_regions
 from ..mapgen.zocgen import generate_zoc_overlays
+from ..map_tools.province_geometry import write_province_geometry
+from ..province_id_grid import (
+    GRID_FILENAME,
+    RUNS_FILENAME,
+    build_province_id_map,
+    write_province_id_grid_file,
+    write_province_id_runs_file,
+)
+from ..tools.warm_map_webp import (
+    cache_path_for,
+    warm as warm_map_webp,
+    webp_warm_sources,
+)
 from .mode_worker import run_mode
 from .queue import load_queue, compile_queue
 from .regen_types import MODES, RegenSpec, parse_regen_type, region_regen_queued
@@ -24,6 +42,12 @@ from .dirs import (
     defines_file
 )
 from .task_lock import get_map_lock
+
+# Derived artifacts rebuilt only when their sources changed. The stamp records
+# the sha256 of every source that fed the last successful build, so a git
+# checkout or container rebuild (which moves mtimes but not content) does not
+# trigger a needless multi-minute province scan.
+DERIVED_STAMP_FILENAME = "derived_sources.json"
 
 
 class _RegenTimings:
@@ -176,6 +200,198 @@ def _run_modes_parallel(
     merge_worker_timings(timings, results)
 
 
+# -------------------------
+# Derived-artifact staleness
+# -------------------------
+def _file_digest(path: str) -> str | None:
+    """sha256 of a file, or None when it does not exist."""
+    try:
+        digest = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    except OSError:
+        return None
+
+
+def _source_fingerprint(sources: list[str]) -> dict[str, str] | None:
+    """Map source path -> sha256. None when any source is missing."""
+    fingerprint: dict[str, str] = {}
+    for path in sources:
+        digest = _file_digest(path)
+        if digest is None:
+            return None
+        fingerprint[os.path.basename(path)] = digest
+    return fingerprint
+
+
+def _stamp_file(map_name: str) -> str:
+    return defines_file(map_name, DERIVED_STAMP_FILENAME)
+
+
+def _load_stamps(map_name: str) -> dict:
+    try:
+        with open(_stamp_file(map_name), "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_stamp(map_name: str, key: str, fingerprint: dict[str, str]) -> None:
+    stamps = _load_stamps(map_name)
+    stamps[key] = fingerprint
+    path = _stamp_file(map_name)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(stamps, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def derived_is_current(
+    map_name: str,
+    key: str,
+    fingerprint: dict[str, str],
+    outputs: list[str],
+) -> bool:
+    """True when every output exists and was built from exactly these sources."""
+    if any(not os.path.exists(path) for path in outputs):
+        return False
+    return _load_stamps(map_name).get(key) == fingerprint
+
+
+def _rebuild_derived(
+    map_name: str,
+    key: str,
+    label: str,
+    sources: list[str],
+    outputs: list[str],
+    build,
+    timings: _RegenTimings,
+) -> None:
+    """Run `build` only when `sources` changed since the last successful build.
+
+    Never fatal: these artifacts are consumed by the editor and the plugin, not
+    by the map render, so a failure here must not sink an otherwise good regen.
+    """
+    fingerprint = _source_fingerprint(sources)
+    if fingerprint is None:
+        missing = [os.path.basename(p) for p in sources if not os.path.exists(p)]
+        print(f"⏭️ Skipping {label}: missing {', '.join(missing)}")
+        return
+
+    if derived_is_current(map_name, key, fingerprint, outputs):
+        print(f"⏭️ {label} up to date (sources unchanged)")
+        return
+
+    print(f"🔧 Rebuilding {label} (sources changed)")
+    try:
+        with timings.timed(f"derived.{key}"):
+            build()
+    except Exception as exc:
+        print(f"⚠️ {label} failed: {exc}")
+        return
+
+    _save_stamp(map_name, key, fingerprint)
+
+
+def _province_sources(map_name: str) -> list[str]:
+    return [
+        input_file(map_name, "provinces.png"),
+        defines_file(map_name, "provinces.txt"),
+    ]
+
+
+def _geometry_outputs(map_name: str) -> list[str]:
+    return [
+        defines_file(map_name, name)
+        for name in (
+            "province_neighbors.json",
+            "province_label_neighbors.json",
+            "province_centroids.json",
+            "province_label_grid.bin.gz",
+            "province_label_grid.json",
+        )
+    ]
+
+
+def run_derived_artifacts(map_name: str, timings: _RegenTimings) -> None:
+    """Rebuild province/preview derivatives whose sources changed."""
+    province_sources = _province_sources(map_name)
+
+    # The runs artifact is a re-encoding of the grid, so both are produced by one
+    # entry under one stamp. Split across two entries they could rebuild
+    # independently and leave the editor decoding runs that disagree with the
+    # grid — a mismatch nothing downstream can detect.
+    def _build_province_id_artifacts() -> None:
+        # Both artifacts encode the same array, so decode provinces.png once.
+        source = build_province_id_map(map_name)
+        write_province_id_grid_file(map_name, source=source)
+        write_province_id_runs_file(map_name, source=source)
+
+    _rebuild_derived(
+        map_name,
+        "province_id_grid",
+        "province id grid + runs",
+        province_sources,
+        [
+            defines_file(map_name, GRID_FILENAME),
+            defines_file(map_name, RUNS_FILENAME),
+        ],
+        _build_province_id_artifacts,
+        timings,
+    )
+
+    if os.environ.get("REGEN_SKIP_PROVINCE_GEOMETRY"):
+        print("⏭️ Skipping province geometry (REGEN_SKIP_PROVINCE_GEOMETRY)")
+    else:
+        _rebuild_derived(
+            map_name,
+            "province_geometry",
+            "province geometry",
+            province_sources,
+            _geometry_outputs(map_name),
+            lambda: write_province_geometry(map_name),
+            timings,
+        )
+
+    _rebuild_derived(
+        map_name,
+        "map_preview",
+        "map preview",
+        [input_file(map_name, "map.png")],
+        [map_preview_path(map_name)],
+        lambda: create_map_preview(map_name),
+        timings,
+    )
+
+
+def warm_webp_cache(map_name: str, timings: _RegenTimings) -> None:
+    """Pre-encode the WebP copies so the first visitor after a regen is not
+    served the full-size PNG while the background encode runs.
+
+    Gated on the same content stamp as the other derived artifacts rather than
+    on webp_cache's own mtime check. create_parchment_base rewrites
+    parchment_base.png every regen, so mtime freshness is always false and this
+    would otherwise spend ~26s per image re-encoding byte-identical input,
+    synchronously, while holding the map lock.
+    """
+    sources = webp_warm_sources(map_name)
+    if not sources:
+        return
+
+    _rebuild_derived(
+        map_name,
+        "webp_cache",
+        "WebP cache",
+        sources,
+        [str(cache_path_for(source)) for source in sources],
+        lambda: warm_map_webp([map_name]),
+        timings,
+    )
+
+
 def print_queues(map_name: str):
     raw_path = input_file(map_name, "queue.json")
     compiled_path = defines_file(map_name, "queue.json")
@@ -250,6 +466,8 @@ def _sync_regeneration(map_name: str, regen_type: str):
         with timings.timed("map.infestation"):
             create_infestation_map(map_name, "infestation_map", cache=cache)
 
+    run_derived_artifacts(map_name, timings)
+
     elapsed = time.perf_counter() - start_time
 
     timings.print_summary(map_name, regen_type, elapsed)
@@ -258,6 +476,10 @@ def _sync_regeneration(map_name: str, regen_type: str):
         f"(type: {regen_type}) took {elapsed:.2f} seconds"
     )
     print(f"✅ Regeneration complete for map '{map_name}'")
+
+    # After the summary so it never hides the real regen cost, but still inside
+    # the map lock so a request cannot race a half-written cache entry.
+    warm_webp_cache(map_name, timings)
     return timings, elapsed
 
 

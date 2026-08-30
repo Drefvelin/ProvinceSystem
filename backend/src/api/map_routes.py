@@ -6,6 +6,7 @@ from .http_headers import conditional_file_response
 from .webp_cache import webp_variant
 from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, parchment_image
+from ..scripts.mapgen.parchmentgen import map_preview_path
 from ..scripts.util.imagechecker import find_province
 
 map_router = APIRouter()
@@ -89,6 +90,30 @@ async def get_parchment_map(
         return JSONResponse({"error": "Map not found"}, 404)
     return _base_map_response(
         path, "parchment", accept, if_none_match, if_modified_since
+    )
+
+@map_router.get("/{map_name}/map/preview")
+async def get_map_preview(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
+):
+    """Low-res placeholder shown while the full base map downloads.
+
+    Deliberately not routed through _base_map_response/webp_variant: the file is
+    already WebP and must be served whatever the Accept header says, since its
+    whole purpose is to render before the real map arrives.
+    """
+    ensure_map_access(map_name, authorization)
+    path = map_preview_path(map_name)
+    if not os.path.exists(path):
+        return JSONResponse({"error": "Map not found"}, 404)
+    return conditional_file_response(
+        path,
+        media_type="image/webp",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
     )
 
 @map_router.get("/{map_name}/map/original")

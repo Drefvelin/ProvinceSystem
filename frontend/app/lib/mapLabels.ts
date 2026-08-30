@@ -441,22 +441,59 @@ export function fullRealmProvinces(
   return provinces;
 }
 
+/**
+ * Province -> occupier index, built once per geometry pass instead of
+ * re-scanning every region for every nation inside labelControlProvinces.
+ * `multi` holds provinces claimed by two or more distinct occupiers, which are
+ * "occupied by other" for every nation.
+ */
+export type OccupationIndex = {
+  ownerOf: Map<number, string>;
+  multi: Set<number>;
+};
+
+export function buildOccupationIndex(
+  regionData: Record<string, NationRegionInput>
+): OccupationIndex {
+  const ownerOf = new Map<number, string>();
+  const multi = new Set<number>();
+
+  for (const [id, region] of Object.entries(regionData)) {
+    for (const provinceId of region?.occupied_held ?? []) {
+      const existing = ownerOf.get(provinceId);
+      if (existing === undefined) {
+        ownerOf.set(provinceId, id);
+      } else if (existing !== id) {
+        multi.add(provinceId);
+      }
+    }
+  }
+
+  return { ownerOf, multi };
+}
+
+function isOccupiedByOther(
+  index: OccupationIndex,
+  provinceId: number,
+  nationId: string
+): boolean {
+  if (index.multi.has(provinceId)) return true;
+  const owner = index.ownerOf.get(provinceId);
+  return owner !== undefined && owner !== nationId;
+}
+
 export function labelControlProvinces(
   nationId: string,
   regionData: Record<string, NationRegionInput>,
-  deJure: number[]
+  deJure: number[],
+  occupation?: OccupationIndex
 ): number[] {
-  const occupiedByOther = new Set<number>();
-  for (const [id, region] of Object.entries(regionData)) {
-    if (id === nationId) continue;
-    for (const provinceId of region.occupied_held ?? []) {
-      occupiedByOther.add(provinceId);
-    }
-  }
+  const index = occupation ?? buildOccupationIndex(regionData);
   const seen = new Set<number>();
   const out: number[] = [];
   for (const provinceId of deJure) {
-    if (occupiedByOther.has(provinceId) || seen.has(provinceId)) continue;
+    if (isOccupiedByOther(index, provinceId, nationId) || seen.has(provinceId))
+      continue;
     seen.add(provinceId);
     out.push(provinceId);
   }
@@ -712,6 +749,7 @@ export function computeRegionLabelGeometry(
 ): RegionLabelGeometryCache | null {
   if (mapType === "nation") {
     const nations: NationLabelGeometry[] = [];
+    const occupation = buildOccupationIndex(regionData);
 
     for (const nationId of Object.keys(regionData)) {
       const region = regionData[nationId];
@@ -721,7 +759,8 @@ export function computeRegionLabelGeometry(
       const fullProvinces = labelControlProvinces(
         nationId,
         regionData,
-        fullRealmProvinces(nationId, regionData)
+        fullRealmProvinces(nationId, regionData),
+        occupation
       );
       if (!fullProvinces.length) continue;
 
@@ -740,7 +779,8 @@ export function computeRegionLabelGeometry(
         const directProvinces = labelControlProvinces(
           nationId,
           regionData,
-          directHoldingProvinces(nationId, regionData)
+          directHoldingProvinces(nationId, regionData),
+          occupation
         );
         if (directProvinces.length) {
           direct = labelsForProvinces(

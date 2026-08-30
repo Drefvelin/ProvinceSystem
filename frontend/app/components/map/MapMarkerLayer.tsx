@@ -116,6 +116,11 @@ function MapMarkerLayer({
               style={{
                 left: iconOffset,
                 top: iconOffset,
+                // Marker assets are 16x16 Minecraft textures blown up to
+                // iconSize and then scaled again by the hover transform.
+                // Smooth upscaling turns them to mush, so scale them
+                // nearest-neighbour like the paint stamps do.
+                imageRendering: "pixelated",
               }}
               draggable={false}
             />

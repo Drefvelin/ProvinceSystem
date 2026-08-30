@@ -112,7 +112,9 @@ export function useMapHover(props: UseMapHoverProps) {
     const canvas = current.canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    // Must match the pick canvas' own getContext options; this path calls
+    // getImageData once per hover frame.
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     const coords = getMapCoords(

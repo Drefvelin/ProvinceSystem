@@ -5,13 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import type { MapId } from "@/app/components/map/types";
 import {
   buildProvinceIndexFromGrid,
+  buildProvinceIndexFromRuns,
+  buildProvinceRunIndex,
   deserializeProvinceIdGrid,
+  deserializeProvinceIdRuns,
   type ProvinceIndex,
 } from "@/app/lib/map/editor/buildProvinceIndex";
 import {
-  fetchEditorProvinceIndex,
   fetchEditorProvinces,
+  fetchEditorProvinceIndex,
+  fetchMapApi,
   MapAccessError,
+  type EditorProvinceRow,
 } from "@/lib/map/api";
 
 async function gunzipProvinceIndexGrid(buffer: ArrayBuffer): Promise<ArrayBuffer> {
@@ -22,6 +27,54 @@ async function gunzipProvinceIndexGrid(buffer: ArrayBuffer): Promise<ArrayBuffer
     .stream()
     .pipeThrough(new DecompressionStream("gzip"));
   return await new Response(stream).arrayBuffer();
+}
+
+/**
+ * Feature flag for the run-length province index.
+ *
+ * Defaults to OFF: unless this is exactly "1" the editor keeps using the flat
+ * province_id_grid path, byte for byte. Even when it is on, a missing route, a
+ * stale or corrupt artifact, or any decoder failure falls back to the flat
+ * path rather than failing the editor.
+ */
+export const EDITOR_PROVINCE_RUNS_FLAG = "NEXT_PUBLIC_EDITOR_PROVINCE_RUNS";
+
+export function isEditorProvinceRunsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_EDITOR_PROVINCE_RUNS === "1";
+}
+
+export function editorProvinceRunsPath(mapId: MapId): string {
+  return `/${mapId}/editor/province-runs`;
+}
+
+/**
+ * Try the runs artifact. Returns null (never throws) whenever the runs path
+ * is unavailable for any reason, so the caller can use the flat path.
+ */
+export async function loadProvinceIndexFromRuns(
+  mapId: MapId,
+  sessionToken: string,
+  provinces: EditorProvinceRow[]
+): Promise<ProvinceIndex | null> {
+  try {
+    const res = await fetchMapApi(editorProvinceRunsPath(mapId), {
+      sessionToken,
+    });
+    if (!res.ok) return null;
+
+    const payload = await gunzipProvinceIndexGrid(await res.arrayBuffer());
+    const decoded = deserializeProvinceIdRuns(payload);
+    const runIndex = buildProvinceRunIndex(
+      decoded.width,
+      decoded.height,
+      decoded.runLengths,
+      decoded.runIds,
+      decoded.bbox
+    );
+    return buildProvinceIndexFromRuns(provinces, runIndex);
+  } catch {
+    return null;
+  }
 }
 
 function loadErrorMessage(err: unknown): string {
@@ -72,19 +125,40 @@ export function useEditorProvinceIndex(
       setIndex(null);
 
       try {
+        const runsEnabled = isEditorProvinceRunsEnabled();
         const provincesPromise = fetchEditorProvinces(mapId, sessionToken);
-        const gridPromise = fetchEditorProvinceIndex(mapId, sessionToken);
+        // Only prefetch the 82 MB grid when the flat path is the one we will
+        // actually use; the runs path must not pay for it.
+        const gridPromise = runsEnabled
+          ? null
+          : fetchEditorProvinceIndex(mapId, sessionToken);
 
         const { provinces } = await provincesPromise;
         if (cancelled) return;
         callbacksRef.current?.onCatalogLoaded?.();
 
-        const gridBytes = await gridPromise;
-        if (cancelled) return;
+        let built: ProvinceIndex | null = null;
 
-        const payload = await gunzipProvinceIndexGrid(gridBytes);
-        const { width, height, ids } = deserializeProvinceIdGrid(payload);
-        const built = buildProvinceIndexFromGrid(provinces, width, height, ids);
+        if (runsEnabled) {
+          built = await loadProvinceIndexFromRuns(
+            mapId,
+            sessionToken,
+            provinces
+          );
+          if (cancelled) return;
+        }
+
+        if (!built) {
+          // Flat path: the original behaviour, and the fallback whenever the
+          // runs artifact is absent, stale or undecodable.
+          const gridBytes = await (gridPromise ??
+            fetchEditorProvinceIndex(mapId, sessionToken));
+          if (cancelled) return;
+
+          const payload = await gunzipProvinceIndexGrid(gridBytes);
+          const { width, height, ids } = deserializeProvinceIdGrid(payload);
+          built = buildProvinceIndexFromGrid(provinces, width, height, ids);
+        }
 
         if (!cancelled) {
           setIndex(built);
