@@ -19,7 +19,8 @@ export type PaintColorId =
   | "objective"
   | "warning"
   | "naval"
-  | "note";
+  | "note"
+  | "earth";
 
 /**
  * Stroke size, as a continuous value in the same reference screen pixels the
@@ -152,6 +153,7 @@ export const PAINT_COLORS: Record<PaintColorId, string> = {
   warning: "#e6c84a", // STATUS_HIGHLIGHT / WARNING
   naval: "#9ec8ff", // BATTLE_KIND
   note: "#d4c9ae", // VALUE
+  earth: "#2a1f14", // dark brown, matches the map's province border ink
 };
 
 /** Shown on the swatch tooltips so the meaning is discoverable. */
@@ -162,6 +164,7 @@ export const PAINT_COLOR_LABELS: Record<PaintColorId, string> = {
   warning: "Warning",
   naval: "Naval",
   note: "Note",
+  earth: "Earth",
 };
 
 export const PAINT_COLOR_IDS: PaintColorId[] = [
@@ -171,6 +174,7 @@ export const PAINT_COLOR_IDS: PaintColorId[] = [
   "warning",
   "naval",
   "note",
+  "earth",
 ];
 
 export const PAINT_WIDTH_MIN = 1;
