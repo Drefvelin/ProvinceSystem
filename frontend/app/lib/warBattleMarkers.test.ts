@@ -77,7 +77,7 @@ describe("slotToMapMarker", () => {
       id: "war-war-1-slot-invasion-0",
       kind: "battle",
       mapX: 300,
-      mapY: 400,
+      mapY: 370,
       label: "Siege",
       showLabelOnlyOnHover: true,
       baseScale: 1.1,
@@ -97,12 +97,26 @@ describe("slotToMapMarker", () => {
 });
 
 describe("warBattleMarkersFromWars", () => {
-  it("converts invasion and counter schedule slots", () => {
+  it("shows only the next battle slot", () => {
     const wars: WarExport[] = [
       {
         id: "1",
         campaign_battle_schedule: [
-          sampleSlot({ schedule_index: 0, leg: "invasion" }),
+          sampleSlot({ schedule_index: 0, leg: "invasion", status: "fought" }),
+          sampleSlot({
+            schedule_index: 1,
+            leg: "invasion",
+            map_x: 310,
+            map_y: 410,
+            status: "next",
+          }),
+          sampleSlot({
+            schedule_index: 2,
+            leg: "invasion",
+            map_x: 320,
+            map_y: 420,
+            status: "upcoming",
+          }),
         ],
         campaign_counter_schedule: [
           sampleSlot({
@@ -117,11 +131,10 @@ describe("warBattleMarkersFromWars", () => {
     ];
 
     const markers = warBattleMarkersFromWars(wars);
-    expect(markers).toHaveLength(2);
-    expect(markers.map((marker) => marker.id)).toEqual([
-      "war-1-slot-invasion-0",
-      "war-1-slot-counter-0",
-    ]);
+    expect(markers).toHaveLength(1);
+    expect(markers[0].id).toBe("war-1-slot-invasion-1");
+    expect(markers[0].mapY).toBe(380);
+    expect(markers[0].title).toContain("Next battle");
   });
 
   it("omits slots without map coordinates", () => {
@@ -159,12 +172,9 @@ describe("warBattleMarkersFromWars", () => {
     ];
 
     const markers = warBattleMarkersFromWars(wars);
-    expect(markers).toHaveLength(2);
-    expect(markers.map((marker) => marker.id)).toEqual([
-      "war-1-slot-invasion-0",
-      "war-1-slot-counter-0",
-    ]);
-    expect(markers[1].title).toContain("Next battle");
+    expect(markers).toHaveLength(1);
+    expect(markers[0].id).toBe("war-1-slot-counter-0");
+    expect(markers[0].title).toContain("Next battle");
   });
 
   it("keeps siege and field at same province", () => {
@@ -193,8 +203,8 @@ describe("warBattleMarkersFromWars", () => {
     ];
 
     const markers = warBattleMarkersFromWars(wars);
-    expect(markers).toHaveLength(2);
-    expect(markers[0].title).toBe("Siege of Greenfort - Upcoming");
-    expect(markers[1].title).toBe("Battle of Lanbury - Next battle");
+    expect(markers).toHaveLength(1);
+    expect(markers[0].title).toBe("Battle of Lanbury - Next battle");
+    expect(markers[0].mapY).toBe(370);
   });
 });

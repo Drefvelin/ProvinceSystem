@@ -4,6 +4,7 @@ import type { MapMarker } from "./mapMarkers";
 
 export const BATTLE_MARKER_KIND = "battle";
 export const BATTLE_NEXT_BASE_SCALE = 1.1;
+export const BATTLE_MARKER_Y_OFFSET = 30;
 
 export function formatBattleSlotStatus(
   status: WarScheduleSlot["status"]
@@ -54,7 +55,7 @@ export function slotToMapMarker(warId: string, slot: WarScheduleSlot): MapMarker
     kind: BATTLE_MARKER_KIND,
     markerSize: "small",
     mapX: slot.map_x!,
-    mapY: slot.map_y!,
+    mapY: slot.map_y! - BATTLE_MARKER_Y_OFFSET,
     label: slot.kind_label || slot.kind,
     title: formatBattleMarkerTitle(slot),
     showLabelOnlyOnHover: true,
@@ -113,6 +114,7 @@ export function warBattleMarkersFromWars(wars: WarExport[]): MapMarker[] {
   for (const war of wars) {
     const deduped = dedupeSlotCandidates(collectWarSlots(war));
     for (const { warId, slot } of deduped) {
+      if (slot.status !== "next") continue;
       markers.push(slotToMapMarker(warId, slot));
     }
   }

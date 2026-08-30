@@ -4,6 +4,8 @@ import type { WarExport } from "../components/map/types";
 import {
   buildSvgPathD,
   buildWarCampaignPathD,
+  buildWarCampaignPathPair,
+  campaignFrontAxisIndex,
   catmullRomSpline,
   resolveWarWaypoints,
   warLineStrokeStyle,
@@ -114,6 +116,44 @@ describe("catmullRomSpline", () => {
     ];
     expect(catmullRomSpline(segment)).toEqual(segment);
   });
+
+  it("passes through every waypoint far from the origin", () => {
+    const farWaypoints = [
+      { x: 1000, y: 1000 },
+      { x: 2000, y: 1200 },
+      { x: 3000, y: 1800 },
+      { x: 4000, y: 2000 },
+    ];
+    const spline = catmullRomSpline(farWaypoints);
+    expect(spline.length).toBeGreaterThan(farWaypoints.length);
+
+    for (const waypoint of farWaypoints) {
+      const nearest = spline.reduce((best, point) => {
+        const dist = Math.hypot(point.x - waypoint.x, point.y - waypoint.y);
+        const bestDist = Math.hypot(best.x - waypoint.x, best.y - waypoint.y);
+        return dist < bestDist ? point : best;
+      });
+      expect(
+        Math.hypot(nearest.x - waypoint.x, nearest.y - waypoint.y)
+      ).toBeLessThan(1);
+    }
+  });
+
+  it("does not scale interior samples toward the origin", () => {
+    const farWaypoints = [
+      { x: 1000, y: 1000 },
+      { x: 2000, y: 1200 },
+      { x: 3000, y: 1800 },
+      { x: 4000, y: 2000 },
+    ];
+    const spline = catmullRomSpline(farWaypoints);
+    const interior = spline.slice(1, -1);
+    expect(interior.length).toBeGreaterThan(0);
+    for (const point of interior) {
+      expect(point.x).toBeGreaterThan(900);
+      expect(point.y).toBeGreaterThan(900);
+    }
+  });
 });
 
 describe("buildSvgPathD", () => {
@@ -142,16 +182,46 @@ describe("buildWarCampaignPathD", () => {
 });
 
 describe("warLineStrokeStyle", () => {
-  it("is stable for the same war id", () => {
-    const first = warLineStrokeStyle("war-42", 3);
-    const second = warLineStrokeStyle("war-42", 3);
-    expect(second).toEqual(first);
+  it("uses white dashes for progressed and gray for remaining", () => {
+    const progressed = warLineStrokeStyle("progressed");
+    const remaining = warLineStrokeStyle("remaining");
+    expect(progressed.dashColor).toBe("#ffffff");
+    expect(remaining.dashColor).toBe("#c4c4c4");
+    expect(progressed.dashWidth).toBe(8);
+    expect(progressed.dashArray).toBe("12 16");
+    expect(progressed.opacity).toBe(1);
+  });
+});
+
+describe("campaignFrontAxisIndex", () => {
+  it("uses cursor_index and extends with attacker occupation", () => {
+    const war = sampleWar({
+      campaign_provinces: [10, 20, 30, 40],
+      cursor_index: 1,
+      occupied_by_attacker: [30],
+    });
+    expect(campaignFrontAxisIndex(war)).toBe(2);
+  });
+});
+
+describe("buildWarCampaignPathPair", () => {
+  it("returns empty paths when war has insufficient waypoints", () => {
+    expect(buildWarCampaignPathPair(sampleWar({ campaign_line_points: [] }))).toEqual(
+      { progressedD: "", remainingD: "" }
+    );
   });
 
-  it("uses default colors for a single war", () => {
-    const style = warLineStrokeStyle("war-1", 1);
-    expect(style.borderColor).toBe("#2a1810");
-    expect(style.dashColor).toBe("#8b3a3a");
-    expect(style.opacity).toBe(0.85);
+  it("splits progressed white from remaining gray at the front", () => {
+    const pair = buildWarCampaignPathPair(
+      sampleWar({
+        campaign_provinces: [10, 20, 30, 40],
+        cursor_index: 1,
+      })
+    );
+    expect(pair.progressedD.startsWith("M ")).toBe(true);
+    expect(pair.remainingD.startsWith("M ")).toBe(true);
+    expect(pair.progressedD).not.toBe(pair.remainingD);
+    expect(pair.progressedD.includes("400 200")).toBe(false);
+    expect(pair.remainingD.includes("100 100")).toBe(false);
   });
 });

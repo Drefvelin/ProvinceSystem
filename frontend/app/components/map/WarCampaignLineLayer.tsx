@@ -3,7 +3,7 @@ import { memo, useMemo } from "react";
 import type { WarExport } from "./types";
 import type { ProvinceCentroids } from "../../lib/mapLabels";
 import {
-  buildWarCampaignPathD,
+  buildWarCampaignPathPair,
   warLineStrokeStyle,
 } from "../../lib/warCampaignLine";
 
@@ -14,8 +14,8 @@ type WarCampaignLineLayerProps = {
   mapH: number;
 };
 
-type WarLineRender = {
-  warId: string;
+type PathStroke = {
+  key: string;
   pathD: string;
   style: ReturnType<typeof warLineStrokeStyle>;
 };
@@ -28,21 +28,29 @@ function WarCampaignLineLayer({
   mapW,
   mapH,
 }: WarCampaignLineLayerProps) {
-  const lines = useMemo(() => {
-    const rendered: WarLineRender[] = [];
+  const strokes = useMemo(() => {
+    const rendered: PathStroke[] = [];
     for (const war of wars) {
-      const pathD = buildWarCampaignPathD(war, centroids);
-      if (!pathD) continue;
-      rendered.push({
-        warId: war.id,
-        pathD,
-        style: warLineStrokeStyle(war.id, wars.length),
-      });
+      const pair = buildWarCampaignPathPair(war, centroids);
+      if (pair.remainingD) {
+        rendered.push({
+          key: `${war.id}-remaining`,
+          pathD: pair.remainingD,
+          style: warLineStrokeStyle("remaining"),
+        });
+      }
+      if (pair.progressedD) {
+        rendered.push({
+          key: `${war.id}-progressed`,
+          pathD: pair.progressedD,
+          style: warLineStrokeStyle("progressed"),
+        });
+      }
     }
     return rendered;
   }, [wars, centroids]);
 
-  if (!lines.length || !mapW || !mapH) {
+  if (!strokes.length || !mapW || !mapH) {
     return null;
   }
 
@@ -53,29 +61,18 @@ function WarCampaignLineLayer({
       preserveAspectRatio="xMidYMid meet"
       aria-hidden
     >
-      {lines.map((line) => (
-        <g
-          key={line.warId}
-          style={{ opacity: line.style.opacity }}
-        >
-          <path
-            d={line.pathD}
-            fill="none"
-            stroke={line.style.borderColor}
-            strokeWidth={line.style.borderWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d={line.pathD}
-            fill="none"
-            stroke={line.style.dashColor}
-            strokeWidth={line.style.dashWidth}
-            strokeDasharray={line.style.dashArray}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </g>
+      {strokes.map((stroke) => (
+        <path
+          key={stroke.key}
+          d={stroke.pathD}
+          fill="none"
+          stroke={stroke.style.dashColor}
+          strokeWidth={stroke.style.dashWidth}
+          strokeDasharray={stroke.style.dashArray}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+          opacity={stroke.style.opacity}
+        />
       ))}
     </svg>
   );

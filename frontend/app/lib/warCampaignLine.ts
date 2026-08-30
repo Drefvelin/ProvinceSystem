@@ -9,21 +9,23 @@ export type CatmullRomOptions = {
 };
 
 export type WarLineStrokeStyle = {
-  borderColor: string;
   dashColor: string;
-  borderWidth: number;
   dashWidth: number;
   dashArray: string;
   opacity: number;
 };
 
-export const WAR_LINE_BORDER_COLOR = "#2a1810";
-export const WAR_LINE_DASH_COLOR = "#8b3a3a";
-export const WAR_LINE_OPACITY = 0.85;
-export const WAR_LINE_DASH_WIDTH = 4;
-export const WAR_LINE_BORDER_WIDTH = WAR_LINE_DASH_WIDTH * 1.5;
-export const WAR_LINE_DASH_ARRAY = "6 8";
-export const CATMULL_ROM_TENSION = 0.5;
+export type WarCampaignPathPair = {
+  progressedD: string;
+  remainingD: string;
+};
+
+export const WAR_LINE_PROGRESSED_COLOR = "#ffffff";
+export const WAR_LINE_REMAINING_COLOR = "#c4c4c4";
+export const WAR_LINE_OPACITY = 1;
+export const WAR_LINE_DASH_WIDTH = 8;
+export const WAR_LINE_DASH_ARRAY = "12 16";
+export const CATMULL_ROM_TENSION = 0;
 export const CATMULL_ROM_SAMPLES_PER_SEGMENT = 12;
 
 function isFinitePoint(point: MapPoint): boolean {
@@ -130,21 +132,20 @@ function catmullRomPoint(
   const t2 = t * t;
   const t3 = t2 * t;
   const s = (1 - tension) / 2;
+  const h00 = 2 * t3 - 3 * t2 + 1;
+  const h10 = t3 - 2 * t2 + t;
+  const h01 = -2 * t3 + 3 * t2;
+  const h11 = t3 - t2;
 
-  const x =
-    s *
-    (2 * p1.x +
-      (-p0.x + p2.x) * t +
-      (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-      (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-  const y =
-    s *
-    (2 * p1.y +
-      (-p0.y + p2.y) * t +
-      (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-      (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+  const m1x = s * (p2.x - p0.x);
+  const m1y = s * (p2.y - p0.y);
+  const m2x = s * (p3.x - p1.x);
+  const m2y = s * (p3.y - p1.y);
 
-  return { x, y };
+  return {
+    x: h00 * p1.x + h10 * m1x + h01 * p2.x + h11 * m2x,
+    y: h00 * p1.y + h10 * m1y + h01 * p2.y + h11 * m2y,
+  };
 }
 
 export function catmullRomSpline(
@@ -164,8 +165,7 @@ export function catmullRomSpline(
     const p2 = points[i + 1];
     const p3 = points[Math.min(points.length - 1, i + 2)];
 
-    const segmentSamples = i === points.length - 2 ? samplesPerSegment + 1 : samplesPerSegment;
-    for (let step = 0; step < segmentSamples; step += 1) {
+    for (let step = 0; step <= samplesPerSegment; step += 1) {
       if (i > 0 && step === 0) continue;
       const t = step / samplesPerSegment;
       result.push(catmullRomPoint(p0, p1, p2, p3, t, tension));
@@ -185,89 +185,83 @@ export function buildSvgPathD(points: MapPoint[]): string {
   return `M ${first.x} ${first.y} ${segments.join(" ")}`;
 }
 
-function stableHash(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
-}
-
-function shiftHexHue(hex: string, degrees: number): string {
-  const normalized = hex.replace("#", "");
-  if (normalized.length !== 6) return hex;
-
-  const r = parseInt(normalized.slice(0, 2), 16) / 255;
-  const g = parseInt(normalized.slice(2, 4), 16) / 255;
-  const b = parseInt(normalized.slice(4, 6), 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const delta = max - min;
-
-  let h = 0;
-  if (delta !== 0) {
-    if (max === r) h = ((g - b) / delta) % 6;
-    else if (max === g) h = (b - r) / delta + 2;
-    else h = (r - g) / delta + 4;
-    h *= 60;
-    if (h < 0) h += 360;
-  }
-
-  const l = (max + min) / 2;
-  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-
-  const shifted = (h + degrees) % 360;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((shifted / 60) % 2) - 1));
-  const m = l - c / 2;
-
-  let r1 = 0;
-  let g1 = 0;
-  let b1 = 0;
-  if (shifted < 60) {
-    r1 = c;
-    g1 = x;
-  } else if (shifted < 120) {
-    r1 = x;
-    g1 = c;
-  } else if (shifted < 180) {
-    g1 = c;
-    b1 = x;
-  } else if (shifted < 240) {
-    g1 = x;
-    b1 = c;
-  } else if (shifted < 300) {
-    r1 = x;
-    b1 = c;
-  } else {
-    r1 = c;
-    b1 = x;
-  }
-
-  const toHex = (channel: number) =>
-    Math.round((channel + m) * 255)
-      .toString(16)
-      .padStart(2, "0");
-
-  return `#${toHex(r1)}${toHex(g1)}${toHex(b1)}`;
-}
-
 export function warLineStrokeStyle(
-  warId: string,
-  warCount = 1
+  segment: "progressed" | "remaining"
 ): WarLineStrokeStyle {
-  const hueShift =
-    warCount > 1 ? (stableHash(warId) % 7) * 18 - 54 : 0;
-
   return {
-    borderColor: WAR_LINE_BORDER_COLOR,
-    dashColor: shiftHexHue(WAR_LINE_DASH_COLOR, hueShift),
-    borderWidth: WAR_LINE_BORDER_WIDTH,
+    dashColor:
+      segment === "progressed"
+        ? WAR_LINE_PROGRESSED_COLOR
+        : WAR_LINE_REMAINING_COLOR,
     dashWidth: WAR_LINE_DASH_WIDTH,
     dashArray: WAR_LINE_DASH_ARRAY,
     opacity: WAR_LINE_OPACITY,
   };
+}
+
+export function campaignFrontAxisIndex(war: WarExport): number {
+  const axis = war.campaign_provinces ?? [];
+  const fallbackLength = war.campaign_line_points?.length ?? 0;
+  const length = axis.length || fallbackLength;
+  if (!length) return 0;
+
+  let front = war.cursor_index ?? 0;
+  if (!Number.isFinite(front)) front = 0;
+  front = Math.max(0, Math.min(length - 1, front));
+
+  for (const provinceId of war.occupied_by_attacker ?? []) {
+    const index = axis.indexOf(provinceId);
+    if (index > front) front = index;
+  }
+  return front;
+}
+
+function prependedCapital(waypoints: MapPoint[], war: WarExport): boolean {
+  if (waypoints.length < 2) return false;
+  const capital = war.attacker_capital;
+  if (
+    !capital ||
+    !Number.isFinite(capital.map_x) ||
+    !Number.isFinite(capital.map_y)
+  ) {
+    return false;
+  }
+  return pointsEqual(waypoints[0], { x: capital.map_x!, y: capital.map_y! });
+}
+
+export function frontWaypointIndex(war: WarExport, waypoints: MapPoint[]): number {
+  if (waypoints.length === 0) return 0;
+  const axisFront = campaignFrontAxisIndex(war);
+  const offset = prependedCapital(waypoints, war) ? 1 : 0;
+  return Math.max(0, Math.min(waypoints.length - 1, axisFront + offset));
+}
+
+function nearestSplineIndex(spline: MapPoint[], target: MapPoint): number {
+  let best = 0;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < spline.length; i += 1) {
+    const dx = spline[i].x - target.x;
+    const dy = spline[i].y - target.y;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  return best;
+}
+
+export function splitSplineAtIndex(
+  spline: MapPoint[],
+  splitIndex: number
+): { before: MapPoint[]; after: MapPoint[] } {
+  if (spline.length < 2) {
+    return { before: [], after: [] };
+  }
+  const index = Math.max(0, Math.min(spline.length - 1, splitIndex));
+  const before = spline.slice(0, index + 1);
+  const after = spline.slice(index);
+  return { before, after };
 }
 
 export function buildWarCampaignPathD(
@@ -278,4 +272,23 @@ export function buildWarCampaignPathD(
   if (waypoints.length < 2) return "";
   const spline = catmullRomSpline(waypoints);
   return buildSvgPathD(spline);
+}
+
+export function buildWarCampaignPathPair(
+  war: WarExport,
+  centroids?: ProvinceCentroids | null
+): WarCampaignPathPair {
+  const empty = { progressedD: "", remainingD: "" };
+  const waypoints = resolveWarWaypoints(war, centroids);
+  if (waypoints.length < 2) return empty;
+
+  const spline = catmullRomSpline(waypoints);
+  const frontWp = waypoints[frontWaypointIndex(war, waypoints)];
+  const splitAt = nearestSplineIndex(spline, frontWp);
+  const { before, after } = splitSplineAtIndex(spline, splitAt);
+
+  return {
+    progressedD: before.length >= 2 ? buildSvgPathD(before) : "",
+    remainingD: after.length >= 2 ? buildSvgPathD(after) : "",
+  };
 }
