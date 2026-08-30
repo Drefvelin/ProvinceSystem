@@ -7,7 +7,6 @@ import {
   filterVisibleMapMarkers,
   markerIconScale,
   markerLayout,
-  markerLabelHaloShadow,
   markerLabelTextStyle,
   pickMapMarkerAt,
   resolveMarkerImageSrc,
@@ -51,7 +50,7 @@ describe("mapMarkers", () => {
     const layout = markerLayout(100, 200, "small");
     expect(layout.imageX).toBe(50);
     expect(layout.imageY).toBe(150);
-    expect(layout.textY).toBe(222);
+    expect(layout.textY).toBe(252);
     expect(layout.iconSize).toBe(100);
   });
 
@@ -59,7 +58,7 @@ describe("mapMarkers", () => {
     const layout = markerLayout(100, 200, "small", "fort");
     expect(layout.iconSize).toBe(75);
     expect(layout.size).toBe(100);
-    expect(layout.textY).toBe(222);
+    expect(layout.textY).toBe(252);
   });
 
   it("markerLayout shrinks battle icons to 75%", () => {
@@ -96,24 +95,21 @@ describe("mapMarkers", () => {
     expect(markerIconScale("settlement")).toBe(1);
   });
 
-  it("markerLabelTextStyle uses a soft halo when highlighted", () => {
-    const style = markerLabelTextStyle({ fontSize: 48, highlighted: true });
-    expect(style.color).toBe("#2a1f14");
-    expect(style.textShadow).toContain("#e8e4d9");
-    expect(style.backgroundColor).toBeUndefined();
-    expect(style.padding).toBeUndefined();
-  });
-
-  it("markerLabelHaloShadow scales with font size", () => {
-    const small = markerLabelHaloShadow(48);
-    const large = markerLabelHaloShadow(72);
-    expect(small).not.toBe(large);
-  });
-
-  it("markerLabelTextStyle stays plain black when not highlighted", () => {
+  it("markerLabelTextStyle renders a sans chip, not haloed serif text", () => {
     const style = markerLabelTextStyle({ fontSize: 48, highlighted: false });
-    expect(style.color).toBe("#000000");
-    expect(style.backgroundColor).toBeUndefined();
+    expect(style.fontFamily).toContain("--font-source-sans");
+    expect(style.color).toBe("var(--tfmc-cream)");
+    expect(style.textShadow).toBeUndefined();
+    expect(style.backgroundColor).toContain("--tfmc-forest-deep");
+    expect(style.padding).toBeTruthy();
+  });
+
+  it("markerLabelTextStyle swaps chip colours when highlighted", () => {
+    const plain = markerLabelTextStyle({ fontSize: 48, highlighted: false });
+    const hovered = markerLabelTextStyle({ fontSize: 48, highlighted: true });
+    expect(hovered.backgroundColor).not.toBe(plain.backgroundColor);
+    expect(hovered.border).toContain("var(--tfmc-accent)");
+    expect(hovered.textShadow).toBeUndefined();
   });
 
   it("pickMapMarkerAt hits icon and label bounds", () => {

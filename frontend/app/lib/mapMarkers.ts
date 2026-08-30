@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { MapMode } from "../components/map/types";
-import { LABEL_HALO, LABEL_INK, LABEL_MAP_MODES } from "./mapLabels";
+import { LABEL_MAP_MODES } from "./mapLabels";
 
 export const MARKER_HOVER_EXPAND = 0.05;
 export const MARKER_HOVER_SCALE = 1 + MARKER_HOVER_EXPAND;
@@ -12,8 +12,30 @@ export const MARKER_SMALL_PX = 100;
 export const MARKER_LARGE_PX = 160;
 export const MARKER_LABEL_FONT_SMALL = 48;
 export const MARKER_LABEL_FONT_LARGE = 72;
-export const MARKER_LABEL_GAP = -28;
-export const MARKER_LABEL_COLOR = "#000000";
+export const MARKER_LABEL_GAP = 2;
+export const MARKER_LABEL_COLOR = "var(--tfmc-cream)";
+
+/**
+ * Marker names render as small chips instead of bare map text so they read as a
+ * different layer from the serif nation labels they sit on top of. Chip metrics
+ * are in `em` because the label font size lives in map space and is scaled by
+ * the viewport transform.
+ */
+export const MARKER_CHIP_BG =
+  "color-mix(in srgb, var(--tfmc-forest-deep) 88%, transparent)";
+export const MARKER_CHIP_BG_HOVER =
+  "color-mix(in srgb, var(--tfmc-forest) 92%, transparent)";
+export const MARKER_CHIP_BORDER =
+  "color-mix(in srgb, var(--tfmc-stone) 30%, transparent)";
+export const MARKER_CHIP_BORDER_HOVER = "var(--tfmc-accent)";
+export const MARKER_CHIP_PAD_X_EM = 0.5;
+export const MARKER_CHIP_PAD_Y_EM = 0.18;
+export const MARKER_CHIP_RADIUS_EM = 0.12;
+export const MARKER_CHIP_BORDER_EM = 0.035;
+export const MARKER_CHIP_TRANSITION =
+  "background-color 150ms ease-out, border-color 150ms ease-out";
+export const MARKER_ICON_HOVER_GLOW =
+  "drop-shadow(0 0 6px color-mix(in srgb, var(--tfmc-accent) 45%, transparent))";
 export const MARKER_LABEL_MIN_SCREEN_PX = 9;
 export const INSTALLATION_ICON_SCALE = 0.75;
 export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
@@ -88,37 +110,28 @@ export function markerIconScale(kind: string | undefined): number {
   return 1;
 }
 
-export function markerLabelHaloShadow(fontSize: number): string {
-  const inner = Math.max(1, Math.round(fontSize * 0.04));
-  const mid = Math.max(3, Math.round(fontSize * 0.09));
-  const outer = Math.max(5, Math.round(fontSize * 0.14));
-  return [
-    `0 0 ${inner}px ${LABEL_HALO}`,
-    `0 0 ${mid}px color-mix(in srgb, ${LABEL_HALO} 75%, transparent)`,
-    `0 0 ${outer}px color-mix(in srgb, ${LABEL_HALO} 42%, transparent)`,
-  ].join(", ");
-}
-
 export function markerLabelTextStyle(options: {
   fontSize: number;
   highlighted: boolean;
 }): CSSProperties {
   const { fontSize, highlighted } = options;
-  const base: CSSProperties = {
+  return {
     fontSize,
     lineHeight: 1,
-    fontFamily: "var(--font-fraunces), serif",
-    fontWeight: 500,
-    color: highlighted ? LABEL_INK : MARKER_LABEL_COLOR,
-  };
-
-  if (!highlighted) {
-    return base;
-  }
-
-  return {
-    ...base,
-    textShadow: markerLabelHaloShadow(fontSize),
+    // Sans keeps marker names in the site's body voice, so they never read as
+    // more nation labels when the two overlap.
+    fontFamily: "var(--font-source-sans), system-ui, sans-serif",
+    fontWeight: 600,
+    color: MARKER_LABEL_COLOR,
+    backgroundColor: highlighted ? MARKER_CHIP_BG_HOVER : MARKER_CHIP_BG,
+    // Floors keep the chip outline from collapsing to a sub-pixel hairline at
+    // the zoom levels where markers are smallest.
+    border: `max(1px, ${MARKER_CHIP_BORDER_EM}em) solid ${
+      highlighted ? MARKER_CHIP_BORDER_HOVER : MARKER_CHIP_BORDER
+    }`,
+    borderRadius: `max(2px, ${MARKER_CHIP_RADIUS_EM}em)`,
+    padding: `${MARKER_CHIP_PAD_Y_EM}em ${MARKER_CHIP_PAD_X_EM}em`,
+    transition: MARKER_CHIP_TRANSITION,
   };
 }
 
@@ -202,8 +215,15 @@ export function markerHitBounds(
     };
   }
 
-  const labelWidth = Math.max(layout.size, label.length * layout.fontSize * 0.55);
-  const labelHeight = layout.fontSize * 1.2;
+  const chipPadX =
+    layout.fontSize * (MARKER_CHIP_PAD_X_EM + MARKER_CHIP_BORDER_EM) * 2;
+  const chipPadY =
+    layout.fontSize * (MARKER_CHIP_PAD_Y_EM + MARKER_CHIP_BORDER_EM) * 2;
+  const labelWidth = Math.max(
+    layout.size,
+    label.length * layout.fontSize * 0.55 + chipPadX
+  );
+  const labelHeight = layout.fontSize + chipPadY;
   const left = layout.mapX - labelWidth / 2;
   const top = layout.imageY;
   const bottom = Math.max(
