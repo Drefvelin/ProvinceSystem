@@ -101,7 +101,20 @@ export default function MapAuthImage({
   const showPlaceholder = Boolean(previewUrl) && !previewFailed;
 
   return (
-    <div className={className} style={{ ...style, position: "relative" }}>
+    <div
+      className={className}
+      style={{
+        ...style,
+        position: "relative",
+        // Contain the placeholder/full z-indexes below. `position: relative`
+        // with `z-index: auto` does NOT create a stacking context, so the full
+        // image's `zIndex: 1` would otherwise compete in the map container's
+        // own context and paint above the region overlays — which are siblings
+        // of this wrapper sitting at `z-index: auto`. That hid every border on
+        // the map until you hovered one.
+        isolation: "isolate",
+      }}
+    >
       {showPlaceholder && (
         <img
           key={previewUrl}
