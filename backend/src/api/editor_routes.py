@@ -7,10 +7,10 @@ import json
 import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import JSONResponse, Response
 
 from .data_routes import clear_province_cache
-from .http_headers import add_cors, add_no_cache
+from .http_headers import add_cors, add_no_cache, conditional_file_response
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from .map_access import ensure_map_staff_write
 from .regen_routes import _regen_start_message
@@ -123,6 +123,8 @@ async def get_editor_provinces(
 async def get_editor_province_pick(
     map_name: str,
     authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
     """Staff-only raw provinces.png for editor province RGB hit-testing."""
     ensure_map_staff_write(map_name, authorization)
@@ -136,7 +138,12 @@ async def get_editor_province_pick(
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Province pick map not found")
 
-    return add_no_cache(add_cors(FileResponse(path, media_type="image/png")))
+    return conditional_file_response(
+        path,
+        media_type="image/png",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
+    )
 
 
 @editor_router.get("/{map_name}/editor/province-index")

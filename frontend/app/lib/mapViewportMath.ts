@@ -18,10 +18,32 @@ export type ViewportPoint = {
   y: number;
 };
 
-/** Width-fit scale so map matches current `w-full` behaviour at user zoom 1. */
-export function computeFitScale(viewport: Size, map: Size): number {
-  if (map.w <= 0) return 1;
-  return viewport.w / map.w;
+/**
+ * "cover": fills the viewport edge to edge on both axes, cropping whichever
+ * axis overflows (the default — see `computeFitScale`).
+ * "contain": shows the whole map on both axes, leaving empty space on the
+ * axis that doesn't need the full scale.
+ */
+export type FitMode = "cover" | "contain";
+
+/**
+ * "Cover" fit: the smallest scale at which the map fully covers the viewport
+ * on both axes, so user zoom 1 always fills the screen edge to edge with no
+ * empty space — the fit-limiting axis lands exactly on the viewport, the
+ * other overflows and needs a pan to see the rest. For a viewport container
+ * whose aspect ratio matches the map's (the previous square layout), this is
+ * identical to a width-only fit. It only differs once the viewport is a
+ * full-bleed rectangle with its own independent height.
+ */
+export function computeFitScale(
+  viewport: Size,
+  map: Size,
+  mode: FitMode = "cover"
+): number {
+  if (map.w <= 0 || map.h <= 0) return 1;
+  const widthFit = viewport.w / map.w;
+  const heightFit = viewport.h / map.h;
+  return mode === "contain" ? Math.min(widthFit, heightFit) : Math.max(widthFit, heightFit);
 }
 
 export function computeDisplayScale(fitScale: number, userScale: number): number {
@@ -45,21 +67,56 @@ export function clampTranslate(
   let tx = translateX;
   let ty = translateY;
 
+  // A square map in a non-square (full-bleed) viewport leaves slack on
+  // whichever axis isn't the fit-limiting one — e.g. a wide screen has empty
+  // space left and right of a contain-fit square map. Centering that slack
+  // matches every other map viewer's default view; pinning it to 0 would
+  // shove the map into a corner with dead space beside it.
   if (displayW <= viewport.w) {
-    tx = 0;
+    tx = (viewport.w - displayW) / 2;
   } else {
     const minX = viewport.w - displayW;
     tx = Math.min(0, Math.max(minX, tx));
   }
 
   if (displayH <= viewport.h) {
-    ty = 0;
+    ty = (viewport.h - displayH) / 2;
   } else {
     const minY = viewport.h - displayH;
     ty = Math.min(0, Math.max(minY, ty));
   }
 
   return { x: tx, y: ty };
+}
+
+/**
+ * Where the view should sit the moment it becomes ready (page load, or an
+ * explicit "reset view"), before any pan the user has done. Cover-fit's
+ * cropped axis overflows the viewport at zoom 1, and without this the view
+ * lands pinned to that axis's top/left edge (translate 0,0 happens to be
+ * valid there) instead of showing the middle of the map like every other
+ * axis. Centers both axes uniformly by feeding the geometric center through
+ * `clampTranslate` — on the axis with slack this reproduces its own
+ * centering, and on the overflowing axis it lands at the midpoint of the
+ * pannable range instead of an edge.
+ */
+export function computeCenteredTransform(
+  viewport: Size,
+  map: Size,
+  userScale = 1,
+  mode: FitMode = "cover"
+): ViewportTransform {
+  const fitScale = computeFitScale(viewport, map, mode);
+  const displayScale = computeDisplayScale(fitScale, userScale);
+  const centerX = (viewport.w - map.w * displayScale) / 2;
+  const centerY = (viewport.h - map.h * displayScale) / 2;
+  const clamped = clampTranslate(viewport, map, displayScale, centerX, centerY);
+
+  return {
+    userScale,
+    translateX: clamped.x,
+    translateY: clamped.y,
+  };
 }
 
 export function mapToScreen(
@@ -103,9 +160,10 @@ export function zoomAtPoint(
   map: Size,
   transform: ViewportTransform,
   cursor: ViewportPoint,
-  wheelDelta: number
+  wheelDelta: number,
+  mode: FitMode = "cover"
 ): ViewportTransform {
-  const fitScale = computeFitScale(viewport, map);
+  const fitScale = computeFitScale(viewport, map, mode);
   const displayScale = computeDisplayScale(fitScale, transform.userScale);
   const translate = { x: transform.translateX, y: transform.translateY };
 

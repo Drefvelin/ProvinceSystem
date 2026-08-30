@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Header, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 import os, time
 
-from .http_headers import add_cors, add_no_cache
+from .http_headers import conditional_file_response
+from .webp_cache import webp_variant
 from .map_access import ensure_map_access
 from ..scripts.util.dirs import input_file, parchment_image
 from ..scripts.util.imagechecker import find_province
@@ -46,38 +47,77 @@ def _resolve_base_map_path(map_name: str, base: str) -> str | None:
         )
     return path if os.path.exists(path) else None
 
+def _base_map_response(
+    path: str,
+    base_label: str,
+    accept: str | None,
+    if_none_match: str | None,
+    if_modified_since: str | None,
+):
+    """Serve the base map, preferring a cached WebP copy when the client can use it.
+
+    Falls back to the PNG whenever no fresh WebP exists yet, so the first request
+    after a map regen is never blocked on the encode.
+    """
+    webp = webp_variant(path, accept=accept)
+    served = str(webp) if webp else path
+    media_type = "image/webp" if webp else "image/png"
+
+    response = conditional_file_response(
+        served,
+        media_type=media_type,
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
+    )
+    response.headers["X-Map-Base"] = base_label
+    # The body depends on whether the client advertised WebP, so caches must key on it.
+    response.headers["Vary"] = "Accept"
+    return response
+
+
 @map_router.get("/{map_name}/map/parchment")
 async def get_parchment_map(
     map_name: str,
     authorization: str | None = Header(default=None),
+    accept: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
     path = _resolve_base_map_path(map_name, "parchment")
     if not path:
         return JSONResponse({"error": "Map not found"}, 404)
-    r = FileResponse(path, media_type="image/png")
-    r.headers["X-Map-Base"] = "parchment"
-    return add_no_cache(add_cors(r))
+    return _base_map_response(
+        path, "parchment", accept, if_none_match, if_modified_since
+    )
 
 @map_router.get("/{map_name}/map/original")
 async def get_original_map(
     map_name: str,
     authorization: str | None = Header(default=None),
+    accept: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
-    return await get_base_map(map_name, authorization)
+    return await get_base_map(
+        map_name, authorization, accept, if_none_match, if_modified_since
+    )
 
 @map_router.get("/{map_name}/map")
 async def get_base_map(
     map_name: str,
     authorization: str | None = Header(default=None),
+    accept: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
     path = _resolve_base_map_path(map_name, "satellite")
     if not path:
         return JSONResponse({"error": "Map not found"}, 404)
-    r = FileResponse(path, media_type="image/png")
-    r.headers["X-Map-Base"] = "original"
-    return add_no_cache(add_cors(r))
+    return _base_map_response(
+        path, "original", accept, if_none_match, if_modified_since
+    )
 
 @map_router.get("/{map_name}/map/province/{coords}")
 async def get_province(
