@@ -20,6 +20,7 @@ import {
   buildProvincePixelIndex,
   type ProvinceIndex,
 } from "@/app/lib/map/editor/buildProvinceIndex";
+import type { ProvinceRegionIndex } from "@/app/lib/map/editor/paintTitleLayers";
 import type { TitlePickIndex } from "@/app/lib/map/editor/buildTitlePickIndex";
 import { buildChildToParentId } from "@/app/lib/map/editor/childTitleAssignment";
 import { buildProvinceToCountyId } from "@/app/lib/map/editor/countyAssignment";
@@ -174,10 +175,16 @@ export default function MapEditorCanvas({
     internalPick.error ??
     (childTierMode ? childPickError : null);
 
+  // The flat pixel index walks all 40.96M pixels and buckets them into
+  // per-province arrays - a large transient allocation. When the index came
+  // from the run-length artifact the run spans serve the same queries, so we
+  // skip building it entirely. Flat indexes keep the original behaviour.
   const pixelIndex = useMemo(
-    () => (index ? buildProvincePixelIndex(index.provinceMap) : null),
+    () => (index && !index.runs ? buildProvincePixelIndex(index.provinceMap) : null),
     [index]
   );
+
+  const regionIndex: ProvinceRegionIndex | null = index?.runs ?? pixelIndex;
 
   const provinceAssignment = useMemo(
     () => (countyMode ? buildProvinceToCountyId(draft) : new Map()),
@@ -240,7 +247,10 @@ export default function MapEditorCanvas({
   }, []);
 
   useEffect(() => {
-    if (!editorPickMode || !index || !pixelIndex) return;
+    if (!editorPickMode || !index || !regionIndex) return;
+
+    // Run spans when available, otherwise the flat province map.
+    const geometry = index.runs ?? index.provinceMap;
 
     const selectionCanvas = selectionCanvasRef.current;
     const activeCanvas = activeCanvasRef.current;
@@ -288,14 +298,14 @@ export default function MapEditorCanvas({
         const countySnapshot = snapshot as CountyPaintSnapshot;
         paintSelectionLayerFull(
           selectionImageData,
-          index.provinceMap,
+          geometry,
           index.provinceToRgb,
           provinceAssignment,
           countySnapshot.colors
         );
         paintActiveLayerFull(
           activeImageData,
-          index.provinceMap,
+          geometry,
           countySnapshot.selectedProvinces,
           countySnapshot.selectedRgb,
           new Set()
@@ -306,14 +316,14 @@ export default function MapEditorCanvas({
         const childSnapshot = snapshot as ChildTierPaintSnapshot;
         paintChildSelectionLayerFull(
           selectionImageData,
-          index.provinceMap,
+          geometry,
           childDraftForPaint,
           childTierConfig.resolveChildProvinces,
           titleLayers
         );
         paintParentActiveLayerFull(
           activeImageData,
-          index.provinceMap,
+          geometry,
           childSnapshot.selectedMembers,
           childSnapshot.selectedRgb,
           childTierConfig.resolveChildProvinces,
@@ -349,7 +359,7 @@ export default function MapEditorCanvas({
       if (selectionProvinceIds.size > 0) {
         updateCountySelectionSubset(
           selectionImageData,
-          pixelIndex,
+          regionIndex,
           [...selectionProvinceIds],
           index.provinceToRgb,
           provinceAssignment,
@@ -365,7 +375,7 @@ export default function MapEditorCanvas({
         );
         updateCountyActiveSubset(
           activeImageData,
-          pixelIndex,
+          regionIndex,
           nextProvinces,
           countySnapshot.selectedRgb,
           toClear
@@ -390,7 +400,7 @@ export default function MapEditorCanvas({
       if (selectionChildIds.size > 0) {
         updateChildSelectionSubset(
           selectionImageData,
-          pixelIndex,
+          regionIndex,
           [...selectionChildIds],
           childSnapshot.childColors,
           childTierConfig.resolveChildProvinces,
@@ -404,7 +414,7 @@ export default function MapEditorCanvas({
         const toClear = prevMembers.filter((id) => !nextMembers.includes(id));
         updateParentActiveSubset(
           activeImageData,
-          pixelIndex,
+          regionIndex,
           nextMembers,
           childSnapshot.selectedRgb,
           childTierConfig.resolveChildProvinces,
@@ -488,7 +498,7 @@ export default function MapEditorCanvas({
     childTierMode,
     childTierConfig,
     index,
-    pixelIndex,
+    regionIndex,
     mapId,
     tier,
     draft,

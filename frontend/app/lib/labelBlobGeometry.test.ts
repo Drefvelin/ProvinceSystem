@@ -4,6 +4,7 @@ import {
   LABEL_MIN_INSET_PX,
   LABEL_GLYPH_WIDTH_EM,
   buildComponentMask,
+  componentSubRect,
   corridorClear,
   distanceTransform,
   findLabelAnchor,
@@ -267,5 +268,151 @@ describe("parseProvinceLabelGrid", () => {
     expect(Array.from(grid.cells)).toEqual([5, 9, 0, 12]);
     expect(grid.scaleX).toBe(20);
     expect(grid.scaleY).toBe(10);
+  });
+});
+
+describe("sub-rect restriction", () => {
+  /**
+   * Full-grid reference implementation of the pre-optimisation behaviour:
+   * seeds every unmasked cell AND every cell on a TRUE grid edge.
+   */
+  function referenceDistanceTransform(
+    mask: Uint8Array,
+    grid: ProvinceLabelGrid
+  ): Float32Array {
+    const { gridWidth, gridHeight, scaleX, scaleY } = grid;
+    const cellScale = Math.min(scaleX, scaleY);
+    const size = gridWidth * gridHeight;
+    const dist = new Float32Array(size);
+    dist.fill(-1);
+    const queue: number[] = [];
+
+    for (let idx = 0; idx < size; idx += 1) {
+      if (mask[idx] === 0) {
+        dist[idx] = 0;
+        queue.push(idx);
+        continue;
+      }
+      const x = idx % gridWidth;
+      const y = (idx / gridWidth) | 0;
+      if (x === 0 || x === gridWidth - 1 || y === 0 || y === gridHeight - 1) {
+        dist[idx] = 0;
+        queue.push(idx);
+      }
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const idx = queue[head++];
+      const x = idx % gridWidth;
+      const y = (idx / gridWidth) | 0;
+      const nextDist = dist[idx] + 1;
+      const push = (neighbor: number) => {
+        if (mask[neighbor] === 0 || dist[neighbor] >= 0) return;
+        dist[neighbor] = nextDist;
+        queue.push(neighbor);
+      };
+      if (x > 0) push(idx - 1);
+      if (x + 1 < gridWidth) push(idx + 1);
+      if (y > 0) push(idx - gridWidth);
+      if (y + 1 < gridWidth) push(idx + gridWidth);
+    }
+
+    for (let idx = 0; idx < size; idx += 1) {
+      if (mask[idx] === 1 && dist[idx] >= 0) {
+        dist[idx] *= cellScale;
+      } else {
+        dist[idx] = 0;
+      }
+    }
+    return dist;
+  }
+
+  /**
+   * 24x24 grid, map scale 8px/cell so the sub-rect padding
+   * (LABEL_MIN_INSET_PX / cellScale = 5 cells) does not swallow the grid.
+   */
+  function scenarioGrid(): ProvinceLabelGrid {
+    const w = 24;
+    const h = 24;
+    const cells = new Array<number>(w * h).fill(0);
+    const paint = (id: number, x0: number, y0: number, x1: number, y1: number) => {
+      for (let y = y0; y <= y1; y += 1) {
+        for (let x = x0; x <= x1; x += 1) cells[y * w + x] = id;
+      }
+    };
+    // 1: fully interior blob
+    paint(1, 9, 9, 14, 14);
+    // 2: blob flush against the left + top TRUE grid edges
+    paint(2, 0, 0, 5, 5);
+    // 3: blob flush against the right + bottom TRUE grid edges
+    paint(3, 18, 18, 23, 23);
+    // 4: neighbouring land so blobs are not surrounded purely by water
+    paint(4, 6, 9, 8, 14);
+    return {
+      mapWidth: w * 8,
+      mapHeight: h * 8,
+      gridWidth: w,
+      gridHeight: h,
+      cells: new Uint16Array(cells),
+      scaleX: 8,
+      scaleY: 8,
+    };
+  }
+
+  const grid = scenarioGrid();
+
+  it.each([[1], [2], [3], [4]])(
+    "sub-rect mask + distance transform match the full-grid result (province %i)",
+    (id) => {
+      const rect = componentSubRect(grid, [id])!;
+      expect(rect).not.toBeNull();
+
+      const fullMask = buildComponentMask(grid, [id]);
+      const rectMask = buildComponentMask(grid, [id], rect);
+      expect(Array.from(rectMask)).toEqual(Array.from(fullMask));
+
+      const reference = referenceDistanceTransform(fullMask, grid);
+      const restricted = distanceTransform(rectMask, grid, rect);
+      expect(Array.from(restricted)).toEqual(Array.from(reference));
+    }
+  );
+
+  it("keeps clearance-0 seeding on TRUE grid edges", () => {
+    // Province 2 sits on the left/top grid edges: its edge cells must be 0.
+    const rect = componentSubRect(grid, [2])!;
+    const mask = buildComponentMask(grid, [2], rect);
+    const dist = distanceTransform(mask, grid, rect);
+    expect(dist[0 * grid.gridWidth + 3]).toBe(0);
+    expect(dist[3 * grid.gridWidth + 0]).toBe(0);
+  });
+
+  it("does NOT seed clearance-0 on sub-rect borders interior to the grid", () => {
+    // Province 1 is fully interior. Its sub-rect borders are ordinary grid
+    // cells; if they were treated as edges the blob interior would lose
+    // clearance relative to the unrestricted transform.
+    const rect = componentSubRect(grid, [1])!;
+    expect(rect.x0).toBeGreaterThan(0);
+    expect(rect.y0).toBeGreaterThan(0);
+
+    const mask = buildComponentMask(grid, [1], rect);
+    const restricted = distanceTransform(mask, grid, rect);
+    const reference = referenceDistanceTransform(
+      buildComponentMask(grid, [1]),
+      grid
+    );
+    const center = 12 * grid.gridWidth + 12;
+    expect(restricted[center]).toBe(reference[center]);
+    expect(restricted[center]).toBeGreaterThan(0);
+  });
+
+  it("returns null for province ids absent from the grid", () => {
+    expect(componentSubRect(grid, [9999])).toBeNull();
+  });
+
+  it("pads the sub-rect beyond the raw province bounds", () => {
+    const rect = componentSubRect(grid, [1])!;
+    expect(rect.x0).toBeLessThan(9);
+    expect(rect.x1).toBeGreaterThan(14);
   });
 });

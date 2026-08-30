@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from email.utils import parsedate
 
 from fastapi import Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 
 def add_cors(response: Response) -> Response:
@@ -95,4 +97,55 @@ def conditional_file_response(
     not_modified = Response(status_code=304)
     not_modified.headers["ETag"] = etag
     not_modified.headers["Last-Modified"] = last_modified
+    return add_revalidate(add_cors(not_modified))
+
+
+def make_etag(*parts: object) -> str:
+    """Quoted strong ETag derived from arbitrary identity parts.
+
+    Used for JSON that is built in memory rather than read from one file, where
+    `FileResponse`'s mtime/size tag is not available.
+    """
+    raw = "\x00".join(str(part) for part in parts).encode("utf-8")
+    return '"' + hashlib.sha1(raw, usedforsecurity=False).hexdigest() + '"'
+
+
+def conditional_json_response(
+    payload: object = None,
+    *,
+    etag: str | None = None,
+    if_none_match: str | None = None,
+    body: str | None = None,
+) -> Response:
+    """CORS-enabled JSON response that answers 304 when the client is current.
+
+    Same contract as `conditional_file_response`, for payloads that are computed
+    instead of streamed off disk: the client keeps the body it already has and
+    revalidates with a bodiless 304.
+
+    Pass `body` when the caller already serialized the payload, and the encode
+    happens once instead of twice. `etag` defaults to a hash of the bytes about
+    to be sent, which is the identity callers almost always want — a tag derived
+    from anything else (a cache timestamp, say) changes while the body does not,
+    forcing clients to re-download bytes they already hold.
+    """
+    if body is None:
+        body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    if etag is None:
+        etag = make_etag(body)
+
+    if_none_match = _header_str(if_none_match)
+
+    if if_none_match and _matches_etag(if_none_match, etag):
+        return _not_modified_response(etag)
+
+    response = Response(content=body, media_type="application/json")
+    response.headers["ETag"] = etag
+    return add_revalidate(add_cors(response))
+
+
+def _not_modified_response(etag: str) -> Response:
+    """Bodiless 304 carrying the tag the client should keep revalidating with."""
+    not_modified = Response(status_code=304)
+    not_modified.headers["ETag"] = etag
     return add_revalidate(add_cors(not_modified))

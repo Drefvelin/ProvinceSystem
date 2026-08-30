@@ -15,11 +15,18 @@ import os
 import sys
 import time
 
-from api.webp_cache import cache_path_for, webp_variant
-from scripts.util.dirs import INPUT_DIR, input_file, parchment_image
+from ..util.dirs import INPUT_DIR, input_file, parchment_image
+
+try:
+    # Imported as part of the `src` package (server / regeneration).
+    from ...api.webp_cache import cache_path_for, webp_variant
+except ImportError:
+    # Run as a CLI from backend/src, where `src` is not a package root.
+    from api.webp_cache import cache_path_for, webp_variant
 
 
-def _sources(map_name: str) -> list[str]:
+def webp_warm_sources(map_name: str) -> list[str]:
+    """Base images this map warms. Public so regeneration can stamp them."""
     """The base map images the API can serve as WebP."""
     candidates = [input_file(map_name, "map.png"), parchment_image(map_name)]
     return [path for path in candidates if os.path.isfile(path)]
@@ -38,7 +45,7 @@ def _discover_maps() -> list[str]:
 def warm(map_names: list[str]) -> int:
     built = 0
     for map_name in map_names:
-        sources = _sources(map_name)
+        sources = webp_warm_sources(map_name)
         if not sources:
             print(f"[{map_name}] no base map image, skipping")
             continue

@@ -251,8 +251,11 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setPendingDrillId(null);
   }, [pendingDrillId, regionData, drillDownRegion]);
 
+  // The pick canvas only needs its own image, so it is deliberately not gated
+  // on `loading`/`geometryReady` — hover goes live as soon as the pick image
+  // decodes instead of waiting for every region/geometry JSON.
   useEffect(() => {
-    if (!accessChecked || gateReason || loading || (mapId === "main" && !geometryReady)) {
+    if (!accessChecked || gateReason) {
       return;
     }
 
@@ -262,7 +265,8 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     const drawImage = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const ctx = canvas.getContext("2d");
+      // getImageData runs per hover frame; keep the backing store CPU-side.
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
       const path = `/${mapId}/mapdata/${mapType}`;
@@ -287,8 +291,12 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // Resizing re-allocates the (6400x6400 => ~164MB) backing store, so
+        // only touch the dimensions when the pick image actually changed size.
+        if (canvas.width !== img.width || canvas.height !== img.height) {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
@@ -310,15 +318,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       cancelled = true;
       revokeMapBlobUrl(blobUrl);
     };
-  }, [
-    mapId,
-    mapType,
-    loading,
-    geometryReady,
-    accessChecked,
-    gateReason,
-    authToken,
-  ]);
+  }, [mapId, mapType, accessChecked, gateReason, authToken]);
 
   const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable } = useMapHover({
     mapId,
@@ -480,15 +480,10 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     );
   }
 
-  if (loading || (mapId === "main" && !geometryReady)) {
-    return (
-      <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
-        <p className="text-lg font-medium text-[var(--tfmc-cream)]">
-          Loading map…
-        </p>
-      </div>
-    );
-  }
+  // Data/geometry loading no longer unmounts the map: MapCanvas stays in the
+  // tree so the base map <img> starts downloading immediately, and the loading
+  // screen is drawn over it instead.
+  const mapLoading = loading || (mapId === "main" && !geometryReady);
 
   return (
     <>
@@ -584,6 +579,14 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
           paint={paint}
         />
       </MapPageLayout>
+
+      {mapLoading && (
+        <div className="fixed inset-x-0 bottom-0 top-[var(--tfmc-header-h)] z-40 flex items-center justify-center bg-[var(--tfmc-forest-deep)]">
+          <p className="text-lg font-medium text-[var(--tfmc-cream)]">
+            Loading map…
+          </p>
+        </div>
+      )}
 
       <NationDetailModal
         open={modalOpen}
