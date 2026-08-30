@@ -82,6 +82,7 @@ def build_compiled_provinces(map_name: str):
             "dominance_ratio": ratio,
             "infestation_severity": inf.get("severity") if inf else None,
             "infestation_group": inf.get("group") if inf else None,
+            "infestation_display": (inf.get("display") or inf.get("group")) if inf else None,
         }
 
     return out

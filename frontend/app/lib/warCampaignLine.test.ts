@@ -122,6 +122,35 @@ describe("resolveWarWaypoints", () => {
     );
     expect(waypoints[2]).toEqual({ x: 250, y: 180, provinceId: 30 });
   });
+
+  it("inserts a siege fort that is not on the campaign province axis", () => {
+    const waypoints = resolveWarWaypoints(
+      sampleWar({
+        campaign_battle_schedule: [
+          {
+            schedule_index: 0,
+            leg: "invasion",
+            province_id: 99,
+            kind: "siege",
+            kind_label: "Siege",
+            status: "upcoming",
+            map_x: 250,
+            map_y: 135,
+            fort_installation_id: "Greenfort",
+          },
+        ],
+      })
+    );
+    expect(waypoints).toHaveLength(5);
+    expect(waypoints[2]).toEqual({ x: 250, y: 135, provinceId: 99 });
+    const spline = catmullRomSpline(waypoints);
+    const nearest = spline.reduce((best, point) => {
+      const dist = Math.hypot(point.x - 250, point.y - 135);
+      const bestDist = Math.hypot(best.x - 250, best.y - 135);
+      return dist < bestDist ? point : best;
+    });
+    expect(Math.hypot(nearest.x - 250, nearest.y - 135)).toBeLessThan(1);
+  });
 });
 
 describe("catmullRomSpline", () => {

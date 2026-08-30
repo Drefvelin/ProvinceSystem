@@ -54,9 +54,10 @@ export function useProvinceHover({
             lines.push(`Fertility: ${data.fertility}`);
           if (mapType === "prosperity")
             lines.push(`Prosperity: ${data.prosperity ?? 0}`);
-          if (mapType === "infestation") {
+            if (mapType === "infestation") {
             const severity = data.infestation_severity;
-            const group = data.infestation_group;
+            const group =
+              data.infestation_display || data.infestation_group;
             if (severity) {
               const label =
                 String(severity).charAt(0).toUpperCase() +

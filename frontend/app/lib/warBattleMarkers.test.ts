@@ -81,8 +81,8 @@ describe("slotToMapMarker", () => {
       label: "Siege",
       showLabelOnlyOnHover: true,
       baseScale: 1.1,
-      highlightRing: true,
     });
+    expect(marker.highlightRing).toBeUndefined();
     expect(marker.title).toBe("Siege - Greenfort - Next battle");
   });
 
@@ -92,7 +92,7 @@ describe("slotToMapMarker", () => {
       sampleSlot({ status: "upcoming" })
     );
     expect(marker.baseScale).toBe(1);
-    expect(marker.highlightRing).toBe(false);
+    expect(marker.highlightRing).toBeUndefined();
   });
 });
 

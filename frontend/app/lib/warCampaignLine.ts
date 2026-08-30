@@ -172,6 +172,80 @@ function overlayBattleSites(waypoints: MapPoint[], war: WarExport): MapPoint[] {
   });
 }
 
+const ALREADY_ON_PATH_PX = 1;
+
+function isSiegeSiteSlot(slot: WarScheduleSlot): boolean {
+  if (!slotHasCoords(slot)) return false;
+  const kind = (slot.kind ?? "").toLowerCase();
+  if (kind === "siege" || kind.includes("siege")) return true;
+  if (typeof slot.fort_installation_id === "string" && slot.fort_installation_id.trim()) {
+    return true;
+  }
+  if (typeof slot.port_installation_id === "string" && slot.port_installation_id.trim()) {
+    return true;
+  }
+  return false;
+}
+
+function pointToSegmentDistance2(
+  point: MapPoint,
+  a: MapPoint,
+  b: MapPoint
+): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length2 = dx * dx + dy * dy;
+  if (length2 === 0) {
+    const ox = point.x - a.x;
+    const oy = point.y - a.y;
+    return ox * ox + oy * oy;
+  }
+  let t = ((point.x - a.x) * dx + (point.y - a.y) * dy) / length2;
+  t = Math.max(0, Math.min(1, t));
+  const px = a.x + t * dx;
+  const py = a.y + t * dy;
+  const ox = point.x - px;
+  const oy = point.y - py;
+  return ox * ox + oy * oy;
+}
+
+function alreadyOnPath(waypoints: MapPoint[], site: MapPoint): boolean {
+  return waypoints.some((waypoint) => pointsEqual(waypoint, site, ALREADY_ON_PATH_PX));
+}
+
+function nearestSegmentInsertIndex(waypoints: MapPoint[], site: MapPoint): number {
+  let bestIndex = 1;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < waypoints.length - 1; i += 1) {
+    const dist = pointToSegmentDistance2(site, waypoints[i], waypoints[i + 1]);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIndex = i + 1;
+    }
+  }
+  return bestIndex;
+}
+
+function insertSiegeForts(waypoints: MapPoint[], war: WarExport): MapPoint[] {
+  if (waypoints.length < 2) return waypoints;
+  const sites = collectScheduleSlots(war)
+    .filter(isSiegeSiteSlot)
+    .sort((a, b) => a.schedule_index - b.schedule_index);
+
+  let result = [...waypoints];
+  for (const slot of sites) {
+    const site: MapPoint = {
+      x: slot.map_x!,
+      y: slot.map_y!,
+      provinceId: slot.province_id,
+    };
+    if (alreadyOnPath(result, site)) continue;
+    const insertAt = nearestSegmentInsertIndex(result, site);
+    result = [...result.slice(0, insertAt), site, ...result.slice(insertAt)];
+  }
+  return result;
+}
+
 export function nextBattleSlot(war: WarExport): WarScheduleSlot | null {
   const schedules = [
     war.campaign_battle_schedule ?? [],
@@ -198,6 +272,7 @@ export function resolveWarWaypoints(
 
   waypoints = maybePrependAttackerCapital(waypoints, war);
   waypoints = overlayBattleSites(waypoints, war);
+  waypoints = insertSiegeForts(waypoints, war);
 
   const valid = waypoints.filter(isFinitePoint);
   if (valid.length < 2) {

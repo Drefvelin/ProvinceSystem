@@ -60,7 +60,6 @@ export function slotToMapMarker(warId: string, slot: WarScheduleSlot): MapMarker
     title: formatBattleMarkerTitle(slot),
     showLabelOnlyOnHover: true,
     baseScale: isNext ? BATTLE_NEXT_BASE_SCALE : 1,
-    highlightRing: isNext,
   };
 }
 
