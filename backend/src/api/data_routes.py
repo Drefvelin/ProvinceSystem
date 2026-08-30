@@ -8,6 +8,7 @@ from .map_access import ensure_map_access
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 from ..scripts.loader.markers import build_markers_response
+from ..scripts.mapgen.infestationgen import create_infestation_map, load_infestation_by_id
 from ..scripts.loader.province_metadata import load_province_metadata
 from ..scripts.mapgen.zocgen import generate_zoc_overlays
 
@@ -46,12 +47,24 @@ def build_compiled_provinces(map_name: str):
         pdata = json.load(f)
 
     by_id = {p["id"]: p for p in pdata}
+    infest = load_infestation_by_id(map_name)
     out = {}
 
     for pid, m in meta.items():
         p = by_id.get(pid, {})
+        if not p:
+            try:
+                p = by_id.get(int(pid), {})
+            except (TypeError, ValueError):
+                p = {}
         trade = p.get("trade") or {}
         shares, dom, ratio = compute_trade_shares(trade)
+        inf = infest.get(pid)
+        if inf is None:
+            try:
+                inf = infest.get(int(pid))
+            except (TypeError, ValueError):
+                inf = None
 
         out[pid] = {
             **m,
@@ -62,6 +75,8 @@ def build_compiled_provinces(map_name: str):
             "trade_shares": shares,
             "dominant_guild": dom,
             "dominance_ratio": ratio,
+            "infestation_severity": inf.get("severity") if inf else None,
+            "infestation_group": inf.get("group") if inf else None,
         }
 
     return out
@@ -144,7 +159,7 @@ async def upload_region_data(
 
     path = (
         input_file(map_name, f"{mode}.json")
-        if mode in {"nation", "guilds", "province_data", "queue", "map_markers"}
+        if mode in {"nation", "guilds", "province_data", "queue", "map_markers", "infestation_data"}
         else defines_file(map_name, f"{mode}.json")
     )
 
@@ -156,5 +171,7 @@ async def upload_region_data(
 
     if mode_norm == "map_markers":
         background_tasks.add_task(generate_zoc_overlays, map_name)
+    if mode_norm == "infestation_data":
+        background_tasks.add_task(create_infestation_map, map_name)
 
     return JSONResponse({"message": f"{mode} data saved for '{map_name}'"})

@@ -20,7 +20,7 @@ export default function NationDetailPanel({
   sessionToken,
 }: NationDetailPanelProps) {
   const showPanel =
-    regionInfo && mapType !== "terrain" && mapType !== "fertility";
+    regionInfo && mapType !== "terrain" && mapType !== "fertility" && mapType !== "infestation";
 
   return (
     <div

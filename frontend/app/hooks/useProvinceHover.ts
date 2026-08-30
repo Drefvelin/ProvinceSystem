@@ -31,6 +31,7 @@ export function useProvinceHover({
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
+      mapType === "infestation" ||
       mapType === "trade";
 
     if (!active) return false;
@@ -53,6 +54,22 @@ export function useProvinceHover({
             lines.push(`Fertility: ${data.fertility}`);
           if (mapType === "prosperity")
             lines.push(`Prosperity: ${data.prosperity ?? 0}`);
+          if (mapType === "infestation") {
+            const severity = data.infestation_severity;
+            const group = data.infestation_group;
+            if (severity) {
+              const label =
+                String(severity).charAt(0).toUpperCase() +
+                String(severity).slice(1);
+              lines.push(
+                group
+                  ? `Infestation: ${label} (${group})`
+                  : `Infestation: ${label}`
+              );
+            } else {
+              lines.push("Infestation: None");
+            }
+          }
           
           if ((mapType === "trade" || mapType === "prosperity") && data.trade_shares) {
             const entries = Object.entries(
@@ -107,7 +124,8 @@ export function useProvinceHover({
     const consumesHover =
         mapType === "terrain" ||
         mapType === "fertility" ||
-        mapType === "prosperity";
+        mapType === "prosperity" ||
+        mapType === "infestation";
 
     return consumesHover;
   };

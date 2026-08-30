@@ -56,6 +56,7 @@ export default function MapToolbar({
             <option value="fertility">Fertility</option>
             <option value="trade">Trade</option>
             <option value="prosperity">Prosperity</option>
+            <option value="infestation">Infestation</option>
           </>
         )}
       </select>

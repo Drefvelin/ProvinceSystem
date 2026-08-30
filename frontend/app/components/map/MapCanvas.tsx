@@ -210,7 +210,10 @@ export default function MapCanvas({
   }, [mapId, mapType, viewport.resetViewport]);
 
   const showProvinceOverlay =
-    mapType === "terrain" || mapType === "fertility" || mapType === "prosperity";
+    mapType === "terrain" ||
+    mapType === "fertility" ||
+    mapType === "prosperity" ||
+    mapType === "infestation";
 
   const handleBaseMapLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     syncNaturalMapSize(e.currentTarget);

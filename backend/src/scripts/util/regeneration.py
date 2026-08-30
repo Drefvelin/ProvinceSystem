@@ -11,6 +11,7 @@ from ..compile.trade_compiler import process_trade
 from ..mapgen.geometry_cache import MapGeometryCache
 from ..mapgen.mapgen import create_map
 from ..mapgen.parchmentgen import create_parchment_base
+from ..mapgen.infestationgen import create_infestation_map
 from ..mapgen.prosperitygen import create_prosperity_map
 from ..mapgen.regiongen import generate_regions
 from ..mapgen.zocgen import generate_zoc_overlays
@@ -245,6 +246,9 @@ def _sync_regeneration(map_name: str, regen_type: str):
 
         with timings.timed("zocgen"):
             generate_zoc_overlays(map_name, cache=cache)
+
+        with timings.timed("map.infestation"):
+            create_infestation_map(map_name, "infestation_map", cache=cache)
 
     elapsed = time.perf_counter() - start_time
 

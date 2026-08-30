@@ -15,6 +15,7 @@ import {
 import { warBattleMarkersFromWars } from "../lib/warBattleMarkers";
 import {
   settlementToMapMarker,
+  visibleSettlementKind,
 } from "../lib/settlementMarkers";
 import { useGuildCache } from "../hooks/useGuildCache";
 import { useTitleLayerData } from "../hooks/useTitleLayerData";
@@ -171,11 +172,20 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     if (!isMarkerMapMode(mapType)) return [];
     const battleMarkers = warBattleMarkersFromWars(wars);
     return [
-      ...settlements.map(settlementToMapMarker),
+      ...settlements.map((settlement) =>
+        settlementToMapMarker({
+          ...settlement,
+          kind: visibleSettlementKind(
+            settlement.kind,
+            settlement.faction_id,
+            mapObjects
+          ),
+        })
+      ),
       ...installations.map(installationToMapMarker),
       ...battleMarkers,
     ];
-  }, [settlements, installations, wars, mapType]);
+  }, [settlements, installations, wars, mapType, mapObjects]);
 
   const labelGeometry = useMemo(() => {
     if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;

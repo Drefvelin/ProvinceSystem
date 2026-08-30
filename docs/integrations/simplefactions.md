@@ -63,6 +63,7 @@ Common `mode` values on `POST /{map}/data/upload/{mode}`:
 - `guilds` - guild layer data
 - `queue` - pending region RGB jobs
 - `map_markers` - settlements, capitals, forts
+- `infestation_data` - province infestation overlay (Infestations plugin)
 - `county` / `duchy` / `kingdom` / `empire` - de jure title JSON (same IP gate; validated payload)
 
 War and chronicle extensions follow the export schema in [`docs/assets/map-export-schema.json`](../assets/map-export-schema.json). SF-side export details: [`simplefactions/docs/map-export.md`](../../../simplefactions/docs/map-export.md).

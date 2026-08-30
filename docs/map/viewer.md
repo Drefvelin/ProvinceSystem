@@ -6,7 +6,7 @@ Making the map **feel fast and responsive** is a top priority. Product goals: [o
 
 1. **Full-map region PNGs** - [`regiongen.py`](../../backend/src/scripts/mapgen/regiongen.py) historically allocated full-canvas images per region. Files were huge; the browser stacked many transparent full canvases.
 2. **Hover lookup** - [`useRegionHover.ts`](../../frontend/app/hooks/useRegionHover.ts) uses `ctx.getImageData(x, y, 1, 1)` on mousemove.
-3. **Province modes** - [`useProvinceHover.ts`](../../frontend/app/hooks/useProvinceHover.ts) may `fetch` meta on move for terrain/fertility/prosperity (cached later).
+3. **Province modes** - [`useProvinceHover.ts`](../../frontend/app/hooks/useProvinceHover.ts) may `fetch` meta on move for terrain/fertility/prosperity/infestation (cached later).
 4. **Layout** - [`MapViewer.tsx`](../../frontend/app/components/MapViewer.tsx) was desktop `flex-row`; improved for small screens.
 
 ## Cropped overlays + offsets

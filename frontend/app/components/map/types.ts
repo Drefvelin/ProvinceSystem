@@ -9,7 +9,8 @@ export type MapMode =
   | "trade"
   | "prosperity"
   | "terrain"
-  | "fertility";
+  | "fertility"
+  | "infestation";
 
 export type OverlayBBox = { x: number; y: number; w: number; h: number };
 

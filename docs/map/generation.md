@@ -57,7 +57,7 @@ Claim changes typically `enqueue("nation", rgb)` then later upload queue + regen
 
 1. Load/compile nation (and other modes) into `defines/{map}/`.  
 2. `create_map` / `generate_regions` write `output/{map}/maps/` and `regions/`.  
-3. [`file_routes`](../../backend/src/api/file_routes.py) serves PNGs; data routes serve JSON (including `GET /{map}/data/markers` for settlement pins).  
+3. [`file_routes`](../../backend/src/api/file_routes.py) serves PNGs; data routes serve JSON (including `GET /{map}/data/markers` for settlement pins). Infestation overlay is `output/{map}/maps/infestation_map.png` from `infestation_data.json` (yellow to dark red, no green).  
 4. Frontend uses `NEXT_PUBLIC_API_URL` + `mapId` (e.g. `/map/main`); `MapSettlementMarkers` renders pins + straight labels on political modes when zoomed in.
 
 ## Multi-map

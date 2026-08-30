@@ -8,6 +8,7 @@ import {
   markerDimensions,
   resolveMarkerImageSrc,
   shouldShowSettlementMarker,
+  visibleSettlementKind,
 } from "./settlementMarkers";
 
 describe("settlementMarkers", () => {
@@ -49,6 +50,25 @@ describe("settlementMarkers", () => {
     expect(isSettlementMapMode("trade")).toBe(true);
     expect(isSettlementMapMode("terrain")).toBe(false);
     expect(isSettlementMapMode("fertility")).toBe(false);
+    expect(isSettlementMapMode("infestation")).toBe(false);
+  });
+
+  it("visibleSettlementKind hides capital star for hidden vassals", () => {
+    const overview = [
+      { id: "gaba_gaba", visible: true },
+      { id: "invaders", visible: false },
+    ];
+    expect(
+      visibleSettlementKind("faction_capital", "invaders", overview)
+    ).toBe("settlement");
+    expect(
+      visibleSettlementKind("faction_capital", "gaba_gaba", overview)
+    ).toBe("faction_capital");
+    expect(
+      visibleSettlementKind("faction_capital", "invaders", [
+        { id: "invaders", visible: true },
+      ])
+    ).toBe("faction_capital");
   });
 
   it("filterPlacedSettlements keeps only finite map coords", () => {

@@ -1,9 +1,14 @@
 import type {
   MapMode,
   SettlementMarker,
+  SettlementMarkerKind,
   SettlementMarkerSize,
 } from "../components/map/types";
-import { cleanRegionName } from "./mapLabels";
+import {
+  cleanRegionName,
+  isNationLabelVisible,
+  type LabelMapObject,
+} from "./mapLabels";
 import {
   MARKER_LABEL_COLOR,
   MARKER_LABEL_FONT_LARGE,
@@ -51,6 +56,24 @@ export function filterPlacedSettlements(
       typeof s.map_y === "number" &&
       Number.isFinite(s.map_y)
   );
+}
+
+export function visibleSettlementKind(
+  kind: SettlementMarkerKind | undefined,
+  factionId: string | undefined,
+  mapObjects: LabelMapObject[]
+): SettlementMarkerKind {
+  const resolved = kind ?? "settlement";
+  if (resolved === "settlement") {
+    return "settlement";
+  }
+  if (!factionId) {
+    return resolved;
+  }
+  if (!isNationLabelVisible(factionId, mapObjects)) {
+    return "settlement";
+  }
+  return resolved;
 }
 
 export function settlementToMapMarker(settlement: SettlementMarker): MapMarker {

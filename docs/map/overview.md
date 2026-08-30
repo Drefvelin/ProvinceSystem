@@ -13,7 +13,7 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | Fast refined layout, click modal, drill-down, cropped overlays, mobile | Shipped |
 | Xaero world map → colour base + ink parchment washes | Shipped |
 | Fantasy muted nation overlays | Shipped |
-| Nation / title / trade labels; Calavorn terrain/fertility/trade/prosperity modes | Shipped |
+| Nation / title / trade labels; Calavorn terrain/fertility/trade/prosperity/infestation modes | Shipped |
 | Pan and zoom (wheel + middle-mouse pan, clamped bounds) | Shipped |
 | Staff-only maps (configurable per `mapId`) | Shipped |
 | Named capitals / guild settlements | Shipped |
