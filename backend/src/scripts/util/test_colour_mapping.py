@@ -23,6 +23,19 @@ class OccupationRemapTests(unittest.TestCase):
         self.assertEqual(province_to_color[province_rgb], occupier)
         self.assertEqual(occupied, {province_rgb})
 
+    def test_skips_occupier_de_jure_provinces(self) -> None:
+        de_jure = (200, 10, 10)
+        province_rgb = (1, 2, 3)
+        province_to_color = {province_rgb: de_jure}
+        occupied = apply_occupation_remap(
+            province_to_color,
+            {province_rgb: 17},
+            {"atk": {"rgb": "200,10,10", "provinces": [17]}},
+            [{"id": 17, "occupied_by": "atk"}],
+        )
+        self.assertEqual(province_to_color[province_rgb], de_jure)
+        self.assertEqual(occupied, set())
+
     def test_ignores_unknown_occupier(self) -> None:
         province_rgb = (1, 2, 3)
         de_jure = (10, 20, 30)

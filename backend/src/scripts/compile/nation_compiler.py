@@ -153,5 +153,8 @@ def _occupied_held_by_nation(map_name: str, nations: dict) -> dict[str, list[int
         province_id = pdata.get("id")
         if occupier not in held or not isinstance(province_id, int):
             continue
+        owned = nations.get(occupier, {}).get("provinces") or []
+        if isinstance(owned, list) and province_id in owned:
+            continue
         held[occupier].append(province_id)
     return held

@@ -12,9 +12,7 @@ FILL_SATURATION_MAX = 0.48
 FILL_LIGHTNESS_MIN = 0.42
 FILL_LIGHTNESS_MAX = 0.58
 PARCHMENT_BLEND = 0.08
-OCCUPATION_PARCHMENT_BLEND = 0.62
-OCCUPATION_SATURATION_SCALE = 0.22
-OCCUPATION_FILL_SATURATION_MAX = 0.22
+OCCUPATION_GREY_BLEND = 0.22
 
 HOVER_LIGHTNESS_BUMP = 0.10
 HOVER_SATURATION_BUMP = 0.05
@@ -67,22 +65,11 @@ def display_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
 
 
 def occupation_display_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
-    """Quieter wash for occupied land of the same occupier nation."""
-    r, g, b = (c / 255.0 for c in rgb)
-    hue, lightness, saturation = colorsys.rgb_to_hls(r, g, b)
-
-    hue = _maybe_warm_green_hue(hue)
-    lightness = FILL_LIGHTNESS_MIN + lightness * (FILL_LIGHTNESS_MAX - FILL_LIGHTNESS_MIN)
-    lightness = min(1.0, lightness + 0.08)
-    saturation = min(saturation * OCCUPATION_SATURATION_SCALE, OCCUPATION_FILL_SATURATION_MAX)
-
-    r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
-    washed = (
-        _clamp_byte(r * 255),
-        _clamp_byte(g * 255),
-        _clamp_byte(b * 255),
-    )
-    muted = _lerp_rgb(washed, PAPER_HIGH, OCCUPATION_PARCHMENT_BLEND)
+    """Nation display colour, slightly greyer, for occupied land of the occupier."""
+    home = display_rgb(rgb)
+    luminance = 0.299 * home[0] + 0.587 * home[1] + 0.114 * home[2]
+    grey = (_clamp_byte(luminance), _clamp_byte(luminance), _clamp_byte(luminance))
+    muted = _lerp_rgb(home, grey, OCCUPATION_GREY_BLEND)
     return tuple(_clamp_byte(channel) for channel in muted)
 
 

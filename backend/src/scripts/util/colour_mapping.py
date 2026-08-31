@@ -276,6 +276,9 @@ def apply_occupation_remap(
         prov_rgb = rgb_by_id.get(pdata.get("id"))
         if prov_rgb is None:
             continue
+        held = occupier.get("provinces") or []
+        if isinstance(held, list) and pdata.get("id") in held:
+            continue
         occupier_color = tuple(int(part) for part in occupier["rgb"].split(","))
         province_to_color[prov_rgb] = occupier_color
         occupied.add(prov_rgb)

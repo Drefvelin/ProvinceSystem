@@ -350,10 +350,14 @@ def generate_regions_numpy(
                 _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
                 _finalize_buffer_layer(buf, "hover", full_hover)
         else:
+            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
+            nation_border_owners = compute_border_owners(ref.load(), width, height)
+            ref.close()
+
             for i, (color, buf) in enumerate(regions.items(), start=1):
                 log_progress(
                     f"Painting borders (nested): {i}/{total_regions} "
-                    f"({i / total_regions * 100:5.1f}%)"
+                    f"({i / max(total_regions, 1) * 100:5.1f}%)"
                 )
                 display_color = display_rgb(color)
                 base_stroke = border_color_for_fill(display_color)
@@ -362,16 +366,10 @@ def generate_regions_numpy(
 
                 full_base = np.zeros((height, width, 4), dtype=np.uint8)
                 full_base[y0:y1, x0:x1] = buf.base
-                base_bo = compute_border_owners(
-                    Image.fromarray(full_base, mode="RGBA").load(),
-                    width,
-                    height,
-                    include_outer=True,
-                )
                 _apply_region_borders_np(
                     full_base,
-                    display_color,
-                    base_bo,
+                    color,
+                    nation_border_owners,
                     base_stroke,
                     border_thickness,
                 )
@@ -381,8 +379,8 @@ def generate_regions_numpy(
                 full_hover[y0:y1, x0:x1] = buf.hover
                 _apply_region_borders_np(
                     full_hover,
-                    display_color,
-                    base_bo,
+                    color,
+                    nation_border_owners,
                     hover_stroke,
                     border_thickness,
                 )

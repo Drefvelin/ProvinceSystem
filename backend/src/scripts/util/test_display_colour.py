@@ -67,7 +67,7 @@ class DisplayColourTests(unittest.TestCase):
         _, hover_l, _ = colorsys.rgb_to_hls(*(c / 255.0 for c in hover))
         self.assertGreater(hover_l, base_l)
 
-    def test_occupation_display_is_uint8_and_closer_to_parchment(self):
+    def test_occupation_display_is_slightly_greyer_than_home(self):
         raw = (200, 20, 20)
         occupied = occupation_display_rgb(raw)
         home = display_rgb(raw)
@@ -76,9 +76,12 @@ class DisplayColourTests(unittest.TestCase):
             self.assertGreaterEqual(channel, 0)
             self.assertLessEqual(channel, 255)
         self.assertNotEqual(occupied, home)
+        _, _, home_s = colorsys.rgb_to_hls(*(c / 255.0 for c in home))
+        _, _, occupied_s = colorsys.rgb_to_hls(*(c / 255.0 for c in occupied))
+        self.assertLess(occupied_s, home_s)
         self.assertLess(
+            _rgb_distance(occupied, home),
             _rgb_distance(occupied, PAPER_HIGH),
-            _rgb_distance(home, PAPER_HIGH) * 0.7,
         )
 
 

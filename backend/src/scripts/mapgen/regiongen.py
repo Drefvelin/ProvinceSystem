@@ -270,7 +270,12 @@ def generate_regions(
                     width, height, hover_stroke, border_thickness
                 )
         else:
-            # SAFE PATH
+            # SAFE PATH: nation map for occupier outline so occupation fill
+            # is not treated as a separate country.
+            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
+            nation_border_owners = compute_border_owners(ref.load(), width, height)
+            ref.close()
+
             for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
                 log_progress(
                     f"Painting borders (nested): {i}/{total} "
@@ -280,13 +285,12 @@ def generate_regions(
                 display_color = display_rgb(color)
                 base_stroke = border_color_for_fill(display_color)
                 hover_stroke = border_color_for_fill(hover_rgb(color))
-                base_bo = compute_border_owners(base.load(), width, height, include_outer=True)
                 apply_region_borders(
-                    base.load(), display_color, base_bo,
+                    base.load(), color, nation_border_owners,
                     width, height, base_stroke, border_thickness
                 )
                 apply_region_borders(
-                    hover.load(), display_color, base_bo,
+                    hover.load(), color, nation_border_owners,
                     width, height, hover_stroke, border_thickness
                 )
 
