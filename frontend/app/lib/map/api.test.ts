@@ -8,6 +8,7 @@ import {
   fetchMapApi,
   fetchMapJson,
   fetchMapMarkers,
+  isAbortError,
   postEditorTitles,
   staffMapAccessReason,
 } from "@/lib/map/api";
@@ -37,6 +38,35 @@ describe("map api", () => {
         cache: "no-cache",
       })
     );
+  });
+
+  it("fetchMapApi re-throws an abort instead of masking it as a failure", async () => {
+    // A user who pressed Cancel was being shown "Request failed. Please try
+    // again." The chronicle build compensated by re-checking `signal.aborted`;
+    // any other caller would report a deliberate cancel as a transport error.
+    const abort = new DOMException("The operation was aborted.", "AbortError");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(abort));
+
+    const err = await fetchMapApi("/dev/data/nation", {
+      signal: new AbortController().signal,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBe(abort);
+    expect(err).not.toBeInstanceOf(MapAccessError);
+    expect(isAbortError(err)).toBe(true);
+  });
+
+  it("fetchMapApi still masks a genuine transport failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+
+    const err = await fetchMapApi("/dev/data/nation").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(MapAccessError);
+    expect((err as MapAccessError).status).toBe(0);
+    expect((err as MapAccessError).message).toBe(
+      "Request failed. Please try again."
+    );
+    expect(isAbortError(err)).toBe(false);
   });
 
   it("fetchMapMarkers requests markers endpoint with session token", async () => {

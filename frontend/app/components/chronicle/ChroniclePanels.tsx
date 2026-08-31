@@ -1,0 +1,443 @@
+import {
+  CHRONICLE_RENDER_SIZES,
+  describeChronicleEstimate,
+  describeChronicleEstimateSplit,
+  formatChronicleBytes,
+  type ChronicleBuildProgress,
+  type ChronicleEstimate,
+  type ChronicleRangeSelection,
+} from "../../lib/map/chronicleBuild";
+import {
+  CHRONICLE_TOGGLE_ORDER,
+  anyChronicleToggleOn,
+  type ChronicleToggleKey,
+  type ChronicleToggles,
+} from "./chronicleLayers";
+
+/**
+ * The studio's step panels. They own no state — every one of them is a pure
+ * view over what `ChronicleStudio` already decided, so the studio's flow reads
+ * top to bottom in one file.
+ */
+
+export const chroniclePanelClass =
+  "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] shadow-xl backdrop-blur-sm";
+
+const primaryButtonClass =
+  "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_45%,var(--tfmc-forest-deep))] px-3 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45";
+
+const quietButtonClass =
+  "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] px-3 py-1.5 text-xs text-[var(--tfmc-stone)] transition hover:text-[var(--tfmc-cream)] disabled:cursor-not-allowed disabled:opacity-45";
+
+const selectClass =
+  "w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,var(--tfmc-forest-deep))] px-2 py-1.5 text-sm text-[var(--tfmc-cream)]";
+
+const headingClass =
+  "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
+
+function StepHeading({ step, title }: { step: number; title: string }) {
+  return (
+    <p className={headingClass}>
+      Step {step} — {title}
+    </p>
+  );
+}
+
+export function ChronicleTogglePanel({
+  toggles,
+  onToggle,
+  disabledReasons,
+  busy,
+  blockReason,
+  notice,
+  onNext,
+}: {
+  toggles: ChronicleToggles;
+  onToggle: (key: ChronicleToggleKey) => void;
+  disabledReasons: Partial<Record<ChronicleToggleKey, string>>;
+  busy: boolean;
+  /** Set when the composed look cannot be carried forward yet. Blocks Next. */
+  blockReason: string | null;
+  notice: string | null;
+  onNext: () => void;
+}) {
+  return (
+    <div className={`${chroniclePanelClass} p-3`}>
+      <StepHeading step={1} title="Compose" />
+      <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+        The map starts bare. Switch layers on to build the look you want; every
+        one you add appears on the latest stored day.
+      </p>
+
+      <ul className="mt-3 space-y-1.5">
+        {CHRONICLE_TOGGLE_ORDER.map(({ key, label, detail }) => {
+          const reason = disabledReasons[key];
+          return (
+            <li key={key}>
+              <label
+                className={`flex items-start gap-2 text-sm ${
+                  reason
+                    ? "cursor-not-allowed text-[var(--tfmc-stone)] opacity-60"
+                    : "cursor-pointer text-[var(--tfmc-cream)]"
+                }`}
+                title={reason ?? detail}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-1 accent-[var(--tfmc-accent)]"
+                  checked={toggles[key]}
+                  disabled={Boolean(reason)}
+                  onChange={() => onToggle(key)}
+                />
+                <span>
+                  {label}
+                  <span className="block text-xs text-[var(--tfmc-stone)]">
+                    {reason ?? detail}
+                  </span>
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+
+      {notice ? (
+        <p className="mt-3 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] px-2 py-1.5 text-xs leading-snug text-[var(--tfmc-cream)]">
+          {notice}
+        </p>
+      ) : null}
+
+      {blockReason ? (
+        <p className="mt-3 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] px-2 py-1.5 text-xs leading-snug text-[var(--tfmc-cream)]">
+          {blockReason}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        className={`${primaryButtonClass} mt-3 w-full`}
+        onClick={onNext}
+        disabled={busy || Boolean(blockReason) || !anyChronicleToggleOn(toggles)}
+      >
+        {busy
+          ? "Loading layers…"
+          : blockReason
+            ? "Waiting on label geometry…"
+            : anyChronicleToggleOn(toggles)
+              ? "Pick a date range"
+              : "Switch on a layer first"}
+      </button>
+    </div>
+  );
+}
+
+export function ChronicleRangePanel({
+  days,
+  incompleteDays,
+  start,
+  end,
+  onStartChange,
+  onEndChange,
+  selection,
+  estimate,
+  renderSize,
+  onRenderSizeChange,
+  blockReason,
+  onBack,
+  onBuild,
+}: {
+  days: string[];
+  incompleteDays: Set<string>;
+  start: string | null;
+  end: string | null;
+  onStartChange: (day: string) => void;
+  onEndChange: (day: string) => void;
+  selection: ChronicleRangeSelection;
+  estimate: ChronicleEstimate;
+  renderSize: number;
+  onRenderSizeChange: (size: number) => void;
+  /**
+   * Why this build cannot start, from `chronicleBuildBlockReason`. The same
+   * value `startBuild` re-checks, so the button and the guard cannot disagree.
+   */
+  blockReason: string | null;
+  onBack: () => void;
+  onBuild: () => void;
+}) {
+  const dayOption = (day: string) => (
+    <option key={day} value={day}>
+      {incompleteDays.has(day) ? `${day} (incomplete)` : day}
+    </option>
+  );
+
+  return (
+    <div className={`${chroniclePanelClass} p-3`}>
+      <StepHeading step={2} title="Range" />
+      <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
+        Only days this map actually stored can be picked. Days captured with
+        holes stay selectable and are flagged.
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label className="text-xs text-[var(--tfmc-mist)]">
+          First day
+          <select
+            className={`${selectClass} mt-1`}
+            value={start ?? ""}
+            onChange={(e) => onStartChange(e.target.value)}
+          >
+            {days.map(dayOption)}
+          </select>
+        </label>
+        <label className="text-xs text-[var(--tfmc-mist)]">
+          Last day
+          <select
+            className={`${selectClass} mt-1`}
+            value={end ?? ""}
+            onChange={(e) => onEndChange(e.target.value)}
+          >
+            {days.map(dayOption)}
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
+        <StepHeading step={3} title="Estimate" />
+        {selection.error ? (
+          <p className="mt-1 text-sm text-[var(--tfmc-accent)]">
+            {selection.error}
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-[var(--tfmc-cream)]">
+              {describeChronicleEstimate(estimate)}
+            </p>
+            <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
+              {describeChronicleEstimateSplit(estimate)}
+            </p>
+            <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
+              {estimate.staleSample
+                ? "Timed with a different set of layers — go back and let the preview re-measure the ones you picked."
+                : estimate.measured
+                  ? "Timed on one real day with exactly these layers, counting every day as a repaint. Days that do not change are reused, so builds usually land early."
+                  : "Timed from defaults — switch your layers on and let the preview paint once to measure a real day."}
+            </p>
+            {selection.incompleteDays.length ? (
+              <p className="mt-1 text-xs text-[var(--tfmc-accent)]">
+                {selection.incompleteDays.length} day
+                {selection.incompleteDays.length === 1 ? "" : "s"} in this range
+                were captured with missing sources.
+              </p>
+            ) : null}
+          </>
+        )}
+
+        <label className="mt-3 block text-xs text-[var(--tfmc-mist)]">
+          Frame size
+          <select
+            className={`${selectClass} mt-1`}
+            value={renderSize}
+            onChange={(e) => onRenderSizeChange(Number(e.target.value))}
+          >
+            {CHRONICLE_RENDER_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size} x {size} px
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {estimate.overCeiling ? (
+          <p className="mt-2 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_40%,transparent)] px-2 py-1.5 text-xs leading-snug text-[var(--tfmc-cream)]">
+            {formatChronicleBytes(estimate.memoryBytes)} of frames is more than
+            this browser should hold at once. Shorten the range or pick a
+            smaller frame size before building.
+          </p>
+        ) : blockReason && !selection.error ? (
+          <p className="mt-2 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_40%,transparent)] px-2 py-1.5 text-xs leading-snug text-[var(--tfmc-cream)]">
+            {blockReason}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <button type="button" className={quietButtonClass} onClick={onBack}>
+          Back to layers
+        </button>
+        <button
+          type="button"
+          className={`${primaryButtonClass} flex-1`}
+          onClick={onBuild}
+          disabled={Boolean(blockReason)}
+        >
+          Build {selection.days.length || ""} frames
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ChronicleBuildPanel({
+  progress,
+  error,
+  onCancel,
+  onBack,
+}: {
+  progress: ChronicleBuildProgress | null;
+  error: string | null;
+  onCancel: () => void;
+  onBack: () => void;
+}) {
+  const total = progress?.total ?? 0;
+  const completed = progress?.completed ?? 0;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return (
+    <div className={`${chroniclePanelClass} p-3`}>
+      <StepHeading step={4} title="Build" />
+      <p className="mt-1 text-sm text-[var(--tfmc-cream)]">
+        {completed} / {total} days
+        {progress?.day ? ` — ${progress.day}` : ""}
+      </p>
+
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)]">
+        <div
+          className="h-full rounded-full bg-[var(--tfmc-accent)] transition-[width] duration-150 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {progress ? (
+        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
+          {progress.painted} painted, {progress.reused} reused
+          {progress.skipped ? `, ${progress.skipped} skipped` : ""}
+        </p>
+      ) : null}
+
+      {error ? (
+        <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{error}</p>
+      ) : null}
+
+      <div className="mt-3 flex gap-2">
+        <button type="button" className={quietButtonClass} onClick={onBack}>
+          Back to range
+        </button>
+        <button
+          type="button"
+          className={`${primaryButtonClass} flex-1`}
+          onClick={onCancel}
+          disabled={Boolean(error)}
+        >
+          Cancel build
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export const CHRONICLE_SPEEDS = [1, 2, 4, 8, 16] as const;
+
+export function ChroniclePlaybackPanel({
+  days,
+  activeIndex,
+  onScrub,
+  playing,
+  onTogglePlay,
+  speed,
+  onSpeedChange,
+  loop,
+  onLoopChange,
+  incomplete,
+  skippedDays,
+  summary,
+  onDiscard,
+}: {
+  days: string[];
+  activeIndex: number;
+  onScrub: (index: number) => void;
+  playing: boolean;
+  onTogglePlay: () => void;
+  speed: number;
+  onSpeedChange: (speed: number) => void;
+  loop: boolean;
+  onLoopChange: (loop: boolean) => void;
+  incomplete: boolean;
+  skippedDays: string[];
+  summary: string;
+  onDiscard: () => void;
+}) {
+  return (
+    <div className={`${chroniclePanelClass} p-3`}>
+      <StepHeading step={5} title="Play" />
+      <p className="mt-1 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+        {days[activeIndex] ?? "—"}
+      </p>
+      {incomplete ? (
+        <p className="text-xs text-[var(--tfmc-accent)]">
+          This day was captured with missing sources.
+        </p>
+      ) : null}
+
+      <input
+        type="range"
+        className="mt-2 w-full accent-[var(--tfmc-accent)]"
+        min={0}
+        max={Math.max(0, days.length - 1)}
+        step={1}
+        value={activeIndex}
+        onChange={(e) => onScrub(Number(e.target.value))}
+        aria-label="Chronicle day"
+      />
+
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          className={`${primaryButtonClass} flex-1`}
+          onClick={onTogglePlay}
+        >
+          {playing ? "Pause" : "Play"}
+        </button>
+        <label className="text-xs text-[var(--tfmc-mist)]">
+          <span className="sr-only">Days per second</span>
+          <select
+            className={selectClass}
+            value={speed}
+            onChange={(e) => onSpeedChange(Number(e.target.value))}
+          >
+            {CHRONICLE_SPEEDS.map((value) => (
+              <option key={value} value={value}>
+                {value}x
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--tfmc-stone)]">
+        <input
+          type="checkbox"
+          className="accent-[var(--tfmc-accent)]"
+          checked={loop}
+          onChange={(e) => onLoopChange(e.target.checked)}
+        />
+        Loop
+      </label>
+
+      <p className="mt-2 text-xs text-[var(--tfmc-stone)]">{summary}</p>
+      {skippedDays.length ? (
+        <p className="mt-1 text-xs text-[var(--tfmc-accent)]">
+          {skippedDays.length} day{skippedDays.length === 1 ? "" : "s"} had no
+          stored sources and were left out.
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        className={`${quietButtonClass} mt-3 w-full`}
+        onClick={onDiscard}
+      >
+        Discard frames and start over
+      </button>
+    </div>
+  );
+}

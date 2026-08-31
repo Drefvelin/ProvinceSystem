@@ -41,6 +41,39 @@ const LITTLE_ENDIAN = (() => {
 })();
 
 /**
+ * Packs one RGBA quad the way the running machine lays bytes out inside a
+ * `Uint32Array`, so a 32-bit store lands the same bytes a four-byte write
+ * would. Exported because the chronicle painter fills whole frames through the
+ * same view and must not re-derive the byte order on its own.
+ */
+export function packRgbaForU32View(
+  r: number,
+  g: number,
+  b: number,
+  a: number
+): number {
+  return LITTLE_ENDIAN
+    ? (((a << 24) | (b << 16) | (g << 8) | r) >>> 0)
+    : (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
+}
+
+/**
+ * A 32-bit view over an RGBA byte buffer, or `null` when the buffer's offset or
+ * length rules one out (or the engine refuses the view outright) — callers must
+ * keep a per-byte path for that case.
+ */
+export function createRgbaU32View(
+  data: Uint8ClampedArray
+): Uint32Array | null {
+  if (data.byteOffset % 4 !== 0 || data.length % 4 !== 0) return null;
+  try {
+    return new Uint32Array(data.buffer, data.byteOffset, data.length >>> 2);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Returns a writer that fills a contiguous run of pixels with one RGBA value.
  * Uses a single Uint32Array.fill per span when the ImageData buffer allows a
  * 32-bit view, and otherwise falls back to the identical per-byte loop.
@@ -50,22 +83,12 @@ function makeSpanWriter(
 ): (start: number, length: number, r: number, g: number, b: number, a: number) => void {
   const { data } = imageData;
 
-  let u32: Uint32Array | null = null;
-  if (data.byteOffset % 4 === 0 && data.length % 4 === 0) {
-    try {
-      u32 = new Uint32Array(data.buffer, data.byteOffset, data.length >>> 2);
-    } catch {
-      u32 = null;
-    }
-  }
+  const u32 = createRgbaU32View(data);
 
   if (u32) {
     const view = u32;
     return (start, length, r, g, b, a) => {
-      const packed = LITTLE_ENDIAN
-        ? (((a << 24) | (b << 16) | (g << 8) | r) >>> 0)
-        : (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
-      view.fill(packed, start, start + length);
+      view.fill(packRgbaForU32View(r, g, b, a), start, start + length);
     };
   }
 

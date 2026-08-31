@@ -57,6 +57,8 @@ export type FetchMapApiOptions = {
   cache?: RequestCache;
   body?: string;
   headers?: HeadersInit;
+  /** Lets a long multi-request job (the chronicle build) drop what is in flight. */
+  signal?: AbortSignal;
 };
 
 export type EditorTier = "county" | "duchy" | "kingdom" | "empire";
@@ -114,14 +116,32 @@ export async function fetchMapApi(
       method: options.method ?? "GET",
       headers,
       body: options.body,
+      signal: options.signal,
       // "no-cache" revalidates on every request but reuses the stored body on a
       // 304, so an unchanged 34 MB base map costs a header round-trip instead of
       // a full re-download. "no-store" would refetch the bytes every time.
       cache: options.cache ?? "no-cache",
     });
-  } catch {
+  } catch (err) {
+    // A caller that aborted on purpose is not a failed request, and reporting it
+    // as "Request failed. Please try again." puts a retry prompt in front of a
+    // user who just pressed Cancel. Only genuine transport failures are masked.
+    if (isAbortError(err)) throw err;
     throw new MapAccessError("Request failed. Please try again.", 0, "");
   }
+}
+
+/**
+ * `fetch` rejects with a `DOMException` named "AbortError" on abort, but the
+ * exact class varies between the browser, node's undici and the test doubles, so
+ * this goes by name rather than by `instanceof`.
+ */
+export function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
 }
 
 export async function fetchMapJson<T>(
