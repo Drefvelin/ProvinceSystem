@@ -10,10 +10,10 @@ LUMINANCE_THRESHOLD = 0.55
 # Sentinel owner for overlay-alpha union (home wash + occupation grey).
 OPAQUE_UNION_OWNER = (1, 0, 0)
 
-OCCUPATION_DASH_COLOR = (196, 40, 40, 255)
-OCCUPATION_DASH_ON = 12
-OCCUPATION_DASH_OFF = 16
-OCCUPATION_DASH_THICKNESS = 8
+OCCUPATION_DASH_COLOR = (150, 72, 66, 210)
+OCCUPATION_DASH_ON = 1
+OCCUPATION_DASH_OFF = 0
+OCCUPATION_DASH_THICKNESS = 1
 
 _NEIGHBOR4 = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
@@ -222,7 +222,7 @@ def stamp_dashed_polylines(
         return
     for path in polylines:
         for i, (x, y) in enumerate(path):
-            if i % period < dash_on:
+            if dash_off == 0 or i % period < dash_on:
                 _stamp_dilated(img_data, x, y, width, height, color, thickness)
 
 

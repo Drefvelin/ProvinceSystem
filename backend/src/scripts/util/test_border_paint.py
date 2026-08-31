@@ -148,7 +148,7 @@ class BorderPaintTests(unittest.TestCase):
         self.assertTrue(all(x == mid for x, _y in seam))
         self.assertNotIn((mid - 1, 3), seam)
 
-    def test_occupation_dash_gaps_and_spares_interiors(self):
+    def test_occupation_seam_is_a_connected_line(self):
         wash = (180, 80, 80)
         grey = (120, 70, 70)
         width, height = 6, 40
@@ -165,12 +165,7 @@ class BorderPaintTests(unittest.TestCase):
         seam_red = [
             y for y in range(height) if pixels[mid, y] == OCCUPATION_DASH_COLOR
         ]
-        seam_grey = [
-            y for y in range(height) if pixels[mid, y][:3] == grey
-        ]
-        self.assertTrue(seam_red)
-        self.assertTrue(seam_grey)
-        self.assertLess(len(seam_red), height)
+        self.assertEqual(len(seam_red), height)
         self.assertEqual(pixels[1, height // 2][:3], wash)
         self.assertEqual(pixels[width - 1, height // 2][:3], grey)
 

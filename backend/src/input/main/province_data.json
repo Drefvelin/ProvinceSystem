@@ -3889,7 +3889,8 @@
         "trade": 2.37,
         "production": 1.25
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 695,
@@ -3933,7 +3934,8 @@
         "trade": 2.11,
         "production": 2.49
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 699,
@@ -3973,7 +3975,8 @@
         "trade": 1.95,
         "production": 2.2
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 703,
@@ -3983,7 +3986,8 @@
         "trade": 1.95,
         "production": 2.2
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 704,
@@ -4013,7 +4017,8 @@
         "trade": 3.26,
         "production": 7.42
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 707,
@@ -4683,7 +4688,8 @@
         "trade": 3.55,
         "production": 8.9
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 796,
@@ -4743,7 +4749,8 @@
         "trade": 3.55,
         "production": 8.9
       }
-    }
+    },
+    "occupied_by": "Lantan"
   },
   {
     "id": 802,
