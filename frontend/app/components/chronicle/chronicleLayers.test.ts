@@ -50,8 +50,12 @@ describe("chronicleLabelMapObjects", () => {
   it("hides a vassal's own label under its suzerain's", () => {
     const regionData = chronicleRegionData(nationFile);
     expect(chronicleLabelMapObjects(regionData, nationFile)).toEqual([
-      { id: "suzerain", visible: true },
-      { id: "vassal", visible: false },
+      // `nested`/`baseId` are stated rather than inferred from the id, so a
+      // realm legitimately named `Foo_nested` is not mistaken for the drilled
+      // shape of a realm named `Foo`. The studio has no drill state, so every
+      // entry it emits is a real region.
+      { id: "suzerain", visible: true, nested: false, baseId: "suzerain" },
+      { id: "vassal", visible: false, nested: false, baseId: "vassal" },
     ]);
   });
 });

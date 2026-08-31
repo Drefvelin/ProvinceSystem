@@ -6,16 +6,29 @@ import { fetchMapJson } from "@/lib/map/api";
 
 const tierCache = new Map<string, Record<string, TitleEntity>>();
 
-function cacheKey(mapId: MapId, tier: string): string {
-  return `${mapId}:${tier}`;
+/**
+ * The day is part of the key even though nothing varies it today.
+ *
+ * `/{mapId}/data/{tier}` is **live** data, and this cache is module-level: it
+ * survives client-side navigation from the live map onto a stored day. Today
+ * that is unreachable — `ACTIVE_TIER` has no `nation` key, and `trade`
+ * resolves from the day's own `regionData` with no extra fetch, so `extra` is
+ * empty for both chronicle modes and `fetchTier` is never called under a day.
+ * The moment a title tier is added to `CHRONICLE_MODE_SOURCE` it would become
+ * a silent live-data leak under a date banner. Keying on the day now costs one
+ * template literal and makes that impossible.
+ */
+function cacheKey(mapId: MapId, tier: string, day: string | null): string {
+  return `${mapId}:${day ?? "live"}:${tier}`;
 }
 
 async function fetchTier(
   mapId: MapId,
   tier: string,
-  sessionToken?: string | null
+  sessionToken?: string | null,
+  day: string | null = null
 ): Promise<Record<string, TitleEntity>> {
-  const key = cacheKey(mapId, tier);
+  const key = cacheKey(mapId, tier, day);
   const cached = tierCache.get(key);
   if (cached) return cached;
 
@@ -45,7 +58,9 @@ export function useTitleLayerData(
   mapId: MapId,
   mapType: MapMode,
   regionData: Record<string, TitleEntity> | null,
-  sessionToken?: string | null
+  sessionToken?: string | null,
+  /** A chronicle day, or `null` for the live map. See `cacheKey`. */
+  day: string | null = null
 ): { layers: TitleLayers | null; loading: boolean } {
   const [layers, setLayers] = useState<TitleLayers | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,7 +86,9 @@ export function useTitleLayerData(
     let cancelled = false;
     setLoading(true);
 
-    Promise.all(extra.map((tier) => fetchTier(mapId, tier, sessionToken)))
+    Promise.all(
+      extra.map((tier) => fetchTier(mapId, tier, sessionToken, day))
+    )
       .then((fetched) => {
         if (cancelled) return;
 
@@ -101,7 +118,7 @@ export function useTitleLayerData(
     return () => {
       cancelled = true;
     };
-  }, [mapId, mapType, regionData, sessionToken]);
+  }, [mapId, mapType, regionData, sessionToken, day]);
 
   return { layers, loading };
 }

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   CHRONICLE_RENDER_SIZES,
   describeChronicleEstimate,
@@ -350,6 +352,7 @@ export function ChroniclePlaybackPanel({
   incomplete,
   skippedDays,
   summary,
+  exploreHref,
   onDiscard,
 }: {
   days: string[];
@@ -364,6 +367,13 @@ export function ChroniclePlaybackPanel({
   incomplete: boolean;
   skippedDays: string[];
   summary: string;
+  /**
+   * Route to the standalone viewer for the day currently on screen, or `null`
+   * when there is no day to explore. Built by `ChronicleStudio`, which is the
+   * component that knows the `mapId`; rebuilding the route in here would mean
+   * a second place that has to remember the `dev` -> `r3b1rth` rename.
+   */
+  exploreHref?: string | null;
   onDiscard: () => void;
 }) {
   return (
@@ -422,6 +432,15 @@ export function ChroniclePlaybackPanel({
         />
         Loop
       </label>
+
+      {exploreHref ? (
+        <Link
+          href={exploreHref}
+          className="mt-2 inline-flex text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline"
+        >
+          Explore this day on the full map &rarr;
+        </Link>
+      ) : null}
 
       <p className="mt-2 text-xs text-[var(--tfmc-stone)]">{summary}</p>
       {skippedDays.length ? (

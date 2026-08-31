@@ -55,6 +55,7 @@ import {
   type MapMarkersResponse,
   type RegionRecord,
 } from "../map/types";
+import { chronicleDayHref } from "../../lib/map/chronicleDayRoute";
 import {
   ChronicleBuildPanel,
   ChroniclePlaybackPanel,
@@ -1142,6 +1143,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 loop={loop}
                 onLoopChange={setLoop}
                 incomplete={Boolean(activeFrame?.incomplete)}
+                exploreHref={
+                  activeFrame ? chronicleDayHref(mapId, activeFrame.day) : null
+                }
                 skippedDays={skippedDays}
                 summary={buildSummary}
                 onDiscard={() => {

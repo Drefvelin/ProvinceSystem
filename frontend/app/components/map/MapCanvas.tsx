@@ -41,8 +41,12 @@ import { mapApiPathFromUrl } from "@/lib/map/api";
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
 
-const HOVER_OVERLAY_OPACITY = 0.72;
-const DRILL_STACK_OVERLAY_OPACITY = 0.88;
+/**
+ * Exported so the chronicle's client-painted ownership layer can match the live
+ * look exactly rather than re-typing the numbers and drifting from it.
+ */
+export const HOVER_OVERLAY_OPACITY = 0.72;
+export const DRILL_STACK_OVERLAY_OPACITY = 0.88;
 const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
 const OVERLAY_TRANSITION_CLASS =
   "pointer-events-none absolute transition-[left,top,width,height,opacity] duration-150 ease-out";
@@ -166,6 +170,17 @@ type MapCanvasProps = {
   fitMode?: FitMode;
   /** War-planning annotation layer. See `useMapPaint`. */
   paint?: UseMapPaintResult;
+  /**
+   * Chronicle mode only. When provided, this node replaces *both* server-
+   * rendered nation layers: the per-`MapObject` `/regions/...` overlays and the
+   * hovered-region `_hover` highlight. Those PNGs are regenerated from today's
+   * data and have no per-day variant, so a historical day has to paint its own
+   * borders client-side or it would show today's under a past date.
+   *
+   * Undefined on the live map, where the two blocks below render exactly as
+   * they always have.
+   */
+  regionOverlay?: React.ReactNode;
 };
 
 export default function MapCanvas({
@@ -191,6 +206,7 @@ export default function MapCanvas({
   fill = false,
   fitMode = "cover",
   paint,
+  regionOverlay,
 }: MapCanvasProps) {
   const [mapSize, setMapSize] = useState({
     w: MAP_BOUNDS[mapId],
@@ -309,32 +325,40 @@ export default function MapCanvas({
             style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
           />
         )}
-        {mapObjects
-          .filter((obj) => obj.visible)
-          .map((obj) => (
-            <MapAuthImage
-              key={obj.id}
-              mapId={mapId}
-              path={`/${mapId}/regions/${mapType}/${obj.path}`}
-              sessionToken={sessionToken}
-              crossOrigin="anonymous"
-              alt={`Overlay ${obj.id}`}
-              className={OVERLAY_TRANSITION_CLASS}
-              style={{
-                ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
-                  expand:
-                    hoveredPath && obj.path === hoveredPath
-                      ? HOVER_OVERLAY_EXPAND
-                      : 0,
-                }),
-                opacity: DRILL_STACK_OVERLAY_OPACITY,
-              }}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-          ))}
-        {isMarkerMapMode(mapType) && hoveredFortZoc && (
+        {regionOverlay === undefined
+          ? mapObjects
+              .filter((obj) => obj.visible)
+              .map((obj) => (
+                <MapAuthImage
+                  key={obj.id}
+                  mapId={mapId}
+                  path={`/${mapId}/regions/${mapType}/${obj.path}`}
+                  sessionToken={sessionToken}
+                  crossOrigin="anonymous"
+                  alt={`Overlay ${obj.id}`}
+                  className={OVERLAY_TRANSITION_CLASS}
+                  style={{
+                    ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                      expand:
+                        hoveredPath && obj.path === hoveredPath
+                          ? HOVER_OVERLAY_EXPAND
+                          : 0,
+                    }),
+                    opacity: DRILL_STACK_OVERLAY_OPACITY,
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ))
+          : regionOverlay}
+        {/*
+          `regionOverlay` is only ever passed by the chronicle. Fort ZoC is a
+          server-rendered `/zoc/{id}.png` regenerated from *today's* state, so
+          a stored day must not show it — same guard the `hoveredOverlay` block
+          below already carries. Live behaviour is unchanged.
+        */}
+        {regionOverlay === undefined && isMarkerMapMode(mapType) && hoveredFortZoc && (
           <HoverOverlayImage
             mapId={mapId}
             sessionToken={sessionToken}
@@ -345,7 +369,7 @@ export default function MapCanvas({
             alt="Fort zone of control"
           />
         )}
-        {hoveredOverlay && (
+        {regionOverlay === undefined && hoveredOverlay && (
           <HoverOverlayImage
             mapId={mapId}
             sessionToken={sessionToken}

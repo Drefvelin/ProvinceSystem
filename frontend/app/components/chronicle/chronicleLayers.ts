@@ -120,9 +120,15 @@ export function chronicleLabelMapObjects(
   regionData: Record<string, NationRegionInput>,
   nationFile: RegionRecord | null
 ): LabelMapObject[] {
+  // `nested`/`baseId` are stated rather than left to be inferred from the id.
+  // These are all real region ids — the studio has no drill state and so no
+  // synthetic `_nested` entries — and a realm legitimately named `Foo_nested`
+  // would otherwise be read as one.
   return Object.keys(regionData).map((id) => ({
     id,
     visible: !nationFile?.[id]?.overlord,
+    nested: false,
+    baseId: id,
   }));
 }
 

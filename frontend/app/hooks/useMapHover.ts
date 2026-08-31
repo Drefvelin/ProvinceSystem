@@ -11,6 +11,7 @@ import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
 import { filterVisibleMapMarkers, isMarkerMapMode, pickMapMarkerAt } from "../lib/mapMarkers";
 import { lookupFortZocOverlay } from "../lib/fortZoc";
+import type { ProvinceIdGrid } from "../lib/map/chroniclePaint";
 
 type UseMapHoverProps = {
   mapId: MapId;
@@ -42,6 +43,17 @@ type UseMapHoverProps = {
   forts?: FortMarker[];
   setHoveredMarkerId?: (id: string | null) => void;
   setHoveredFortZoc?: (overlay: HoverOverlay | null) => void;
+  /**
+   * A chronicle day, or `null` for the live map. Passed straight through to
+   * `useProvinceHover`, which uses it to stay off the live province endpoints.
+   */
+  day?: string | null;
+  /**
+   * The quarter-scale province id grid the chronicle already fetches. It is
+   * the day path's replacement for `/province/{x},{y}/meta`: same grid the
+   * pick canvas is painted from, so hover and pick cannot disagree.
+   */
+  chronicleGrid?: ProvinceIdGrid | null;
 };
 
 type PointerPosition = {
@@ -49,7 +61,15 @@ type PointerPosition = {
   clientY: number;
 };
 
-function mapObjectsVisibilityKey(mapObjects: MapObject[]): string {
+/**
+ * Identity of the *drawn* state: which overlays are on, in order. Repaint keys
+ * off this rather than the `mapObjects` array itself, which is rebuilt (new
+ * object identities, same visibility) on every drill reset.
+ *
+ * Exported for the chronicle's client-painted ownership layer, which needs the
+ * exact same "did what is visible change?" question answered.
+ */
+export function mapObjectsVisibilityKey(mapObjects: MapObject[]): string {
   return mapObjects
     .map((obj) => `${obj.id}:${obj.visible ? 1 : 0}`)
     .join("|");
@@ -74,7 +94,11 @@ export function useMapHover(props: UseMapHoverProps) {
   propsRef.current = props;
 
   const rgbToId = useMemo(() => {
-    const map: Record<string, string> = {};
+    // `Object.create(null)` for consistency with every other wire-keyed map in
+    // this feature. Not exploitable today — every read is a
+    // `` `${r},${g},${b}` `` built from `getImageData`, which can never spell
+    // `__proto__` — so this is hygiene, not a fix.
+    const map: Record<string, string> = Object.create(null);
     if (!regionData) return map;
 
     for (const [id, region] of Object.entries(regionData)) {
@@ -83,12 +107,34 @@ export function useMapHover(props: UseMapHoverProps) {
     return map;
   }, [regionData]);
 
+  /**
+   * Map pixel -> stored province id, read from the chronicle's own grid.
+   * Stable identity (reads through `propsRef`) so it never re-creates the
+   * hover handler.
+   */
+  const resolveProvinceId = useCallback((x: number, y: number) => {
+    const grid = propsRef.current.chronicleGrid;
+    if (!grid) return null;
+    const point = mapPixelToPickCanvas(
+      x,
+      y,
+      propsRef.current.viewportCoordsRef.current?.mapSize,
+      grid
+    );
+    if (!point) return null;
+    const id = grid.ids[point.y * grid.width + point.x];
+    // Id 0 is ocean / no province.
+    return id ? id : null;
+  }, []);
+
   const { handleProvinceHover } = useProvinceHover({
     mapId,
     mapType,
     setCursorTooltip,
     guildNameCacheRef,
     sessionToken: props.sessionToken,
+    day: props.day ?? null,
+    resolveProvinceId,
   });
 
   const { handleRegionHover, resetHoverCache } = useRegionHover({

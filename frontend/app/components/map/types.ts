@@ -48,6 +48,23 @@ export type MapObject = {
   visible: boolean;
   path: string;
   overlay?: OverlayBBox;
+  /**
+   * Structure, stated rather than inferred. `id` mixes two namespaces: real
+   * region ids are day-file object keys (player-set names), while the builder
+   * also synthesises one `${regionId}_nested` entry per region with subjects.
+   * A region literally named `Foo_nested` therefore collides with the
+   * synthetic entry for `Foo`, and any consumer that recovers structure with
+   * `id.endsWith("_nested")` mis-reads that real nation as a synthetic drill
+   * shape — it loses its ownership entry and is painted transparent while the
+   * pick canvas still resolves hovers over its land.
+   *
+   * `nested` is true only for entries the builder synthesised; `baseId` is the
+   * real region id the entry describes (equal to `id` when `nested` is false).
+   * Both are set literally at construction in `core/mapObjectBuilder.ts`,
+   * which is the only place that knows which namespace an id came from.
+   */
+  nested: boolean;
+  baseId: string;
 };
 
 export type HoverOverlay = {
