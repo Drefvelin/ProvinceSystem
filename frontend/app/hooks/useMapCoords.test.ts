@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getMapCoords, type MapPickViewport } from "./useMapCoords";
+import {
+  getMapCoords,
+  mapPixelToPickCanvas,
+  type MapPickViewport,
+} from "./useMapCoords";
 
 function mockMouseEvent(clientX: number, clientY: number): React.MouseEvent {
   return { clientX, clientY } as React.MouseEvent;
@@ -159,5 +163,25 @@ describe("getMapCoords viewport path", () => {
     );
 
     expect(coords).toEqual(legacy);
+  });
+});
+
+describe("mapPixelToPickCanvas", () => {
+  it("keeps map pixels when canvas matches map size", () => {
+    expect(
+      mapPixelToPickCanvas(100, 200, { w: 6400, h: 6400 }, { width: 6400, height: 6400 })
+    ).toEqual({ x: 100, y: 200 });
+  });
+
+  it("scales map pixels onto a smaller pick bitmap", () => {
+    expect(
+      mapPixelToPickCanvas(3200, 1600, { w: 6400, h: 6400 }, { width: 4096, height: 4096 })
+    ).toEqual({ x: 2048, y: 1024 });
+  });
+
+  it("returns null when the scaled pixel is outside the bitmap", () => {
+    expect(
+      mapPixelToPickCanvas(6399, 0, { w: 6400, h: 6400 }, { width: 0, height: 4096 })
+    ).toBeNull();
   });
 });

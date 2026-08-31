@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getMapCoords, type MapPickViewport } from "./useMapCoords";
+import {
+  getMapCoords,
+  mapPixelToPickCanvas,
+  type MapPickViewport,
+} from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
 import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
@@ -168,10 +172,23 @@ export function useMapHover(props: UseMapHoverProps) {
       return;
     }
 
-    const clickable = handleRegionHoverRef.current(
-      ctx,
+    const pickPixel = mapPixelToPickCanvas(
       coords.x,
       coords.y,
+      current.viewportCoordsRef.current?.mapSize,
+      canvas
+    );
+    if (!pickPixel) {
+      current.setCursorTooltip(null);
+      current.setHoveredOverlay(null);
+      setIsHoveringClickable(false);
+      return;
+    }
+
+    const clickable = handleRegionHoverRef.current(
+      ctx,
+      pickPixel.x,
+      pickPixel.y,
       coords.screenX,
       coords.screenY,
       current.setCursorTooltip

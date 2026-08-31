@@ -60,7 +60,6 @@ import {
   MapAccessError,
   fetchMapBlobUrl,
   fetchMapJson,
-  mapApiUrl,
   mapRequiresAuth,
   revokeMapBlobUrl,
   staffMapAccessReason,
@@ -270,15 +269,19 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       if (!ctx) return;
 
       const path = `/${mapId}/mapdata/${mapType}`;
-      let src = mapApiUrl(path);
-      if (mapRequiresAuth(mapId) && authToken) {
-        try {
-          src = await fetchMapBlobUrl(path, authToken);
-          blobUrl = src;
-        } catch (err) {
-          console.error("Failed to load pick map image:", err);
-          return;
-        }
+      // Blob URLs are same-origin, so getImageData is never CORS-tainted.
+      // Cross-origin <img crossOrigin> plus a cached 304 is what killed hover
+      // on prod while /mapdata/nation still opened fine in a tab.
+      let src: string;
+      try {
+        src = await fetchMapBlobUrl(path, authToken, {
+          cache: "no-store",
+          headers: { Accept: "image/png" },
+        });
+        blobUrl = src;
+      } catch (err) {
+        console.error("Failed to load pick map image:", err);
+        return;
       }
 
       if (cancelled) {
@@ -287,7 +290,6 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       }
 
       const img = new Image();
-      img.crossOrigin = "anonymous";
       img.src = src;
       img.onload = () => {
         if (cancelled) return;

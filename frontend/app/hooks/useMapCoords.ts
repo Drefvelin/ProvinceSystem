@@ -17,6 +17,28 @@ export type MapCoords = {
   screenY: number;
 };
 
+/**
+ * Viewport/map pixels -> pick-canvas bitmap pixels.
+ * Display size comes from the base map (often 6400); pick maps can differ.
+ */
+export function mapPixelToPickCanvas(
+  mapX: number,
+  mapY: number,
+  mapSize: Size | null | undefined,
+  canvas: { width: number; height: number }
+): { x: number; y: number } | null {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  if (cw <= 0 || ch <= 0) return null;
+
+  const mw = mapSize?.w && mapSize.w > 0 ? mapSize.w : cw;
+  const mh = mapSize?.h && mapSize.h > 0 ? mapSize.h : ch;
+  const x = mw === cw ? mapX : Math.floor((mapX * cw) / mw);
+  const y = mh === ch ? mapY : Math.floor((mapY * ch) / mh);
+  if (x < 0 || y < 0 || x >= cw || y >= ch) return null;
+  return { x, y };
+}
+
 function getLegacyMapCoords(
   event: React.MouseEvent,
   canvas: HTMLCanvasElement,
