@@ -12,6 +12,7 @@ from PIL import Image
 
 from ..util.border_paint import (
     OPAQUE_UNION_OWNER,
+    apply_occupation_seam_dashes,
     border_color_for_fill,
     border_thickness as default_border_thickness,
     compute_opaque_union_borders,
@@ -226,6 +227,22 @@ def _stroke_opaque_union_np(
     _apply_region_borders_np(img, OPAQUE_UNION_OWNER, owners, stroke, thickness)
 
 
+class _XyPixels:
+    """PIL-style [x, y] access over a (H, W, 4) array."""
+
+    def __init__(self, arr: np.ndarray):
+        self.arr = arr
+
+    def __getitem__(self, xy):
+        x, y = xy
+        pix = self.arr[y, x]
+        return (int(pix[0]), int(pix[1]), int(pix[2]), int(pix[3]))
+
+    def __setitem__(self, xy, value):
+        x, y = xy
+        self.arr[y, x] = value
+
+
 def generate_regions_numpy(
     map_name: str,
     mode: str,
@@ -344,28 +361,54 @@ def generate_regions_numpy(
 
             full_base = _stage_on_full_canvas(buf, height, width, "base")
             _stroke_opaque_union_np(full_base, base_stroke, border_thickness)
-            _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
 
             full_hover = np.zeros((height, width, 4), dtype=np.uint8)
             full_hover[y0:y1, x0:x1] = buf.hover
             _stroke_opaque_union_np(full_hover, hover_stroke, border_thickness)
+
+            if occupation_provinces:
+                occ_color = occupation_display_rgb(color)
+                base_px = _XyPixels(full_base)
+                apply_occupation_seam_dashes(
+                    base_px,
+                    [base_px, _XyPixels(full_hover)],
+                    width,
+                    height,
+                    display_color,
+                    occ_color,
+                )
+
+            _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
             _finalize_buffer_layer(buf, "hover", full_hover)
 
             if buf.with_nested and buf.nested is not None:
                 full_nested = np.zeros((height, width, 4), dtype=np.uint8)
                 full_nested[y0:y1, x0:x1] = buf.nested
                 _stroke_opaque_union_np(full_nested, base_stroke, border_thickness)
-                _finalize_buffer_layer(
-                    buf,
-                    "nested",
-                    full_nested,
-                    store_nested_overlay_meta=True,
-                )
 
                 full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
                 full_nested_hover[y0:y1, x0:x1] = buf.nested_hover
                 _stroke_opaque_union_np(
                     full_nested_hover, hover_stroke, border_thickness
+                )
+
+                if occupation_provinces:
+                    occ_color = occupation_display_rgb(color)
+                    nested_px = _XyPixels(full_nested)
+                    apply_occupation_seam_dashes(
+                        nested_px,
+                        [nested_px, _XyPixels(full_nested_hover)],
+                        width,
+                        height,
+                        display_color,
+                        occ_color,
+                    )
+
+                _finalize_buffer_layer(
+                    buf,
+                    "nested",
+                    full_nested,
+                    store_nested_overlay_meta=True,
                 )
                 _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
     elif regions:

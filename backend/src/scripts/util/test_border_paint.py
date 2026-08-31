@@ -4,10 +4,13 @@ from PIL import Image
 
 from .border_paint import (
     INK_DARK,
+    OCCUPATION_DASH_COLOR,
     OPAQUE_UNION_OWNER,
+    apply_occupation_seam_dashes,
     apply_region_borders,
     border_color_for_fill,
     compute_border_owners,
+    compute_occupation_seam_pixels,
     compute_opaque_union_borders,
 )
 
@@ -124,6 +127,72 @@ class BorderPaintTests(unittest.TestCase):
         self.assertEqual(pixels[4, 3][:3], grey)
         self.assertEqual(pixels[2, 3], INK_DARK)
         self.assertEqual(pixels[5, 3], INK_DARK)
+
+    def _two_tone_strip(self, width, height, wash, grey):
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        pixels = img.load()
+        mid = width // 2
+        for y in range(height):
+            for x in range(mid):
+                pixels[x, y] = (*wash, 255)
+            for x in range(mid, width):
+                pixels[x, y] = (*grey, 255)
+        return img, pixels, mid
+
+    def test_occupation_seam_is_occ_side_only(self):
+        wash = (180, 80, 80)
+        grey = (120, 70, 70)
+        _img, pixels, mid = self._two_tone_strip(8, 8, wash, grey)
+        seam = compute_occupation_seam_pixels(pixels, 8, 8, wash, grey)
+        self.assertTrue(seam)
+        self.assertTrue(all(x == mid for x, _y in seam))
+        self.assertNotIn((mid - 1, 3), seam)
+
+    def test_occupation_dash_gaps_and_spares_interiors(self):
+        wash = (180, 80, 80)
+        grey = (120, 70, 70)
+        width, height = 6, 40
+        _img, pixels, mid = self._two_tone_strip(width, height, wash, grey)
+        apply_occupation_seam_dashes(
+            pixels,
+            [pixels],
+            width,
+            height,
+            wash,
+            grey,
+            thickness=0,
+        )
+        seam_red = [
+            y for y in range(height) if pixels[mid, y] == OCCUPATION_DASH_COLOR
+        ]
+        seam_grey = [
+            y for y in range(height) if pixels[mid, y][:3] == grey
+        ]
+        self.assertTrue(seam_red)
+        self.assertTrue(seam_grey)
+        self.assertLess(len(seam_red), height)
+        self.assertEqual(pixels[1, height // 2][:3], wash)
+        self.assertEqual(pixels[width - 1, height // 2][:3], grey)
+
+    def test_occupation_dash_skips_outer_vs_transparent(self):
+        grey = (120, 70, 70)
+        wash = (180, 80, 80)
+        width, height = 8, 8
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        pixels = img.load()
+        for x in range(2, 6):
+            for y in range(2, 6):
+                pixels[x, y] = (*grey, 255)
+        apply_occupation_seam_dashes(
+            pixels, [pixels], width, height, wash, grey, thickness=0
+        )
+        red = [
+            (x, y)
+            for x in range(width)
+            for y in range(height)
+            if pixels[x, y] == OCCUPATION_DASH_COLOR
+        ]
+        self.assertEqual(red, [])
 
 
 if __name__ == "__main__":

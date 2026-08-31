@@ -4,6 +4,7 @@ import sys
 import time
 
 from ..util.border_paint import (
+    apply_occupation_seam_dashes,
     apply_opaque_union_borders,
     border_color_for_fill,
     border_thickness as default_border_thickness,
@@ -261,6 +262,16 @@ def generate_regions(
             apply_opaque_union_borders(
                 hover.load(), width, height, hover_stroke, border_thickness
             )
+            if occupation_provinces:
+                occ_color = occupation_display_rgb(color)
+                apply_occupation_seam_dashes(
+                    base.load(),
+                    [base.load(), hover.load()],
+                    width,
+                    height,
+                    display_color,
+                    occ_color,
+                )
             if nested:
                 apply_opaque_union_borders(
                     nested.load(), width, height, base_stroke, border_thickness
@@ -268,6 +279,16 @@ def generate_regions(
                 apply_opaque_union_borders(
                     nested_hover.load(), width, height, hover_stroke, border_thickness
                 )
+                if occupation_provinces:
+                    occ_color = occupation_display_rgb(color)
+                    apply_occupation_seam_dashes(
+                        nested.load(),
+                        [nested.load(), nested_hover.load()],
+                        width,
+                        height,
+                        display_color,
+                        occ_color,
+                    )
 
     print()
 
