@@ -4,10 +4,9 @@ import sys
 import time
 
 from ..util.border_paint import (
-    apply_region_borders,
+    apply_opaque_union_borders,
     border_color_for_fill,
     border_thickness as default_border_thickness,
-    compute_border_owners,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
@@ -17,7 +16,7 @@ from ..util.overlay_metadata import (
     save_cropped,
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
-from ..util.dirs import input_file, validate_map, map_image
+from ..util.dirs import input_file, validate_map
 from .geometry_cache import MapGeometryCache
 
 
@@ -246,64 +245,29 @@ def generate_regions(
     if borders and region_imgs:
 
         total = len(region_imgs)
-        if not has_nesting:
-            # FAST PATH
-            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
-            border_owners = compute_border_owners(ref.load(), width, height)
+        for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
+            kind = "nested" if has_nesting else "fast"
+            log_progress(
+                f"Painting borders ({kind}): {i}/{total} "
+                f"({i / total * 100:5.1f}%)"
+            )
 
-            for i, (color, (base, hover, _, _)) in enumerate(region_imgs.items(), start=1):
-                log_progress(
-                    f"Painting borders (fast): {i}/{total} "
-                    f"({i / total * 100:5.1f}%)"
+            display_color = display_rgb(color)
+            base_stroke = border_color_for_fill(display_color)
+            hover_stroke = border_color_for_fill(hover_rgb(color))
+            apply_opaque_union_borders(
+                base.load(), width, height, base_stroke, border_thickness
+            )
+            apply_opaque_union_borders(
+                hover.load(), width, height, hover_stroke, border_thickness
+            )
+            if nested:
+                apply_opaque_union_borders(
+                    nested.load(), width, height, base_stroke, border_thickness
                 )
-
-                display_color = display_rgb(color)
-                base_stroke = border_color_for_fill(display_color)
-                hover_stroke = border_color_for_fill(hover_rgb(color))
-
-                apply_region_borders(
-                    base.load(), color, border_owners,
-                    width, height, base_stroke, border_thickness
+                apply_opaque_union_borders(
+                    nested_hover.load(), width, height, hover_stroke, border_thickness
                 )
-                apply_region_borders(
-                    hover.load(), color, border_owners,
-                    width, height, hover_stroke, border_thickness
-                )
-        else:
-            # SAFE PATH: nation map for occupier outline so occupation fill
-            # is not treated as a separate country.
-            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
-            nation_border_owners = compute_border_owners(ref.load(), width, height)
-            ref.close()
-
-            for i, (color, (base, hover, nested, nested_hover)) in enumerate(region_imgs.items(), start=1):
-                log_progress(
-                    f"Painting borders (nested): {i}/{total} "
-                    f"({i / total * 100:5.1f}%)"
-                )
-
-                display_color = display_rgb(color)
-                base_stroke = border_color_for_fill(display_color)
-                hover_stroke = border_color_for_fill(hover_rgb(color))
-                apply_region_borders(
-                    base.load(), color, nation_border_owners,
-                    width, height, base_stroke, border_thickness
-                )
-                apply_region_borders(
-                    hover.load(), color, nation_border_owners,
-                    width, height, hover_stroke, border_thickness
-                )
-
-                if nested:
-                    nested_bo = compute_border_owners(nested.load(), width, height, include_outer=True)
-                    apply_region_borders(
-                        nested.load(), display_color, nested_bo,
-                        width, height, base_stroke, border_thickness
-                    )
-                    apply_region_borders(
-                        nested_hover.load(), display_color, nested_bo,
-                        width, height, hover_stroke, border_thickness
-                    )
 
     print()
 

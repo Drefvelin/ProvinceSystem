@@ -4,9 +4,11 @@ from PIL import Image
 
 from .border_paint import (
     INK_DARK,
+    OPAQUE_UNION_OWNER,
     apply_region_borders,
     border_color_for_fill,
     compute_border_owners,
+    compute_opaque_union_borders,
 )
 
 
@@ -60,6 +62,68 @@ class BorderPaintTests(unittest.TestCase):
         self.assertEqual(soften_pixels, [])
         after = {(x, y): pixels[x, y] for x, y in before}
         self.assertNotEqual(before, after)
+
+    def test_opaque_union_outlines_single_fill_vs_transparent(self):
+        width, height = 8, 8
+        fill = (200, 100, 100)
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        pixels = img.load()
+        for x in range(2, 6):
+            for y in range(2, 6):
+                pixels[x, y] = (*fill, 255)
+
+        owners = compute_opaque_union_borders(pixels, width, height)
+        edge = (2, 2)
+        interior = (3, 3)
+        self.assertIn(OPAQUE_UNION_OWNER, owners.get(edge, set()))
+        self.assertNotIn(interior, owners)
+
+        apply_region_borders(
+            pixels,
+            OPAQUE_UNION_OWNER,
+            owners,
+            width,
+            height,
+            INK_DARK,
+            thickness=0,
+        )
+        self.assertEqual(pixels[2, 2], INK_DARK)
+        self.assertEqual(pixels[3, 3][:3], fill)
+
+    def test_opaque_union_ignores_two_tone_seam(self):
+        width, height = 8, 8
+        wash = (180, 80, 80)
+        grey = (120, 70, 70)
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        pixels = img.load()
+        for x in range(2, 4):
+            for y in range(2, 6):
+                pixels[x, y] = (*wash, 255)
+        for x in range(4, 6):
+            for y in range(2, 6):
+                pixels[x, y] = (*grey, 255)
+
+        owners = compute_opaque_union_borders(pixels, width, height)
+        seam_left = (3, 3)
+        seam_right = (4, 3)
+        self.assertNotIn(seam_left, owners)
+        self.assertNotIn(seam_right, owners)
+        self.assertIn(OPAQUE_UNION_OWNER, owners.get((2, 3), set()))
+        self.assertIn(OPAQUE_UNION_OWNER, owners.get((5, 3), set()))
+
+        apply_region_borders(
+            pixels,
+            OPAQUE_UNION_OWNER,
+            owners,
+            width,
+            height,
+            INK_DARK,
+            thickness=0,
+        )
+        self.assertEqual(pixels[3, 3][:3], wash)
+        self.assertEqual(pixels[4, 3][:3], grey)
+        self.assertEqual(pixels[2, 3], INK_DARK)
+        self.assertEqual(pixels[5, 3], INK_DARK)
 
 
 if __name__ == "__main__":

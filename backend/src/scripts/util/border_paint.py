@@ -7,6 +7,8 @@ border_thickness = 5  # Adjustable thickness
 INK_DARK = (42, 31, 20, 255)
 INK_LIGHT = (232, 220, 200, 255)
 LUMINANCE_THRESHOLD = 0.55
+# Sentinel owner for overlay-alpha union (home wash + occupation grey).
+OPAQUE_UNION_OWNER = (1, 0, 0)
 
 
 def relative_luminance(rgb: tuple[int, int, int]) -> float:
@@ -57,6 +59,39 @@ def compute_border_owners(img_data, width, height, include_outer=True):
                     borders.setdefault((x, y), set()).update((c_rgb, n_rgb))
                     borders.setdefault((nx, ny), set()).update((c_rgb, n_rgb))
     return borders
+
+
+def compute_opaque_union_borders(img_data, width, height):
+    """Outline the union of opaque pixels, ignoring RGB differences.
+
+    Home wash and occupation grey on one overlay share one outer stroke.
+    """
+    borders = {}
+
+    for y in range(height):
+        for x in range(width):
+            c = img_data[x, y]
+            if c[3] == 0:
+                continue
+
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if not (0 <= nx < width and 0 <= ny < height):
+                    borders.setdefault((x, y), set()).add(OPAQUE_UNION_OWNER)
+                    continue
+
+                n = img_data[nx, ny]
+                if n[3] == 0:
+                    borders.setdefault((x, y), set()).add(OPAQUE_UNION_OWNER)
+
+    return borders
+
+
+def apply_opaque_union_borders(img_data, width, height, color, thickness):
+    owners = compute_opaque_union_borders(img_data, width, height)
+    apply_region_borders(
+        img_data, OPAQUE_UNION_OWNER, owners, width, height, color, thickness
+    )
+
 
 def apply_region_borders(
     img_data,

@@ -11,9 +11,10 @@ import numpy as np
 from PIL import Image
 
 from ..util.border_paint import (
+    OPAQUE_UNION_OWNER,
     border_color_for_fill,
     border_thickness as default_border_thickness,
-    compute_border_owners,
+    compute_opaque_union_borders,
 )
 from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
@@ -23,7 +24,7 @@ from ..util.overlay_metadata import (
     rgb_tuple_to_str,
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
-from ..util.dirs import input_file, validate_map, map_image
+from ..util.dirs import input_file, validate_map
 from .geometry_cache import MapGeometryCache
 
 OwnerColor = tuple[int, int, int]
@@ -211,6 +212,20 @@ def _apply_region_borders_np(
                         img[ny, nx] = color
 
 
+def _stroke_opaque_union_np(
+    img: np.ndarray,
+    stroke: tuple[int, int, int, int],
+    thickness: int,
+) -> None:
+    height, width = img.shape[:2]
+    owners = compute_opaque_union_borders(
+        Image.fromarray(img, mode="RGBA").load(),
+        width,
+        height,
+    )
+    _apply_region_borders_np(img, OPAQUE_UNION_OWNER, owners, stroke, thickness)
+
+
 def generate_regions_numpy(
     map_name: str,
     mode: str,
@@ -316,109 +331,43 @@ def generate_regions_numpy(
 
     if borders and regions:
         total_regions = len(regions)
-        if not has_nesting:
-            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
-            border_owners = compute_border_owners(ref.load(), width, height)
-            ref.close()
+        kind = "nested" if has_nesting else "fast"
+        for i, (color, buf) in enumerate(regions.items(), start=1):
+            log_progress(
+                f"Painting borders ({kind}): {i}/{total_regions} "
+                f"({i / max(total_regions, 1) * 100:5.1f}%)"
+            )
+            display_color = display_rgb(color)
+            base_stroke = border_color_for_fill(display_color)
+            hover_stroke = border_color_for_fill(hover_rgb(color))
+            x0, y0, x1, y1 = buf.x0, buf.y0, buf.x1, buf.y1
 
-            for i, (color, buf) in enumerate(regions.items(), start=1):
-                log_progress(
-                    f"Painting borders (fast): {i}/{total_regions} "
-                    f"({i / total_regions * 100:5.1f}%)"
+            full_base = _stage_on_full_canvas(buf, height, width, "base")
+            _stroke_opaque_union_np(full_base, base_stroke, border_thickness)
+            _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
+
+            full_hover = np.zeros((height, width, 4), dtype=np.uint8)
+            full_hover[y0:y1, x0:x1] = buf.hover
+            _stroke_opaque_union_np(full_hover, hover_stroke, border_thickness)
+            _finalize_buffer_layer(buf, "hover", full_hover)
+
+            if buf.with_nested and buf.nested is not None:
+                full_nested = np.zeros((height, width, 4), dtype=np.uint8)
+                full_nested[y0:y1, x0:x1] = buf.nested
+                _stroke_opaque_union_np(full_nested, base_stroke, border_thickness)
+                _finalize_buffer_layer(
+                    buf,
+                    "nested",
+                    full_nested,
+                    store_nested_overlay_meta=True,
                 )
-                base_stroke = border_color_for_fill(display_rgb(color))
-                hover_stroke = border_color_for_fill(hover_rgb(color))
 
-                full_base = _stage_on_full_canvas(buf, height, width, "base")
-                full_hover = _stage_on_full_canvas(buf, height, width, "hover")
-
-                _apply_region_borders_np(
-                    full_base,
-                    color,
-                    border_owners,
-                    base_stroke,
-                    border_thickness,
+                full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
+                full_nested_hover[y0:y1, x0:x1] = buf.nested_hover
+                _stroke_opaque_union_np(
+                    full_nested_hover, hover_stroke, border_thickness
                 )
-                _apply_region_borders_np(
-                    full_hover,
-                    color,
-                    border_owners,
-                    hover_stroke,
-                    border_thickness,
-                )
-
-                _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
-                _finalize_buffer_layer(buf, "hover", full_hover)
-        else:
-            ref = Image.open(map_image(map_name, mode)).convert("RGBA")
-            nation_border_owners = compute_border_owners(ref.load(), width, height)
-            ref.close()
-
-            for i, (color, buf) in enumerate(regions.items(), start=1):
-                log_progress(
-                    f"Painting borders (nested): {i}/{total_regions} "
-                    f"({i / max(total_regions, 1) * 100:5.1f}%)"
-                )
-                display_color = display_rgb(color)
-                base_stroke = border_color_for_fill(display_color)
-                hover_stroke = border_color_for_fill(hover_rgb(color))
-                x0, y0, x1, y1 = buf.x0, buf.y0, buf.x1, buf.y1
-
-                full_base = np.zeros((height, width, 4), dtype=np.uint8)
-                full_base[y0:y1, x0:x1] = buf.base
-                _apply_region_borders_np(
-                    full_base,
-                    color,
-                    nation_border_owners,
-                    base_stroke,
-                    border_thickness,
-                )
-                _finalize_buffer_layer(buf, "base", full_base, store_overlay_meta=True)
-
-                full_hover = np.zeros((height, width, 4), dtype=np.uint8)
-                full_hover[y0:y1, x0:x1] = buf.hover
-                _apply_region_borders_np(
-                    full_hover,
-                    color,
-                    nation_border_owners,
-                    hover_stroke,
-                    border_thickness,
-                )
-                _finalize_buffer_layer(buf, "hover", full_hover)
-
-                if buf.with_nested and buf.nested is not None:
-                    full_nested = np.zeros((height, width, 4), dtype=np.uint8)
-                    full_nested[y0:y1, x0:x1] = buf.nested
-                    nested_bo = compute_border_owners(
-                        Image.fromarray(full_nested, mode="RGBA").load(),
-                        width,
-                        height,
-                        include_outer=True,
-                    )
-                    _apply_region_borders_np(
-                        full_nested,
-                        display_color,
-                        nested_bo,
-                        base_stroke,
-                        border_thickness,
-                    )
-                    _finalize_buffer_layer(
-                        buf,
-                        "nested",
-                        full_nested,
-                        store_nested_overlay_meta=True,
-                    )
-
-                    full_nested_hover = np.zeros((height, width, 4), dtype=np.uint8)
-                    full_nested_hover[y0:y1, x0:x1] = buf.nested_hover
-                    _apply_region_borders_np(
-                        full_nested_hover,
-                        display_color,
-                        nested_bo,
-                        hover_stroke,
-                        border_thickness,
-                    )
-                    _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
+                _finalize_buffer_layer(buf, "nested_hover", full_nested_hover)
     elif regions:
         for buf in regions.values():
             map_x0, map_y0, map_x1, map_y1 = buf.x0, buf.y0, buf.x1, buf.y1
