@@ -105,6 +105,7 @@ from src.api.editor_routes import editor_router
 from src.api.map_routes import map_router
 from src.api.data_routes import data_router
 from src.api.banner_routes import banner_router
+from src.api.chronicle_routes import chronicle_router
 from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
@@ -121,6 +122,7 @@ app.include_router(data_router)
 app.include_router(maps_router)
 app.include_router(banner_router)
 app.include_router(claim_router)
+app.include_router(chronicle_router)
 app.include_router(regen_router)
 app.include_router(file_router)
 app.include_router(skins_router)

@@ -15,6 +15,30 @@ from .util.dirs import defines_file, input_file, validate_map
 GRID_FILENAME = "province_id_grid.bin.gz"
 HEADER_SIZE = 8  # width + height as int32 LE
 
+# A decimated grid keeps the same byte layout and gains a _q{scale} suffix, so
+# scale=1 stays byte-identical to the artifact every existing caller already
+# reads.
+GRID_SCALED_FILENAME = "province_id_grid_q{scale}.bin.gz"
+
+# Majority decimation is done in horizontal bands so peak memory stays bounded
+# regardless of scale; 6400x6400 at scale 4 would otherwise materialise several
+# 41M-element index arrays at once.
+_DECIMATE_CHUNK_ELEMENTS = 4_000_000
+
+# Province id 0 is ocean/background, not a province. It must not be allowed to
+# win the block vote, so ocean pixels are voted with sentinel values above the
+# uint16 id space (hence the int32 working dtype) - one distinct sentinel per
+# column, so no two ocean pixels ever form a run longer than 1 and any real
+# province present in the block outvotes or out-tie-breaks them all.
+_OCEAN_VOTE_BASE = 1 << 16
+
+
+def province_id_grid_filename(scale: int = 1) -> str:
+    """Artifact filename for a given decimation factor."""
+    if scale == 1:
+        return GRID_FILENAME
+    return GRID_SCALED_FILENAME.format(scale=scale)
+
 
 def build_province_id_map(map_name: str) -> tuple[int, int, np.ndarray]:
     """
@@ -38,6 +62,122 @@ def build_province_id_map(map_name: str) -> tuple[int, int, np.ndarray]:
     province_id_map = id_lut[packed_rgb]
 
     return width, height, province_id_map
+
+
+def _block_majority(blocks: np.ndarray) -> np.ndarray:
+    """Modal value of each row of `blocks` (n, k), ties broken toward the lower id.
+
+    Sorting each block groups equal ids into runs, so the mode is just the value
+    inside the longest run. Everything is vectorised over all n blocks at once;
+    a Python loop over 41M source pixels is not an option.
+    """
+    n, k = blocks.shape
+    ordered = np.sort(blocks, axis=1)
+
+    is_start = np.empty((n, k), dtype=bool)
+    is_start[:, 0] = True
+    np.not_equal(ordered[:, 1:], ordered[:, :-1], out=is_start[:, 1:])
+
+    is_end = np.empty((n, k), dtype=bool)
+    is_end[:, -1] = True
+    is_end[:, :-1] = is_start[:, 1:]
+
+    idx = np.arange(k, dtype=np.int32)
+    # Running max of "index where a run starts" gives, per column, the start of
+    # the run that column belongs to; the mirrored running min gives its end.
+    start = np.maximum.accumulate(np.where(is_start, idx, np.int32(0)), axis=1)
+    end = np.minimum.accumulate(
+        np.where(is_end, idx, np.int32(k))[:, ::-1], axis=1
+    )[:, ::-1]
+
+    # argmax returns the first maximum, i.e. the lowest id among tied runs, so
+    # the result is deterministic and independent of pixel order.
+    pick = np.argmax(end - start, axis=1)
+    return ordered[np.arange(n), pick]
+
+
+def _block_majority_land(blocks: np.ndarray) -> np.ndarray:
+    """_block_majority, but ocean (id 0) only wins a block that is entirely ocean.
+
+    Ocean participating as an ordinary value is wrong twice over: it can outvote
+    the land it surrounds, and because ties resolve toward the lower id, 0 wins
+    *every* tie. At scale 4 that meant a block split 8 ocean / 8 land collapsed
+    to ocean (coastlines erode inward), and a 3x3 island or a 1px-wide strait
+    province disappeared from the decimated grid with nothing reporting it.
+
+    Rather than reimplement the (brute-force-verified) vote, each ocean pixel is
+    replaced by a sentinel unique to its column. Sentinels sort above every real
+    id, so _block_majority's "longest run, ties to the lowest value" rule keeps
+    holding, while each sentinel run is exactly one pixel long - a block with any
+    land in it therefore always resolves to land, and an all-ocean block resolves
+    to a sentinel that is mapped back to 0.
+    """
+    n, k = blocks.shape
+    sentinels = (_OCEAN_VOTE_BASE + np.arange(k, dtype=np.int32)).reshape(1, k)
+    votes = np.where(blocks > 0, blocks.astype(np.int32, copy=False), sentinels)
+    picked = _block_majority(votes)
+    return np.where(picked >= _OCEAN_VOTE_BASE, 0, picked).astype(np.uint16, copy=False)
+
+
+def lost_province_ids(before: np.ndarray, after: np.ndarray) -> list[int]:
+    """Province ids present in `before` but wiped out entirely by decimation.
+
+    Ocean exclusion makes this rare, but a province thinner than the block size
+    can still lose every one of its blocks to a larger neighbour. Callers report
+    it instead of letting the province silently vanish from the timelapse.
+    """
+    kept = set(np.unique(after).tolist())
+    return sorted(int(v) for v in np.unique(before).tolist() if v and v not in kept)
+
+
+def decimate_province_id_map(
+    width: int, height: int, ids: np.ndarray, scale: int
+) -> tuple[int, int, np.ndarray]:
+    """
+    Shrink a province id grid by an integer factor for cheap timelapse repaints.
+
+    Each scale x scale source block collapses to the province id that covers the
+    most of it. Province ids are categorical, so anything that averages or
+    interpolates would invent ids that name no province; majority is picked over
+    plain nearest-neighbour sampling because at scale 4 a single sampled pixel
+    lets a one-pixel coastal sliver decide a 16-pixel block, which makes narrow
+    provinces flicker in and out along their borders.
+
+    Ocean (id 0) is excluded from the vote unless the block contains no land at
+    all - see _block_majority_land for why letting it vote deletes islands.
+
+    `scale` must divide both dimensions exactly - a partial trailing block would
+    silently crop the map edge, and callers are better off told than shrunk.
+    """
+    if scale < 1:
+        raise ValueError(f"scale must be a positive integer, got {scale}")
+    if ids.shape != (height, width):
+        raise ValueError(
+            f"ids shape {ids.shape} does not match height={height}, width={width}"
+        )
+    if scale == 1:
+        return width, height, ids
+    if width % scale or height % scale:
+        raise ValueError(
+            f"scale {scale} does not divide source dimensions {width}x{height} evenly"
+        )
+
+    out_width = width // scale
+    out_height = height // scale
+    source = np.ascontiguousarray(ids, dtype=np.uint16)
+    out = np.empty((out_height, out_width), dtype=np.uint16)
+
+    block_pixels = scale * scale
+    rows_per_chunk = max(1, _DECIMATE_CHUNK_ELEMENTS // (out_width * block_pixels))
+    for y0 in range(0, out_height, rows_per_chunk):
+        y1 = min(y0 + rows_per_chunk, out_height)
+        band = source[y0 * scale : y1 * scale].reshape(
+            y1 - y0, scale, out_width, scale
+        )
+        blocks = band.transpose(0, 2, 1, 3).reshape(-1, block_pixels)
+        out[y0:y1] = _block_majority_land(blocks).reshape(y1 - y0, out_width)
+
+    return out_width, out_height, out
 
 
 def serialize_province_id_grid(width: int, height: int, ids: np.ndarray) -> bytes:
@@ -75,15 +215,19 @@ def write_province_id_grid_file(
     map_name: str,
     dest: str | None = None,
     source: tuple[int, int, np.ndarray] | None = None,
+    scale: int = 1,
 ) -> str:
     """Write defines/{map}/province_id_grid.bin.gz unless dest is set.
 
     Pass `source` to reuse an already-decoded province id map; decoding
     provinces.png costs a 6400x6400 decode plus a 32MB LUT pass, and the grid
     and runs artifacts are built from exactly the same array.
+
+    `scale` > 1 decimates the grid and writes the _q{scale} variant instead.
     """
     width, height, ids = source or build_province_id_map(map_name)
-    out_path = dest or defines_file(map_name, GRID_FILENAME)
+    width, height, ids = decimate_province_id_map(width, height, ids, scale)
+    out_path = dest or defines_file(map_name, province_id_grid_filename(scale))
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     payload = serialize_province_id_grid(width, height, ids)

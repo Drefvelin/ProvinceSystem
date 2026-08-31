@@ -271,3 +271,26 @@ CREATE INDEX IF NOT EXISTS idx_drink_notifications_undelivered
     ON drink_notifications(delivered_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_cosmetic_mint_resets_player
     ON cosmetic_mint_resets(player_uuid);
+
+CREATE TABLE IF NOT EXISTS map_chronicle_snapshots (
+    map_id      TEXT NOT NULL,
+    day         TEXT NOT NULL,
+    realm_id    TEXT NOT NULL DEFAULT 'main',
+    captured_at INTEGER NOT NULL,
+    bytes       INTEGER NOT NULL,
+    geometry_version TEXT,
+    manifest    TEXT NOT NULL,
+    PRIMARY KEY (map_id, day)
+);
+
+CREATE TABLE IF NOT EXISTS map_chronicle_snapshots_archive (
+    map_id      TEXT NOT NULL,
+    day         TEXT NOT NULL,
+    realm_id    TEXT NOT NULL DEFAULT 'main',
+    captured_at INTEGER NOT NULL,
+    bytes       INTEGER NOT NULL,
+    geometry_version TEXT,
+    manifest    TEXT NOT NULL,
+    archived_at INTEGER NOT NULL,
+    PRIMARY KEY (map_id, day, archived_at)
+);
