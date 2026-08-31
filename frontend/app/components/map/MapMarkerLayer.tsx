@@ -6,7 +6,7 @@ import {
   MARKER_HOVER_TRANSITION,
   MARKER_ICON_HOVER_GLOW,
   MARKER_LABEL_GAP,
-  MARKER_LAYER_Z_BELOW_LABELS,
+  MARKER_LAYER_Z_ABOVE_LABELS,
   MARKER_LAYER_Z_HOVERED,
   MARKER_VISIBILITY_TRANSITION,
   isMarkerMapMode,
@@ -25,7 +25,7 @@ type MapMarkerLayerProps = {
   mapH: number;
   mapType: MapMode;
   displayScale: number;
-  /** Base pins render below faction labels; hovered pin renders above. */
+  /** Base pins render above faction labels; hovered pin renders above those. */
   layer: "base" | "hovered";
 };
 
@@ -55,7 +55,7 @@ function MapMarkerLayer({
   }
 
   const layerZ =
-    layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_BELOW_LABELS;
+    layer === "hovered" ? MARKER_LAYER_Z_HOVERED : MARKER_LAYER_Z_ABOVE_LABELS;
 
   return (
     <div

@@ -39,7 +39,9 @@ export const MARKER_ICON_HOVER_GLOW =
 export const MARKER_LABEL_MIN_SCREEN_PX = 9;
 export const INSTALLATION_ICON_SCALE = 0.75;
 export const BATTLE_ICON_SCALE = INSTALLATION_ICON_SCALE;
-export const MARKER_LAYER_Z_BELOW_LABELS = 14;
+// Marker chips sit above the serif nation labels (z-15) so a settlement name is
+// never swallowed by the faction name painted across the same landmass.
+export const MARKER_LAYER_Z_ABOVE_LABELS = 16;
 export const MARKER_LAYER_Z_HOVERED = 17;
 
 export type MapMarkerSize = "small" | "large";
