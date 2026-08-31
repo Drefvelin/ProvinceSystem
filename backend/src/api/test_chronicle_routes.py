@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -493,3 +494,332 @@ def test_marker_upload_regenerates_zoc_overlays_before_capturing(monkeypatch, tm
 
     assert res.status_code == 200
     assert order == ["zoc", "capture"]
+
+
+# ---------------------------------------------------------------------------
+# Per-day markers: the same enrichment as /{map}/data/markers, over stored files
+# ---------------------------------------------------------------------------
+
+
+def _write_day_files(map_name: str, day: str, files: dict) -> None:
+    """Like _write_day but records several sources under one snapshot row."""
+    manifest_files: dict = {}
+    total = 0
+    for name, payload in files.items():
+        path = store.stored_file_path(map_name, day, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with gzip.open(path, "wt", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+        size = os.path.getsize(path)
+        total += size
+        manifest_files[name] = {"sha256": "x", "bytes": size}
+    store.upsert_snapshot(
+        map_name, day, "main", int(time.time()), total, None, {"files": manifest_files}
+    )
+
+
+_MARKERS_DAY = {
+    "map_id": "main",
+    "exported_at": "2026-01-01T00:00:00Z",
+    "settlement_large_population_threshold": 500,
+    "settlements": [
+        {"id": "s1", "name": "Rimehold", "province_id": "7", "population": 900}
+    ],
+    "installations": [{"id": "i1", "name": "Mill", "province_id": "7"}],
+    "forts": [{"id": "f1", "name": "Gate", "province_id": "7"}],
+    "wars": [],
+}
+
+
+def test_markers_route_returns_the_enriched_shape(client):
+    _write_day_files(
+        "main",
+        "2026-01-01",
+        {"map_markers": _MARKERS_DAY, "zoc_overlays": {}},
+    )
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(["settlements", "installations", "forts", "wars"]) <= set(body)
+    assert body["map_id"] == "main"
+    assert body["exported_at"] == "2026-01-01T00:00:00Z"
+    assert body["settlement_large_population_threshold"] == 500
+    assert [s["name"] for s in body["settlements"]] == ["Rimehold"]
+    assert [i["name"] for i in body["installations"]] == ["Mill"]
+    assert [f["name"] for f in body["forts"]] == ["Gate"]
+    assert body["wars"] == []
+
+
+def test_markers_route_unknown_day_is_404(client):
+    _write_day_files("main", "2026-01-01", {"map_markers": _MARKERS_DAY})
+
+    res = client.get("/main/chronicle/2026-01-02/markers")
+    assert res.status_code == 404
+    assert res.json() == {"error": "Snapshot not found"}
+    assert "no-store" in res.headers["cache-control"] or "no-cache" in res.headers["cache-control"]
+
+
+@pytest.mark.parametrize("day", ["2026-13-99", "../..", "nope", "2026-1-1"])
+def test_markers_route_bad_day_is_400_without_touching_disk(client, monkeypatch, day):
+    def _boom(*args, **kwargs):  # pragma: no cover - must never run
+        raise AssertionError("filesystem reached with an unvalidated day")
+
+    monkeypatch.setattr("src.api.chronicle_routes.resolve_stored_file", _boom)
+    monkeypatch.setattr("src.api.chronicle_routes.get_snapshot", _boom)
+
+    res = client.get(f"/main/chronicle/{day}/markers")
+    # "../.." cannot match the {day} segment at all, so it is a routing 404.
+    assert res.status_code in (400, 404)
+    if res.status_code == 400:
+        assert res.json()["detail"] == "Invalid chronicle day"
+
+
+def test_markers_route_missing_source_is_an_empty_payload_not_500(client):
+    # A captured day whose map_markers source was absent: Phase 1 records that
+    # in the manifest, and the route must still answer 200.
+    store.upsert_snapshot(
+        "main",
+        "2026-01-01",
+        "main",
+        int(time.time()),
+        0,
+        None,
+        {"files": {}, "missing": ["map_markers", "zoc_overlays"]},
+    )
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["settlements"] == []
+    assert body["installations"] == []
+    assert body["forts"] == []
+    assert body["wars"] == []
+    assert body["map_id"] == "main"
+    assert body["exported_at"] is None
+
+
+def test_markers_route_is_realm_scoped_like_the_other_chronicle_routes(client):
+    _write_day_files("main", "2026-01-01", {"map_markers": _MARKERS_DAY})
+
+    assert client.get("/dev/chronicle/2026-01-01/markers").status_code == 403
+    assert client.get("/main/chronicle/2026-01-01/markers").status_code == 200
+
+
+@pytest.mark.parametrize("segment", ["%20main", "MaIn", "MAIN%20"])
+def test_markers_route_normalises_map_id_like_the_access_gate(client, segment):
+    """The gate grants " main"/"MaIn" as "main"; feeding the raw segment onward
+    raised ValueError out of validate_map as an anonymous 500."""
+    _write_day_files("main", "2026-01-01", {"map_markers": _MARKERS_DAY})
+
+    res = client.get(f"/{segment}/chronicle/2026-01-01/markers")
+    assert res.status_code == 200, res.text
+    assert [s["name"] for s in res.json()["settlements"]] == ["Rimehold"]
+
+
+def test_markers_route_revalidates_with_an_etag(client):
+    _write_day_files("main", "2026-01-01", {"map_markers": _MARKERS_DAY})
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.headers["etag"]
+    again = client.get(
+        "/main/chronicle/2026-01-01/markers",
+        headers={"If-None-Match": res.headers["etag"]},
+    )
+    assert again.status_code == 304
+
+
+# ---------------------------------------------------------------------------
+# Regression: a captured day is immutable, so anything that 500s the markers
+# route 500s it forever. Every degraded input below must answer 200.
+# ---------------------------------------------------------------------------
+
+
+def _strict_json(text: str) -> object:
+    """json.loads that refuses NaN/Infinity, the way a browser's JSON.parse does."""
+
+    def _reject(constant: str):
+        raise AssertionError(f"response carries the bare JSON literal {constant!r}")
+
+    return json.loads(text, parse_constant=_reject)
+
+
+def test_markers_route_survives_non_finite_coordinates(client):
+    """Python's json accepts the Infinity/NaN literals on the way in, so one bad
+    coordinate from the game plugin lands in a stored day. round(inf) raises
+    OverflowError, which _finite_int did not catch."""
+    day = {
+        "map_id": "main",
+        "settlements": [
+            {
+                # No province_id, so there is no centroid fallback to mask the
+                # coordinates being rejected.
+                "id": "s1",
+                "name": "Rimehold",
+                "center_x": float("inf"),
+                "center_z": float("nan"),
+            }
+        ],
+        "installations": [],
+        "forts": [],
+        "wars": [],
+    }
+    _write_day_files("main", "2026-01-01", {"map_markers": day})
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.status_code == 200, res.text
+    body = _strict_json(res.text)
+    settlement = body["settlements"][0]
+    assert settlement["name"] == "Rimehold"
+    # Unusable coordinates are dropped, not rounded into a bogus pixel.
+    assert "map_x" not in settlement
+    assert "map_y" not in settlement
+
+
+def test_markers_route_survives_a_damaged_deflate_stream(client):
+    """A valid gzip header over a torn deflate stream raises zlib.error, which is
+    neither OSError nor ValueError - truncation (EOFError) and bad magic
+    (BadGzipFile) were the only corruption shapes previously covered."""
+    _write_day_files("main", "2026-01-01", {"map_markers": _MARKERS_DAY})
+    path = store.stored_file_path("main", "2026-01-01", "map_markers")
+    # Rewritten with gzip.compress so the header is exactly 10 bytes (gzip.open
+    # adds an FNAME field); byte 10 is then the first deflate byte, and BFINAL=1
+    # with the reserved BTYPE=11 is rejected as an invalid block type - a torn
+    # stream under an intact header, not a CRC mismatch or a truncation.
+    blob = bytearray(gzip.compress(json.dumps(_MARKERS_DAY).encode("utf-8")))
+    blob[10] = 0x07
+    Path(path).write_bytes(bytes(blob))
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["settlements"] == []
+    assert body["installations"] == []
+    assert body["forts"] == []
+    assert body["wars"] == []
+
+
+def test_markers_route_body_is_always_valid_json(client):
+    """json.dumps defaults to allow_nan=True and emits bare NaN/Infinity, which
+    the viewer's JSON.parse rejects outright. Numeric fields other than the
+    coordinates (population here) are never coerced, so they must be sanitised."""
+    day = {
+        "map_id": "main",
+        "settlement_large_population_threshold": float("inf"),
+        "settlements": [
+            {
+                "id": "s1",
+                "name": "Rimehold",
+                "province_id": 7,
+                "population": float("nan"),
+            }
+        ],
+        "installations": [],
+        "forts": [],
+        "wars": [],
+    }
+    _write_day_files("main", "2026-01-01", {"map_markers": day})
+
+    res = client.get("/main/chronicle/2026-01-01/markers")
+    assert res.status_code == 200, res.text
+    body = _strict_json(res.text)
+    assert body["settlements"][0]["population"] is None
+    assert body["settlement_large_population_threshold"] is None
+
+
+def test_markers_route_map_id_comes_from_the_registry_not_the_file(client):
+    """The stored file is attacker-adjacent content; map_id is an identifier the
+    response hands back, so it comes from the registry entry the gate resolved."""
+    day = dict(_MARKERS_DAY, map_id="dev")
+    _write_day_files("main", "2026-01-01", {"map_markers": day})
+
+    body = client.get("/main/chronicle/2026-01-01/markers").json()
+    assert body["map_id"] == "main"
+
+
+# ---------------------------------------------------------------------------
+# Regression: the index must not open a SQLite connection per day of history
+# ---------------------------------------------------------------------------
+
+
+def test_index_query_count_does_not_scale_with_day_count(client, monkeypatch):
+    """One connect for fifty days, not fifty.
+
+    The index used to call get_snapshot per day to read its manifest, and every
+    get_snapshot is a fresh sqlite3.connect plus its PRAGMA. On a real map that
+    is one connection per day of history on the event loop before the ETag is
+    even computed, so the constant matters, not just the wall clock.
+    """
+    start = date(2026, 2, 1)
+    for index in range(50):
+        _write_day("main", (start + timedelta(days=index)).isoformat(), "nation", {"a": index})
+
+    real_connect = store.connect
+    calls = []
+
+    def counting_connect(*args, **kwargs):
+        calls.append(1)
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr(store, "connect", counting_connect)
+
+    body = client.get("/main/chronicle/index").json()
+
+    assert len(body["days"]) == 50
+    assert len(calls) == 1
+
+
+def test_index_shape_is_unchanged_with_many_days(client):
+    """The single-query path must answer exactly what the per-day loop did."""
+    _write_day("main", "2026-03-01", "nation", {"a": 1})
+    store.upsert_snapshot(
+        "main",
+        "2026-03-02",
+        "main",
+        int(time.time()),
+        0,
+        None,
+        {"files": {}, "missing": ["trade"]},
+    )
+    _write_day("main", "2026-03-03", "nation", {"a": 3})
+    store.upsert_snapshot(
+        "main",
+        "2026-03-04",
+        "main",
+        int(time.time()),
+        0,
+        None,
+        {"files": {}, "invalid": ["guilds"]},
+    )
+
+    body = client.get("/main/chronicle/index").json()
+
+    assert body["days"] == ["2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04"]
+    assert body["first"] == "2026-03-01"
+    assert body["last"] == "2026-03-04"
+    # Ordered as `days` is, and each entry carries both lists even when empty.
+    assert body["incomplete_days"] == [
+        {"day": "2026-03-02", "missing": ["trade"], "invalid": []},
+        {"day": "2026-03-04", "missing": [], "invalid": ["guilds"]},
+    ]
+    assert body["incomplete_day_count"] == 2
+
+
+def test_index_survives_an_unparsable_manifest(client):
+    """A torn manifest row degrades to "complete", never to a 500."""
+    _write_day("main", "2026-04-01", "nation", {"a": 1})
+    conn = store.connect()
+    try:
+        with conn:
+            conn.execute(
+                "UPDATE map_chronicle_snapshots SET manifest = ? "
+                "WHERE map_id = ? AND day = ?",
+                ("{not json", "main", "2026-04-01"),
+            )
+    finally:
+        conn.close()
+
+    res = client.get("/main/chronicle/index")
+    assert res.status_code == 200
+    assert res.json()["days"] == ["2026-04-01"]
+    assert res.json()["incomplete_days"] == []

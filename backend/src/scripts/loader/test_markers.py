@@ -17,11 +17,14 @@ if str(_BACKEND_SRC) not in sys.path:
 from scripts.loader.markers import (  # noqa: E402
     build_campaign_line_points,
     build_markers_response,
+    build_markers_response_from,
     build_province_name_index,
     enrich_war_capital,
     enrich_war_schedule_slots,
     enrich_settlements,
     enrich_wars,
+    clear_province_centroid_cache,
+    load_province_centroids,
     load_raw_markers,
     resolve_settlement_map_xy,
     world_coords_to_map_xy,
@@ -576,6 +579,110 @@ class MarkersLoaderTest(unittest.TestCase):
         out = enrich_wars(["bad", {"id": "1", "campaign_provinces": [1]}], centroids, {})
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["id"], "1")
+
+    def test_non_finite_coords_are_dropped_not_raised(self) -> None:
+        """round(float('inf')) raises OverflowError, which is not a ValueError.
+
+        Python's json parses the bare Infinity/NaN literals, so a bad coordinate
+        from the game plugin reaches _finite_int as a real float."""
+        self.assertIsNone(world_coords_to_map_xy(float("inf"), 1))
+        self.assertIsNone(world_coords_to_map_xy(1, float("-inf")))
+        self.assertIsNone(world_coords_to_map_xy(float("nan"), 1))
+        self.assertIsNone(world_coords_to_map_xy("Infinity", 1))
+        # An int too large to become a float overflows in float() itself.
+        self.assertIsNone(world_coords_to_map_xy(10**400, 1))
+        self.assertEqual(world_coords_to_map_xy(1.6, -2.4), (2, -2))
+
+    def test_enrich_settlements_drops_non_finite_coords(self) -> None:
+        out = enrich_settlements(
+            [{"id": "s1", "center_x": float("inf"), "center_z": 5}], {}
+        )
+        self.assertNotIn("map_x", out[0])
+
+    def test_build_markers_response_from_validates_the_map_name(self) -> None:
+        """The only guard used to sit in load_raw_markers; the extracted builder
+        still turns map_name into a filesystem path and a response URL."""
+        raw = {
+            "map_id": "main",
+            "exported_at": None,
+            "settlements": [],
+            "installations": [],
+            "forts": [],
+            "wars": [],
+        }
+        with self.assertRaises(ValueError):
+            build_markers_response_from(raw, {}, {}, "../etc")
+
+
+class ProvinceCentroidCacheTest(unittest.TestCase):
+    """province_centroids.json is ~80 KB of static geometry.
+
+    Every markers build re-read and re-parsed it, so a timelapse paid for one
+    parse per day of identical bytes. The cache is only correct if a regenerated
+    file is still picked up, hence the invalidation half of each test.
+    """
+
+    def setUp(self) -> None:
+        clear_province_centroid_cache()
+        self.addCleanup(clear_province_centroid_cache)
+
+    def test_second_load_reuses_the_parse(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "province_centroids.json")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write('{"705":{"x":100,"y":200}}')
+
+            with mock.patch(
+                "scripts.loader.markers.defines_file",
+                return_value=path,
+            ):
+                first = load_province_centroids("main")
+                with mock.patch(
+                    "scripts.loader.markers.json.load",
+                    side_effect=AssertionError("centroids re-parsed"),
+                ):
+                    second = load_province_centroids("main")
+
+        self.assertEqual(first, {"705": {"x": 100, "y": 200}})
+        self.assertIs(second, first)
+
+    def test_a_regenerated_file_invalidates_the_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "province_centroids.json")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write('{"705":{"x":100,"y":200}}')
+
+            with mock.patch(
+                "scripts.loader.markers.defines_file",
+                return_value=path,
+            ):
+                first = load_province_centroids("main")
+                # A rebuild changes the size, which the mtime+size check sees
+                # even where the clock granularity would hide the write.
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write('{"705":{"x":1,"y":2},"706":{"x":3,"y":4}}')
+                second = load_province_centroids("main")
+
+        self.assertEqual(first, {"705": {"x": 100, "y": 200}})
+        self.assertEqual(
+            second, {"705": {"x": 1, "y": 2}, "706": {"x": 3, "y": 4}}
+        )
+
+    def test_a_missing_file_is_empty_and_caches_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "province_centroids.json")
+
+            with mock.patch(
+                "scripts.loader.markers.defines_file",
+                return_value=path,
+            ):
+                self.assertEqual(load_province_centroids("main"), {})
+                # The first build after this must be picked up, not pinned to {}.
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write('{"705":{"x":100,"y":200}}')
+                self.assertEqual(
+                    load_province_centroids("main"), {"705": {"x": 100, "y": 200}}
+                )
 
 
 if __name__ == "__main__":

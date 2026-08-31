@@ -185,6 +185,41 @@ def list_days(map_id: str) -> list[str]:
         conn.close()
 
 
+def list_day_manifests(map_id: str) -> list[tuple[str, dict]]:
+    """Every indexed day with its manifest, oldest first — one query, one connect.
+
+    The index route needs a field out of each day's manifest, which it used to
+    get with a get_snapshot per day. Each of those is a fresh sqlite3.connect
+    plus its PRAGMA, so the cost scaled with the length of history: two years of
+    captures meant 730 connections per index request, all of it on one thread
+    before the ETag was even computed. The rows already arrive in one ordered
+    SELECT for list_days, so the manifest can ride along in the same one.
+
+    A manifest that will not parse (or parses to something that is not an
+    object) degrades to {} rather than raising: an unreadable row must not take
+    down the index for every other day.
+    """
+    validate_map(map_id)
+    conn = connect()
+    try:
+        rows = conn.execute(
+            "SELECT day, manifest FROM map_chronicle_snapshots WHERE map_id = ? "
+            "ORDER BY day ASC",
+            (map_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    out: list[tuple[str, dict]] = []
+    for row in rows:
+        try:
+            manifest = json.loads(row["manifest"])
+        except (TypeError, ValueError):
+            manifest = {}
+        out.append((row["day"], manifest if isinstance(manifest, dict) else {}))
+    return out
+
+
 def get_snapshot(map_id: str, day: str) -> dict | None:
     validate_map(map_id)
     if not is_valid_day(day):

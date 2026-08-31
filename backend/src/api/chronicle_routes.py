@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import gzip
+import json
 import logging
+import math
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -18,8 +21,13 @@ from ..scripts.chronicle.store import (
     geometry_version,
     get_snapshot,
     is_valid_day,
-    list_days,
+    list_day_manifests,
     resolve_stored_file,
+)
+from ..scripts.loader.markers import (
+    build_markers_response_from,
+    load_province_centroids,
+    normalize_raw_markers,
 )
 from ..scripts.util.dirs import defines_file
 
@@ -99,20 +107,15 @@ def _is_capturable_day(day: str) -> bool:
     return parsed >= today - timedelta(days=_MAX_BACKFILL_DAYS)
 
 
-def _incomplete_days(map_id: str, days: list[str]) -> list[dict]:
+def _incomplete_days(day_manifests: list[tuple[str, dict]]) -> list[dict]:
     """Days whose manifest recorded a missing or unparsable source.
 
-    The manifest is stored in the index row, so this is SQLite only - no
-    filesystem access and no re-reading of day directories. One get_snapshot per
-    day is a connect per day, which is fine at one row per day of history and
-    keeps this route free of any new store API.
+    Takes the rows the caller already fetched rather than looking each day up
+    again: the manifest lives in the index row, and a get_snapshot per day was a
+    fresh SQLite connect per day of history on every index request.
     """
     out: list[dict] = []
-    for day in days:
-        snapshot = get_snapshot(map_id, day)
-        if snapshot is None:
-            continue
-        manifest = snapshot.get("manifest") or {}
+    for day, manifest in day_manifests:
         missing = [str(name) for name in (manifest.get("missing") or [])]
         invalid = [str(name) for name in (manifest.get("invalid") or [])]
         if missing or invalid:
@@ -121,7 +124,7 @@ def _incomplete_days(map_id: str, days: list[str]) -> list[dict]:
 
 
 @chronicle_router.get("/{map_name}/chronicle/index")
-async def get_chronicle_index(
+def get_chronicle_index(
     map_name: str,
     authorization: str | None = Header(default=None),
     if_none_match: str | None = Header(default=None),
@@ -136,6 +139,11 @@ async def get_chronicle_index(
     in data_routes: this is the one response that must never be heuristically
     cached, since a stale copy silently hides newly captured days. The ETag
     still turns an unchanged index into a bodiless 304.
+
+    Declared `def`, not `async def`: every line below is blocking - SQLite and a
+    file stat - and an `async def` handler runs on the event loop itself, so one
+    slow index request stalls every other connection on the box. Starlette runs
+    a sync handler in its threadpool instead.
     """
     entry = ensure_map_access(map_name, authorization)
     # Everything below keys off the *registry* id, never the raw path segment:
@@ -145,8 +153,11 @@ async def get_chronicle_index(
     # map_id that does not exist and reported an empty history.
     map_id = entry.id
 
-    days = list_days(map_id)
-    incomplete = _incomplete_days(map_id, days)
+    # One query for both fields: `days` is the row order this returns, so the
+    # response ordering is unchanged from the old list_days + per-day lookup.
+    day_manifests = list_day_manifests(map_id)
+    days = [day for day, _ in day_manifests]
+    incomplete = _incomplete_days(day_manifests)
     return conditional_json_response(
         {
             "days": days,
@@ -165,7 +176,7 @@ async def get_chronicle_index(
 
 
 @chronicle_router.get("/{map_name}/chronicle/{day}/data/{name}")
-async def get_chronicle_data(
+def get_chronicle_data(
     map_name: str,
     day: str,
     name: str,
@@ -180,6 +191,8 @@ async def get_chronicle_data(
     is served as application/gzip, which server.EXCLUDED_FROM_GZIP keeps the
     GZip middleware from re-compressing; the client gunzips it itself, the same
     way it already handles province_id_grid.bin.gz.
+
+    Sync body, so `def` rather than `async def` - see get_chronicle_index.
     """
     entry = ensure_map_access(map_name, authorization)
     map_id = entry.id  # see get_chronicle_index: never trust the raw segment
@@ -206,6 +219,119 @@ async def get_chronicle_data(
         # surface as an uncaught FileNotFoundError -> 500. The file is gone, so
         # the honest answer is the same 404 the missing-snapshot path gives.
         return add_no_cache(JSONResponse({"error": "Snapshot not found"}, 404))
+
+
+def _load_stored_json(map_id: str, day: str, name: str) -> object | None:
+    """Parsed contents of one stored gzip, or None when it is not usable.
+
+    A day can legitimately lack a source — Phase 1 records that in the
+    manifest's missing/invalid lists — so absence and corruption both degrade to
+    None for the caller to turn into an empty payload, never into a 500.
+    """
+    path = resolve_stored_file(map_id, day, name)
+    if path is None:
+        return None
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception:
+        # Deliberately broad. The contract above is absolute - a stored source
+        # can be absent or torn and must still answer 200 - so enumerating
+        # decoder exceptions is a guess that keeps being wrong: a damaged
+        # deflate stream under an intact header raises zlib.error, which is
+        # neither OSError nor ValueError, while truncation raises EOFError and
+        # bad magic raises BadGzipFile. Nothing here is worth a 500, and a
+        # captured day is immutable, so an escape would be permanent. The
+        # WARNING below (with exc_info) keeps the real cause visible.
+        logger.warning(
+            "Unreadable chronicle file '%s' for map '%s' day '%s'",
+            name,
+            map_id,
+            day,
+            exc_info=True,
+        )
+        return None
+
+
+def _json_safe(value):
+    """Replace non-finite floats with null, recursively.
+
+    json.dumps defaults to allow_nan=True and emits bare NaN/Infinity, which is
+    not JSON - the viewer's JSON.parse rejects the whole body, so one poisoned
+    number loses the entire day. Sanitising rather than passing allow_nan=False
+    is on purpose: raising would only trade an unreadable response for a 500 on
+    a day that can never be recaptured. Coordinates are already dropped by
+    _finite_int; this covers every other numeric field (population, thresholds)
+    that flows through the enrichment untouched.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+@chronicle_router.get("/{map_name}/chronicle/{day}/markers")
+def get_chronicle_markers(
+    map_name: str,
+    day: str,
+    authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+):
+    """One stored day's markers, enriched exactly like /{map}/data/markers.
+
+    The viewer never consumes raw map_markers.json; it consumes the built
+    payload from build_markers_response, which joins settlements, installations,
+    forts and wars against province centroids and ZoC overlays. Rather than
+    reimplement that join client-side for history, the same enrichment runs
+    against the day's stored files.
+
+    Province centroids come from the *live* defines: geometry is static and
+    shared across days, and no per-day centroid snapshot exists.
+
+    Known limitation: the fort ZoC overlay PNGs the enriched forts point at
+    (`zoc_url`) are live artifacts, not per-day snapshots. An old day's fort may
+    therefore reference an overlay image that has since changed or been deleted.
+    That is accepted — snapshotting images is out of scope.
+
+    Sync body, so `def` rather than `async def` - see get_chronicle_index. This
+    is the heaviest of the three: three SQLite connects, two gunzip+parse passes
+    and the centroid load, which a timelapse build issues once per day.
+    """
+    entry = ensure_map_access(map_name, authorization)
+    map_id = entry.id  # see get_chronicle_index: never trust the raw segment
+
+    if not is_valid_day(day):
+        raise HTTPException(status_code=400, detail="Invalid chronicle day")
+
+    # get_snapshot, not resolve_stored_file: resolve returns None both for "no
+    # snapshot for this day" and for "this day has no map_markers", and only the
+    # first is a 404 — a captured day with a missing source is a real, empty day.
+    if get_snapshot(map_id, day) is None:
+        return add_no_cache(JSONResponse({"error": "Snapshot not found"}, 404))
+
+    raw = normalize_raw_markers(_load_stored_json(map_id, day, "map_markers"), map_id)
+    stored_overlays = _load_stored_json(map_id, day, "zoc_overlays")
+    overlays = stored_overlays if isinstance(stored_overlays, dict) else {}
+
+    payload = build_markers_response_from(
+        raw,
+        load_province_centroids(map_id),
+        overlays,
+        map_id,
+    )
+    # The stored file is the authority for this route's data, but map_id is an
+    # identifier the response hands back: a day captured with "map_id": "dev"
+    # would otherwise have /main/chronicle/... report itself as dev. The
+    # registry id the gate resolved is the only trustworthy source. Left alone
+    # in load_raw_markers so the live /{map}/data/markers route is unchanged.
+    payload["map_id"] = map_id
+    return conditional_json_response(
+        body=json.dumps(_json_safe(payload), sort_keys=True, ensure_ascii=False),
+        if_none_match=if_none_match,
+    )
 
 
 @chronicle_router.post("/{map_name}/chronicle/snapshot")
