@@ -70,7 +70,7 @@ Desktop pan/zoom on `/map/{id}`:
 
 Keep **one** full-resolution lookup surface (the existing mapdata canvas).
 
-Live map assets (pick PNGs, region overlays, banners, ZOC, and defines JSON such as `nation.json`) revalidate with ETag (`private, no-cache`). The viewer loads pick maps through a same-origin blob so `getImageData` is not CORS-tainted, and maps pick-canvas pixels from display map size when the bitmap differs (e.g. 4096 vs 6400). If a reverse proxy uses `proxy_cache`, it must honour origin `Cache-Control`. After deploy, users who already cached an old PNG may need one hard reload.
+Live map assets (pick PNGs, region overlays, banners, ZOC, and defines JSON such as `nation.json`) revalidate with ETag (`private, no-cache`) and CORS on the file response so a 304 can still be drawn onto the pick canvas. If a reverse proxy uses `proxy_cache`, it must honour origin `Cache-Control`. After deploy, users who already cached an old PNG may need one hard reload.
 
 Improvements:
 

@@ -146,17 +146,15 @@ export async function fetchMapJson<T>(
 
 export async function fetchMapBlobUrl(
   path: string,
-  sessionToken?: string | null,
-  options?: Pick<FetchMapApiOptions, "headers" | "cache">
+  sessionToken: string
 ): Promise<string> {
   const res = await fetchMapApi(path, {
     sessionToken,
-    cache: options?.cache,
     // `fetch` defaults to `Accept: */*`, which the API reads as "cannot display
     // WebP" and answers with the full-size PNG. Public maps render through a
     // plain <img> and get this from the browser; authenticated maps come through
     // here, so they have to ask for it explicitly.
-    headers: options?.headers ?? { Accept: "image/webp,image/png,*/*" },
+    headers: { Accept: "image/webp,image/png,*/*" },
   });
   if (!res.ok) {
     let data: unknown = null;

@@ -60,6 +60,7 @@ import {
   MapAccessError,
   fetchMapBlobUrl,
   fetchMapJson,
+  mapApiUrl,
   mapRequiresAuth,
   revokeMapBlobUrl,
   staffMapAccessReason,
@@ -250,38 +251,45 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
     setPendingDrillId(null);
   }, [pendingDrillId, regionData, drillDownRegion]);
 
-  // The pick canvas only needs its own image, so it is deliberately not gated
-  // on `loading`/`geometryReady` — hover goes live as soon as the pick image
-  // decodes instead of waiting for every region/geometry JSON.
+  const mapCanvasMounted =
+    !loading && !(mapId === "main" && !geometryReady);
+
+  // Pick pixels are read from the hidden canvas inside MapCanvas. That node
+  // does not exist until loading/geometry finish, so this effect must wait
+  // for mapCanvasMounted or it draws once into a null ref and never retries.
   useEffect(() => {
-    if (!accessChecked || gateReason) {
+    if (!accessChecked || gateReason || !mapCanvasMounted) {
       return;
     }
 
     let blobUrl: string | null = null;
     let cancelled = false;
+    let retryId = 0;
+    let retries = 0;
 
     const drawImage = async () => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {
+        if (retries++ > 60) return;
+        retryId = requestAnimationFrame(() => {
+          if (!cancelled) void drawImage();
+        });
+        return;
+      }
       // getImageData runs per hover frame; keep the backing store CPU-side.
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
       const path = `/${mapId}/mapdata/${mapType}`;
-      // Blob URLs are same-origin, so getImageData is never CORS-tainted.
-      // Cross-origin <img crossOrigin> plus a cached 304 is what killed hover
-      // on prod while /mapdata/nation still opened fine in a tab.
-      let src: string;
-      try {
-        src = await fetchMapBlobUrl(path, authToken, {
-          cache: "no-store",
-          headers: { Accept: "image/png" },
-        });
-        blobUrl = src;
-      } catch (err) {
-        console.error("Failed to load pick map image:", err);
-        return;
+      let src = mapApiUrl(path);
+      if (mapRequiresAuth(mapId) && authToken) {
+        try {
+          src = await fetchMapBlobUrl(path, authToken);
+          blobUrl = src;
+        } catch (err) {
+          console.error("Failed to load pick map image:", err);
+          return;
+        }
       }
 
       if (cancelled) {
@@ -290,6 +298,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
       }
 
       const img = new Image();
+      img.crossOrigin = "anonymous";
       img.src = src;
       img.onload = () => {
         if (cancelled) return;
@@ -318,9 +327,10 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
 
     return () => {
       cancelled = true;
+      cancelAnimationFrame(retryId);
       revokeMapBlobUrl(blobUrl);
     };
-  }, [mapId, mapType, accessChecked, gateReason, authToken]);
+  }, [mapId, mapType, accessChecked, gateReason, authToken, mapCanvasMounted]);
 
   const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable } = useMapHover({
     mapId,
@@ -487,7 +497,7 @@ const MapViewer = ({ mapId }: MapViewerProps) => {
   // rendered before regionData settled, and a failed overlay request is made
   // permanent by MapCanvas's onError handler setting display:none — borders
   // then stay invisible until something forces a remount.
-  if (loading || (mapId === "main" && !geometryReady)) {
+  if (!mapCanvasMounted) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] items-center justify-center bg-[var(--tfmc-forest-deep)]">
         <p className="text-lg font-medium text-[var(--tfmc-cream)]">

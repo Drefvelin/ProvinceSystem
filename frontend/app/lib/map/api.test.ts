@@ -7,7 +7,6 @@ import {
   fetchAccessibleMaps,
   fetchMapApi,
   fetchMapJson,
-  fetchMapBlobUrl,
   fetchMapMarkers,
   postEditorTitles,
   staffMapAccessReason,
@@ -139,30 +138,5 @@ describe("map api", () => {
         },
       })
     );
-  });
-
-  it("fetchMapBlobUrl loads public pick maps without a session token", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("URL", {
-      ...URL,
-      createObjectURL: () => "blob:pick",
-    });
-
-    await fetchMapBlobUrl("/main/mapdata/nation", null, {
-      cache: "no-store",
-      headers: { Accept: "image/png" },
-    });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://api.test/main/mapdata/nation",
-      expect.objectContaining({
-        cache: "no-store",
-        headers: { Accept: "image/png" },
-      })
-    );
-    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 });

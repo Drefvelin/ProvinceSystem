@@ -127,7 +127,8 @@
         ],
         "subjects": [],
         "size": 0,
-        "subject_size": 0
+        "subject_size": 0,
+        "occupied_held": []
     },
     "Brume": {
         "id": "Brume",
@@ -274,6 +275,7 @@
         "subjects": [],
         "size": 1,
         "subject_size": 0,
+        "occupied_held": [],
         "overlay": {
             "x": 2903,
             "y": 2314,
@@ -509,6 +511,7 @@
         "subjects": [],
         "size": 4,
         "subject_size": 0,
+        "occupied_held": [],
         "overlay": {
             "x": 1249,
             "y": 2286,
