@@ -49,8 +49,8 @@ export default function MapPageLayout({
     <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col bg-[var(--tfmc-forest-deep)] text-[var(--tfmc-cream)] md:h-[calc(100dvh-var(--tfmc-header-h))] md:overflow-hidden">
       {/* Mobile-only header + mode bar, normal document flow above the map. */}
       <div className="md:hidden">
-        <header className="flex flex-col gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-          <div>
+        <header className="flex flex-row items-center justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 py-4 sm:px-6">
+          <div className="min-w-0">
             <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
               World map
             </p>
@@ -69,24 +69,38 @@ export default function MapPageLayout({
         {/* Floating controls: desktop only. On mobile the map's own square
             box has no room to spare for overlays. */}
         <div className="pointer-events-none absolute inset-0 z-10 hidden p-4 md:block">
+          {/* One flow column rather than three hand-tuned `top-[Nrem]` offsets.
+              Those were tuned against a title panel holding at most a single
+              link, so anything taller — the staff "Edit titles" button, now the
+              timelapse card — slid under the mode selector. A dragged panel
+              switches to `position: fixed` and leaves the flow, so the ones
+              below simply close up, which is what you would expect. */}
+          <div className="absolute left-4 top-4 flex w-72 flex-col gap-3">
           <DraggablePanel
             storageKey="tfmc-map-panel-worldmap"
-            className="pointer-events-auto absolute left-4 top-4 w-64"
+            className="pointer-events-auto w-72"
           >
             <div className={`${overlayPanelClass} p-3`}>
-              <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-                World map
-              </p>
-              <h1 className="font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
-                {mapDisplayName}
-              </h1>
-              {headerAction ? <div className="mt-2">{headerAction}</div> : null}
+              {/* Title and action side by side: the action is the only pointer
+                  to the chronicle, so it reads as part of the map's identity
+                  rather than as something appended underneath it. */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
+                    World map
+                  </p>
+                  <h1 className="truncate font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
+                    {mapDisplayName}
+                  </h1>
+                </div>
+                {headerAction}
+              </div>
             </div>
           </DraggablePanel>
 
           <DraggablePanel
             storageKey="tfmc-map-panel-mapmode"
-            className="pointer-events-auto absolute left-4 top-[9.5rem] w-64"
+            className="pointer-events-auto w-72"
           >
             {mapModeSelectorDesktop}
           </DraggablePanel>
@@ -94,11 +108,12 @@ export default function MapPageLayout({
           {paintPanel ? (
             <DraggablePanel
               storageKey="tfmc-map-panel-paint"
-              className="pointer-events-auto absolute left-4 top-[13rem] w-64"
+              className="pointer-events-auto w-72"
             >
               {paintPanel}
             </DraggablePanel>
           ) : null}
+          </div>
 
           <div className="pointer-events-auto absolute right-4 top-4 w-72 xl:w-80">
             {desktopSidePanel}

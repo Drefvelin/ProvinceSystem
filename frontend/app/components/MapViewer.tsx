@@ -66,6 +66,7 @@ import {
   staffMapAccessReason,
 } from "@/lib/map/api";
 import { editorUrl } from "@/lib/map/editorAccess";
+import { chronicleStudioHref } from "@/app/lib/map/chronicleDayRoute";
 import ChronicleOwnershipLayer from "./chronicle/ChronicleOwnershipLayer";
 import { fetchProvinceIdGridQ4 } from "@/app/lib/map/chronicleData";
 import { directOwnership } from "@/app/lib/map/chronicleOwnership";
@@ -78,6 +79,15 @@ import {
 
 const editTitlesLinkClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] no-underline transition hover:brightness-110 hover:border-[var(--tfmc-accent)]";
+
+/**
+ * The chronicle is the one feature nothing else on the map hints at, so this
+ * sits beside the map's title in accent colours rather than reading as a peer
+ * of "Edit titles". Without it a viewer has no way to discover the map has any
+ * history at all.
+ */
+const reviewHistoryLinkClass =
+  "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_60%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_16%,transparent)] px-2.5 py-1.5 text-xs font-medium text-[var(--tfmc-cream)] no-underline transition hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_28%,transparent)]";
 
 const fitModeLabelClass = (active: boolean) =>
   `text-xs transition ${active ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`;
@@ -739,13 +749,42 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       <MapPageLayout
         mapDisplayName={mapDisplayName}
         headerAction={
-          // The editor writes to the *live* map. Reaching it from a stored day
-          // would invite editing today's titles while looking at last year's.
-          !chronicle && canEdit && !canEditLoading ? (
-            <Link href={editorUrl(mapId)} className={editTitlesLinkClass}>
-              Edit titles
-            </Link>
-          ) : null
+          chronicle ? null : (
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {/* Shown to everyone, and shown even when this map has captured
+                  no days yet — the studio says so itself, which is a better
+                  answer than an entry point that silently is not there. Costs
+                  no request: the live map must not pay for the chronicle. */}
+              <Link
+                href={chronicleStudioHref(mapId)}
+                className={reviewHistoryLinkClass}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  aria-hidden
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--tfmc-accent)]"
+                >
+                  <path
+                    d="M10 5.5V10l2.75 1.75M3 10a7 7 0 1 0 2.2-5.1M3 3.5V7h3.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Review History
+              </Link>
+              {/* The editor writes to the *live* map. Reaching it from a stored
+                  day would invite editing today's titles while looking at last
+                  year's — hence the whole block being hidden in chronicle mode. */}
+              {canEdit && !canEditLoading ? (
+                <Link href={editorUrl(mapId)} className={editTitlesLinkClass}>
+                  Edit titles
+                </Link>
+              ) : null}
+            </div>
+          )
         }
         mapModeSelectorMobile={
           <MapToolbar
