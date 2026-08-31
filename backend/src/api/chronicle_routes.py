@@ -21,7 +21,7 @@ from ..scripts.chronicle.store import (
     geometry_version,
     get_snapshot,
     is_valid_day,
-    list_day_manifests,
+    list_day_rows,
     resolve_stored_file,
 )
 from ..scripts.loader.markers import (
@@ -123,6 +123,38 @@ def _incomplete_days(day_manifests: list[tuple[str, dict]]) -> list[dict]:
     return out
 
 
+def _stale_geometry_days(
+    day_rows: list[tuple[str, dict, object]], live_version: str | None
+) -> list[str]:
+    """Days whose stored geometry sha differs from the live geometry sha.
+
+    "Explore a day" repaints a stored day's province-id lists onto the *live*
+    province geometry. If the province map has been redrawn since a day was
+    captured, those ids land on today's shapes and the viewer quietly lies about
+    the past, so the client needs to be able to say so.
+
+    A stored version of None means "unknown", not "stale": rows captured before
+    the column was populated would otherwise all light up, and a warning that
+    fires on everything is a warning nobody reads. Same for a non-string value
+    from a damaged row — it cannot be compared, so it is not reported.
+
+    If the live version is None (the geometry artifact is missing entirely,
+    store.geometry_version returns None) there is nothing to compare against, so
+    nothing is flagged rather than every day being flagged.
+
+    Reads the rows the caller already fetched — no extra query, no extra stat.
+    Ordering follows `day_rows`, which is the same ascending order as `days`
+    and `incomplete_days`.
+    """
+    if not isinstance(live_version, str):
+        return []
+    return [
+        day
+        for day, _manifest, stored in day_rows
+        if isinstance(stored, str) and stored != live_version
+    ]
+
+
 @chronicle_router.get("/{map_name}/chronicle/index")
 def get_chronicle_index(
     map_name: str,
@@ -155,21 +187,28 @@ def get_chronicle_index(
 
     # One query for both fields: `days` is the row order this returns, so the
     # response ordering is unchanged from the old list_days + per-day lookup.
-    day_manifests = list_day_manifests(map_id)
-    days = [day for day, _ in day_manifests]
-    incomplete = _incomplete_days(day_manifests)
+    day_rows = list_day_rows(map_id)
+    days = [day for day, _manifest, _geometry in day_rows]
+    incomplete = _incomplete_days([(day, manifest) for day, manifest, _ in day_rows])
+    live_geometry_version = _cached_geometry_version(map_id)
+    stale_geometry = _stale_geometry_days(day_rows, live_geometry_version)
     return conditional_json_response(
         {
             "days": days,
             "first": days[0] if days else None,
             "last": days[-1] if days else None,
-            "geometry_version": _cached_geometry_version(map_id),
+            "geometry_version": live_geometry_version,
             # Additive only. A capture runs as a BackgroundTask after the 200
             # has gone out, so a source that was absent or torn is otherwise
             # visible only in the server log; surfacing it here lets a monitor
             # notice a permanently partial day without shelling into the box.
             "incomplete_days": incomplete,
             "incomplete_day_count": len(incomplete),
+            # Additive only: `days` stays a plain string[] because the timelapse
+            # consumes it as one. A day listed here was captured against a
+            # different province geometry than the one the client will paint it
+            # onto, so its borders/labels cannot be trusted for that date.
+            "stale_geometry_days": stale_geometry,
         },
         if_none_match=if_none_match,
     )

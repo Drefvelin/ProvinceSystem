@@ -104,6 +104,11 @@ def _snapshot_row(conn, map_id: str, day: str) -> dict | None:
         manifest = json.loads(row["manifest"])
     except (TypeError, ValueError):
         manifest = {}
+    if not isinstance(manifest, dict):
+        # A row whose manifest parses to a list (or a bare string/number) would
+        # otherwise reach callers as `manifest["files"]` -> AttributeError, i.e.
+        # a 500 on a read route. Same degrade-to-empty rule as list_day_rows.
+        manifest = {}
     return {
         "map_id": row["map_id"],
         "day": row["day"],
@@ -185,6 +190,47 @@ def list_days(map_id: str) -> list[str]:
         conn.close()
 
 
+def list_day_rows(map_id: str) -> list[tuple[str, dict, str | None]]:
+    """Every indexed day with its manifest and stored geometry version.
+
+    Oldest first — one connect, one ordered SELECT. See list_day_manifests for
+    why the index route must not go back to the database per day; the stored
+    `geometry_version` rides along in the same row so the index can compare it
+    against the live geometry without a second pass.
+
+    A manifest that will not parse (or parses to something that is not an
+    object, e.g. a list) degrades to {} rather than raising: an unreadable row
+    must not take down the index for every other day. The geometry version is
+    handed back exactly as stored — including None and including a non-string
+    from a bad row — so callers can decide what "unknown" means.
+    """
+    validate_map(map_id)
+    conn = connect()
+    try:
+        rows = conn.execute(
+            "SELECT day, manifest, geometry_version FROM map_chronicle_snapshots "
+            "WHERE map_id = ? ORDER BY day ASC",
+            (map_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    out: list[tuple[str, dict, str | None]] = []
+    for row in rows:
+        try:
+            manifest = json.loads(row["manifest"])
+        except (TypeError, ValueError):
+            manifest = {}
+        out.append(
+            (
+                row["day"],
+                manifest if isinstance(manifest, dict) else {},
+                row["geometry_version"],
+            )
+        )
+    return out
+
+
 def list_day_manifests(map_id: str) -> list[tuple[str, dict]]:
     """Every indexed day with its manifest, oldest first — one query, one connect.
 
@@ -199,25 +245,7 @@ def list_day_manifests(map_id: str) -> list[tuple[str, dict]]:
     object) degrades to {} rather than raising: an unreadable row must not take
     down the index for every other day.
     """
-    validate_map(map_id)
-    conn = connect()
-    try:
-        rows = conn.execute(
-            "SELECT day, manifest FROM map_chronicle_snapshots WHERE map_id = ? "
-            "ORDER BY day ASC",
-            (map_id,),
-        ).fetchall()
-    finally:
-        conn.close()
-
-    out: list[tuple[str, dict]] = []
-    for row in rows:
-        try:
-            manifest = json.loads(row["manifest"])
-        except (TypeError, ValueError):
-            manifest = {}
-        out.append((row["day"], manifest if isinstance(manifest, dict) else {}))
-    return out
+    return [(day, manifest) for day, manifest, _ in list_day_rows(map_id)]
 
 
 def get_snapshot(map_id: str, day: str) -> dict | None:

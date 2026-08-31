@@ -79,7 +79,13 @@ def client(chronicle_env):
         yield test_client
 
 
-def _write_day(map_name: str, day: str, name: str, payload: object) -> None:
+def _write_day(
+    map_name: str,
+    day: str,
+    name: str,
+    payload: object,
+    geometry_version: str | None = None,
+) -> None:
     path = store.stored_file_path(map_name, day, name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with gzip.open(path, "wt", encoding="utf-8") as handle:
@@ -90,7 +96,7 @@ def _write_day(map_name: str, day: str, name: str, payload: object) -> None:
         "main",
         int(time.time()),
         os.path.getsize(path),
-        None,
+        geometry_version,
         {"files": {name: {"sha256": "x", "bytes": os.path.getsize(path)}}},
     )
 
@@ -823,3 +829,201 @@ def test_index_survives_an_unparsable_manifest(client):
     assert res.status_code == 200
     assert res.json()["days"] == ["2026-04-01"]
     assert res.json()["incomplete_days"] == []
+
+
+# ---------------------------------------------------------------------------
+# Regression: a day captured against older province geometry must be flagged
+# ---------------------------------------------------------------------------
+
+
+def _pin_live_geometry(monkeypatch, version):
+    """Force the live geometry sha the index compares stored versions against."""
+    from src.api import chronicle_routes
+
+    monkeypatch.setattr(
+        chronicle_routes, "_cached_geometry_version", lambda map_name: version
+    )
+
+
+def test_index_flags_days_whose_stored_geometry_differs_from_live(client, monkeypatch):
+    """The whole point: stored ids painted on redrawn shapes lie about the past."""
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-05-01", "nation", {"a": 1}, geometry_version="old-sha")
+    _write_day("main", "2026-05-02", "nation", {"a": 2}, geometry_version="live-sha")
+
+    body = client.get("/main/chronicle/index").json()
+
+    assert body["stale_geometry_days"] == ["2026-05-01"]
+    assert body["geometry_version"] == "live-sha"
+
+
+def test_index_does_not_flag_a_day_matching_live_geometry(client, monkeypatch):
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-05-01", "nation", {"a": 1}, geometry_version="live-sha")
+
+    assert client.get("/main/chronicle/index").json()["stale_geometry_days"] == []
+
+
+def test_index_treats_a_null_stored_geometry_as_unknown_not_stale(client, monkeypatch):
+    """Rows captured before the column was populated must not all light up.
+
+    A warning that fires on every historical day is a warning nobody reads, so
+    "unknown" is deliberately not "stale".
+    """
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-05-01", "nation", {"a": 1}, geometry_version=None)
+
+    body = client.get("/main/chronicle/index").json()
+    assert body["days"] == ["2026-05-01"]
+    assert body["stale_geometry_days"] == []
+
+
+def test_index_flags_nothing_when_the_live_geometry_is_missing(client, monkeypatch):
+    """store.geometry_version returns None with no artifact - nothing to compare."""
+    _pin_live_geometry(monkeypatch, None)
+    _write_day("main", "2026-05-01", "nation", {"a": 1}, geometry_version="old-sha")
+    _write_day("main", "2026-05-02", "nation", {"a": 2}, geometry_version="older-sha")
+
+    body = client.get("/main/chronicle/index").json()
+    assert body["geometry_version"] is None
+    assert body["stale_geometry_days"] == []
+
+
+def test_stale_geometry_days_ignores_a_non_string_stored_version():
+    """A damaged row cannot be compared, so it is unknown rather than stale.
+
+    Driven at the helper because the column has TEXT affinity: SQLite coerces an
+    int on the way in, so only in-process corruption can produce this.
+    """
+    from src.api.chronicle_routes import _stale_geometry_days
+
+    rows = [
+        ("2026-05-01", {}, "old-sha"),
+        ("2026-05-02", {}, b"binary"),
+        ("2026-05-03", {}, 17),
+        ("2026-05-04", {}, None),
+        ("2026-05-05", {}, "live-sha"),
+    ]
+
+    assert _stale_geometry_days(rows, "live-sha") == ["2026-05-01"]
+    assert _stale_geometry_days(rows, None) == []
+
+
+def test_stale_geometry_days_are_ordered_and_shaped_like_days(client, monkeypatch):
+    """Ascending like `days`/`incomplete_days`, and `days` stays a flat string[].
+
+    ChronicleStudio and ChronicleDayViewer both consume `days` as string[], so
+    the new field must be strictly additive.
+    """
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-06-03", "nation", {"a": 3}, geometry_version="old-sha")
+    _write_day("main", "2026-06-01", "nation", {"a": 1}, geometry_version="old-sha")
+    _write_day("main", "2026-06-02", "nation", {"a": 2}, geometry_version="live-sha")
+
+    body = client.get("/main/chronicle/index").json()
+
+    assert body["days"] == ["2026-06-01", "2026-06-02", "2026-06-03"]
+    assert all(isinstance(day, str) for day in body["days"])
+    assert body["stale_geometry_days"] == ["2026-06-01", "2026-06-03"]
+    # Nothing else about the response moved.
+    assert set(body) == {
+        "days",
+        "first",
+        "last",
+        "geometry_version",
+        "incomplete_days",
+        "incomplete_day_count",
+        "stale_geometry_days",
+    }
+    assert body["first"] == "2026-06-01"
+    assert body["last"] == "2026-06-03"
+    assert body["incomplete_days"] == []
+    assert body["incomplete_day_count"] == 0
+
+
+def test_index_without_snapshots_has_no_stale_geometry_days(client, monkeypatch):
+    _pin_live_geometry(monkeypatch, "live-sha")
+    body = client.get("/main/chronicle/index").json()
+    assert body["days"] == []
+    assert body["stale_geometry_days"] == []
+
+
+@pytest.mark.parametrize("segment", ["%20main", "MaIn", "MAIN%20"])
+def test_stale_geometry_days_use_the_normalised_map_id(client, monkeypatch, segment):
+    """Same trap as everywhere else here: entry.id, never the raw path segment."""
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-07-01", "nation", {"a": 1}, geometry_version="old-sha")
+
+    res = client.get(f"/{segment}/chronicle/index")
+    assert res.status_code == 200
+    assert res.json()["days"] == ["2026-07-01"]
+    assert res.json()["stale_geometry_days"] == ["2026-07-01"]
+
+
+def test_stale_geometry_costs_no_extra_database_connections(client, monkeypatch):
+    """One connect for the whole index, geometry comparison included."""
+    _pin_live_geometry(monkeypatch, "live-sha")
+    for index in range(10):
+        _write_day(
+            "main",
+            (date(2026, 8, 1) + timedelta(days=index)).isoformat(),
+            "nation",
+            {"a": index},
+            geometry_version="old-sha" if index % 2 else "live-sha",
+        )
+
+    real_connect = store.connect
+    calls = []
+
+    def counting_connect(*args, **kwargs):
+        calls.append(1)
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr(store, "connect", counting_connect)
+
+    body = client.get("/main/chronicle/index").json()
+
+    assert len(calls) == 1
+    assert len(body["stale_geometry_days"]) == 5
+
+
+def test_index_with_an_unparsable_manifest_still_reports_stale_geometry(
+    client, monkeypatch
+):
+    """A torn manifest must not cost the day its geometry warning, or 500."""
+    _pin_live_geometry(monkeypatch, "live-sha")
+    _write_day("main", "2026-09-01", "nation", {"a": 1}, geometry_version="old-sha")
+    conn = store.connect()
+    try:
+        with conn:
+            conn.execute(
+                "UPDATE map_chronicle_snapshots SET manifest = ? "
+                "WHERE map_id = ? AND day = ?",
+                ("[1, 2, 3]", "main", "2026-09-01"),
+            )
+    finally:
+        conn.close()
+
+    res = client.get("/main/chronicle/index")
+    assert res.status_code == 200
+    assert res.json()["stale_geometry_days"] == ["2026-09-01"]
+    assert res.json()["incomplete_days"] == []
+
+
+def test_snapshot_row_degrades_a_list_manifest_instead_of_raising(client):
+    """_snapshot_row used to hand a list straight through to `.get` -> 500."""
+    _write_day("main", "2026-10-01", "nation", {"a": 1})
+    conn = store.connect()
+    try:
+        with conn:
+            conn.execute(
+                "UPDATE map_chronicle_snapshots SET manifest = ? "
+                "WHERE map_id = ? AND day = ?",
+                ("[1, 2, 3]", "main", "2026-10-01"),
+            )
+    finally:
+        conn.close()
+
+    assert store.get_snapshot("main", "2026-10-01")["manifest"] == {}
+    # The read route resolves through the manifest, so it must 404, not 500.
+    assert client.get("/main/chronicle/2026-10-01/data/nation").status_code == 404
