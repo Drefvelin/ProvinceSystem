@@ -281,11 +281,19 @@ async def list_chronicle_backups(
         body["backup_exists"] = _backup_exists(map_id, record.backup_path)
         return body
 
+    def _describe_all() -> list[dict]:
+        return [_describe(record) for record in records]
+
+    # Up to BACKUP_LIST_LIMIT records, each costing a realpath + isdir stat
+    # (_backup_exists) — real blocking syscalls that must not run on the event
+    # loop, same as audit.list_wipes above.
+    backups = await run_in_threadpool(_describe_all)
+
     return add_no_cache(
         JSONResponse(
             {
                 "map": map_id,
-                "backups": [_describe(record) for record in records],
+                "backups": backups,
                 "count": len(records),
             }
         )

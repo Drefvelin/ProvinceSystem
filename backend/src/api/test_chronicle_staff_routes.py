@@ -324,6 +324,37 @@ def test_backups_never_lists_another_maps_wipes(client):
     assert body["backups"] == []
 
 
+def test_describe_runs_via_run_in_threadpool(client, monkeypatch):
+    """Finding 5: `_describe`'s realpath+isdir stats must not run inline.
+
+    They used to run synchronously inside the `async def` route handler, once
+    per listed backup, blocking the event loop for up to BACKUP_LIST_LIMIT
+    stats. `list_chronicle_backups` must hand that work to
+    `run_in_threadpool`, same as `audit.list_wipes` already does for the row
+    fetch just above it.
+    """
+    from starlette.concurrency import run_in_threadpool as real_run_in_threadpool
+
+    from src.api import chronicle_staff_routes as routes_mod
+
+    _capture_day("main", "2026-01-01")
+    _wipe(client, reason="because")
+
+    calls = []
+
+    async def spy_run_in_threadpool(func, *args, **kwargs):
+        calls.append(func)
+        return await real_run_in_threadpool(func, *args, **kwargs)
+
+    monkeypatch.setattr(routes_mod, "run_in_threadpool", spy_run_in_threadpool)
+
+    body = client.get("/main/chronicle/backups", headers=STAFF_AUTH).json()
+
+    assert body["count"] == 1
+    # One call for audit.list_wipes, one for the _describe pass over the rows.
+    assert len(calls) == 2
+
+
 # --- restore -----------------------------------------------------------------
 
 
