@@ -320,6 +320,15 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     if (!previewAbortRef.current) previewAbortRef.current = new AbortController();
     return previewAbortRef.current.signal;
   }, []);
+  /**
+   * One controller per GIF export, so `exportChronicleGif`'s render loop and
+   * its worker session both actually see an abort instead of running to
+   * completion (or leaking a worker) after the studio no longer wants the
+   * result. `exportingRef` already keeps two exports from overlapping, so
+   * there is only ever one of these live at a time; it is cleared here too
+   * on unmount, the one place this component has no button to cancel from.
+   */
+  const gifAbortRef = useRef<AbortController | null>(null);
   // Bumped whenever `framesRef` is replaced, so the render reads the new array.
   const [framesVersion, setFramesVersion] = useState(0);
 
@@ -1240,6 +1249,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     return () => {
       abortRef.current?.abort();
       previewAbortRef.current?.abort();
+      gifAbortRef.current?.abort();
       disposeChronicleFrames(framesRef.current, (bitmap) => bitmap.close());
       framesRef.current = [];
     };
@@ -1572,6 +1582,15 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     setGifNotice(null);
     setGifStatus("Preparing…");
 
+    // One controller per export — `exportChronicleGif` cannot terminate its
+    // worker or stop its render loop from an abort that never reaches it.
+    // `exportingRef` guarantees only one of these is ever live, but a stale
+    // one from a run that already finished is aborted first regardless, the
+    // same defensive pattern `previewAbortSignal` uses.
+    gifAbortRef.current?.abort();
+    const controller = new AbortController();
+    gifAbortRef.current = controller;
+
     try {
       const { bytes, baseMapOmitted } = await exportChronicleGif({
         frames: built.map((frame) => ({
@@ -1588,6 +1607,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         loop,
         centroids: geometry.centroids,
         stampDay: gifStampDay,
+        signal: controller.signal,
         onProgress: (progress) => {
           setGifStatus(
             progress.phase === "render"
@@ -1616,6 +1636,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
         );
       }
     } finally {
+      if (gifAbortRef.current === controller) gifAbortRef.current = null;
       exportingRef.current = false;
       setGifStatus(null);
     }
