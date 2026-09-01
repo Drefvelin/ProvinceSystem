@@ -62,11 +62,12 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
+from ...api.map_registry import get_map_entry
 from ..chronicle.store import list_days as chronicle_list_days
 from ..chronicle.store import resolve_stored_file as chronicle_resolve_stored_file
 from ..ledger import ingest as ledger_ingest
 from ..ledger.schema import LedgerPayloadError, normalize_snapshot
-from ..ledger.store import is_valid_day, today_utc
+from ..ledger.store import is_valid_day, list_days as ledger_list_days, today_utc
 from ..util.dirs import validate_map
 
 DEFAULT_MAP = "dev"
@@ -696,8 +697,80 @@ def ingest_direct(map_id: str, payloads: list[dict]) -> None:
           f"({len(days_touched)} distinct day(s)).")
 
 
-def post_http(map_id: str, payloads: list[dict], *, base_url: str) -> None:
-    url = UPLOAD_URL_FMT.format(map=map_id) if base_url is None else base_url
+def existing_ledger_days(map_id: str) -> list[str] | None:
+    """Days this map already holds in `map_ledger_days`, or None if unknowable.
+
+    None is "the index could not be read" (no database file yet, no schema, a
+    different box for `--post`) — deliberately distinct from `[]`, which is a
+    readable index that is genuinely empty. Only a non-empty list forces
+    `--force`; an unreadable index must not turn seeding a fresh map into a
+    flag hunt.
+    """
+    try:
+        from src.skins.db import migrate
+
+        migrate()
+        return [row["day"] for row in ledger_list_days(map_id)]
+    except Exception as exc:  # pragma: no cover - depends on local DB state
+        print(f"Could not read existing ledger days for {map_id!r}: {exc}", file=sys.stderr)
+        return None
+
+
+def guard_target_map(parser: argparse.ArgumentParser, map_id: str, force: bool) -> None:
+    """Refuse to spray synthetic economy history over a map that matters.
+
+    Two separate refusals, because they protect against different mistakes:
+
+    * A **public** map (`public: true` in `config/maps.yml`) is a live map real
+      players read. There is no undo for `store_raw` + `promote_day`, so no flag
+      unlocks this — seed `dev`, or make the map non-public first. The old guard
+      hardcoded `main`, which left every *other* real map (`r3b1rth`, ...) wide
+      open the moment it was registered.
+    * A map that **already has ledger rows** may be a staff-only map that is
+      nonetheless holding history someone cares about. That is recoverable-ish
+      and only needs an explicit `--force`.
+    """
+    entry = get_map_entry(map_id)
+    if entry is not None and entry.public:
+        parser.error(
+            f"Refusing to write spoof ledger data onto public map {map_id!r} "
+            f"({entry.display_name}): it is served to real users and this "
+            "script has no undo. Use --map dev, or a map registered with "
+            "public: false."
+        )
+
+    days = existing_ledger_days(map_id)
+    if days:
+        print(
+            f"Map {map_id!r} already holds {len(days)} ledger day(s) "
+            f"({days[0]} .. {days[-1]}) in map_ledger_days.",
+            file=sys.stderr,
+        )
+        if not force:
+            parser.error(
+                f"Refusing to write spoof ledger data onto map {map_id!r}, which "
+                f"already has {len(days)} indexed ledger day(s). Wipe it first "
+                "(python -m src.scripts.ledger.wipe) or pass --force."
+            )
+
+
+def describe_target(map_id: str, payloads: list[dict], *, post: bool) -> None:
+    """Print what is about to be written, before anything is written."""
+    entry = get_map_entry(map_id)
+    registered = "unregistered" if entry is None else (
+        "public" if entry.public else "staff-only"
+    )
+    days = sorted({p["day"] for p in payloads})
+    destination = UPLOAD_URL_FMT.format(map=map_id) if post else "the local ledger store + SQLite index"
+    print(
+        f"About to write {len(payloads)} spoof snapshot(s) covering "
+        f"{len(days)} day(s) ({days[0]} .. {days[-1]}) for map {map_id!r} "
+        f"({registered}) into {destination}."
+    )
+
+
+def post_http(map_id: str, payloads: list[dict]) -> None:
+    url = UPLOAD_URL_FMT.format(map=map_id)
     ok = 0
     for payload in payloads:
         body = json.dumps(payload).encode("utf-8")
@@ -763,7 +836,8 @@ def main() -> None:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Required to target the 'main' map, which holds real history",
+        help="Required to target a map that already has rows in map_ledger_days. "
+        "Never unlocks a public map -- those are refused outright.",
     )
     id_group = parser.add_mutually_exclusive_group()
     id_group.add_argument(
@@ -782,11 +856,8 @@ def main() -> None:
 
     map_id = args.map.strip().lower()
     validate_map(map_id)
-    if map_id == "main" and not args.force:
-        parser.error(
-            "Refusing to write spoof ledger data onto map 'main' (real history) "
-            "without --force. Use --map dev, or pass --force if you really mean main."
-        )
+    if not args.dry_run:
+        guard_target_map(parser, map_id, args.force)
 
     end_day_str = args.end_day if args.end_day is not None else today_utc()
     if not is_valid_day(end_day_str):
@@ -845,8 +916,10 @@ def main() -> None:
         print("[dry-run] nothing written.")
         return
 
+    describe_target(map_id, payloads, post=args.post)
+
     if args.post:
-        post_http(map_id, payloads, base_url=None)
+        post_http(map_id, payloads)
     else:
         ingest_direct(map_id, payloads)
 
