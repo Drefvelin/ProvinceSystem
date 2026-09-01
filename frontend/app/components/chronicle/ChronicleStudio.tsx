@@ -1477,6 +1477,17 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const activeFrame: StudioFrame | null =
     stage === "play" ? (frames[playIndex] ?? null) : null;
 
+  // `ChroniclePlaybackPanel`'s `days` prop, built once per build rather than
+  // once per render — `frames` above is a fresh read of a ref every render,
+  // so `.map()` on it allocated a brand-new array every time even when the
+  // built frames hadn't changed at all. `framesRef.current` only actually
+  // changes alongside `framesVersion` (see the effects above), the same
+  // dependency those already key off instead of `frames` itself.
+  const frameDays = useMemo(
+    () => framesRef.current.map((frame) => frame.day),
+    [framesVersion]
+  );
+
   // Ledger charts read the range actually built, not the range inputs — a
   // build can skip days, and the panel's cursor has to walk the same span
   // `exploreHref`'s prev/next does.
@@ -1842,7 +1853,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
 
             {stage === "play" ? (
               <ChroniclePlaybackPanel
-                days={frames.map((frame) => frame.day)}
+                days={frameDays}
                 activeIndex={playIndex}
                 onScrub={(next) => {
                   setPlaying(false);
