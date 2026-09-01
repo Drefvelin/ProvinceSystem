@@ -9,7 +9,13 @@ from pathlib import Path
 from src.scripts.ledger import ingest, store
 from src.scripts.ledger.schema import normalize_snapshot
 
-from .conftest import MAP, faction_payload, guild_payload, snapshot_payload
+from .conftest import (
+    MAP,
+    _guild_day_rows,
+    faction_payload,
+    guild_payload,
+    snapshot_payload,
+)
 
 DAY = "2026-09-01"
 
@@ -75,7 +81,7 @@ def test_promote_indexes_globals_factions_and_guilds(env: Path) -> None:
     assert factions[0]["rank_up_at"] == 600.0
     assert factions[0]["wealth_breakdown"] == {"provinces": 800.0, "trade": 200.0}
 
-    guilds = store.read_guild_days(MAP, DAY, DAY)
+    guilds = _guild_day_rows(MAP, DAY, DAY)
     assert [guild["guild_id"] for guild in guilds] == ["masons"]
     assert guilds[0]["credit_score"] == 0.8
 
@@ -102,7 +108,7 @@ def test_repromote_replaces_rather_than_accumulates(env: Path) -> None:
 
     factions = store.read_faction_days(MAP, DAY, DAY)
     assert [row["faction_id"] for row in factions] == ["beta"]
-    guilds = store.read_guild_days(MAP, DAY, DAY)
+    guilds = _guild_day_rows(MAP, DAY, DAY)
     assert [row["guild_id"] for row in guilds] == ["smiths"]
 
 

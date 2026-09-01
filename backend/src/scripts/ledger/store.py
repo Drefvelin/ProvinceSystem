@@ -671,22 +671,3 @@ def faction_has_any_row(map_id: str, faction_key: str) -> bool:
     finally:
         conn.close()
     return row is not None
-
-
-def read_guild_days(map_id: str, start: str, end: str) -> list[dict]:
-    """Guild rows across an inclusive range, ordered by (guild, day). One query."""
-    validate_map(map_id)
-    if not is_valid_day(start) or not is_valid_day(end):
-        raise ValueError("Invalid ledger day")
-    columns = ("day", *GUILD_DAY_COLUMNS)
-    conn = connect()
-    try:
-        rows = conn.execute(
-            f"SELECT {', '.join(_quote(c) for c in columns)} "
-            "FROM map_ledger_guild_days WHERE map_id = ? AND day >= ? AND day <= ? "
-            "ORDER BY guild_id ASC, day ASC",
-            (map_id, start, end),
-        ).fetchall()
-    finally:
-        conn.close()
-    return [{column: row[column] for column in columns} for row in rows]

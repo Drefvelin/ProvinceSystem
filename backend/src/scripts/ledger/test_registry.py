@@ -8,7 +8,7 @@ from pathlib import Path
 from src.scripts.ledger import ingest, store, wipe
 from src.scripts.ledger.schema import faction_key, normalize_snapshot
 
-from .conftest import MAP, faction_payload, snapshot_payload
+from .conftest import MAP, _guild_day_rows, faction_payload, snapshot_payload
 
 ALBA_FOUNDED = "2026-01-01T00:00:00Z"
 
@@ -119,7 +119,7 @@ def test_wipe_clears_every_ledger_table(env: Path) -> None:
     assert store.list_registry(MAP) == []
     assert store.list_days(MAP) == []
     assert store.read_faction_days(MAP, "2026-08-30", "2026-08-30") == []
-    assert store.read_guild_days(MAP, "2026-08-30", "2026-08-30") == []
+    assert _guild_day_rows(MAP, "2026-08-30", "2026-08-30") == []
     # The bytes are set aside, never deleted.
     assert Path(store.ledger_root(MAP)).exists() is False
     backups = list(Path(store.ledger_root(MAP)).parent.glob("ledger.bak.*"))

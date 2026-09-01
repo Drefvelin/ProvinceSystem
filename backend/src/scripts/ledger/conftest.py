@@ -115,6 +115,28 @@ def faction_payload(**overrides) -> dict:
     return faction
 
 
+def _guild_day_rows(map_id: str, start: str, end: str) -> list[dict]:
+    """Guild rows across an inclusive day range, ordered by (guild, day).
+
+    `store.read_guild_days` was removed as dead production code (no route
+    ever called it — see finding 7 of the storage-mechanics review); tests
+    that still want to assert on promoted guild rows read them directly here
+    instead of resurrecting an unused public function.
+    """
+    columns = ("day", *store.GUILD_DAY_COLUMNS)
+    conn = store.connect()
+    try:
+        rows = conn.execute(
+            f"SELECT {', '.join(store._quote(c) for c in columns)} "
+            "FROM map_ledger_guild_days WHERE map_id = ? AND day >= ? AND day <= ? "
+            "ORDER BY guild_id ASC, day ASC",
+            (map_id, start, end),
+        ).fetchall()
+    finally:
+        conn.close()
+    return [{column: row[column] for column in columns} for row in rows]
+
+
 def guild_payload(**overrides) -> dict:
     guild = {
         "id": "masons",
