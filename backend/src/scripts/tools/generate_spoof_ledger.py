@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import os
 import json
 import random
 import sys
@@ -697,35 +698,53 @@ def ingest_direct(map_id: str, payloads: list[dict]) -> None:
           f"({len(days_touched)} distinct day(s)).")
 
 
+class LedgerIndexUnreadable(RuntimeError):
+    """The index exists but could not be read, so "has history?" is unanswered."""
+
+
 def existing_ledger_days(map_id: str) -> list[str] | None:
-    """Days this map already holds in `map_ledger_days`, or None if unknowable.
+    """Days this map already holds in `map_ledger_days`.
 
-    None is "the index could not be read" (no database file yet, no schema, a
-    different box for `--post`) — deliberately distinct from `[]`, which is a
-    readable index that is genuinely empty. Only a non-empty list forces
-    `--force`; an unreadable index must not turn seeding a fresh map into a
-    flag hunt.
+    Three outcomes, kept distinct because they mean different things to the
+    guard:
+
+    * `None` - there is no database file at all. Nothing can be overwritten, so
+      seeding a fresh checkout stays one command with no flags.
+    * `[]` - a readable index that is genuinely empty for this map.
+    * a non-empty list - real history, which `--force` gates.
+
+    Anything else (a corrupt file, a migration failure, a locked database)
+    raises `LedgerIndexUnreadable`. Swallowing that into `None` failed *open*:
+    the one case where the script cannot tell whether it is about to overwrite
+    a season is the case where it must not proceed silently.
     """
-    try:
-        from src.skins.db import migrate
+    from src.skins import db as skins_db
 
-        migrate()
-        return [row["day"] for row in ledger_list_days(map_id)]
-    except Exception as exc:  # pragma: no cover - depends on local DB state
-        print(f"Could not read existing ledger days for {map_id!r}: {exc}", file=sys.stderr)
+    if not os.path.exists(skins_db.DB_PATH):
         return None
+    try:
+        skins_db.migrate()
+        return [row["day"] for row in ledger_list_days(map_id)]
+    except Exception as exc:
+        raise LedgerIndexUnreadable(
+            f"Could not read the ledger index for {map_id!r}: {exc}"
+        ) from exc
 
 
 def guard_target_map(parser: argparse.ArgumentParser, map_id: str, force: bool) -> None:
     """Refuse to spray synthetic economy history over a map that matters.
 
-    Two separate refusals, because they protect against different mistakes:
+    Three refusals, because they protect against different mistakes:
 
     * A **public** map (`public: true` in `config/maps.yml`) is a live map real
       players read. There is no undo for `store_raw` + `promote_day`, so no flag
       unlocks this — seed `dev`, or make the map non-public first. The old guard
-      hardcoded `main`, which left every *other* real map (`r3b1rth`, ...) wide
-      open the moment it was registered.
+      hardcoded `main`, which left every other public map wide open the moment
+      it was registered.
+    * A map the registry **does not know** is not thereby safe: it is either a
+      typo or a map registered somewhere this process cannot see, and "not in
+      my registry" is not evidence that nobody reads it. Treated as unknown and
+      gated on `--force`.
     * A map that **already has ledger rows** may be a staff-only map that is
       nonetheless holding history someone cares about. That is recoverable-ish
       and only needs an explicit `--force`.
@@ -738,8 +757,20 @@ def guard_target_map(parser: argparse.ArgumentParser, map_id: str, force: bool) 
             "script has no undo. Use --map dev, or a map registered with "
             "public: false."
         )
+    if entry is None and not force:
+        parser.error(
+            f"Map {map_id!r} is not in this backend's registry "
+            "(src/config/maps.yml), so this script cannot tell whether it is "
+            "public. Use a registered non-public map, or pass --force."
+        )
 
-    days = existing_ledger_days(map_id)
+    try:
+        days = existing_ledger_days(map_id)
+    except LedgerIndexUnreadable as exc:
+        if not force:
+            parser.error(f"{exc}. Fix the database, or pass --force.")
+        print(f"{exc}; continuing because --force was given.", file=sys.stderr)
+        days = None
     if days:
         print(
             f"Map {map_id!r} already holds {len(days)} ledger day(s) "

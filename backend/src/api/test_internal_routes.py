@@ -268,6 +268,39 @@ class ChronicleSnapshotTriggerTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(200, other.status_code)
 
+    async def test_an_abandoned_slot_is_reclaimed_after_the_ttl(self) -> None:
+        """The claim is in the handler, the release in the BackgroundTask.
+
+        A response that never sends means the task never runs, and without an
+        expiry that map would answer 409 for the life of the process.
+        """
+        request = _request_with_host("127.0.0.1")
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+
+        # As if the claim had happened one second past the TTL.
+        stale = self.routes._in_flight_maps["main"]
+        self.routes._in_flight_maps["main"] = (
+            stale - self.routes._CAPTURE_SLOT_TTL_SECONDS - 1
+        )
+
+        again = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(200, again.status_code)
+
+    async def test_a_slot_inside_the_ttl_is_still_held(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+
+        self.routes._in_flight_maps["main"] -= (
+            self.routes._CAPTURE_SLOT_TTL_SECONDS - 5
+        )
+
+        blocked = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(409, blocked.status_code)
+
     async def test_the_slot_is_released_even_when_the_capture_raises(self) -> None:
         request = _request_with_host("127.0.0.1")
         tasks = BackgroundTasks()

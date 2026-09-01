@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
@@ -82,21 +83,39 @@ def _cached_geometry_version(map_name: str) -> str | None:
 # thread and the release on a different threadpool thread once the response has
 # already gone out.
 _in_flight_guard = threading.Lock()
-_in_flight_maps: set[str] = set()
+# map_id -> monotonic time the slot was claimed.
+_in_flight_maps: dict[str, float] = {}
+
+# A slot older than this is treated as abandoned. The claim happens in the
+# handler and the release in the BackgroundTask, and a response that fails to
+# send means the task never runs - without an expiry that map would answer 409
+# for the life of the process. Comfortably longer than any real capture (a full
+# one is a few seconds of gzip over a handful of JSON sources) and short enough
+# that a stuck map recovers inside one operator coffee break.
+_CAPTURE_SLOT_TTL_SECONDS = 15 * 60
 
 
 def _begin_capture(map_id: str) -> bool:
     """Claim the single capture slot for `map_id`. False when one is in flight."""
+    now = time.monotonic()
     with _in_flight_guard:
-        if map_id in _in_flight_maps:
+        claimed_at = _in_flight_maps.get(map_id)
+        if claimed_at is not None and now - claimed_at < _CAPTURE_SLOT_TTL_SECONDS:
             return False
-        _in_flight_maps.add(map_id)
+        if claimed_at is not None:
+            logger.warning(
+                "Reclaiming a chronicle capture slot for map '%s' held for %.0fs; "
+                "its background task never released it",
+                map_id,
+                now - claimed_at,
+            )
+        _in_flight_maps[map_id] = now
         return True
 
 
 def _end_capture(map_id: str) -> None:
     with _in_flight_guard:
-        _in_flight_maps.discard(map_id)
+        _in_flight_maps.pop(map_id, None)
 
 
 def _run_capture(map_name: str, day: str | None) -> None:

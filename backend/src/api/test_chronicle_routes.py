@@ -930,7 +930,9 @@ def test_stale_geometry_days_are_ordered_and_shaped_like_days(client, monkeypatc
     assert body["days"] == ["2026-06-01", "2026-06-02", "2026-06-03"]
     assert all(isinstance(day, str) for day in body["days"])
     assert body["stale_geometry_days"] == ["2026-06-01", "2026-06-03"]
-    # Nothing else about the response moved.
+    # Nothing else about the response moved. `last_wiped_at` joined the shape
+    # with the staff wipe routes: an empty `days` means "never captured" *or*
+    # "wiped", and the viewer needs to tell those apart.
     assert set(body) == {
         "days",
         "first",
@@ -939,11 +941,14 @@ def test_stale_geometry_days_are_ordered_and_shaped_like_days(client, monkeypatc
         "incomplete_days",
         "incomplete_day_count",
         "stale_geometry_days",
+        "last_wiped_at",
     }
     assert body["first"] == "2026-06-01"
     assert body["last"] == "2026-06-03"
     assert body["incomplete_days"] == []
     assert body["incomplete_day_count"] == 0
+    # Never wiped, so null rather than absent.
+    assert body["last_wiped_at"] is None
 
 
 def test_index_without_snapshots_has_no_stale_geometry_days(client, monkeypatch):

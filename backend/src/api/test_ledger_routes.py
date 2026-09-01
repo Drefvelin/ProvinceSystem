@@ -36,6 +36,7 @@ from src.api.ledger_routes import (  # noqa: E402
     MAX_RANGE_DAYS,
     ledger_router,
 )
+from src.api.http_headers import make_etag  # noqa: E402
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.ledger import ingest, store  # noqa: E402
 from src.scripts.ledger.schema import faction_key, normalize_snapshot  # noqa: E402
@@ -577,25 +578,130 @@ def test_faction_detail_survives_a_row_outside_the_day_axis(client, monkeypatch)
 # --- fields=full allocation cap ----------------------------------------------
 
 
-def test_full_read_past_the_faction_day_cap_is_400(client):
-    """40 factions x 730 days x 64 keys x 2 is ~3.7M slots, unauthenticated."""
+def test_the_cap_cannot_refuse_a_request_the_axis_caps_accept(client):
+    """The cap is a backstop, not a policy the viewer can trip over.
+
+    `_parse_faction_keys` bounds the key list at MAX_FACTION_KEYS and
+    `_resolve_range` bounds the axis at MAX_RANGE_DAYS, so their product is the
+    largest response the route can ever build. The viewer asks for
+    `fields=full` over the whole history with every selected faction
+    (useLedgerSeries.ts), and a smaller cap 400s that request on any map with a
+    few hundred days of history.
+    """
+    assert MAX_FULL_FACTION_DAYS == MAX_FACTION_KEYS * MAX_RANGE_DAYS
+    assert DEFAULT_FACTION_COUNT * MAX_RANGE_DAYS <= MAX_FULL_FACTION_DAYS
+
+
+def test_the_cap_counts_the_resolved_axis_not_the_requested_span(client):
+    """A one-day map must answer a six-year request, not refuse it.
+
+    The days a map actually holds are what gets allocated; the requested span
+    is just a filter. Counting the span refused a response the size of one row.
+    """
     _store_day("main", "2026-01-01")
     keys = ",".join(f"k{n}" for n in range(MAX_FACTION_KEYS))
     res = client.get(
         f"/main/ledger/series?start=2025-01-02&end=2026-01-01&factions={keys}&fields=full"
     )
-    assert res.status_code == 400
-    assert str(MAX_FULL_FACTION_DAYS) in res.json()["detail"]
-
-
-def test_the_same_range_is_fine_with_fields_core(client):
-    """`core` has no breakdown arrays, so the per-axis caps already bound it."""
-    _store_day("main", "2026-01-01")
-    keys = ",".join(f"k{n}" for n in range(MAX_FACTION_KEYS))
-    res = client.get(
-        f"/main/ledger/series?start=2025-01-02&end=2026-01-01&factions={keys}&fields=core"
-    )
     assert res.status_code == 200
+    assert res.json()["days"] == ["2026-01-01"]
+
+
+def test_a_full_read_past_the_cap_is_400(client, monkeypatch):
+    """Boundary check. Two real days x one key is 2 faction-days.
+
+    The constant is monkeypatched rather than storing 29200 faction-days: the
+    branch under test is the comparison, and building 730 days x 40 factions of
+    real snapshots would cost minutes per run.
+    """
+    monkeypatch.setattr("src.api.ledger_routes.MAX_FULL_FACTION_DAYS", 1)
+    _store_day("main", "2026-01-01")
+    _store_day("main", "2026-01-02")
+
+    res = client.get(f"/main/ledger/series?factions={ALBA_KEY}&fields=full")
+
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "2 faction-days" in detail
+    assert "cap is 1" in detail
+
+
+def test_the_same_read_is_fine_with_fields_core(client, monkeypatch):
+    """`core` has no breakdown arrays, so the per-axis caps already bound it."""
+    monkeypatch.setattr("src.api.ledger_routes.MAX_FULL_FACTION_DAYS", 1)
+    _store_day("main", "2026-01-01")
+    _store_day("main", "2026-01-02")
+
+    res = client.get(f"/main/ledger/series?factions={ALBA_KEY}&fields=core")
+
+    assert res.status_code == 200
+
+
+def test_the_default_faction_selection_is_never_refused(client):
+    """A bare `?fields=full` - what the viewer sends - must always be served."""
+    _store_day("main", "2026-01-01")
+    _store_day("main", "2026-01-02")
+
+    res = client.get("/main/ledger/series?fields=full")
+
+    assert res.status_code == 200
+    assert res.json()["days"] == ["2026-01-01", "2026-01-02"]
+
+
+# --- series ETag -------------------------------------------------------------
+
+
+def test_series_etag_is_not_a_hash_of_the_body(client):
+    """Derived from the day/registry rows, so the body is encoded once.
+
+    Hashing the encoded body means the structure, the JSON string and its UTF-8
+    copy are all alive at once - the peak this route's cap exists to bound.
+    """
+    _store_day("main", "2026-01-01")
+    res = client.get("/main/ledger/series?fields=full")
+
+    assert res.status_code == 200
+    assert res.headers["etag"] != make_etag(res.text)
+
+
+def test_re_promoting_a_day_changes_the_series_etag(client):
+    """A cheap tag is only correct if it moves whenever the rows move."""
+    _store_day("main", "2026-01-01")
+    first = client.get("/main/ledger/series?fields=full")
+    assert first.status_code == 200
+
+    # A later snapshot for the same day, with different numbers: promotion
+    # re-picks the canonical snapshot, so every row for the day changes.
+    payload = _payload("2026-01-01", factions=[_faction(wealth=4242.0)])
+    payload["captured_at"] = "2026-01-01T18:00:00Z"
+    ingest.store_raw("main", normalize_snapshot(payload, "main"))
+    ingest.promote_day("main", "2026-01-01")
+
+    second = client.get("/main/ledger/series?fields=full")
+    assert second.status_code == 200
+    assert second.json()["factions"][0]["series"]["wealth"] == [4242.0]
+    assert second.headers["etag"] != first.headers["etag"]
+
+    # And the new tag still revalidates.
+    third = client.get(
+        "/main/ledger/series?fields=full",
+        headers={"If-None-Match": second.headers["etag"]},
+    )
+    assert third.status_code == 304
+
+
+def test_a_renamed_faction_changes_the_series_etag(client):
+    """The registry supplies labels for factions with no rows in range."""
+    _store_day("main", "2026-01-01")
+    first = client.get(f"/main/ledger/series?fields=full&factions={ALBA_KEY}")
+
+    _store_day("main", "2026-01-02", factions=[_faction(name="Alba Reborn")])
+    second = client.get(
+        f"/main/ledger/series?fields=full&factions={ALBA_KEY}"
+        "&start=2026-01-01&end=2026-01-01"
+    )
+
+    assert second.headers["etag"] != first.headers["etag"]
 
 
 def test_a_full_read_inside_the_cap_still_works(client):

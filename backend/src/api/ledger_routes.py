@@ -29,7 +29,12 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from .http_headers import add_no_cache, conditional_file_response, conditional_json_response
+from .http_headers import (
+    add_no_cache,
+    conditional_file_response,
+    conditional_json_response,
+    make_etag,
+)
 from .map_access import ensure_map_access
 from ..scripts.ledger import store
 from ..scripts.ledger.schema import MAX_BREAKDOWN_KEYS, MAX_BREAKDOWN_KEY_CHARS
@@ -44,14 +49,18 @@ MAX_RANGE_DAYS = 730
 MAX_FACTION_KEYS = 40
 DEFAULT_FACTION_COUNT = 12
 
-# `fields=full` adds the two breakdown maps, and `_breakdown_columns` allocates
-# one full-length array per breakdown key per faction: 40 factions x 730 days x
-# 64 keys x 2 breakdowns is ~3.7M list slots, then serialised and hashed for the
-# ETag - all of it reachable unauthenticated on a public map. The per-axis caps
-# above bound each dimension but not their product, so `fields=full` is capped
-# on the product itself. `fields=core` is untouched: it allocates one array per
-# scalar field, which the axis caps already bound.
-MAX_FULL_FACTION_DAYS = 3650
+# Backstop on the *product* of the two axes above, for `fields=full` only:
+# `_breakdown_columns` allocates one full-length array per breakdown key per
+# faction, so 40 factions x 730 days x 64 keys x 2 breakdowns is ~3.7M list
+# slots from one unauthenticated request. Deliberately set to the product of the
+# per-axis caps rather than anything smaller: every request that passes
+# `_parse_faction_keys` and `_resolve_range` is *by construction* at or under
+# this, so no caller the API already accepts - the viewer included, which asks
+# for `fields=full` over the whole history with every selected faction - can be
+# refused by it. It exists to catch a future caps change that would multiply out
+# to something far larger, not to police today's clients. The allocation itself
+# is bounded by serialising the payload only once; see `_series_etag`.
+MAX_FULL_FACTION_DAYS = MAX_FACTION_KEYS * MAX_RANGE_DAYS
 
 # Mirrors `schema._GLOBAL_INT_FIELDS + _GLOBAL_FLOAT_FIELDS`, and
 # `LedgerGlobalField` on the client. faction_wealth / pouch_wealth /
@@ -170,10 +179,15 @@ def _resolve_range(
     return resolved_start, resolved_end, False
 
 
-def _require_affordable_full_read(
-    full: bool, range_start: str, range_end: str, faction_count: int
-) -> None:
+def _require_affordable_full_read(full: bool, size: int, faction_count: int) -> None:
     """400 when a `fields=full` read would allocate past MAX_FULL_FACTION_DAYS.
+
+    `size` is the length of the resolved day axis - the days the map actually
+    holds in range - not the requested span. The two differ by a lot: a one-day
+    map answers `start=2020-01-01&end=2026-01-01` with a single column, and
+    charging that request for 2192 days would refuse a response the size of one
+    row. What is being bounded is the allocation, and the allocation is
+    `size * faction_count` arrays.
 
     Refused rather than trimmed, like every other cap on this route: a partial
     answer that looks complete is worse than an error the caller can react to.
@@ -182,13 +196,62 @@ def _require_affordable_full_read(
     """
     if not full or faction_count <= 0:
         return
-    faction_days = _day_span(range_start, range_end) * faction_count
+    faction_days = size * faction_count
     if faction_days > MAX_FULL_FACTION_DAYS:
         raise _bad_request(
-            f"Ledger 'fields=full' request covers {faction_days} faction-days, "
+            f"Ledger 'fields=full' response covers {faction_days} faction-days, "
             f"cap is {MAX_FULL_FACTION_DAYS}. Narrow the day range, ask for "
             "fewer factions, or use fields=core."
         )
+
+
+def _series_etag(
+    *,
+    map_id: str,
+    fields: str,
+    range_start: str,
+    range_end: str,
+    keys: list[str],
+    truncated: bool,
+    day_rows: list[dict],
+    registry: dict[str, dict],
+) -> str:
+    """Identity of a series response, derived without serialising the payload.
+
+    `conditional_json_response` otherwise hashes the encoded body, which for a
+    `fields=full` range means the structure, the JSON string and a second UTF-8
+    copy of that string all alive at once. Everything the body is built from is
+    already in memory here and is O(days + factions) rather than
+    O(days x factions x breakdown keys), so the tag comes from that instead and
+    the body is encoded exactly once, for sending.
+
+    Correctness rests on covering every input the payload is built from:
+
+    * the request itself (map, fields, resolved range, key set, `truncated`);
+    * every day row's full identity. `captured_at` / `captured_at_ts` name the
+      canonical snapshot the day was promoted from, so re-promoting a day onto a
+      different snapshot changes them - and with them every faction row and
+      global that day contributes;
+    * the registry rows the response reads labels out of, which is how a
+      faction with no rows in range still gets its name and colour.
+    """
+    parts: list[object] = [map_id, fields, range_start, range_end, truncated]
+    parts.extend(keys)
+    for row in day_rows:
+        # Every column the store returns, not a hand-listed subset: a column
+        # added to `map_ledger_days` later joins the tag automatically instead
+        # of silently falling out of it.
+        parts.extend(f"{name}={value}" for name, value in sorted(row.items()))
+    for key in keys:
+        entry = registry.get(key)
+        if entry is None:
+            continue
+        parts.append(key)
+        parts.extend(
+            entry.get(column)
+            for column in ("faction_id", "founded_at", "last_name", "last_rgb")
+        )
+    return make_etag(*parts)
 
 
 def _parse_faction_keys(raw: str | None) -> list[str] | None:
@@ -487,15 +550,25 @@ def get_ledger_series(
         else:
             keys = requested_keys
 
-        _require_affordable_full_read(full, range_start, range_end, len(keys))
+        _require_affordable_full_read(full, size, len(keys))
 
+        registry = {
+            row["faction_key"]: row for row in store.list_registry(map_id, conn=conn)
+        }
+        etag = _series_etag(
+            map_id=map_id,
+            fields=normalized_fields,
+            range_start=range_start,
+            range_end=range_end,
+            keys=keys,
+            truncated=truncated,
+            day_rows=day_rows,
+            registry=registry,
+        )
         rows = store.read_faction_days(
             map_id, range_start, range_end, keys, full=full, conn=conn
         )
         grouped = _group_by_key(rows)
-        registry = {
-            row["faction_key"]: row for row in store.list_registry(map_id, conn=conn)
-        }
     finally:
         conn.close()
 
@@ -517,7 +590,9 @@ def get_ledger_series(
         ],
         "truncated": truncated,
     }
-    return conditional_json_response(payload, if_none_match=if_none_match)
+    # `etag=` on purpose: the default hashes the encoded body, which doubles the
+    # peak memory of exactly the response this route's cap is about.
+    return conditional_json_response(payload, etag=etag, if_none_match=if_none_match)
 
 
 @ledger_router.get("/{map_name}/ledger/faction/{key}")
