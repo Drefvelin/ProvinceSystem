@@ -213,5 +213,77 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(handle.read(), '{"keep": true}')
 
 
+class ChronicleSnapshotTriggerTest(unittest.IsolatedAsyncioTestCase):
+    """The LAN-reachable capture trigger: no `force`, one capture per map."""
+
+    def setUp(self) -> None:
+        from src.api import chronicle_routes
+
+        self.routes = chronicle_routes
+        chronicle_routes._in_flight_maps.clear()
+        self.addCleanup(chronicle_routes._in_flight_maps.clear)
+
+    def test_force_is_not_part_of_the_route_surface(self) -> None:
+        """`force=true` re-writes stored history; this gate is the whole LAN."""
+        import inspect
+
+        params = inspect.signature(self.routes.create_chronicle_snapshot).parameters
+        self.assertNotIn("force", params)
+
+    async def test_localhost_trigger_queues_one_capture(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        tasks = BackgroundTasks()
+
+        response = await self.routes.create_chronicle_snapshot("main", request, tasks)
+
+        self.assertEqual(200, response.status_code)
+        body = json.loads(response.body)
+        self.assertTrue(body["success"])
+        self.assertNotIn("force", body)
+        self.assertEqual(1, len(tasks.tasks))
+        self.assertEqual(("main", None), tasks.tasks[0].args)
+
+    async def test_second_trigger_while_one_is_in_flight_is_409(self) -> None:
+        """A LAN peer looping this must not fill the 40-slot threadpool."""
+        request = _request_with_host("127.0.0.1")
+
+        first = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        second = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+
+        self.assertEqual(200, first.status_code)
+        self.assertEqual(409, second.status_code)
+        self.assertFalse(json.loads(second.body)["success"])
+
+    async def test_a_busy_map_does_not_block_another_map(self) -> None:
+        request = _request_with_host("127.0.0.1")
+
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+        other = await self.routes.create_chronicle_snapshot(
+            "dev", request, BackgroundTasks()
+        )
+
+        self.assertEqual(200, other.status_code)
+
+    async def test_the_slot_is_released_even_when_the_capture_raises(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        tasks = BackgroundTasks()
+        await self.routes.create_chronicle_snapshot("main", request, tasks)
+
+        def _boom(*args, **kwargs):
+            raise RuntimeError("capture exploded")
+
+        with patch("src.scripts.chronicle.capture.capture_snapshot", _boom):
+            self.routes._run_capture("main", None)
+
+        again = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(200, again.status_code)
+
+
 if __name__ == "__main__":
     unittest.main()

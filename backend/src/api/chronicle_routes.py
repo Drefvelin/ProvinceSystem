@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import os
+import threading
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
@@ -71,17 +72,47 @@ def _cached_geometry_version(map_name: str) -> str | None:
     return version
 
 
-def _run_capture(map_name: str, day: str | None, force: bool) -> None:
+# Maps with a triggered capture queued or running in *this* process. The
+# threadpool a BackgroundTask runs on is process-local and has 40 slots, so a
+# LAN peer looping POST /{map}/chronicle/snapshot could fill it and stall every
+# other request on the box; one in-flight capture per map is all this route ever
+# needs. `maplock.map_lock` is the cross-process guard and `capture_snapshot`
+# still takes it — but it cannot be used here: it is reentrant *per thread* and
+# held for the length of a `with`, while the acquire would happen on the request
+# thread and the release on a different threadpool thread once the response has
+# already gone out.
+_in_flight_guard = threading.Lock()
+_in_flight_maps: set[str] = set()
+
+
+def _begin_capture(map_id: str) -> bool:
+    """Claim the single capture slot for `map_id`. False when one is in flight."""
+    with _in_flight_guard:
+        if map_id in _in_flight_maps:
+            return False
+        _in_flight_maps.add(map_id)
+        return True
+
+
+def _end_capture(map_id: str) -> None:
+    with _in_flight_guard:
+        _in_flight_maps.discard(map_id)
+
+
+def _run_capture(map_name: str, day: str | None) -> None:
     """Background wrapper: capture_snapshot raises, a BackgroundTask must not.
 
     The 200 has already gone out by the time this runs, so a failure can only be
     reported in the log. capture_if_due swallows its own errors the same way;
     capture_snapshot deliberately keeps raising for direct callers.
+
+    Releases the map's in-flight slot on every exit, so one failed capture never
+    wedges the trigger for the life of the process.
     """
     from ..scripts.chronicle.capture import capture_snapshot
 
     try:
-        capture_snapshot(map_name, day, force)
+        capture_snapshot(map_name, day)
     except Exception:
         logger.warning(
             "Chronicle capture failed for map '%s' day '%s'",
@@ -89,6 +120,8 @@ def _run_capture(map_name: str, day: str | None, force: bool) -> None:
             day,
             exc_info=True,
         )
+    finally:
+        _end_capture(map_name)
 
 
 def _is_capturable_day(day: str) -> bool:
@@ -385,8 +418,16 @@ async def create_chronicle_snapshot(
     request: Request,
     background_tasks: BackgroundTasks,
     day: str | None = None,
-    force: bool = False,
 ):
+    """Queue one capture for this map. Deliberately has no `force`.
+
+    `force=true` re-writes a day that is already stored — the chronicle is the
+    only copy of that day — and this route's only gate is `require_localhost`,
+    which `internal_access` widens to the whole RFC1918 LAN. Rewriting stored
+    history is a staff action, so it lives on the staff routes (which take
+    `ensure_map_staff_write`) and on the CLI, not here. No caller in the repo
+    passed it.
+    """
     require_localhost(request)
 
     # require_localhost is not actually localhost-only (internal_access accepts
@@ -402,14 +443,24 @@ async def create_chronicle_snapshot(
     if day is not None and not _is_capturable_day(day):
         raise HTTPException(status_code=400, detail="Invalid chronicle day")
 
-    background_tasks.add_task(_run_capture, map_id, day, force)
+    if not _begin_capture(map_id):
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "map": map_id,
+                "day": day,
+                "message": "A chronicle capture is already running for this map.",
+            },
+        )
+
+    background_tasks.add_task(_run_capture, map_id, day)
 
     return JSONResponse(
         content={
             "success": True,
             "map": map_id,
             "day": day,
-            "force": force,
             "message": "Chronicle snapshot started.",
         }
     )

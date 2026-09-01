@@ -178,6 +178,9 @@ def test_snapshot_post_from_localhost_schedules_capture(chronicle_env, monkeypat
         "src.scripts.chronicle.capture.capture_snapshot",
         lambda *args, **kwargs: calls.append((args, kwargs)),
     )
+    # `force` is not part of this route's surface any more: a LAN peer must not
+    # be able to re-write an already-stored day. An unknown query parameter is
+    # ignored by FastAPI, so the request still succeeds - without forcing.
     with TestClient(app, client=("127.0.0.1", 12345)) as test_client:
         res = test_client.post("/main/chronicle/snapshot?force=true")
 
@@ -185,8 +188,8 @@ def test_snapshot_post_from_localhost_schedules_capture(chronicle_env, monkeypat
     body = res.json()
     assert body["success"] is True
     assert body["map"] == "main"
-    assert body["force"] is True
-    assert calls == [(("main", None, True), {})]
+    assert "force" not in body
+    assert calls == [(("main", None), {})]
 
 
 @pytest.fixture
