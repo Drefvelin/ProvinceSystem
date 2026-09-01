@@ -56,7 +56,9 @@ type ChronicleOwnershipLayerProps = {
  */
 const HIGHLIGHT_MIX_TOWARD_WHITE = 0.45;
 
-function highlightRgb(rgb: string | undefined): string | null {
+/** Same mix, returned as bytes instead of a string — the hover canvas below
+ * writes straight into `ImageData.data` and has no use for the joined form. */
+function highlightBytes(rgb: string | undefined): [number, number, number] | null {
   if (!rgb) return null;
   const parts = rgb.split(",");
   if (parts.length !== 3) return null;
@@ -70,8 +72,46 @@ function highlightRgb(rgb: string | undefined): string | null {
       Math.round(clamped + (255 - clamped) * HIGHLIGHT_MIX_TOWARD_WHITE)
     );
   }
-  return mixed.join(",");
+  return mixed as [number, number, number];
 }
+
+/**
+ * Maps a province id to the flat pixel indices (`y * width + x`, matching
+ * `ProvinceIdGrid.ids`) it occupies. Built once per grid rather than once per
+ * hover — the hover effect below only ever needs the pixels for the one or
+ * two province ids a hover change actually touches, and paying a single
+ * full-grid pass to know where every id lives is what makes answering that
+ * without re-scanning all 2.56M cells on every mouse move possible.
+ */
+function buildProvincePixelIndex(grid: ProvinceIdGrid): Map<number, Int32Array> {
+  const { ids } = grid;
+  const counts = new Map<number, number>();
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]!;
+    if (id === 0) continue; // Ocean / unowned — never highlighted.
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+
+  const index = new Map<number, Int32Array>();
+  for (const [id, count] of counts) index.set(id, new Int32Array(count));
+
+  const cursors = new Map<number, number>();
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]!;
+    if (id === 0) continue;
+    const cursor = cursors.get(id) ?? 0;
+    index.get(id)![cursor] = i;
+    cursors.set(id, cursor + 1);
+  }
+  return index;
+}
+
+/** What the hover canvas currently has painted on it — enough to clear it
+ * cleanly on the next change and to skip work when nothing actually moved. */
+type PaintedHighlight = {
+  regionId: string;
+  provinces: number[];
+};
 
 function paintOwnershipCanvas(
   canvas: HTMLCanvasElement | null,
@@ -113,6 +153,17 @@ export default function ChronicleOwnershipLayer({
   const baseCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const hoverCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Rebuilt only when the grid itself changes (a new day's province ids), not
+  // on every hover — see `buildProvincePixelIndex`.
+  const provincePixelIndex = useMemo(
+    () => (grid ? buildProvincePixelIndex(grid) : null),
+    [grid]
+  );
+  // The hover canvas's own persistent pixel buffer, mutated in place instead
+  // of rebuilt from scratch on every hover change.
+  const hoverImageDataRef = useRef<ImageData | null>(null);
+  const paintedHighlightRef = useRef<PaintedHighlight | null>(null);
+
   // The drawn state's identity. `mapObjects` gets a fresh array (and fresh
   // entry objects) on every drill reset even when nothing became visible or
   // invisible, so depending on the array itself would repaint 2.5M pixels for
@@ -142,19 +193,110 @@ export default function ChronicleOwnershipLayer({
     paintOwnershipCanvas(baseCanvasRef.current, grid, visible);
   }, [grid, visible]);
 
+  /**
+   * Paints (and un-paints) the hover highlight without ever touching the
+   * grid's other ~2.5M pixels. `paintChronicleFrameToImageData` walks the
+   * whole grid regardless of how few provinces its LUT actually names, so
+   * routing a one-nation highlight through it costs the same full pass as the
+   * base ownership canvas on every mouse move. Instead this keeps the hover
+   * canvas's `ImageData` alive across renders and only writes the pixel
+   * indices `provincePixelIndex` already knows belong to the region losing
+   * the highlight and the one gaining it, then flushes just their bounding
+   * rectangle back to the canvas.
+   */
   useEffect(() => {
-    const drawn = hoveredRegionId ? visible?.[hoveredRegionId] : null;
-    const rgb = highlightRgb(drawn?.rgb);
+    const canvas = hoverCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    if (!grid || !drawn || !rgb) {
-      paintOwnershipCanvas(hoverCanvasRef.current, null, null);
+    if (!grid || !provincePixelIndex) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hoverImageDataRef.current = null;
+      paintedHighlightRef.current = null;
       return;
     }
 
-    const highlight: NationOwnership = Object.create(null);
-    highlight[hoveredRegionId!] = { rgb, provinces: drawn.provinces };
-    paintOwnershipCanvas(hoverCanvasRef.current, grid, highlight);
-  }, [grid, visible, hoveredRegionId]);
+    if (canvas.width !== grid.width || canvas.height !== grid.height) {
+      canvas.width = grid.width;
+      canvas.height = grid.height;
+      hoverImageDataRef.current = null;
+      paintedHighlightRef.current = null;
+    }
+
+    if (!hoverImageDataRef.current) {
+      hoverImageDataRef.current = ctx.createImageData(grid.width, grid.height);
+      paintedHighlightRef.current = null;
+    }
+
+    const drawn = hoveredRegionId ? visible?.[hoveredRegionId] : null;
+    const bytes = drawn ? highlightBytes(drawn.rgb) : null;
+    const next: PaintedHighlight | null =
+      hoveredRegionId && drawn && bytes
+        ? { regionId: hoveredRegionId, provinces: drawn.provinces ?? [] }
+        : null;
+    const previous = paintedHighlightRef.current;
+
+    const unchanged =
+      previous === next ||
+      (previous !== null &&
+        next !== null &&
+        previous.regionId === next.regionId &&
+        previous.provinces === next.provinces);
+    if (unchanged) return;
+
+    const { data } = hoverImageDataRef.current;
+    const width = grid.width;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    const touch = (pixelIndex: number): void => {
+      const x = pixelIndex % width;
+      const y = (pixelIndex / width) | 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    };
+
+    const write = (provinces: number[], r: number, g: number, b: number, a: number): void => {
+      for (const id of provinces) {
+        const pixels = provincePixelIndex.get(id);
+        if (!pixels) continue;
+        for (let i = 0; i < pixels.length; i++) {
+          const pixelIndex = pixels[i]!;
+          const offset = pixelIndex * 4;
+          data[offset] = r;
+          data[offset + 1] = g;
+          data[offset + 2] = b;
+          data[offset + 3] = a;
+          touch(pixelIndex);
+        }
+      }
+    };
+
+    // `unchanged` above already covers "still the same region, same province
+    // list" — anything reaching here needs its old pixels cleared before the
+    // new ones (if any) go down, including the rare case where the hovered id
+    // stayed the same but a drill change gave it a different province set.
+    if (previous) write(previous.provinces, 0, 0, 0, 0);
+    if (next) write(next.provinces, bytes![0], bytes![1], bytes![2], 255);
+
+    paintedHighlightRef.current = next;
+
+    if (minX === Infinity) return; // Nothing was actually touched.
+    ctx.putImageData(
+      hoverImageDataRef.current,
+      0,
+      0,
+      minX,
+      minY,
+      maxX - minX + 1,
+      maxY - minY + 1
+    );
+  }, [grid, provincePixelIndex, visible, hoveredRegionId]);
 
   // Matches `HoverOverlayImage`: a map with no measured size has nothing to
   // stretch to, so hide rather than show a stray 1600x1600 square. Hidden, not
