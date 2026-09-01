@@ -17,6 +17,17 @@ type LabelLayerProps = {
   mapH: number;
   displayScale: number;
   hoveredNationId?: string | null;
+  /**
+   * Skips the zoom-size gate and draws every entry at full opacity.
+   *
+   * For the timelapse studio, where every layer on screen is one the user
+   * ticked on: a layer that hides itself at the zoom they are viewing at is
+   * simply the layer they asked for not being there. The live map passes
+   * nothing — it has no layer toggles, so the gate is the only thing keeping
+   * several hundred chips off a world-zoom view, and its hover picking filters
+   * on the same predicate.
+   */
+  alwaysVisible?: boolean;
 };
 
 export default memo(LabelLayer);
@@ -27,6 +38,7 @@ function LabelLayer({
   mapH,
   displayScale,
   hoveredNationId = null,
+  alwaysVisible = false,
 }: LabelLayerProps) {
   if (!labels.length || !mapW || !mapH || displayScale <= 0) {
     return null;
@@ -42,10 +54,9 @@ function LabelLayer({
       {labels.map((label) => {
         const pathId = `map-label-${label.nationId}-${label.componentIndex}`;
         const hovered = hoveredNationId === label.nationId;
-        const visible = shouldShowLabelAtScreenSize(
-          label.fontSize,
-          displayScale
-        );
+        const visible =
+          alwaysVisible ||
+          shouldShowLabelAtScreenSize(label.fontSize, displayScale);
         const hoverTransform = hovered
           ? `translate(${label.cx} ${label.cy}) scale(${LABEL_HOVER_SCALE}) translate(${-label.cx} ${-label.cy})`
           : undefined;
