@@ -15,14 +15,14 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import sys
 import time
 
 from src.skins.db import connect, migrate
 
+from ..util.atomic import CrossDeviceError, rename_aside
 from ..util.dirs import validate_map
-from ..util.maplock import map_lock
+from ..util.maplock import MapLockBusy, map_lock
 from .store import ledger_lock_path, ledger_root
 
 _TABLES = (
@@ -46,9 +46,9 @@ def _row_counts(conn, map_name: str) -> dict[str, int]:
 def _unique_backup_path(root: str, stamp: int) -> str:
     """A backup path nothing occupies yet.
 
-    `shutil.move` onto an *existing* directory moves the source **inside** it
-    rather than failing, so two wipes in the same second would nest one ledger
-    inside the other's backup.
+    Renaming onto an *existing* directory either fails or (via the old
+    `shutil.move`) moved the source **inside** it, so two wipes in the same
+    second would nest one ledger inside the other's backup.
     """
     backup = f"{root}.bak.{stamp}"
     suffix = 1
@@ -100,7 +100,10 @@ def _wipe_locked(map_name: str, *, dry_run: bool) -> int:
     # is fixed by re-running; the other order can end with a live row for a day
     # whose bytes have just been set aside by a concurrent promote.
     if has_dir:
-        shutil.move(root, backup)
+        # Rename, never a copy — the module docstring promises the tree is
+        # "renamed aside", and `shutil.move` quietly became copytree+rmtree
+        # across a filesystem boundary. Same helper as the chronicle wipe.
+        rename_aside(root, backup)
         print(f"Moved {root} -> {backup}")
     else:
         print(f"No ledger directory at {root} (index rows only).")
@@ -146,7 +149,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return wipe_map(args.map, dry_run=args.dry_run)
-    except ValueError as exc:
+    except MapLockBusy:
+        parser.error(
+            f"Another ledger wipe, ingest or reindex is running for "
+            f"'{args.map}'. Wait for it to finish and re-run."
+        )
+        return 2
+    except (ValueError, CrossDeviceError) as exc:
         parser.error(str(exc))
         return 2
 

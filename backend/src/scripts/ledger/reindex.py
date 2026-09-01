@@ -15,7 +15,7 @@ import sys
 from src.skins.db import migrate
 
 from ..util.dirs import validate_map
-from ..util.maplock import map_lock
+from ..util.maplock import MapLockBusy, map_lock
 from .ingest import promote_day, reindex_day
 from .store import daily_root, is_valid_day, ledger_lock_path, raw_root
 
@@ -96,6 +96,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return reindex_map(args.map, from_raw=args.from_raw, dry_run=args.dry_run)
+    except MapLockBusy:
+        parser.error(
+            f"Another ledger wipe, ingest or reindex is running for "
+            f"'{args.map}'. Wait for it to finish and re-run."
+        )
+        return 2
     except ValueError as exc:
         parser.error(str(exc))
         return 2

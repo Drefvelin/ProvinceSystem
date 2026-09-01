@@ -48,6 +48,13 @@ def store_raw(map_id: str, snapshot: dict) -> str:
     The sha8 in the filename is of the packed bytes, so a retry of the identical
     snapshot lands on the same name and overwrites itself instead of doubling
     the day. Two genuinely different snapshots in the same second stay distinct.
+
+    Takes this map's ledger lock even though it only ever *adds* a file. `raw/`
+    lives inside `ledger_root`, which `ledger/wipe.py` renames away wholesale,
+    and unlike promote this runs **synchronously on the upload request** — so a
+    store_raw landing mid-wipe either fails the upload outright or re-creates
+    `raw/{day}/` under a root the wipe has already set aside, stranding the only
+    durable copy of that 5-minute sample outside both trees.
     """
     validate_map(map_id)
     day = snapshot["day"]
@@ -58,10 +65,15 @@ def store_raw(map_id: str, snapshot: dict) -> str:
     sha8 = hashlib.sha1(packed).hexdigest()[:8]
     hhmmss = snapshot["captured_at"][11:19].replace(":", "")
 
-    day_dir = raw_day_dir(map_id, day)
-    os.makedirs(day_dir, exist_ok=True)
-    path = raw_snapshot_path(map_id, day, hhmmss, sha8)
-    _write_atomic(path, packed, prefix=_TEMP_PREFIX)
+    # No day lock: the filename is content-addressed, so two writers for the
+    # same (day, second) are writing identical bytes to identical names and
+    # `_write_atomic` already makes that safe. Only the whole-tree ops need
+    # excluding.
+    with map_lock(ledger_lock_path(map_id)):
+        day_dir = raw_day_dir(map_id, day)
+        os.makedirs(day_dir, exist_ok=True)
+        path = raw_snapshot_path(map_id, day, hhmmss, sha8)
+        _write_atomic(path, packed, prefix=_TEMP_PREFIX)
     return path
 
 

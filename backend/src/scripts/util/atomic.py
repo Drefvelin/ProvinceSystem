@@ -1,12 +1,16 @@
-"""Crash-safe file writes and per-(scope, day) in-process locks.
+"""Crash-safe file writes, tree renames, and per-(scope, day) in-process locks.
 
-Extracted from `scripts/chronicle/capture.py` unchanged so the ledger ingest can
-reuse the same primitives; `capture` re-exports all three, so chronicle
-behaviour and its tests' monkeypatch targets are untouched.
+`_day_lock`, `_fsync_dir` and `_write_atomic` were extracted from
+`scripts/chronicle/capture.py` unchanged so the ledger ingest could reuse the
+same primitives; `capture` re-exports all three, so chronicle behaviour and its
+tests' monkeypatch targets are untouched. `rename_aside` was extracted from the
+chronicle wipe for the same reason: the ledger wipe makes the identical
+"renamed aside" promise and used to break it the identical way.
 """
 
 from __future__ import annotations
 
+import errno
 import os
 import tempfile
 import threading
@@ -77,3 +81,33 @@ def _write_atomic(path: str, data: bytes, prefix: str = ".chronicle-") -> None:
             except OSError:
                 pass
     _fsync_dir(directory)
+
+
+class CrossDeviceError(RuntimeError):
+    """A set-aside rename that would have to become a copy. Operator-readable."""
+
+
+def rename_aside(source: str, destination: str) -> None:
+    """Move a whole tree aside by renaming it, or refuse. Never a copy.
+
+    `shutil.move` silently degrades to copytree+rmtree across a device boundary,
+    which is not what a "renamed aside" backup promises: it doubles the disk
+    footprint of the tree, takes unbounded time while the map lock is held, and
+    deletes the original afterwards, so a failure part-way through leaves the
+    days split across two trees. An operator who has put the output directory on
+    a different filesystem from its backups needs to hear about it rather than
+    have the wipe quietly become a copy.
+
+    Shared by the chronicle and ledger wipes: both rename `<root>` to
+    `<root>.bak.<stamp>` and both made the same promise.
+    """
+    try:
+        os.rename(source, destination)
+    except OSError as exc:
+        if exc.errno == errno.EXDEV:
+            raise CrossDeviceError(
+                f"Cannot set aside {source}: the backup path {destination} is on a "
+                "different filesystem, and setting aside only ever renames. Put the "
+                "map's output directory and its backups on the same filesystem."
+            ) from exc
+        raise

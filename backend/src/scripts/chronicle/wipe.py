@@ -9,7 +9,6 @@ the live table, mirroring the snapshot-then-mutate pattern in
 from __future__ import annotations
 
 import argparse
-import errno
 import os
 import sys
 import time
@@ -17,14 +16,10 @@ from dataclasses import dataclass
 
 from src.skins.db import connect, migrate
 
+from ..util.atomic import CrossDeviceError, rename_aside
 from ..util.dirs import validate_map
-from ..util.maplock import map_lock
+from ..util.maplock import MapLockBusy, map_lock
 from .store import chronicle_lock_path, chronicle_root
-
-
-class WipeError(RuntimeError):
-    """A wipe that must not proceed, with an operator-readable reason."""
-
 
 _LIVE_TABLE = "map_chronicle_snapshots"
 _ARCHIVE_TABLE = "map_chronicle_snapshots_archive"
@@ -89,29 +84,6 @@ def _delete_rows(map_name: str) -> None:
             conn.execute(f"DELETE FROM {_LIVE_TABLE} WHERE map_id = ?", (map_name,))
     finally:
         conn.close()
-
-
-def _rename_aside(root: str, backup: str) -> None:
-    """Rename the tree aside, or refuse. Never a copy.
-
-    `shutil.move` silently degrades to copytree+rmtree across a device
-    boundary, which is not what this module's docstring or `WipeResult`
-    promise: it doubles the disk footprint of the whole chronicle, takes
-    unbounded time under the lock, and deletes the original afterwards, so a
-    failure part-way through leaves the days split across two trees. An
-    operator who has put the output directory on a different filesystem needs
-    to hear about it, not have the wipe quietly become a copy.
-    """
-    try:
-        os.rename(root, backup)
-    except OSError as exc:
-        if exc.errno == errno.EXDEV:
-            raise WipeError(
-                f"Cannot set aside {root}: the backup directory {backup} is on a "
-                "different filesystem, and this wipe only ever renames. Put the "
-                "map's output directory and its backups on the same filesystem."
-            ) from exc
-        raise
 
 
 def _unique_backup_path(root: str, archived_at: int) -> str:
@@ -210,7 +182,7 @@ def _perform_wipe_locked(map_name: str) -> WipeResult:
     moved = _archive_rows(map_name, archived_at)
 
     if has_dir:
-        _rename_aside(root, backup)
+        rename_aside(root, backup)
 
     _delete_rows(map_name)
 
@@ -272,7 +244,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return wipe_map(args.map, dry_run=args.dry_run)
-    except (ValueError, WipeError) as exc:
+    except MapLockBusy:
+        parser.error(
+            f"Another chronicle wipe, restore or capture is running for "
+            f"'{args.map}'. Wait for it to finish and re-run."
+        )
+        return 2
+    except (ValueError, CrossDeviceError) as exc:
         parser.error(str(exc))
         return 2
 

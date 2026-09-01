@@ -23,7 +23,7 @@ if str(_BACKEND_SRC) not in sys.path:
 os.environ.setdefault("SKINS_DEV", "1")
 
 from src.scripts.chronicle import store, wipe  # noqa: E402
-from src.scripts.util import maplock  # noqa: E402
+from src.scripts.util import atomic, maplock  # noqa: E402
 from src.skins import db as skins_db  # noqa: E402
 
 
@@ -204,7 +204,7 @@ def test_rows_survive_a_failure_during_the_directory_move(chronicle_env, monkeyp
     def boom(*_args, **_kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr(wipe.os, "rename", boom)
+    monkeypatch.setattr(atomic.os, "rename", boom)
 
     with pytest.raises(OSError):
         wipe.wipe_map("dev")
@@ -223,9 +223,9 @@ def test_cross_device_backup_fails_loudly_instead_of_copying(chronicle_env, monk
     def exdev(*_args, **_kwargs):
         raise OSError(errno.EXDEV, "Invalid cross-device link")
 
-    monkeypatch.setattr(wipe.os, "rename", exdev)
+    monkeypatch.setattr(atomic.os, "rename", exdev)
 
-    with pytest.raises(wipe.WipeError) as excinfo:
+    with pytest.raises(atomic.CrossDeviceError) as excinfo:
         wipe.perform_wipe("dev")
     assert "same filesystem" in str(excinfo.value)
 
@@ -262,3 +262,22 @@ def test_a_second_wipe_is_refused_while_one_is_running(chronicle_env):
 
     # Untouched by the refusal.
     assert _live_rows("dev") == ["2026-01-01"]
+
+
+def test_the_cli_reports_a_busy_lock_instead_of_a_traceback(
+    chronicle_env, monkeypatch, capsys
+):
+    """`main` is what an operator sees; a raw MapLockBusy traceback is not an
+    answer to "why did my wipe not run"."""
+    _capture_day("dev", "2026-01-01")
+
+    def busy(*_args, **_kwargs):
+        raise maplock.MapLockBusy("held")
+
+    monkeypatch.setattr(wipe, "map_lock", busy)
+
+    with pytest.raises(SystemExit) as excinfo:
+        wipe.main(["--map", "dev"])
+
+    assert excinfo.value.code == 2
+    assert "Wait for it to finish" in capsys.readouterr().err

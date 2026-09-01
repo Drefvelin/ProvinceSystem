@@ -132,6 +132,10 @@ def map_lock(
     """
     entry = _entry(lock_path)
     limit = DEFAULT_TIMEOUT if timeout is None else float(timeout)
+    # One deadline for both halves of the acquire. Timing the in-process RLock
+    # and then the OS lock from a fresh clock let a caller wait up to 2x what it
+    # asked for, which for a threadpool worker is 2x the time it is unavailable.
+    deadline = time.monotonic() + limit
 
     if blocking:
         got = entry.rlock.acquire(timeout=limit)
@@ -144,7 +148,6 @@ def map_lock(
     try:
         if entry.depth == 0:
             fd = _open_lock_file(entry.path)
-            deadline = time.monotonic() + limit
             while True:
                 if _try_os_lock(fd):
                     break

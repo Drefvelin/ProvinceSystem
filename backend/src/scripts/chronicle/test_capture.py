@@ -596,14 +596,14 @@ def test_a_capture_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -
     order: list[str] = []
     at_move = threading.Event()
     release = threading.Event()
-    real_rename = wipe_mod._rename_aside
+    real_rename = wipe_mod.rename_aside
 
     def gated_rename(root: str, backup: str) -> None:
         at_move.set()
         assert release.wait(30)
         real_rename(root, backup)
 
-    monkeypatch.setattr(wipe_mod, "_rename_aside", gated_rename)
+    monkeypatch.setattr(wipe_mod, "rename_aside", gated_rename)
 
     wiped: list[object] = []
 

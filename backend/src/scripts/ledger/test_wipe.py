@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import threading
 from pathlib import Path
@@ -10,7 +11,7 @@ import pytest
 
 from src.scripts.ledger import ingest, reindex, store, wipe
 from src.scripts.ledger.schema import normalize_snapshot
-from src.scripts.util import maplock
+from src.scripts.util import atomic, maplock
 
 from .conftest import MAP, snapshot_payload
 
@@ -21,6 +22,23 @@ def _post(**overrides) -> dict:
     snapshot = normalize_snapshot(snapshot_payload(**overrides), MAP)
     ingest.store_raw(MAP, snapshot)
     return snapshot
+
+
+def _gate_rename(monkeypatch, at_move: threading.Event, release: threading.Event):
+    """Park the wipe inside its rename-aside until `release` is set.
+
+    Patches `os.rename` (what `atomic.rename_aside` calls) rather than swapping
+    the `shutil` module object out from under the wipe: the wipe no longer uses
+    `shutil`, and replacing a module attribute reached into a shared import.
+    """
+    real_rename = atomic.os.rename
+
+    def gated(source, destination, *args, **kwargs):
+        at_move.set()
+        assert release.wait(30)
+        return real_rename(source, destination, *args, **kwargs)
+
+    monkeypatch.setattr(atomic.os, "rename", gated)
 
 
 def test_a_promote_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -> None:
@@ -34,16 +52,7 @@ def test_a_promote_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -
     order: list[str] = []
     at_move = threading.Event()
     release = threading.Event()
-    real_move = wipe.shutil.move
-
-    class _GatedShutil:
-        @staticmethod
-        def move(source: str, destination: str) -> None:
-            at_move.set()
-            assert release.wait(30)
-            real_move(source, destination)
-
-    monkeypatch.setattr(wipe, "shutil", _GatedShutil)
+    _gate_rename(monkeypatch, at_move, release)
 
     def run_wipe() -> None:
         wipe.wipe_map(MAP)
@@ -75,10 +84,100 @@ def test_a_promote_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -
     assert not wipe_thread.is_alive() and not promote_thread.is_alive()
     assert order == ["wipe-done", "promote-done"]
 
-    # The promote that followed rebuilt the day from raw/, which the wipe moved
-    # aside with everything else — so there is nothing to rebuild and no row.
+    # The promote that followed found no raw/ to rebuild from: the wipe renamed
+    # the whole `ledger/` tree aside, `raw/` included. That is the wipe doing
+    # its job, not raw/ being protected — see
+    # `test_a_raw_write_cannot_land_in_the_middle_of_a_wipe` for what actually
+    # keeps an in-flight upload's bytes out of a half-wiped tree.
     assert promoted == [None]
     assert store.get_day(MAP, DAY) is None
+
+
+def test_a_raw_write_cannot_land_in_the_middle_of_a_wipe(
+    env: Path, monkeypatch
+) -> None:
+    """`store_raw` runs *synchronously on the upload request*, not as a
+    background task, and writes into `raw/` inside the tree the wipe renames
+    away. One landing mid-wipe either failed the upload or re-created
+    `raw/{day}/` under a root already set aside, stranding the only durable copy
+    of that 5-minute sample outside both trees."""
+    _post()
+    ingest.promote_day(MAP, DAY)
+
+    order: list[str] = []
+    at_move = threading.Event()
+    release = threading.Event()
+    _gate_rename(monkeypatch, at_move, release)
+
+    def run_wipe() -> None:
+        wipe.wipe_map(MAP)
+        order.append("wipe-done")
+
+    wipe_thread = threading.Thread(target=run_wipe)
+    wipe_thread.start()
+    assert at_move.wait(30)
+
+    later = normalize_snapshot(
+        snapshot_payload(captured_at=f"{DAY}T13:00:00Z"), MAP
+    )
+    stored: list[str] = []
+    at_store = threading.Event()
+
+    def run_store() -> None:
+        at_store.set()
+        stored.append(ingest.store_raw(MAP, later))
+        order.append("store-done")
+
+    store_thread = threading.Thread(target=run_store)
+    store_thread.start()
+    assert at_store.wait(30)
+    # Blocked on the map lock while the wipe sits mid-rename.
+    store_thread.join(1.0)
+    assert store_thread.is_alive()
+    assert order == []
+
+    release.set()
+    wipe_thread.join(30)
+    store_thread.join(30)
+    assert not wipe_thread.is_alive() and not store_thread.is_alive()
+    assert order == ["wipe-done", "store-done"]
+
+    # The upload's bytes landed in the fresh tree, whole, after the wipe — never
+    # inside the directory being renamed away.
+    assert os.path.isfile(stored[0])
+    assert stored[0].startswith(store.ledger_root(MAP) + os.sep)
+    # And the backup the wipe made holds only what was there before it started.
+    backup = next(
+        entry
+        for entry in os.listdir(os.path.dirname(store.ledger_root(MAP)))
+        if entry.startswith("ledger.bak.")
+    )
+    backup_raw = os.path.join(
+        os.path.dirname(store.ledger_root(MAP)), backup, "raw", DAY
+    )
+    assert os.path.basename(stored[0]) not in os.listdir(backup_raw)
+
+
+def test_cross_device_backup_fails_loudly_instead_of_copying(
+    env: Path, monkeypatch
+) -> None:
+    """Same promise, same trap as the chronicle wipe: `shutil.move` degraded to
+    copytree+rmtree across a filesystem boundary."""
+    _post()
+    ingest.promote_day(MAP, DAY)
+
+    def exdev(*_args, **_kwargs):
+        raise OSError(errno.EXDEV, "Invalid cross-device link")
+
+    monkeypatch.setattr(atomic.os, "rename", exdev)
+
+    with pytest.raises(atomic.CrossDeviceError) as excinfo:
+        wipe.wipe_map(MAP)
+    assert "same filesystem" in str(excinfo.value)
+
+    # Nothing was copied and nothing was deleted.
+    assert os.path.isdir(store.ledger_root(MAP))
+    assert store.get_day(MAP, DAY) is not None
 
 
 def test_deleted_count_is_not_the_pre_move_census(env: Path, monkeypatch, capsys) -> None:
@@ -228,3 +327,37 @@ def test_a_second_wipe_is_refused_while_one_is_running(env: Path) -> None:
         thread.join(30)
 
     assert store.get_day(MAP, DAY) is not None
+
+
+def test_the_cli_reports_a_busy_lock_instead_of_a_traceback(
+    env: Path, monkeypatch, capsys
+) -> None:
+    """`main` is what an operator sees; a raw MapLockBusy traceback is not an
+    answer to "why did my wipe not run"."""
+
+    def busy(*_args, **_kwargs):
+        raise maplock.MapLockBusy("held")
+
+    monkeypatch.setattr(wipe, "map_lock", busy)
+
+    with pytest.raises(SystemExit) as excinfo:
+        wipe.main(["--map", MAP])
+
+    assert excinfo.value.code == 2
+    assert "Wait for it to finish" in capsys.readouterr().err
+
+
+def test_the_reindex_cli_reports_a_busy_lock_too(env: Path, monkeypatch, capsys) -> None:
+    _post()
+    ingest.promote_day(MAP, DAY)
+
+    def busy(*_args, **_kwargs):
+        raise maplock.MapLockBusy("held")
+
+    monkeypatch.setattr(reindex, "map_lock", busy)
+
+    with pytest.raises(SystemExit) as excinfo:
+        reindex.main(["--map", MAP])
+
+    assert excinfo.value.code == 2
+    assert "Wait for it to finish" in capsys.readouterr().err

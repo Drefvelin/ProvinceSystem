@@ -250,6 +250,11 @@ def capture_if_due(map_name: str) -> dict | None:
     sitting on disk. So an incomplete manifest re-runs with force=True. That is
     safe by construction: no later day can point at today yet, which
     `_capture_locked` verifies anyway.
+
+    A map lock still held past `maplock.DEFAULT_TIMEOUT` (a long wipe or
+    restore) makes this upload's capture give up and log, like any other
+    failure here. Nothing is lost: the next upload runs it again, and the day is
+    only captured once either way.
     """
     try:
         day = today_utc()

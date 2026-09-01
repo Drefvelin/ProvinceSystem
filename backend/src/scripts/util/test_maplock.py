@@ -7,6 +7,7 @@ import subprocess
 import sys
 import textwrap
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -85,6 +86,12 @@ def test_blocking_acquire_waits_for_the_holder(tmp_path: Path) -> None:
 
 
 def test_blocking_acquire_gives_up_after_the_timeout(tmp_path: Path) -> None:
+    """And after `timeout` in total, not twice it.
+
+    The in-process RLock and the OS lock are two waits. Timing the second from a
+    fresh clock let a caller asking for 0.5s block for 1.0s — for a threadpool
+    worker, twice the time it is unavailable to serve anything else.
+    """
     path = str(tmp_path / "chronicle.lock")
     held = threading.Event()
     release = threading.Event()
@@ -97,11 +104,15 @@ def test_blocking_acquire_gives_up_after_the_timeout(tmp_path: Path) -> None:
     thread = threading.Thread(target=holder)
     thread.start()
     assert held.wait(10)
+    started = time.monotonic()
     with pytest.raises(MapLockBusy):
-        with map_lock(path, timeout=0.05):
+        with map_lock(path, timeout=0.5):
             pass
+    elapsed = time.monotonic() - started
     release.set()
     thread.join(10)
+
+    assert 0.4 <= elapsed < 0.9, elapsed
 
 
 def test_the_lock_is_reentrant_for_one_thread(tmp_path: Path) -> None:
