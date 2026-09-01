@@ -39,11 +39,17 @@ export function getAncestryChain(
 export function getDrilledRealmIds(mapObjects: MapObject[]): Set<string> {
   const ids = new Set<string>();
 
+  // Match on the `nested` flag and `baseId`, never on the id's suffix. Region
+  // ids are day-file object keys — player-set names — so a real nation can be
+  // called `Foo_nested` and is indistinguishable by string from the synthetic
+  // entry `mapObjectBuilder` creates for `Foo`.
   for (const obj of mapObjects) {
-    if (obj.id.endsWith("_nested")) continue;
+    if (obj.nested) continue;
     if (obj.visible) continue;
 
-    const nested = mapObjects.find((entry) => entry.id === `${obj.id}_nested`);
+    const nested = mapObjects.find(
+      (entry) => entry.nested && entry.baseId === obj.baseId
+    );
     if (nested?.visible) {
       ids.add(obj.id);
     }

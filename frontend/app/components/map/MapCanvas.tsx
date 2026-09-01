@@ -37,12 +37,20 @@ import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
 import { mapApiPathFromUrl } from "@/lib/map/api";
+import {
+  PROVINCE_RASTER_MODES,
+  showsLiveProvinceRaster,
+} from "@/app/lib/map/chronicleDayModes";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
 
-const HOVER_OVERLAY_OPACITY = 0.72;
-const DRILL_STACK_OVERLAY_OPACITY = 0.88;
+/**
+ * Exported so the chronicle's client-painted ownership layer can match the live
+ * look exactly rather than re-typing the numbers and drifting from it.
+ */
+export const HOVER_OVERLAY_OPACITY = 0.72;
+export const DRILL_STACK_OVERLAY_OPACITY = 0.88;
 const PROVINCE_MODE_OVERLAY_OPACITY = 0.72;
 const OVERLAY_TRANSITION_CLASS =
   "pointer-events-none absolute transition-[left,top,width,height,opacity] duration-150 ease-out";
@@ -166,6 +174,29 @@ type MapCanvasProps = {
   fitMode?: FitMode;
   /** War-planning annotation layer. See `useMapPaint`. */
   paint?: UseMapPaintResult;
+  /**
+   * Chronicle mode only. When provided, this node replaces *both* server-
+   * rendered nation layers: the per-`MapObject` `/regions/...` overlays and the
+   * hovered-region `_hover` highlight. Those PNGs are regenerated from today's
+   * data and have no per-day variant, so a historical day has to paint its own
+   * borders client-side or it would show today's under a past date.
+   *
+   * Undefined on the live map, where the two blocks below render exactly as
+   * they always have.
+   */
+  regionOverlay?: React.ReactNode;
+  /**
+   * A chronicle day, or `null` for the live map. Read only by
+   * `showsLiveProvinceRaster` below, which is what stops a stored day from
+   * showing today's prosperity or infestation raster.
+   */
+  day?: string | null;
+  /**
+   * Chronicle mode only. Replaces the `/{mapId}/mapdata/{mode}` image for the
+   * raster modes that vary per day. Undefined on the live map and for the
+   * static rasters (`terrain`, `fertility`), which keep the server image.
+   */
+  provinceOverlay?: React.ReactNode;
 };
 
 export default function MapCanvas({
@@ -191,6 +222,9 @@ export default function MapCanvas({
   fill = false,
   fitMode = "cover",
   paint,
+  regionOverlay,
+  day = null,
+  provinceOverlay,
 }: MapCanvasProps) {
   const [mapSize, setMapSize] = useState({
     w: MAP_BOUNDS[mapId],
@@ -231,11 +265,19 @@ export default function MapCanvas({
     viewport.resetViewport({ animated: true });
   }, [mapId, mapType, viewport.resetViewport]);
 
-  const showProvinceOverlay =
-    mapType === "terrain" ||
-    mapType === "fertility" ||
-    mapType === "prosperity" ||
-    mapType === "infestation";
+  /**
+   * The four modes drawn as a full-map raster over the base map rather than as
+   * region shapes. `showsLiveProvinceRaster` then decides *which* raster: the
+   * server's, or — for `prosperity` and `infestation` under a stored day —
+   * `provinceOverlay`, painted from that day's capture.
+   *
+   * This `<img>` had no notion of a day, so widening the day page's mode list
+   * without this split would have shown today's prosperity under a past date.
+   * `terrain` and `fertility` keep the live image on purpose: they are province
+   * geometry, identical on every day.
+   */
+  const showProvinceOverlay = PROVINCE_RASTER_MODES.has(mapType);
+  const liveProvinceRaster = showsLiveProvinceRaster(mapType, day);
 
   const handleBaseMapLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     syncNaturalMapSize(e.currentTarget);
@@ -299,42 +341,53 @@ export default function MapCanvas({
           }}
           onLoad={handleBaseMapLoad}
         />
-        {showProvinceOverlay && (
-          <MapAuthImage
-            mapId={mapId}
-            path={`/${mapId}/mapdata/${mapType}`}
-            sessionToken={sessionToken}
-            alt={`${mapType} overlay`}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
-          />
-        )}
-        {mapObjects
-          .filter((obj) => obj.visible)
-          .map((obj) => (
+        {showProvinceOverlay &&
+          (liveProvinceRaster ? (
             <MapAuthImage
-              key={obj.id}
               mapId={mapId}
-              path={`/${mapId}/regions/${mapType}/${obj.path}`}
+              path={`/${mapId}/mapdata/${mapType}`}
               sessionToken={sessionToken}
-              crossOrigin="anonymous"
-              alt={`Overlay ${obj.id}`}
-              className={OVERLAY_TRANSITION_CLASS}
-              style={{
-                ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
-                  expand:
-                    hoveredPath && obj.path === hoveredPath
-                      ? HOVER_OVERLAY_EXPAND
-                      : 0,
-                }),
-                opacity: DRILL_STACK_OVERLAY_OPACITY,
-              }}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
+              alt={`${mapType} overlay`}
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
             />
+          ) : (
+            provinceOverlay ?? null
           ))}
-        {isMarkerMapMode(mapType) && hoveredFortZoc && (
+        {regionOverlay === undefined
+          ? mapObjects
+              .filter((obj) => obj.visible)
+              .map((obj) => (
+                <MapAuthImage
+                  key={obj.id}
+                  mapId={mapId}
+                  path={`/${mapId}/regions/${mapType}/${obj.path}`}
+                  sessionToken={sessionToken}
+                  crossOrigin="anonymous"
+                  alt={`Overlay ${obj.id}`}
+                  className={OVERLAY_TRANSITION_CLASS}
+                  style={{
+                    ...overlayStyle(obj.overlay, mapSize.w, mapSize.h, {
+                      expand:
+                        hoveredPath && obj.path === hoveredPath
+                          ? HOVER_OVERLAY_EXPAND
+                          : 0,
+                    }),
+                    opacity: DRILL_STACK_OVERLAY_OPACITY,
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ))
+          : regionOverlay}
+        {/*
+          `regionOverlay` is only ever passed by the chronicle. Fort ZoC is a
+          server-rendered `/zoc/{id}.png` regenerated from *today's* state, so
+          a stored day must not show it — same guard the `hoveredOverlay` block
+          below already carries. Live behaviour is unchanged.
+        */}
+        {regionOverlay === undefined && isMarkerMapMode(mapType) && hoveredFortZoc && (
           <HoverOverlayImage
             mapId={mapId}
             sessionToken={sessionToken}
@@ -345,7 +398,7 @@ export default function MapCanvas({
             alt="Fort zone of control"
           />
         )}
-        {hoveredOverlay && (
+        {regionOverlay === undefined && hoveredOverlay && (
           <HoverOverlayImage
             mapId={mapId}
             sessionToken={sessionToken}

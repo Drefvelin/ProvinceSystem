@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import os
 
 from ..util.dirs import (
@@ -25,15 +26,13 @@ def _empty_payload(map_name: str) -> dict:
     }
 
 
-def load_raw_markers(map_name: str) -> dict:
-    validate_map(map_name)
-    path = input_file(map_name, "map_markers.json")
-    if not os.path.exists(path):
-        return _empty_payload(map_name)
+def normalize_raw_markers(data: object, map_name: str) -> dict:
+    """Coerce already-parsed map_markers JSON into the shape callers expect.
 
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
+    Split out of load_raw_markers so a caller that already holds the bytes (the
+    chronicle serves them out of a stored gzip, not out of input/) gets exactly
+    the same normalisation without going through the filesystem.
+    """
     if not isinstance(data, dict):
         return _empty_payload(map_name)
 
@@ -66,25 +65,79 @@ def load_raw_markers(map_name: str) -> dict:
     }
 
 
-def load_province_centroids(map_name: str) -> dict:
+def load_raw_markers(map_name: str) -> dict:
     validate_map(map_name)
-    path = defines_file(map_name, "province_centroids.json")
+    path = input_file(map_name, "map_markers.json")
     if not os.path.exists(path):
-        return {}
+        return _empty_payload(map_name)
 
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    return data if isinstance(data, dict) else {}
+    return normalize_raw_markers(data, map_name)
+
+
+# map_name -> (path, mtime, size, centroids). Centroids are static geometry shared by
+# every day and every marker build, but the file is ~80 KB of JSON that was
+# re-read and re-parsed per request: a 79-day timelapse re-parsed 6.5 MB of
+# identical bytes for one button press. Freshness by mtime+size, the same shape
+# chronicle_routes._cached_geometry_version uses, so there is one idiom for
+# "reuse a defines artifact"; unbounded is fine because the key set is the map
+# list. The path is part of the freshness check, not the key, so the key set
+# stays the map list while a relocated defines dir is still a miss rather than a
+# stale hit. The cached dict is handed out shared - every consumer below only
+# reads it, and a regenerated file replaces the entry rather than mutating it.
+_centroid_cache: dict[str, tuple[str, float, int, dict]] = {}
+
+
+def clear_province_centroid_cache(map_name: str | None = None) -> None:
+    """Drop a cached centroid set, or all of them when no map is named."""
+    if map_name is None:
+        _centroid_cache.clear()
+    else:
+        _centroid_cache.pop(map_name, None)
+
+
+def load_province_centroids(map_name: str) -> dict:
+    validate_map(map_name)
+    path = defines_file(map_name, "province_centroids.json")
+    try:
+        stat = os.stat(path)
+    except OSError:
+        # Not generated yet: cache nothing, so the first build after this is
+        # picked up immediately instead of being pinned to an empty answer.
+        _centroid_cache.pop(map_name, None)
+        return {}
+
+    cached = _centroid_cache.get(map_name)
+    if cached is not None and cached[:3] == (path, stat.st_mtime, stat.st_size):
+        return cached[3]
+
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    centroids = data if isinstance(data, dict) else {}
+    _centroid_cache[map_name] = (path, stat.st_mtime, stat.st_size, centroids)
+    return centroids
 
 
 def _finite_int(value) -> int | None:
     if value is None:
         return None
     try:
-        return int(round(float(value)))
-    except (TypeError, ValueError):
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError: an int too large to become a float, which json will
+        # happily parse out of an upload.
         return None
+    if not math.isfinite(number):
+        # json accepts the bare Infinity/NaN literals, so a bad coordinate from
+        # the game plugin arrives here as a real float, and round() answers it
+        # with OverflowError - not a ValueError, so it used to escape. A
+        # captured chronicle day is immutable by design, so one such value would
+        # 500 that day's public markers route permanently.
+        return None
+    return int(round(number))
 
 
 def world_coords_to_map_xy(center_x, center_z) -> tuple[int, int] | None:
@@ -520,10 +573,21 @@ def enrich_forts(
     return enriched
 
 
-def build_markers_response(map_name: str) -> dict:
-    raw = load_raw_markers(map_name)
-    centroids = load_province_centroids(map_name)
-    overlays = load_zoc_overlays(map_name)
+def build_markers_response_from(
+    raw: dict,
+    centroids: dict,
+    overlays: dict,
+    map_name: str,
+) -> dict:
+    """Enrich already-loaded marker inputs.
+
+    Separate from build_markers_response so the same enrichment can run against
+    a stored chronicle day's files instead of the live input/ + defines/ ones.
+    """
+    # The only guard used to be load_raw_markers, which this path skips: map_name
+    # still becomes both a filesystem path (zoc_image) and a response URL
+    # (/{map_name}/zoc/...) inside enrich_forts.
+    validate_map(map_name)
     name_index = build_province_name_index(
         raw["settlements"],
         raw["installations"],
@@ -545,3 +609,12 @@ def build_markers_response(map_name: str) -> dict:
             raw["settlements"],
         ),
     }
+
+
+def build_markers_response(map_name: str) -> dict:
+    return build_markers_response_from(
+        load_raw_markers(map_name),
+        load_province_centroids(map_name),
+        load_zoc_overlays(map_name),
+        map_name,
+    )

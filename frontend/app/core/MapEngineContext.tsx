@@ -9,11 +9,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { OverlayBBox } from "../components/map/types";
+import type { MapObject, OverlayBBox } from "../components/map/types";
 import { apiBase } from "../components/map/types";
 import {
+  buildMapObjectIndex,
   buildMapObjectsFromRegionData,
   initialMapObjectVisibility,
+  resolveHoverTarget,
 } from "./mapObjectBuilder";
 
 type HoverRegionResult = {
@@ -53,6 +55,23 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
   const mapObjectsRef = useRef(mapObjects);
   mapObjectsRef.current = mapObjects;
 
+  /**
+   * `mapObjects` keyed for lookup. `getHoverRegion` walks the overlord chain
+   * and previously ran two `objects.find(...)` scans per step, which is O(N)
+   * per lookup and quadratic over a deep chain. Rebuilt whenever `mapObjects`
+   * changes so it can never disagree with `mapObjectsRef`.
+   *
+   * Entries are keyed by `baseId` in two buckets rather than by `id`, because
+   * `id` mixes real region ids with synthetic `${id}_nested` ids and the two
+   * namespaces can collide (see `MapObject`).
+   */
+  const mapObjectIndex = useMemo(
+    () => buildMapObjectIndex(mapObjects),
+    [mapObjects]
+  );
+  const mapObjectIndexRef = useRef(mapObjectIndex);
+  mapObjectIndexRef.current = mapObjectIndex;
+
   const loadData = useCallback((regionData: Record<string, unknown>) => {
     const next = buildMapObjectsFromRegionData(regionData);
     setMapObjects((prev) => {
@@ -83,39 +102,23 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
     regionId: string,
     regionData: Record<string, unknown>
   ): HoverRegionResult => {
+    // The walk itself (with its cycle guard and O(1) lookups) lives in
+    // `mapObjectBuilder` so it is a pure function the `node` test suite can
+    // cover; this only turns the resolved entry into a URL.
+    const target = resolveHoverTarget(
+      regionId,
+      regionData,
+      mapObjectIndexRef.current
+    );
+    if (!target) return { regionId: null, imagePath: null, region: null };
+
     const base = apiBase();
-    let currentRegionId: string | null = regionId;
-    const objects = mapObjectsRef.current;
-
-    while (currentRegionId) {
-      const region = regionData[currentRegionId] as Record<string, unknown>;
-      if (!region) return { regionId: null, imagePath: null, region: null };
-
-      const main = objects.find((obj) => obj.id === currentRegionId);
-      if (main?.visible) {
-        return {
-          regionId: currentRegionId,
-          imagePath: `${base}/${mapId}/regions/${mapType}/${main.path}_hover`,
-          region,
-          overlay: main.overlay,
-        };
-      }
-
-      const nestedId = `${currentRegionId}_nested`;
-      const nested = objects.find((obj) => obj.id === nestedId);
-      if (nested?.visible) {
-        return {
-          regionId: currentRegionId,
-          imagePath: `${base}/${mapId}/regions/${mapType}/${nested.path}_hover`,
-          region,
-          overlay: nested.overlay,
-        };
-      }
-
-      currentRegionId = (region.overlord as string) || null;
-    }
-
-    return { regionId: null, imagePath: null, region: null };
+    return {
+      regionId: target.regionId,
+      imagePath: `${base}/${mapId}/regions/${mapType}/${target.object.path}_hover`,
+      region: target.region,
+      overlay: target.object.overlay,
+    };
   }, []);
 
   const drillDownRegion = useCallback(
@@ -126,16 +129,24 @@ export const MapEngineProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!region || !subjects?.length) return prev;
 
         const updated = prev.map((obj) => ({ ...obj }));
-        const mainIndex = updated.findIndex((obj) => obj.id === regionId);
+        // Matched on the recorded structure, not on the id string: a real
+        // region named `${something}_nested` would otherwise be mistaken for
+        // the synthetic drill entry of `something`.
+        const isBase = (obj: MapObject, id: string) =>
+          obj.nested !== true && (obj.baseId ?? obj.id) === id;
+
+        const mainIndex = updated.findIndex((obj) => isBase(obj, regionId));
         if (mainIndex !== -1) updated[mainIndex].visible = false;
 
         const nestedIndex = updated.findIndex(
-          (obj) => obj.id === `${regionId}_nested`
+          (obj) => obj.nested === true && (obj.baseId ?? obj.id) === regionId
         );
         if (nestedIndex !== -1) updated[nestedIndex].visible = true;
 
         for (const subjectId of subjects) {
-          const subjectIndex = updated.findIndex((obj) => obj.id === subjectId);
+          const subjectIndex = updated.findIndex((obj) =>
+            isBase(obj, subjectId)
+          );
           if (subjectIndex !== -1) updated[subjectIndex].visible = true;
         }
 

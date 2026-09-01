@@ -27,6 +27,17 @@ type MapMarkerLayerProps = {
   displayScale: number;
   /** Base pins render above faction labels; hovered pin renders above those. */
   layer: "base" | "hovered";
+  /**
+   * Skips the zoom-size gate and draws every entry at full opacity.
+   *
+   * For the timelapse studio, where every layer on screen is one the user
+   * ticked on: a layer that hides itself at the zoom they are viewing at is
+   * simply the layer they asked for not being there. The live map passes
+   * nothing — it has no layer toggles, so the gate is the only thing keeping
+   * several hundred chips off a world-zoom view, and its hover picking filters
+   * on the same predicate.
+   */
+  alwaysVisible?: boolean;
 };
 
 export default memo(MapMarkerLayer);
@@ -39,6 +50,7 @@ function MapMarkerLayer({
   mapType,
   displayScale,
   layer,
+  alwaysVisible = false,
 }: MapMarkerLayerProps) {
   const layerMarkers = useMemo(() => {
     if (layer === "hovered") {
@@ -70,7 +82,8 @@ function MapMarkerLayer({
           marker.markerSize,
           marker.kind
         );
-        const visible = shouldShowMapMarker(marker, displayScale);
+        const visible =
+          alwaysVisible || shouldShowMapMarker(marker, displayScale);
         const hovered = hoveredMarkerId === marker.id;
         const baseScale = marker.baseScale ?? 1;
         const scale = baseScale * (hovered ? MARKER_HOVER_SCALE : 1);

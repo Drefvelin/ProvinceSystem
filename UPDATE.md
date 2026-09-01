@@ -253,3 +253,4 @@ Full checklist: [STAGING.md](./STAGING.md).
 
 - `git reset --hard` does not delete `backend/.env` if it is gitignored and already on disk.
 - Does **not** update Paper jars (TFMCWeb, ArmourShop, etc.) — deploy those via AMP separately.
+- `defines/{map}/chronicle.json` is orphaned leftover from before the ledger's `chronicle` upload mode got its own partitioned branch (see [docs/map/ledger.md](./docs/map/ledger.md)) — it holds exactly one stale snapshot from the old overwrite-one-file behaviour, nothing reads it any more, safe to delete manually on each map.

@@ -93,6 +93,14 @@ Example maps on this repo: `main`, `dev`.
 
 After **cropped overlay** generator changes, run **fullregen** again so bboxes and small PNGs exist. See [map/viewer.md](../map/viewer.md).
 
+If a **public** data route answers `404 {"detail": "Artifact not found"}` - `/{map}/data/province_id_runs` or `/{map}/data/province_id_grid_q4` - the geometry artifact has not been built for that map. Build it with:
+
+```text
+python -m src.scripts.tools.build_province_id_grid --map {map}
+```
+
+run from `backend/`. The 404 body deliberately does not name this command: those two routes need no authentication, and an unauthenticated caller should not be handed its own input back plus a module path to run. The staff-gated editor equivalents (`/{map}/editor/province-runs`, `/{map}/editor/province-grid`) still print the command in their 404, because their caller is already authenticated as staff.
+
 ## Smoke checklist (map)
 
 - [ ] `GET /ping` → ok  
