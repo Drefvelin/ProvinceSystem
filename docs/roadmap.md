@@ -11,7 +11,7 @@ Branch: **`dev`**.
 - **TFMCWeb gateway** - Discord link, scoped tokens, Survival gate, warn/ban mirror, realm isolation
 - **Map platform** - parchment terrain, muted political layers, nation labels, pan/zoom, settlements, installations, fort ZOC, staff map gates
 - **Map title editor** - staff web editor for county → empire hierarchy
-- **Wars on map (partial)** - campaign route line + battle pins from SimpleFactions export
+- **Wars on map** - campaign route line, battle pins, occupier colour remap from SimpleFactions export
 - **Auth hardening** - production startup guard, localhost internal routes, staff-gated code inspect
 
 ## Planned
@@ -20,7 +20,7 @@ Branch: **`dev`**.
 |---------|-------------|
 | **Map chronicle** | Daily composited snapshot + structured event log (war declared, province taken, capital moved, …) |
 | **Wealth charts** | Nation and global wealth time series over the season |
-| **Occupation tint** | Contested/occupied province overlay on the web map (blocked on SimpleFactions war export) |
+| **Occupation overlay** | Distinct contested fill on political modes (occupier colour remap already ships; not blocked on SF export) |
 
 War gameplay and export schema live in SimpleFactions: see [`../../simplefactions/docs/wars.md`](../../simplefactions/docs/wars.md).
 

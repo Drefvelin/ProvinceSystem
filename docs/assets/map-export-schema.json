@@ -414,6 +414,123 @@
         "province_id": { "type": "integer" },
         "summary": { "type": "string", "description": "Human-readable one-liner for chronicle log" }
       }
+    },
+    "chronicle_snapshot": {
+      "type": "object",
+      "description": "Payload of the chronicle upload mode. Shipped every 300s. Stocks are absolute; the backend differences consecutive snapshots for deltas. Flow fields are full-day ledger projections and are NOT the observed stock change.",
+      "required": ["schema_version", "captured_at", "complete", "global", "factions"],
+      "properties": {
+        "schema_version": { "type": "integer", "description": "Currently 1" },
+        "map_id": { "type": "string" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "server_day": {
+          "type": "integer",
+          "description": "Completed in-game day rollovers. Counts server uptime, not calendar days, so it drifts against captured_at across downtime."
+        },
+        "day_progress_seconds": { "type": "integer", "description": "Seconds into the current in-game day (0-86399)" },
+        "complete": {
+          "type": "boolean",
+          "description": "True from a successful export. A faction's absence only means deletion when this is true."
+        },
+        "global": { "$ref": "#/$defs/chronicle_global" },
+        "factions": { "type": "array", "items": { "$ref": "#/$defs/chronicle_faction" } },
+        "guilds": { "type": "array", "items": { "$ref": "#/$defs/chronicle_guild" } },
+        "events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/chronicle_event" },
+          "description": "Reserved; always empty today. The event stream is still unowned on the SF side."
+        }
+      }
+    },
+    "chronicle_global": {
+      "type": "object",
+      "description": "Server-wide aggregates. The three wealth figures are deliberately not pre-summed: faction_wealth excludes all personal player money, so total money supply is a website decision.",
+      "properties": {
+        "faction_count": { "type": "integer" },
+        "guild_count": { "type": "integer" },
+        "claimed_provinces": { "type": "integer" },
+        "population": { "type": "integer", "description": "Distinct members across all factions" },
+        "active_wars": { "type": "integer" },
+        "max_wealth_prestige": { "type": "integer", "description": "SF config cap shared across factions by wealth share" },
+        "faction_wealth": { "type": "number", "description": "Sum of faction wealth. Excludes personal pouches and banks." },
+        "pouch_wealth": { "type": "number" },
+        "player_bank_wealth": { "type": "number" },
+        "liquid_wealth": { "type": "number", "description": "Bank component only, across all factions" },
+        "guild_liquid_wealth": { "type": "number", "description": "Bank component of non-base guilds" },
+        "node_wealth": { "type": "number", "description": "Capital sunk into mining nodes" },
+        "expansion_wealth": { "type": "number", "description": "Capital sunk into guild branch upgrades" },
+        "guild_income": { "type": "number", "description": "Server-wide daily inflation delta (flow, not stock)" }
+      }
+    },
+    "chronicle_faction": {
+      "type": "object",
+      "required": ["id", "founded_at", "name"],
+      "properties": {
+        "id": { "type": "string", "description": "Derived from the faction name, not a UUID. Reusable after deletion." },
+        "founded_at": {
+          "type": "integer",
+          "description": "Epoch seconds. Pair with id as the identity key so a recycled name does not splice two unrelated nations into one series."
+        },
+        "name": { "type": "string" },
+        "rgb": { "type": "string" },
+        "overlord": { "type": ["string", "null"] },
+        "subjects": { "type": "array", "items": { "type": "string" } },
+        "wealth": { "type": "number" },
+        "wealth_breakdown": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Keyed by modifier type (Bank, Expansions, Nodes, per-guild rollups). Wealth is liquid bank plus sunk capital, so a faction can be wealthy with an empty treasury."
+        },
+        "bank": { "type": "number", "description": "Liquid main-guild bank only" },
+        "vassal_wealth": { "type": "number" },
+        "net_income": { "type": "number", "description": "Projected daily net (flow)" },
+        "inflation_delta": { "type": "number", "description": "Projected daily money creation (flow)" },
+        "trade_power": { "type": "number" },
+        "prestige": { "type": "number" },
+        "prestige_breakdown": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Members, Wealth, Provinces, Titles, Subjects, '<pct>% Bonus', plus admin entries. The Wealth component is a share of global wealth, so prestige falls when rivals get richer; charts need this or the dips look like bugs."
+        },
+        "rank": { "type": "string" },
+        "rank_level": { "type": "integer" },
+        "rank_up_at": {
+          "type": "number",
+          "description": "Competitive threshold, recomputed as the ladder shifts. Draw threshold lines from this, not from ranks.yml minimums."
+        },
+        "rank_down_at": { "type": "number" },
+        "prestige_position": { "type": "integer", "description": "1-based leaderboard position" },
+        "wealth_position": { "type": "integer" },
+        "provinces": { "type": "integer" },
+        "realm_size": { "type": "integer", "description": "Provinces including vassals" },
+        "tier": { "type": ["string", "null"] },
+        "tier_index": { "type": "integer" },
+        "highest_title": { "type": ["string", "null"] },
+        "members": { "type": "integer" },
+        "members_with_vassals": { "type": "integer" },
+        "settlements": { "type": "integer" },
+        "population": { "type": "integer", "description": "Summed settlement population" },
+        "installations": { "type": "integer" },
+        "forts": { "type": "integer" },
+        "wars": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "chronicle_guild": {
+      "type": "object",
+      "description": "The only view of the merchant economy separate from state finances.",
+      "required": ["id", "faction_id"],
+      "properties": {
+        "id": { "type": "string" },
+        "faction_id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "wealth": { "type": "number" },
+        "bank": { "type": "number" },
+        "expansions": { "type": "number", "description": "Cumulative branch upgrade spend" },
+        "trade_power": { "type": "number" },
+        "credit_score": { "type": "integer" },
+        "size": { "type": "integer" }
+      }
     }
   }
 }

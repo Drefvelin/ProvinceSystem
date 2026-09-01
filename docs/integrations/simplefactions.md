@@ -63,10 +63,31 @@ Common `mode` values on `POST /{map}/data/upload/{mode}`:
 - `guilds` - guild layer data
 - `queue` - pending region RGB jobs
 - `map_markers` - settlements, capitals, forts
+- `chronicle` - wealth / prestige / territory snapshot (see below)
 - `infestation_data` - province infestation overlay (Infestations plugin)
 - `county` / `duchy` / `kingdom` / `empire` - de jure title JSON (same IP gate; validated payload)
 
 War and chronicle extensions follow the export schema in [`docs/assets/map-export-schema.json`](../assets/map-export-schema.json). SF-side export details: [`simplefactions/docs/map-export.md`](../../../simplefactions/docs/map-export.md).
+
+## Upload cadence
+
+SF splits its payloads by cost. Every 300 s it ships the **live** set (`province_data`, `guilds`, `chronicle`) unconditionally, and adds the **map** set (`queue`, `nation`, `map_markers`, title JSON) only when the map queue has work. A full nation cycle runs hourly regardless.
+
+The live-only path finishes with `GET /{map}/{hashedKey}/api/regenerate/trade`. That regen type is **not implemented yet**; it should redraw trade and prosperity overlays without touching nation borders or title geometry. Until it exists the call returns an error that SF logs and swallows, so the uploads still land.
+
+## Chronicle ingest (not implemented)
+
+`chronicle` arrives roughly every 5 minutes per map. Unlike every other mode it must **not** overwrite `input/{map}/chronicle.json` - the current one-path-per-mode write would keep a single snapshot and discard the season. Partition on the payload's `captured_at`, for example `chronicle/{map}/{YYYY-MM-DD}/{HH-MM}.json`, with an index for range queries, then downsample to one canonical snapshot per day for charting.
+
+Consuming it correctly:
+
+- **Identity.** Key on `(id, founded_at)`, not `id`. Faction ids are derived from the faction name, not a UUID, and a deleted faction's name can be reused. Renames do not happen, so the id is stable within a lifetime.
+- **Deletion.** Factions vanish from the payload when deleted. Only treat an absence as a deletion when the snapshot carries `complete: true`; keep a registry with first seen, last seen and the last known `name` / `rgb` so dead nations stay on historical charts.
+- **Time.** Store both `captured_at` (real instant) and `server_day` / `day_progress_seconds` (in-game). The in-game clock counts server uptime, so it drifts against wall clock across downtime.
+- **Wealth.** `faction_wealth` excludes all personal player money; chart it separately from `pouch_wealth` and `player_bank_wealth` and only sum for total money supply. Wealth is a stock of liquid bank plus sunk capital in nodes and guild expansions, so chart `wealth_breakdown` rather than the total alone.
+- **Prestige.** The `Wealth` component is a share of global wealth, so prestige moves when rivals get richer. Chart `prestige_breakdown` alongside `global.faction_wealth`. Rank thresholds are competitive: draw threshold lines from each faction's `rank_up_at` / `rank_down_at`, never from `ranks.yml`.
+- **Deltas.** Difference consecutive daily snapshots yourself. The flow fields (`net_income`, `inflation_delta`, `guild_income`) are full-day projections, a different quantity from the observed stock change.
+- **Events.** `events` is present and always empty; the stream is still unowned on the SF side.
 
 ## Multi-map
 

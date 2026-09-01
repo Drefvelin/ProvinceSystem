@@ -19,7 +19,8 @@ Turn the live political map from flat colour blobs into a **fantasy cartography 
 | Named capitals / guild settlements | Shipped |
 | Forts + zone of control | Shipped |
 | Wars: campaign route line + battle pins | Shipped |
-| Wars: occupation tint | Planned |
+| Wars: occupier nation fill (`occupied_by`) | Shipped |
+| Wars: dedicated occupation overlay | Planned |
 | Daily map snapshots + changelog | Planned |
 | Nation / global wealth charts over time | Planned |
 | Staff web map title editor (county → empire) | Shipped |
@@ -69,7 +70,7 @@ flowchart TD
 | `political_{mode}` | `provinces.png` + nation defines | Desaturated fills, borders, hover |
 | `labels_{mode}` | Province graph + nation names (frontend SVG) | Straight text per contiguous blob |
 | `markers` | SF export (`capitals`, `forts`, …) | Town/fort icons |
-| `war_{id}` | SF war export | Frontlines, contested tint (partial) |
+| `war_{id}` | SF war export | Campaign line, battle pins, occupier fill (dedicated contested overlay planned) |
 | `pick_{mode}` | Raw RGB map (`apply_overrides=False`) | Hit-testing only; never styled away |
 
 Pick layer must stay separate from display (see [`mapgen.py`](../../backend/src/scripts/mapgen/mapgen.py) `apply_overrides=False` rule) so vassal pixels remain selectable.
@@ -94,7 +95,8 @@ Nation upload (`nation.json`) already carries `balance`, `provinces`, `relations
 - `capitals` - faction + guild named capitals with province id and map pixel coords
 - `settlements` - guild towns beyond distance threshold from faction capital
 - `forts` - fort id, province, ZOC province list
-- `wars` - belligerents, campaign route slice, battle schedule pins; full occupation zones planned
+- `wars` - belligerents, campaign route slice, battle schedule pins, `occupied_by_*` lists
+- `province_data.occupied_by` - occupier faction id for nation-overlay remap
 - `events` - explicit chronicle events (war declared, province taken, capital moved, …)
 - `global_wealth` - optional aggregate for charts
 
