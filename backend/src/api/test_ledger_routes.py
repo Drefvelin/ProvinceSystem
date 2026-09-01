@@ -32,6 +32,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from src.api.ledger_routes import (  # noqa: E402
     DEFAULT_FACTION_COUNT,
     MAX_FACTION_KEYS,
+    MAX_FULL_FACTION_DAYS,
     MAX_RANGE_DAYS,
     ledger_router,
 )
@@ -518,6 +519,128 @@ def test_breakdown_columns_cap_keys_from_an_already_stored_row():
 
     assert len(out["wealth"]) <= MAX_BREAKDOWN_KEYS
     assert all(len(key) <= MAX_BREAKDOWN_KEY_CHARS for key in out["wealth"])
+
+
+def test_a_faction_row_outside_the_day_axis_is_skipped_not_a_500():
+    """The day axis and the faction rows are two queries (finding 8).
+
+    A faction row can name a day the axis does not carry - a promotion
+    committing between the two reads, or a day row deleted under them - and
+    `index[row["day"]]` made that a KeyError, i.e. a 500 on a public route.
+    """
+    from src.api.ledger_routes import _faction_block
+
+    rows = [
+        {"day": "2026-01-01", "faction_key": ALBA_KEY, "wealth": 1.0, "name": "Alba"},
+        {"day": "2026-01-09", "faction_key": ALBA_KEY, "wealth": 2.0, "name": "Alba"},
+    ]
+
+    block = _faction_block(rows, {"2026-01-01": 0}, 1, full=True)
+
+    assert block["series"]["wealth"] == [1.0]
+
+
+def test_a_breakdown_row_outside_the_day_axis_is_skipped_not_a_500():
+    from src.api.ledger_routes import _breakdown_columns
+
+    rows = [
+        {"day": "2026-01-01", "wealth_breakdown": {"provinces": 1.0}, "prestige_breakdown": {}},
+        {"day": "2026-01-09", "wealth_breakdown": {"provinces": 2.0}, "prestige_breakdown": {}},
+    ]
+
+    out = _breakdown_columns(rows, {"2026-01-01": 0}, 1)
+
+    assert out["wealth"]["provinces"] == [1.0]
+
+
+def test_faction_detail_survives_a_row_outside_the_day_axis(client, monkeypatch):
+    """Same skip on `/ledger/faction/{key}`, which builds its own axis."""
+    _store_day("main", "2026-01-01")
+    real_read = store.read_faction_days
+
+    def _with_a_stray_day(*args, **kwargs):
+        rows = real_read(*args, **kwargs)
+        if rows:
+            stray = dict(rows[0])
+            stray["day"] = "2099-01-01"
+            rows = rows + [stray]
+        return rows
+
+    monkeypatch.setattr(store, "read_faction_days", _with_a_stray_day)
+
+    res = client.get(f"/main/ledger/faction/{ALBA_KEY}")
+
+    assert res.status_code == 200
+    assert res.json()["days"] == ["2026-01-01"]
+
+
+# --- fields=full allocation cap ----------------------------------------------
+
+
+def test_full_read_past_the_faction_day_cap_is_400(client):
+    """40 factions x 730 days x 64 keys x 2 is ~3.7M slots, unauthenticated."""
+    _store_day("main", "2026-01-01")
+    keys = ",".join(f"k{n}" for n in range(MAX_FACTION_KEYS))
+    res = client.get(
+        f"/main/ledger/series?start=2025-01-02&end=2026-01-01&factions={keys}&fields=full"
+    )
+    assert res.status_code == 400
+    assert str(MAX_FULL_FACTION_DAYS) in res.json()["detail"]
+
+
+def test_the_same_range_is_fine_with_fields_core(client):
+    """`core` has no breakdown arrays, so the per-axis caps already bound it."""
+    _store_day("main", "2026-01-01")
+    keys = ",".join(f"k{n}" for n in range(MAX_FACTION_KEYS))
+    res = client.get(
+        f"/main/ledger/series?start=2025-01-02&end=2026-01-01&factions={keys}&fields=core"
+    )
+    assert res.status_code == 200
+
+
+def test_a_full_read_inside_the_cap_still_works(client):
+    _store_day("main", "2026-01-01")
+    res = client.get(
+        f"/main/ledger/series?start=2026-01-01&end=2026-01-01"
+        f"&factions={ALBA_KEY}&fields=full"
+    )
+    assert res.status_code == 200
+    assert res.json()["factions"][0]["breakdowns"]["wealth"]["provinces"] == [800.0]
+
+
+# --- one connection per request ----------------------------------------------
+
+
+def test_series_opens_one_connection_per_request(client, monkeypatch):
+    """Seven `sqlite3.connect` + PRAGMA per request, for one response."""
+    _store_day("main", "2026-01-01")
+    _store_day("main", "2026-01-02")
+
+    connects = 0
+    real_connect = store.connect
+
+    def _counting_connect(*args, **kwargs):
+        nonlocal connects
+        connects += 1
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr(store, "connect", _counting_connect)
+
+    res = client.get("/main/ledger/series?fields=full")
+
+    assert res.status_code == 200
+    assert connects == 1
+
+
+def test_store_reads_still_open_their_own_connection_by_default(client):
+    """The `conn` parameter is optional; every other caller is unchanged."""
+    _store_day("main", "2026-01-01")
+    assert [row["day"] for row in store.list_days("main")] == ["2026-01-01"]
+    assert store.latest_complete_day("main") == "2026-01-01"
+    assert len(store.list_registry("main")) == 1
+    assert len(store.read_global_days("main", "2026-01-01", "2026-01-01")) == 1
+    assert len(store.read_faction_days("main", "2026-01-01", "2026-01-01")) == 1
+    assert store.count_factions_in_range("main", "2026-01-01", "2026-01-01") == 1
 
 
 def test_breakdown_columns_still_carry_a_normal_breakdown(client):

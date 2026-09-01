@@ -44,6 +44,15 @@ MAX_RANGE_DAYS = 730
 MAX_FACTION_KEYS = 40
 DEFAULT_FACTION_COUNT = 12
 
+# `fields=full` adds the two breakdown maps, and `_breakdown_columns` allocates
+# one full-length array per breakdown key per faction: 40 factions x 730 days x
+# 64 keys x 2 breakdowns is ~3.7M list slots, then serialised and hashed for the
+# ETag - all of it reachable unauthenticated on a public map. The per-axis caps
+# above bound each dimension but not their product, so `fields=full` is capped
+# on the product itself. `fields=core` is untouched: it allocates one array per
+# scalar field, which the axis caps already bound.
+MAX_FULL_FACTION_DAYS = 3650
+
 # Mirrors `schema._GLOBAL_INT_FIELDS + _GLOBAL_FLOAT_FIELDS`, and
 # `LedgerGlobalField` on the client. faction_wealth / pouch_wealth /
 # player_bank_wealth are three separate series on purpose — they overlap in
@@ -161,6 +170,27 @@ def _resolve_range(
     return resolved_start, resolved_end, False
 
 
+def _require_affordable_full_read(
+    full: bool, range_start: str, range_end: str, faction_count: int
+) -> None:
+    """400 when a `fields=full` read would allocate past MAX_FULL_FACTION_DAYS.
+
+    Refused rather than trimmed, like every other cap on this route: a partial
+    answer that looks complete is worse than an error the caller can react to.
+    `fields=core` is never checked - it has no breakdown arrays, so the per-axis
+    caps already bound it.
+    """
+    if not full or faction_count <= 0:
+        return
+    faction_days = _day_span(range_start, range_end) * faction_count
+    if faction_days > MAX_FULL_FACTION_DAYS:
+        raise _bad_request(
+            f"Ledger 'fields=full' request covers {faction_days} faction-days, "
+            f"cap is {MAX_FULL_FACTION_DAYS}. Narrow the day range, ask for "
+            "fewer factions, or use fields=core."
+        )
+
+
 def _parse_faction_keys(raw: str | None) -> list[str] | None:
     """`?factions=k,k` -> deduplicated key list, or None for "server picks"."""
     if raw is None:
@@ -182,7 +212,9 @@ def _parse_faction_keys(raw: str | None) -> list[str] | None:
     return keys
 
 
-def _default_faction_keys(map_id: str, days: list[str], anchor: str | None) -> list[str]:
+def _default_faction_keys(
+    map_id: str, days: list[str], anchor: str | None, *, conn=None
+) -> list[str]:
     """Top `DEFAULT_FACTION_COUNT` factions by wealth on the anchor day.
 
     The anchor is `latest_complete_day` so the ranking comes from a snapshot
@@ -193,7 +225,7 @@ def _default_faction_keys(map_id: str, days: list[str], anchor: str | None) -> l
     day = anchor or (days[-1] if days else None)
     if day is None:
         return []
-    rows = store.read_faction_days(map_id, day, day)
+    rows = store.read_faction_days(map_id, day, day, conn=conn)
     rows.sort(key=lambda row: (row.get("wealth") is None, -(row.get("wealth") or 0.0)))
     return [row["faction_key"] for row in rows[:DEFAULT_FACTION_COUNT]]
 
@@ -261,7 +293,9 @@ def _breakdown_columns(
             blob = row.get(column)
             if not isinstance(blob, dict):
                 continue
-            position = index[row["day"]]
+            position = index.get(row["day"])
+            if position is None:
+                continue  # see _faction_block
             for key, amount in blob.items():
                 if key in series:
                     series[key][position] = amount
@@ -285,7 +319,14 @@ def _faction_block(
     series = {field: [None] * size for field in FACTION_SERIES_FIELDS}
     labels = {field: [None] * size for field in FACTION_LABEL_FIELDS}
     for row in rows:
-        position = index[row["day"]]
+        # `.get`, not `[...]`: the day axis and the faction rows are two
+        # separate queries, and a faction row can carry a day the axis does not
+        # (an `index_snapshot` committing between them, a row whose day row was
+        # deleted). A KeyError here is a 500 on a public read route, so a day
+        # with no column to write into is skipped instead.
+        position = index.get(row["day"])
+        if position is None:
+            continue
         for field in FACTION_SERIES_FIELDS:
             series[field][position] = row.get(field)
         for field in FACTION_LABEL_FIELDS:
@@ -399,41 +440,64 @@ def get_ledger_series(
     full = normalized_fields == "full"
 
     requested_keys = _parse_faction_keys(factions)
-    all_days = [row["day"] for row in store.list_days(map_id)]
-    range_start, range_end, truncated = _resolve_range(all_days, start, end)
 
-    if not all_days:
-        return conditional_json_response(
-            {
-                "days": [],
-                "server_day": [],
-                "captured_at": [],
-                "complete": [],
-                "global": {field: [] for field in GLOBAL_FIELDS},
-                "factions": [],
-                "truncated": False,
-            },
-            if_none_match=if_none_match,
+    # One connection for the whole request, passed through every store call
+    # below. Each of them used to open its own (plus its PRAGMA), which was
+    # seven connects for one response; sharing one also makes the day axis and
+    # the faction rows a single consistent view of the database.
+    conn = store.open_connection()
+    try:
+        all_days = [row["day"] for row in store.list_days(map_id, conn=conn)]
+        range_start, range_end, truncated = _resolve_range(all_days, start, end)
+
+        if not all_days:
+            return conditional_json_response(
+                {
+                    "days": [],
+                    "server_day": [],
+                    "captured_at": [],
+                    "complete": [],
+                    "global": {field: [] for field in GLOBAL_FIELDS},
+                    "factions": [],
+                    "truncated": False,
+                },
+                if_none_match=if_none_match,
+            )
+
+        day_rows = store.read_global_days(map_id, range_start, range_end, conn=conn)
+        days, index = _day_axis(day_rows)
+        size = len(days)
+
+        if requested_keys is None:
+            keys = _default_faction_keys(
+                map_id,
+                all_days,
+                store.latest_complete_day(map_id, conn=conn),
+                conn=conn,
+            )
+            # Against the factions that actually have rows in the resolved
+            # range, not against the registry: the registry is cumulative and
+            # keeps every faction the map ever held, so comparing to it reported
+            # `truncated` on every default request the moment a map's first
+            # faction was deleted.
+            in_range = store.count_factions_in_range(
+                map_id, range_start, range_end, conn=conn
+            )
+            truncated = truncated or in_range > len(keys)
+        else:
+            keys = requested_keys
+
+        _require_affordable_full_read(full, range_start, range_end, len(keys))
+
+        rows = store.read_faction_days(
+            map_id, range_start, range_end, keys, full=full, conn=conn
         )
-
-    day_rows = store.read_global_days(map_id, range_start, range_end)
-    days, index = _day_axis(day_rows)
-    size = len(days)
-
-    if requested_keys is None:
-        keys = _default_faction_keys(map_id, all_days, store.latest_complete_day(map_id))
-        # Against the factions that actually have rows in the resolved range,
-        # not against the registry: the registry is cumulative and keeps every
-        # faction the map ever held, so comparing to it reported `truncated` on
-        # every default request the moment a map's first faction was deleted.
-        in_range = store.count_factions_in_range(map_id, range_start, range_end)
-        truncated = truncated or in_range > len(keys)
-    else:
-        keys = requested_keys
-
-    rows = store.read_faction_days(map_id, range_start, range_end, keys, full=full)
-    grouped = _group_by_key(rows)
-    registry = {row["faction_key"]: row for row in store.list_registry(map_id)}
+        grouped = _group_by_key(rows)
+        registry = {
+            row["faction_key"]: row for row in store.list_registry(map_id, conn=conn)
+        }
+    finally:
+        conn.close()
 
     payload = {
         "days": days,
@@ -500,7 +564,9 @@ def get_ledger_faction(
     subjects: list = [[] for _ in range(size)]
     wars: list = [[] for _ in range(size)]
     for row in rows:
-        position = index[row["day"]]
+        position = index.get(row["day"])
+        if position is None:
+            continue  # see _faction_block
         overlord[position] = row.get("overlord")
         subjects[position] = row.get("subjects") or []
         wars[position] = row.get("wars") or []
