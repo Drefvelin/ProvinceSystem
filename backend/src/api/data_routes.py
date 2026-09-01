@@ -1,4 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 import json, logging, os, time
 
@@ -378,7 +379,12 @@ async def upload_region_data(
         # 5-minute sample, and a BackgroundTask failure after a 200 would lose
         # it silently. Promotion is derived from raw and can be retried.
         try:
-            ledger_ingest.store_raw(map_id, snapshot)
+            # Off the event loop: `store_raw` is blocking (gzip + fsync) and now
+            # waits on the per-map ledger lock for up to 30s, which a promote or
+            # a reindex can hold for a long raw scan. Awaited, not queued as a
+            # BackgroundTask - this is the only durable copy of the sample, so
+            # the caller has to learn whether it landed.
+            await run_in_threadpool(ledger_ingest.store_raw, map_id, snapshot)
         except MapLockBusy as exc:
             # `store_raw` takes the per-map ledger lock and gives up after 30s.
             # A staff wipe or restore holding it longer is a *temporary* state,

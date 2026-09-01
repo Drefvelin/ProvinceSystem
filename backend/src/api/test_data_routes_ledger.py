@@ -11,6 +11,7 @@ import gzip
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -27,9 +28,11 @@ os.environ.setdefault("SKINS_DEV", "1")
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from src.api import data_routes  # noqa: E402
 from src.api.data_routes import data_router  # noqa: E402
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.chronicle import capture as chronicle_capture  # noqa: E402
+from src.scripts.ledger import ingest as ledger_ingest  # noqa: E402
 from src.scripts.ledger import store  # noqa: E402
 from src.scripts.ledger.schema import MAX_BODY_BYTES as LEDGER_MAX_BODY_BYTES  # noqa: E402
 from src.scripts.ledger.schema import faction_key  # noqa: E402
@@ -365,6 +368,35 @@ def test_non_localhost_upload_is_403(upload_env):
             headers={"X-Forwarded-For": "8.8.8.8"},
         )
     assert res.status_code == 403
+
+
+def test_store_raw_runs_off_the_event_loop(client, upload_env, monkeypatch):
+    """`store_raw` blocks on gzip, fsync and a 30s lock wait.
+
+    `upload_region_data` is `async def`, so calling it directly would park the
+    whole event loop - every other connection on the box - behind a wipe that
+    happens to hold the map's ledger lock. It has to go through the threadpool.
+    """
+    real_store_raw = ledger_ingest.store_raw
+    real_normalize = data_routes.normalize_snapshot
+    seen: dict[str, str] = {}
+
+    def _normalize(payload, map_id):
+        # Runs on the event loop itself, a few lines above the call under test.
+        seen["loop"] = threading.current_thread().name
+        return real_normalize(payload, map_id)
+
+    def _store_raw(map_id, snapshot):
+        seen["store_raw"] = threading.current_thread().name
+        return real_store_raw(map_id, snapshot)
+
+    monkeypatch.setattr(data_routes, "normalize_snapshot", _normalize)
+    monkeypatch.setattr("src.scripts.ledger.ingest.store_raw", _store_raw)
+
+    res = client.post("/main/data/upload/chronicle", json=_snapshot())
+
+    assert res.status_code == 200
+    assert seen["store_raw"] != seen["loop"]
 
 
 def test_a_locked_ledger_is_503_with_retry_after(client, upload_env, monkeypatch):

@@ -132,6 +132,28 @@ def open_connection():
     return connect()
 
 
+def _read(conn, action):
+    """Run `action(conn)`, owning the connection only if the caller passed none.
+
+    The read routes fan out over several of the functions below, and each one
+    opening its own connection meant a fresh `sqlite3.connect` plus its PRAGMA
+    per call - seven of them for one `/ledger/series` request. Passing a
+    connection in also makes the whole request one consistent view of the
+    database, so a promotion landing mid-request can no longer show a faction
+    row for a day the day-axis query did not return.
+
+    No transaction is opened: these are reads, and wrapping them in `with conn:`
+    would commit on the caller's behalf.
+    """
+    if conn is not None:
+        return action(conn)
+    owned = connect()
+    try:
+        return action(owned)
+    finally:
+        owned.close()
+
+
 def _write(conn, action):
     """Run `action(conn)`, owning the connection and transaction if none given."""
     if conn is not None:
@@ -462,37 +484,35 @@ def _day_dict(row) -> dict:
     return out
 
 
-def list_days(map_id: str) -> list[dict]:
+def list_days(map_id: str, *, conn=None) -> list[dict]:
     """Every indexed day, oldest first — one connect, one ordered SELECT.
 
     `globals` is deliberately not selected: the index route only needs the
     per-day metadata, and the globals blob is the bulk of the row.
     """
     validate_map(map_id)
-    conn = connect()
-    try:
-        rows = conn.execute(
-            f"SELECT {', '.join(_quote(c) for c in _DAY_COLUMNS)} "
+    rows = _read(
+        conn,
+        lambda c: c.execute(
+            f"SELECT {', '.join(_quote(col) for col in _DAY_COLUMNS)} "
             "FROM map_ledger_days WHERE map_id = ? ORDER BY day ASC",
             (map_id,),
-        ).fetchall()
-    finally:
-        conn.close()
+        ).fetchall(),
+    )
     return [_day_dict(row) for row in rows]
 
 
-def latest_complete_day(map_id: str) -> str | None:
+def latest_complete_day(map_id: str, *, conn=None) -> str | None:
     validate_map(map_id)
-    conn = connect()
-    try:
-        row = conn.execute(
+    row = _read(
+        conn,
+        lambda c: c.execute(
             "SELECT day FROM map_ledger_days WHERE map_id = ? AND complete = 1 "
             "ORDER BY day DESC LIMIT 1",
             (map_id,),
-        ).fetchone()
-        return row["day"] if row else None
-    finally:
-        conn.close()
+        ).fetchone(),
+    )
+    return row["day"] if row else None
 
 
 def get_day(map_id: str, day: str) -> dict | None:
@@ -522,23 +542,22 @@ def get_day(map_id: str, day: str) -> dict | None:
     return out
 
 
-def list_registry(map_id: str) -> list[dict]:
+def list_registry(map_id: str, *, conn=None) -> list[dict]:
     """The faction registry, first-seen order. One connect, one ordered SELECT."""
     validate_map(map_id)
-    conn = connect()
-    try:
-        rows = conn.execute(
-            f"SELECT {', '.join(_quote(c) for c in _REGISTRY_COLUMNS)} "
+    rows = _read(
+        conn,
+        lambda c: c.execute(
+            f"SELECT {', '.join(_quote(col) for col in _REGISTRY_COLUMNS)} "
             "FROM map_ledger_factions WHERE map_id = ? "
             "ORDER BY first_seen_day ASC, faction_id ASC",
             (map_id,),
-        ).fetchall()
-    finally:
-        conn.close()
+        ).fetchall(),
+    )
     return [{column: row[column] for column in _REGISTRY_COLUMNS} for row in rows]
 
 
-def read_global_days(map_id: str, start: str, end: str) -> list[dict]:
+def read_global_days(map_id: str, start: str, end: str, *, conn=None) -> list[dict]:
     """Per-day metadata + globals across an inclusive day range, oldest first.
 
     One ordered SELECT for the whole range. The chronicle index route used to
@@ -551,16 +570,15 @@ def read_global_days(map_id: str, start: str, end: str) -> list[dict]:
     validate_map(map_id)
     if not is_valid_day(start) or not is_valid_day(end):
         raise ValueError("Invalid ledger day")
-    conn = connect()
-    try:
-        rows = conn.execute(
-            f"SELECT {', '.join(_quote(c) for c in _DAY_COLUMNS)}, globals "
+    rows = _read(
+        conn,
+        lambda c: c.execute(
+            f"SELECT {', '.join(_quote(col) for col in _DAY_COLUMNS)}, globals "
             "FROM map_ledger_days WHERE map_id = ? AND day >= ? AND day <= ? "
             "ORDER BY day ASC",
             (map_id, start, end),
-        ).fetchall()
-    finally:
-        conn.close()
+        ).fetchall(),
+    )
 
     out: list[dict] = []
     for row in rows:
@@ -581,6 +599,7 @@ def read_faction_days(
     faction_keys=None,
     *,
     full: bool = False,
+    conn=None,
 ) -> list[dict]:
     """Faction rows across an inclusive day range, ordered by (key, day).
 
@@ -611,11 +630,7 @@ def read_faction_days(
         params.extend(keys)
     sql += " ORDER BY faction_key ASC, day ASC"
 
-    conn = connect()
-    try:
-        rows = conn.execute(sql, params).fetchall()
-    finally:
-        conn.close()
+    rows = _read(conn, lambda c: c.execute(sql, params).fetchall())
 
     out: list[dict] = []
     for row in rows:
@@ -629,7 +644,7 @@ def read_faction_days(
     return out
 
 
-def count_factions_in_range(map_id: str, start: str, end: str) -> int:
+def count_factions_in_range(map_id: str, start: str, end: str, *, conn=None) -> int:
     """How many distinct factions actually have rows in an inclusive range.
 
     The registry is *cumulative* — it keeps every faction the map ever held,
@@ -640,15 +655,14 @@ def count_factions_in_range(map_id: str, start: str, end: str) -> int:
     validate_map(map_id)
     if not is_valid_day(start) or not is_valid_day(end):
         raise ValueError("Invalid ledger day")
-    conn = connect()
-    try:
-        row = conn.execute(
+    row = _read(
+        conn,
+        lambda c: c.execute(
             "SELECT COUNT(DISTINCT faction_key) AS total FROM map_ledger_faction_days "
             "WHERE map_id = ? AND day >= ? AND day <= ?",
             (map_id, start, end),
-        ).fetchone()
-    finally:
-        conn.close()
+        ).fetchone(),
+    )
     return int(row["total"]) if row else 0
 
 
