@@ -16,8 +16,6 @@ import {
   EMPTY_CHRONICLE_COST_SAMPLE,
   disposeChronicleFrames,
   estimateChronicleBuild,
-  formatChronicleBytes,
-  formatChronicleDuration,
   chronicleBuildBlockReason,
   isChronicleBuildCancelled,
   runChronicleBuild,
@@ -138,7 +136,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [buildProgress, setBuildProgress] =
     useState<ChronicleBuildProgress | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
-  const [buildSummary, setBuildSummary] = useState<string>("");
   const [skippedDays, setSkippedDays] = useState<string[]>([]);
 
   const [playIndex, setPlayIndex] = useState(0);
@@ -867,13 +864,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       setSkippedDays(result.skippedDays);
       setFramesVersion((version) => version + 1);
       setPlayIndex(0);
-      setBuildSummary(
-        `${result.frames.length} frames in ${formatChronicleDuration(
-          result.elapsedMs
-        )} — ${result.paintedCount} painted, ${result.reusedCount} reused, ${formatChronicleBytes(
-          result.frames.length * renderSize * renderSize * 4
-        )} resident.`
-      );
       setStage(result.frames.length ? "play" : "range");
       if (!result.frames.length) {
         setBuildError("No day in that range had anything to draw.");
@@ -899,7 +889,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     buildBlockReason,
     selection,
     toggles,
-    renderSize,
     ensureGrid,
     ensureRenderTarget,
     loadDay,
@@ -1147,7 +1136,6 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                   activeFrame ? chronicleDayHref(mapId, activeFrame.day) : null
                 }
                 skippedDays={skippedDays}
-                summary={buildSummary}
                 onDiscard={() => {
                   discardFrames();
                   setStage("compose");

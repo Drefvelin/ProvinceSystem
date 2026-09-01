@@ -6,7 +6,6 @@ import {
   ChronicleBuildCancelled,
   chronicleBuildBlockReason,
   describeChronicleEstimate,
-  describeChronicleEstimateSplit,
   disposeChronicleFrames,
   estimateChronicleBuild,
   formatChronicleBytes,
@@ -185,7 +184,11 @@ describe("estimateChronicleBuild", () => {
     expect(estimate.measured).toBe(false);
     expect(estimate.staleSample).toBe(false);
     expect(estimate.totalMs).toBeGreaterThan(0);
-    expect(describeChronicleEstimate(estimate)).toContain("roughly");
+    // The line reads the same whether or not the sample was measured; only the
+    // numbers behind it differ.
+    expect(describeChronicleEstimate(estimate)).toMatch(
+      /^~.+ to build\. ~.+\.$/
+    );
   });
 
   it("flags a range that would blow the memory ceiling", () => {
@@ -220,10 +223,7 @@ describe("estimateChronicleBuild", () => {
       renderHeight: 900,
     });
     expect(describeChronicleEstimate(estimate)).toBe(
-      "25 days — about 23 s to build, ~77.2 MB."
-    );
-    expect(describeChronicleEstimateSplit(estimate)).toBe(
-      "2.5 s fetching, 20 s painting and labelling."
+      "~23 s to build. ~77.2 MB."
     );
   });
 });

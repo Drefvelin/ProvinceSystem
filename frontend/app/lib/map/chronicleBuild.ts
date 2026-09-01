@@ -292,22 +292,17 @@ export function formatChronicleBytes(bytes: number): string {
   return `${mb.toFixed(1)} MB`;
 }
 
-/** The one line the estimate step shows: "25 days — about 8 s to build, ~20 MB." */
+/**
+ * The one line the estimate step shows: "~8 s to build. ~20 MB."
+ *
+ * No day count — the two range selects sit directly above it — and no hedge
+ * word. `measured` still distinguishes a timed sample from a default guess for
+ * anything that wants it; this line no longer says which it got.
+ */
 export function describeChronicleEstimate(estimate: ChronicleEstimate): string {
-  const days = `${estimate.dayCount} ${estimate.dayCount === 1 ? "day" : "days"}`;
   const time = formatChronicleDuration(estimate.totalMs);
   const memory = formatChronicleBytes(estimate.memoryBytes);
-  const hedge = estimate.measured ? "about" : "roughly";
-  return `${days} — ${hedge} ${time} to build, ~${memory}.`;
-}
-
-/** Where the predicted time goes, for the line under the estimate. */
-export function describeChronicleEstimateSplit(
-  estimate: ChronicleEstimate
-): string {
-  return `${formatChronicleDuration(estimate.fetchMs)} fetching, ${formatChronicleDuration(
-    estimate.cpuMs
-  )} painting and labelling.`;
+  return `~${time} to build. ~${memory}.`;
 }
 
 export class ChronicleBuildCancelled extends Error {

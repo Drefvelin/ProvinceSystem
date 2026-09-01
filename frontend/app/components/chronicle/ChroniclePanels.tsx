@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   CHRONICLE_RENDER_SIZES,
   describeChronicleEstimate,
-  describeChronicleEstimateSplit,
   formatChronicleBytes,
   type ChronicleBuildProgress,
   type ChronicleEstimate,
@@ -37,12 +36,8 @@ const selectClass =
 const headingClass =
   "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
 
-function StepHeading({ step, title }: { step: number; title: string }) {
-  return (
-    <p className={headingClass}>
-      Step {step} — {title}
-    </p>
-  );
+function SectionHeading({ title }: { title: string }) {
+  return <p className={headingClass}>{title}</p>;
 }
 
 export function ChronicleTogglePanel({
@@ -65,10 +60,9 @@ export function ChronicleTogglePanel({
 }) {
   return (
     <div className={`${chroniclePanelClass} p-3`}>
-      <StepHeading step={1} title="Compose" />
+      <SectionHeading title="Compose" />
       <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-        The map starts bare. Switch layers on to build the look you want; every
-        one you add appears on the latest stored day.
+        The map starts empty. Toggle layers to build the look you want.
       </p>
 
       <ul className="mt-3 space-y-1.5">
@@ -174,11 +168,7 @@ export function ChronicleRangePanel({
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
-      <StepHeading step={2} title="Range" />
-      <p className="mt-1 text-xs leading-snug text-[var(--tfmc-stone)]">
-        Only days this map actually stored can be picked. Days captured with
-        holes stay selectable and are flagged.
-      </p>
+      <SectionHeading title="Range" />
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <label className="text-xs text-[var(--tfmc-mist)]">
@@ -204,7 +194,7 @@ export function ChronicleRangePanel({
       </div>
 
       <div className="mt-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
-        <StepHeading step={3} title="Estimate" />
+        <SectionHeading title="Estimate" />
         {selection.error ? (
           <p className="mt-1 text-sm text-[var(--tfmc-accent)]">
             {selection.error}
@@ -213,16 +203,6 @@ export function ChronicleRangePanel({
           <>
             <p className="mt-1 text-sm text-[var(--tfmc-cream)]">
               {describeChronicleEstimate(estimate)}
-            </p>
-            <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-              {describeChronicleEstimateSplit(estimate)}
-            </p>
-            <p className="mt-1 text-xs text-[var(--tfmc-stone)]">
-              {estimate.staleSample
-                ? "Timed with a different set of layers — go back and let the preview re-measure the ones you picked."
-                : estimate.measured
-                  ? "Timed on one real day with exactly these layers, counting every day as a repaint. Days that do not change are reused, so builds usually land early."
-                  : "Timed from defaults — switch your layers on and let the preview paint once to measure a real day."}
             </p>
             {selection.incompleteDays.length ? (
               <p className="mt-1 text-xs text-[var(--tfmc-accent)]">
@@ -296,7 +276,7 @@ export function ChronicleBuildPanel({
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
-      <StepHeading step={4} title="Build" />
+      <SectionHeading title="Build" />
       <p className="mt-1 text-sm text-[var(--tfmc-cream)]">
         {completed} / {total} days
         {progress?.day ? ` — ${progress.day}` : ""}
@@ -351,7 +331,6 @@ export function ChroniclePlaybackPanel({
   onLoopChange,
   incomplete,
   skippedDays,
-  summary,
   exploreHref,
   onDiscard,
 }: {
@@ -366,7 +345,6 @@ export function ChroniclePlaybackPanel({
   onLoopChange: (loop: boolean) => void;
   incomplete: boolean;
   skippedDays: string[];
-  summary: string;
   /**
    * Route to the standalone viewer for the day currently on screen, or `null`
    * when there is no day to explore. Built by `ChronicleStudio`, which is the
@@ -378,7 +356,7 @@ export function ChroniclePlaybackPanel({
 }) {
   return (
     <div className={`${chroniclePanelClass} p-3`}>
-      <StepHeading step={5} title="Play" />
+      <SectionHeading title="Play" />
       <p className="mt-1 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         {days[activeIndex] ?? "—"}
       </p>
@@ -423,15 +401,32 @@ export function ChroniclePlaybackPanel({
         </label>
       </div>
 
-      <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--tfmc-stone)]">
-        <input
-          type="checkbox"
-          className="accent-[var(--tfmc-accent)]"
-          checked={loop}
-          onChange={(e) => onLoopChange(e.target.checked)}
-        />
-        Loop
-      </label>
+      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[var(--tfmc-stone)]">
+        <span id="chronicle-loop-label">Loop</span>
+        {/*
+          `role="switch"` rather than a checkbox: the state is on/off and takes
+          effect immediately, which is what a switch means to a screen reader.
+          The visual is the track; the inner span is the knob.
+        */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={loop}
+          aria-labelledby="chronicle-loop-label"
+          onClick={() => onLoopChange(!loop)}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border transition ${
+            loop
+              ? "border-[var(--tfmc-accent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)]"
+              : "border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)]"
+          }`}
+        >
+          <span
+            className={`h-3.5 w-3.5 rounded-full bg-[var(--tfmc-cream)] transition-transform ${
+              loop ? "translate-x-[1.125rem]" : "translate-x-[0.1875rem]"
+            }`}
+          />
+        </button>
+      </div>
 
       {exploreHref ? (
         <Link
@@ -442,7 +437,6 @@ export function ChroniclePlaybackPanel({
         </Link>
       ) : null}
 
-      <p className="mt-2 text-xs text-[var(--tfmc-stone)]">{summary}</p>
       {skippedDays.length ? (
         <p className="mt-1 text-xs text-[var(--tfmc-accent)]">
           {skippedDays.length} day{skippedDays.length === 1 ? "" : "s"} had no
