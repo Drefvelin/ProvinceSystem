@@ -35,17 +35,17 @@ async def read_json_body(request: Request, limit: int):
             # through and let the streamed count below decide.
             pass
 
-    chunks: list[bytes] = []
-    total = 0
+    # A bytearray, not a list of chunks plus `b"".join`: the join holds the
+    # chunk list and the joined copy at the same time, so peak memory was twice
+    # the body. Appending amortises the same way the list did.
+    body = bytearray()
     async for chunk in request.stream():
-        total += len(chunk)
-        if total > limit:
+        if len(body) + len(chunk) > limit:
             # Stop reading rather than draining the rest: the body is already
             # past the ceiling and nothing downstream will use it.
             raise HTTPException(status_code=413, detail="Upload body too large")
-        chunks.append(chunk)
+        body += chunk
 
-    body = b"".join(chunks)
     try:
         return json.loads(body)
     except (ValueError, RecursionError) as exc:

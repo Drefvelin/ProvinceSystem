@@ -29,6 +29,7 @@ from ..scripts.ledger.schema import (
     normalize_snapshot,
 )
 from ..scripts.loader.markers import build_markers_response
+from ..scripts.util.maplock import MapLockBusy
 from ..scripts.mapgen.infestationgen import create_infestation_map, load_infestation_by_id
 from ..scripts.loader.province_metadata import load_province_metadata
 from ..scripts.mapgen.zocgen import generate_zoc_overlays
@@ -43,9 +44,16 @@ _province_cache = {}
 # Ceiling for a non-ledger upload body. Every existing mode is a hand-sized JSON
 # document (the largest on disk is province_data.json at ~70 KB), so this bounds
 # the memory one localhost POST can claim without coming near a real payload —
-# the read is behaviour-identical below the limit. The ledger keeps its own,
-# tighter cap from schema.MAX_BODY_BYTES.
-UPLOAD_MAX_BODY_BYTES = 64 * 1024 * 1024
+# the read is behaviour-identical below the limit. 8 MiB is ~100x the largest
+# real payload and matches the ledger's own schema.MAX_BODY_BYTES; the previous
+# 64 MiB let one LAN POST claim two orders of magnitude more than any mode can
+# legitimately send.
+UPLOAD_MAX_BODY_BYTES = 8 * 1024 * 1024
+
+# What a 503 from a locked ledger tells the caller to wait. Matches
+# `maplock.DEFAULT_TIMEOUT`, which is how long `store_raw` already waited before
+# giving up, so the retry lands after roughly one more lock window.
+LEDGER_LOCK_RETRY_AFTER_SECONDS = 30
 
 def clear_province_cache(map_name: str) -> None:
     _province_cache.pop(map_name, None)
@@ -183,6 +191,11 @@ async def get_map_markers(
         if_none_match=if_none_match,
     )
 
+# Same body for both 404 paths below, and deliberately free of the caller's
+# input: this route is public.
+_ARTIFACT_NOT_FOUND = "Artifact not found"
+
+
 def _gzip_artifact_response(
     map_name: str,
     filename: str,
@@ -190,20 +203,18 @@ def _gzip_artifact_response(
     if_none_match: str | None,
     if_modified_since: str | None,
 ):
-    """Serve a defines artifact as its on-disk gzip bytes, or 404 with the fix.
+    """Serve a defines artifact as its on-disk gzip bytes, or a plain 404.
 
     Body only — every caller still applies its own auth gate first, and the
     gates deliberately differ between the public and the editor routes.
     """
     path = defines_file(map_name, filename)
     if not os.path.isfile(path):
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                f"Artifact '{filename}' not found for map '{map_name}'. "
-                f"Run: python -m scripts.tools.build_province_id_grid --map {map_name}"
-            ),
-        )
+        # Public route: the body echoes neither the requested map nor the
+        # build command that would create the artifact. Handing an
+        # unauthenticated caller back its own input, plus a module path to run,
+        # is free reconnaissance; the operator fix belongs in docs, not here.
+        raise HTTPException(status_code=404, detail=_ARTIFACT_NOT_FOUND)
     try:
         return conditional_file_response(
             path,
@@ -215,13 +226,7 @@ def _gzip_artifact_response(
         # isfile() above and the stat inside the response are two separate
         # syscalls; a regen replacing the artifact in between must 404 like any
         # other absent artifact rather than raising into a 500.
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                f"Artifact '{filename}' not found for map '{map_name}'. "
-                f"Run: python -m scripts.tools.build_province_id_grid --map {map_name}"
-            ),
-        ) from exc
+        raise HTTPException(status_code=404, detail=_ARTIFACT_NOT_FOUND) from exc
 
 @data_router.get("/{map_name}/data/province_id_runs")
 async def get_province_id_runs(
@@ -372,23 +377,35 @@ async def upload_region_data(
         # Raw write is synchronous: it is the only durable copy of this
         # 5-minute sample, and a BackgroundTask failure after a 200 would lose
         # it silently. Promotion is derived from raw and can be retried.
-        ledger_ingest.store_raw(map_id, snapshot)
+        try:
+            ledger_ingest.store_raw(map_id, snapshot)
+        except MapLockBusy as exc:
+            # `store_raw` takes the per-map ledger lock and gives up after 30s.
+            # A staff wipe or restore holding it longer is a *temporary* state,
+            # not a bad request: answer 503 + Retry-After so the plugin retries
+            # this 5-minute sample instead of seeing a 500 and dropping it.
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Map '{map_id}' ledger is locked by a maintenance "
+                    "operation; retry shortly."
+                ),
+                headers={"Retry-After": str(LEDGER_LOCK_RETRY_AFTER_SECONDS)},
+            ) from exc
         background_tasks.add_task(_run_promote_ledger_day, map_id, snapshot["day"])
 
         # ORDER MATTERS - keep capture_if_due last, for the same reason as the
         # legacy path below. See the comment there.
         from ..scripts.chronicle.capture import capture_if_due
 
-        # `map_name`, not `map_id`, deliberately: the timelapse chronicle keys
-        # off the raw URL segment on every other mode, and its sources
-        # (input_file/defines_file) are written under that same segment. Passing
-        # the normalised registry id here would start a *second* chronicle
-        # series under a name whose source files do not exist, producing a
-        # permanently-incomplete manifest that capture_if_due retries on every
-        # single upload. The legacy path's raw-segment map resolution is a known
-        # wart (plan risk 3) - the fix is to be consistent with it, not to
-        # diverge from it here.
-        background_tasks.add_task(capture_if_due, map_name)
+        # `map_id`, not the raw `map_name` segment. `validate_map` only checks
+        # `isalnum()`, so "/MAIN/data/upload/chronicle" reaches here with the
+        # ledger rows keyed on "main" and the segment still "MAIN"; handing the
+        # segment to the chronicle forked an orphan day series under "MAIN"
+        # whose sources never exist, retried on every upload forever. The
+        # registry id is the same key the ledger write above uses, and the same
+        # one every chronicle read route resolves through `ensure_map_access`.
+        background_tasks.add_task(capture_if_due, map_id)
 
         # Return before the defines/ write: nothing about this mode belongs in
         # defines/{map}/chronicle.json, and `_province_cache` holds compiled

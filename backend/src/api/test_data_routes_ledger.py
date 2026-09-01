@@ -31,8 +31,10 @@ from src.api.data_routes import data_router  # noqa: E402
 from src.api.map_registry import clear_map_registry_cache  # noqa: E402
 from src.scripts.chronicle import capture as chronicle_capture  # noqa: E402
 from src.scripts.ledger import store  # noqa: E402
+from src.scripts.ledger.schema import MAX_BODY_BYTES as LEDGER_MAX_BODY_BYTES  # noqa: E402
 from src.scripts.ledger.schema import faction_key  # noqa: E402
 from src.scripts.util import dirs  # noqa: E402
+from src.scripts.util.maplock import MapLockBusy  # noqa: E402
 from src.skins import db as skins_db  # noqa: E402
 
 TEST_REGISTRY = """
@@ -240,19 +242,20 @@ def test_capture_if_due_still_runs_last_on_the_ledger_branch(client, upload_env)
     assert upload_env["captures"] == ["main"]
 
 
-def test_a_mixed_case_url_captures_under_the_url_segment(client, upload_env):
-    """The timelapse must not fork a second series under the normalised id.
+@pytest.mark.parametrize("segment", ["Main", "MAIN"])
+def test_a_mixed_case_url_captures_under_the_registry_id(client, upload_env, segment):
+    """The timelapse must not fork an orphan series under the URL's casing.
 
-    `capture_if_due` reads `input_file(<name>, ...)`/`defines_file(<name>, ...)`,
-    and every other upload mode writes those under the raw URL segment. Handing
-    it the registry id instead would start a chronicle for a map whose sources
-    do not exist there - a permanently-incomplete manifest, retried on every
-    upload forever. The ledger rows still key off the registry id.
+    `validate_map` only enforces `isalnum()`, so "/MAIN/data/upload/chronicle"
+    stores its ledger rows under "main" while the raw segment stays "MAIN".
+    Handing that segment to `capture_if_due` started a second chronicle series
+    under a map id whose sources never exist - a permanently-incomplete
+    manifest, retried on every upload forever.
     """
-    res = client.post("/Main/data/upload/chronicle", json=_snapshot())
+    res = client.post(f"/{segment}/data/upload/chronicle", json=_snapshot())
     assert res.status_code == 200
     assert res.json()["map"] == "main"
-    assert upload_env["captures"] == ["Main"]
+    assert upload_env["captures"] == ["main"]
     # Storage is unaffected: still one series, under the registry id.
     assert [row["day"] for row in store.list_days("main")] == ["2026-09-01"]
 
@@ -364,6 +367,44 @@ def test_non_localhost_upload_is_403(upload_env):
     assert res.status_code == 403
 
 
+def test_a_locked_ledger_is_503_with_retry_after(client, upload_env, monkeypatch):
+    """A staff wipe/restore holding the map lock is temporary, not a 500.
+
+    `store_raw` takes the per-map ledger lock and raises `MapLockBusy` when it
+    cannot get it inside 30s. The plugin re-POSTs on a 503; a 500 loses the
+    sample, and this is the only durable copy of it.
+    """
+    def _busy(*args, **kwargs):
+        raise MapLockBusy("held by a wipe")
+
+    monkeypatch.setattr("src.scripts.ledger.ingest.store_raw", _busy)
+
+    res = client.post("/main/data/upload/chronicle", json=_snapshot())
+
+    assert res.status_code == 503
+    assert res.headers["retry-after"] == "30"
+    assert "locked" in res.json()["detail"]
+    # Nothing was promoted or captured behind the failed write.
+    assert upload_env["captures"] == []
+
+
+# --- public artifact 404s ----------------------------------------------------
+#
+# Lives here rather than in `test_chronicle_routes.py` because that module
+# builds its client from `server.app`; this one mounts `data_router` alone.
+
+
+@pytest.mark.parametrize("route", ["province_id_runs", "province_id_grid_q4"])
+def test_public_artifact_404_echoes_nothing_back(client, upload_env, route):
+    """No caller input, no build command: this route needs no authentication."""
+    res = client.get(f"/MaIn/data/{route}")
+    assert res.status_code == 404
+    detail = res.json()["detail"]
+    assert detail == "Artifact not found"
+    assert "MaIn" not in detail
+    assert "build_province_id_grid" not in detail
+
+
 # --- body reader -------------------------------------------------------------
 
 
@@ -379,6 +420,32 @@ def test_oversize_legacy_body_is_413(client, upload_env, monkeypatch):
     res = client.post("/main/data/upload/nation", json={"nations": [1, 2, 3]})
     assert res.status_code == 413
     assert not (upload_env["root"] / "input" / "main").exists()
+
+
+def test_non_ledger_cap_is_not_more_than_the_ledger_cap(client, upload_env):
+    """The non-ledger modes are ~70 KB documents; the cap was 64 MiB.
+
+    Pinned against the ledger's own `schema.MAX_BODY_BYTES` rather than a bare
+    number so the two cannot drift back apart: no upload mode on this route may
+    claim more memory than the largest payload the app actually receives.
+    """
+    from src.api.data_routes import UPLOAD_MAX_BODY_BYTES
+
+    assert UPLOAD_MAX_BODY_BYTES == 8 * 1024 * 1024
+    assert UPLOAD_MAX_BODY_BYTES <= LEDGER_MAX_BODY_BYTES
+
+
+def test_a_body_at_the_cap_is_still_accepted(client, upload_env, monkeypatch):
+    """The ceiling is exclusive of nothing: exactly `limit` bytes still parse."""
+    payload = {"nations": []}
+    body = json.dumps(payload).encode("utf-8")
+    monkeypatch.setattr("src.api.data_routes.UPLOAD_MAX_BODY_BYTES", len(body))
+    res = client.post(
+        "/main/data/upload/nation",
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+    assert res.status_code == 200
 
 
 def test_malformed_json_is_400_not_500(client, upload_env):

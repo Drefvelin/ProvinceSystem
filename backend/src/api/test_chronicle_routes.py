@@ -214,7 +214,9 @@ def defines_dir(chronicle_env, monkeypatch):
 def test_public_artifact_routes_404_without_artifact(client, defines_dir, route, filename):
     res = client.get(f"/main/data/{route}")
     assert res.status_code == 404
-    assert "build_province_id_grid" in res.json()["detail"]
+    # These routes are public: the body must not echo the caller's map segment
+    # back, nor name the command that would build the artifact.
+    assert res.json()["detail"] == "Artifact not found"
 
 
 @pytest.mark.parametrize(
