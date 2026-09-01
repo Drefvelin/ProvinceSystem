@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 
 import {
   buildAreaPath,
@@ -922,6 +922,26 @@ export default function LedgerChartsPanel({
     [readySeries, readyOptions, readySelections?.income]
   );
 
+  // A fresh arrow per render for these defeated the `React.memo` wrappers
+  // above outright — `onSelect` is a prop every one of those three cards
+  // takes, so a new function identity every tick made the memo comparison
+  // fail regardless of how stable `series`/`faction` were. `readyOnSelect`
+  // itself is already stable (`useLedgerSeries`'s own `useCallback`), so
+  // these stay stable across cursor-only re-renders too.
+  const readyOnSelect = ready?.onSelect;
+  const handleWealthSelect = useCallback(
+    (key: string) => readyOnSelect?.("wealth", key),
+    [readyOnSelect]
+  );
+  const handlePrestigeSelect = useCallback(
+    (key: string) => readyOnSelect?.("prestige", key),
+    [readyOnSelect]
+  );
+  const handleIncomeSelect = useCallback(
+    (key: string) => readyOnSelect?.("income", key),
+    [readyOnSelect]
+  );
+
   if (result.status === "idle") return null;
 
   if (result.status === "loading") {
@@ -969,7 +989,7 @@ export default function LedgerChartsPanel({
     );
   }
 
-  const { options, selections, onSelect, series, seriesLoading, seriesError } = result;
+  const { options, selections, series, seriesLoading, seriesError } = result;
   const cardProps = { options, seriesLoading, seriesError };
   return (
     <>
@@ -979,7 +999,7 @@ export default function LedgerChartsPanel({
         faction={wealthFaction}
         cursorDay={cursorDay}
         selectedKey={selections.wealth}
-        onSelect={(key) => onSelect("wealth", key)}
+        onSelect={handleWealthSelect}
       />
       <PrestigeChart
         {...cardProps}
@@ -987,7 +1007,7 @@ export default function LedgerChartsPanel({
         faction={prestigeFaction}
         cursorDay={cursorDay}
         selectedKey={selections.prestige}
-        onSelect={(key) => onSelect("prestige", key)}
+        onSelect={handlePrestigeSelect}
       />
       <IncomeChart
         {...cardProps}
@@ -995,7 +1015,7 @@ export default function LedgerChartsPanel({
         faction={incomeFaction}
         cursorDay={cursorDay}
         selectedKey={selections.income}
-        onSelect={(key) => onSelect("income", key)}
+        onSelect={handleIncomeSelect}
       />
     </>
   );

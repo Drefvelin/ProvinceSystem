@@ -11,7 +11,7 @@
  * returned key and nothing else.
  */
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import LedgerChartsPanel from "./LedgerChartsPanel";
@@ -139,5 +139,45 @@ describe("LedgerChartsPanel", () => {
 
     factionSpy.mockRestore();
     stackSpy.mockRestore();
+  });
+
+  it("still calls onSelect with the right card and key after memoising the handler", () => {
+    // The `useCallback` wrap around the three `onSelect` closures (added so
+    // `React.memo` on the cards isn't defeated by a fresh arrow every render)
+    // must not lose which card a change came from, or the stale-closure key.
+    const onSelect = vi.fn();
+    const base = readyResult(1) as Extract<LedgerChartsResult, { status: "ready" }>;
+    const result: LedgerChartsResult = {
+      ...base,
+      options: [
+        {
+          name: "Aurelia",
+          keys: ["f1|2026-08-01T00:00:00Z"],
+          foundedAt: ["2026-08-01T00:00:00Z"],
+          label: "Aurelia",
+        },
+        { name: "Second Realm", keys: ["f2"], foundedAt: ["2026-08-01T00:00:00Z"], label: "Second Realm" },
+      ],
+      onSelect,
+    };
+
+    render(<LedgerChartsPanel result={result} cursorDay={DAYS[0]!} />);
+
+    fireEvent.change(screen.getByLabelText("Wealth nation"), {
+      target: { value: "Second Realm" },
+    });
+    expect(onSelect).toHaveBeenCalledWith("wealth", "Second Realm");
+
+    fireEvent.change(screen.getByLabelText("Prestige nation"), {
+      target: { value: "Second Realm" },
+    });
+    expect(onSelect).toHaveBeenCalledWith("prestige", "Second Realm");
+
+    fireEvent.change(screen.getByLabelText("Income nation"), {
+      target: { value: "Second Realm" },
+    });
+    expect(onSelect).toHaveBeenCalledWith("income", "Second Realm");
+
+    expect(onSelect).toHaveBeenCalledTimes(3);
   });
 });
