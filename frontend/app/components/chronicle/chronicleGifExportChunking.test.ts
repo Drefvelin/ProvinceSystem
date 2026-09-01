@@ -146,9 +146,12 @@ describe("exportChronicleGif chunked encode", () => {
     const result = await exportChronicleGif(baseOptions(3));
 
     expect(String.fromCharCode(...result.bytes.slice(0, 6))).toBe("GIF89a");
-    // Two between the three rendered days, plus one before each of the three
-    // encode steps. Without the encode-side yields this would be 2.
-    expect(yields.count).toBe(5);
+    // Two between the three rendered days, plus one before each of the four
+    // encode steps — three that write a frame and the final one that returns.
+    // The first of those four is the one that lets "encode 0 / 3" paint before
+    // the global palette scan takes the thread. Without the encode-side yields
+    // this would be 2.
+    expect(yields.count).toBe(6);
   });
 
   it("reports encode progress for every frame", async () => {

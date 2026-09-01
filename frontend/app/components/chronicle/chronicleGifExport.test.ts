@@ -8,8 +8,8 @@ import { exportChronicleGif } from "./chronicleGifExport";
  * Regression coverage for the export's byte-ceiling refusal (the "frames
  * retained without a ceiling" finding): `size * size * 4 * frames.length` is
  * checked and refused before anything else runs, so this can call
- * `exportChronicleGif` under plain node — no canvas, no `document`, no
- * `Worker` — and still exercise the real refusal path.
+ * `exportChronicleGif` under plain node — no canvas and no `document` — and
+ * still exercise the real refusal path.
  */
 describe("exportChronicleGif memory ceiling", () => {
   function framesOfCount(count: number) {

@@ -322,9 +322,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, []);
   /**
    * One controller per GIF export, so `exportChronicleGif`'s render loop and
-   * its worker session both actually see an abort instead of running to
-   * completion (or leaking a worker) after the studio no longer wants the
-   * result. `exportingRef` already keeps two exports from overlapping, so
+   * its chunked encode loop both actually see an abort instead of running to
+   * completion — and, on the way out, dropping the frame pixels they are
+   * holding — after the studio no longer wants the result.
+   * `exportingRef` already keeps two exports from overlapping, so
    * there is only ever one of these live at a time; it is cleared here too
    * on unmount, the one place this component has no button to cancel from.
    */
@@ -1582,8 +1583,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     setGifNotice(null);
     setGifStatus("Preparing…");
 
-    // One controller per export — `exportChronicleGif` cannot terminate its
-    // worker or stop its render loop from an abort that never reaches it.
+    // One controller per export — `exportChronicleGif` checks the signal
+    // between rendered days and between encode frames, and can stop neither
+    // loop from an abort that never reaches it.
     // `exportingRef` guarantees only one of these is ever live, but a stale
     // one from a run that already finished is aborted first regardless, the
     // same defensive pattern `previewAbortSignal` uses.

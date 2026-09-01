@@ -724,18 +724,26 @@ export async function exportChronicleGif(
       sourceFrames.push({ data: pixels.data, delayMs });
 
       // Between days, not after the last one: the encode loop below opens with
-      // its own yield.
+      // a yield of its own, so a yield here after the final day would only be
+      // two in a row.
       if (i < frames.length - 1) await yieldToEventLoop();
     }
 
     throwIfAborted(signal);
     onProgress?.({ phase: "encode", completed: 0, total: frames.length });
 
-    // One `await` per written frame. The generator's own `onProgress` fires
-    // just before each yield, so the bar's number is already updated by the
-    // time the browser gets the thread back to paint it — and `throwIfAborted`
-    // between steps is what makes Cancel land during the encode instead of
-    // only during the render.
+    // One `await` before every step, the first one included. That first step
+    // is the heaviest synchronous block in the whole pipeline — the global
+    // palette scan reads all `frames.length` frames end to end, then frame 1's
+    // own LZW pass runs — so without a yield ahead of it the "encode 0 / n"
+    // progress posted just above would never reach the screen. (The palette
+    // scan itself stays one unbroken block: it is inherently whole-set work,
+    // so the pre-yield buys a repaint before it, not during it.)
+    //
+    // The generator's own `onProgress` fires just before each yield, so the
+    // bar's number is already updated by the time the browser gets the thread
+    // back to paint it — and `throwIfAborted` before each step is what makes
+    // Cancel land during the encode instead of only during the render.
     const steps = encodeGifSteps({
       width: edge,
       height: edge,
@@ -744,12 +752,12 @@ export async function exportChronicleGif(
       onProgress: (completed, total) =>
         onProgress?.({ phase: "encode", completed, total }),
     });
-    let step = steps.next();
-    while (!step.done) {
+    let step: IteratorResult<number, Uint8Array>;
+    do {
       await yieldToEventLoop();
       throwIfAborted(signal);
       step = steps.next();
-    }
+    } while (!step.done);
     bytes = step.value;
   } catch (err) {
     // Drop every frame this export is holding before the error leaves: the
