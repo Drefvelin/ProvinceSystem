@@ -10,6 +10,7 @@ import numpy as np
 
 from .loader.provinces import load_provinces
 from .mapgen.map_paint_numpy import _pack_key, load_provinces_array, pack_rgb
+from .util.atomic import _write_atomic
 from .util.dirs import defines_file, input_file, validate_map
 
 GRID_FILENAME = "province_id_grid.bin.gz"
@@ -231,8 +232,11 @@ def write_province_id_grid_file(
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     payload = serialize_province_id_grid(width, height, ids)
-    with gzip.open(out_path, "wb") as f:
-        f.write(payload)
+    # Write straight to a `gzip.open(out_path, "wb")` handle used to leave a
+    # truncated gzip visible mid-write: a GET during regen streams it and
+    # `chronicle.store.geometry_version` hashes it half-written. Compress in
+    # memory and land the whole file with one atomic rename instead.
+    _write_atomic(out_path, gzip.compress(payload), prefix=".province-id-grid-")
 
     return out_path
 
@@ -472,8 +476,7 @@ def write_province_id_runs_file(
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     payload = serialize_province_id_runs(width, height, ids)
-    with gzip.open(out_path, "wb") as f:
-        f.write(payload)
+    _write_atomic(out_path, gzip.compress(payload), prefix=".province-id-runs-")
 
     return out_path
 

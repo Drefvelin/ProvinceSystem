@@ -27,6 +27,26 @@ _DAY_LOCKS_GUARD = threading.Lock()
 _DAY_LOCKS: dict[tuple[str, str], threading.Lock] = {}
 
 
+def _read_umask() -> int:
+    """The process umask, without permanently changing it.
+
+    `os.umask()` has no query-only mode — the only way to read it is to set a
+    throwaway value and restore the old one, which is itself a tiny race
+    against a concurrent thread doing the same. Reading it once at import time
+    (the umask essentially never changes after process start) avoids paying
+    that race on every single write.
+    """
+    try:
+        old = os.umask(0)
+        os.umask(old)
+        return old
+    except (AttributeError, OSError):
+        return 0
+
+
+_UMASK = _read_umask()
+
+
 def _day_lock(map_name: str, day: str) -> threading.Lock:
     key = (map_name, day)
     with _DAY_LOCKS_GUARD:
@@ -72,6 +92,15 @@ def _write_atomic(path: str, data: bytes, prefix: str = ".chronicle-") -> None:
             # loss can leave a zero-length file where the manifest promises
             # content, and this is the only copy of the day.
             os.fsync(fh.fileno())
+        # mkstemp creates the file 0600 regardless of the process umask, so
+        # every artifact written through here would otherwise land owner-only
+        # instead of matching the permissions a normal `open(...).write()`
+        # would have produced. Best-effort: a chmod failure (e.g. a
+        # filesystem that doesn't support the bits) must not lose the write.
+        try:
+            os.chmod(tmp, 0o666 & ~_UMASK)
+        except OSError:
+            pass
         os.replace(tmp, path)
         tmp = None
     finally:

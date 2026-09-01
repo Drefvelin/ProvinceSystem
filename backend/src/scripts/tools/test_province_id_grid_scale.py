@@ -153,6 +153,39 @@ class TestWriteScaledGrid(unittest.TestCase):
             )
 
 
+class TestWriteGridIsAtomic(unittest.TestCase):
+    """Finding 1: a GET during regen must never see a truncated gzip.
+
+    `write_province_id_grid_file` used to `gzip.open(out_path, "wb")` directly
+    against the served path, so a reader mid-write (or `geometry_version`
+    hashing the file) could observe a partial file. It now compresses in
+    memory and lands the whole thing with one atomic rename.
+    """
+
+    def test_no_temp_sibling_survives_a_successful_write(self):
+        width, height, ids = _grid([[1, 2, 0], [0, 3, 4]])
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = os.path.join(tmp, "grid.bin.gz")
+            write_province_id_grid_file("main", dest=dest, source=(width, height, ids))
+            self.assertEqual(os.listdir(tmp), ["grid.bin.gz"])
+
+    def test_a_write_failure_leaves_no_partial_destination_file(self):
+        from unittest.mock import patch
+
+        from ..util import atomic
+
+        width, height, ids = _grid([[1, 2, 0], [0, 3, 4]])
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = os.path.join(tmp, "grid.bin.gz")
+            with patch.object(atomic.os, "fsync", side_effect=OSError("disk gone")):
+                with self.assertRaises(OSError):
+                    write_province_id_grid_file(
+                        "main", dest=dest, source=(width, height, ids)
+                    )
+            # No truncated grid.bin.gz and no leftover `.province-id-grid-*.part`.
+            self.assertEqual(os.listdir(tmp), [])
+
+
 class TestBuildProvinceIdGridCli(unittest.TestCase):
     def _run(self, *args):
         return subprocess.run(
