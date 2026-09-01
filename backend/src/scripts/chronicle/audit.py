@@ -16,6 +16,22 @@ from src.skins.db import connect, migrate
 
 _TABLE = "map_chronicle_wipes"
 
+# Explicit rather than `SELECT *`: `_row_to_record` unpacks by name, so the
+# column order here is documentation, not a dependency, but a `SELECT *`
+# would silently start returning any column a future migration adds to the
+# table and make this the one place in the codebase that has to track that.
+_COLUMNS = (
+    "id",
+    "map_id",
+    "wiped_at",
+    "wiped_by",
+    "day_count",
+    "backup_path",
+    "reason",
+    "restored_at",
+    "restored_by",
+)
+
 _UNKNOWN_ACTOR = "unknown"
 
 
@@ -98,7 +114,7 @@ def list_wipes(map_id: str, limit: int = 100) -> list[WipeRecord]:
     conn = connect()
     try:
         rows = conn.execute(
-            f"SELECT * FROM {_TABLE} WHERE map_id = ? "
+            f"SELECT {', '.join(_COLUMNS)} FROM {_TABLE} WHERE map_id = ? "
             "ORDER BY wiped_at DESC, id DESC LIMIT ?",
             (map_id, max(1, int(limit))),
         ).fetchall()
@@ -113,7 +129,7 @@ def get_wipe(map_id: str, wipe_id: int) -> WipeRecord | None:
     conn = connect()
     try:
         row = conn.execute(
-            f"SELECT * FROM {_TABLE} WHERE id = ? AND map_id = ?",
+            f"SELECT {', '.join(_COLUMNS)} FROM {_TABLE} WHERE id = ? AND map_id = ?",
             (int(wipe_id), map_id),
         ).fetchone()
     finally:
