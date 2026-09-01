@@ -12,11 +12,13 @@
  */
 
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import LedgerChartsPanel from "./LedgerChartsPanel";
+import * as useLedgerSeriesModule from "./useLedgerSeries";
 import type { LedgerChartsResult } from "./useLedgerSeries";
 import type { LedgerFactionSeries, LedgerSeries } from "../../lib/map/ledgerData";
+import * as ledgerSeriesModule from "../../lib/map/ledgerSeries";
 import { LEDGER_MAX_BREAKDOWN_BANDS } from "../../lib/map/ledgerSeries";
 
 afterEach(cleanup);
@@ -107,5 +109,35 @@ describe("LedgerChartsPanel", () => {
     // The legend is capped with it — same key list drives both. `band-0`
     // has the smallest peak, so it is one of the folded-away bands.
     expect(screen.queryByText("band-0")).toBeNull();
+  });
+
+  it("does not re-splice the faction or rebuild chart geometry on a cursor-only re-render", () => {
+    // The finding this pins: `factionForKey` (-> `spliceLedgerFaction`, an
+    // O(days) walk) and `stackBreakdown` used to run fresh on every render,
+    // and the panel re-renders once per RAF tick during playback purely
+    // because `cursorDay` advances. Neither should fire again when nothing
+    // but the cursor moved.
+    const factionSpy = vi.spyOn(useLedgerSeriesModule, "factionForKey");
+    const stackSpy = vi.spyOn(ledgerSeriesModule, "stackBreakdown");
+
+    const result = readyResult(3);
+    const { rerender } = render(
+      <LedgerChartsPanel result={result} cursorDay={DAYS[0]!} />
+    );
+
+    const factionCallsAfterMount = factionSpy.mock.calls.length;
+    const stackCallsAfterMount = stackSpy.mock.calls.length;
+    expect(factionCallsAfterMount).toBeGreaterThan(0);
+    expect(stackCallsAfterMount).toBeGreaterThan(0);
+
+    // Same `result` object (series/options/selections all identical), only
+    // the cursor moves — exactly what one RAF playback tick does.
+    rerender(<LedgerChartsPanel result={result} cursorDay={DAYS[1]!} />);
+
+    expect(factionSpy.mock.calls.length).toBe(factionCallsAfterMount);
+    expect(stackSpy.mock.calls.length).toBe(stackCallsAfterMount);
+
+    factionSpy.mockRestore();
+    stackSpy.mockRestore();
   });
 });

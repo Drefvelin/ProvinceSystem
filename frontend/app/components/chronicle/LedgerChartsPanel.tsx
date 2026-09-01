@@ -1,3 +1,5 @@
+import { memo, useMemo } from "react";
+
 import {
   buildAreaPath,
   buildLinePath,
@@ -54,6 +56,10 @@ const BAND_COLORS = [
   "color-mix(in srgb, var(--tfmc-stone) 45%, transparent)",
   "color-mix(in srgb, var(--tfmc-cream) 30%, transparent)",
 ];
+
+/** Stable identity for the no-options case, so `factionForKey`'s `useMemo`
+ * below doesn't see a "changed" dependency on every render from a fresh `[]`. */
+const EMPTY_OPTIONS: LedgerFactionOption[] = [];
 
 const headingClass =
   "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
@@ -313,7 +319,50 @@ function CardStatusMessage({ seriesLoading, seriesError }: Omit<CardSelectProps,
  * the invariant this panel exists to enforce is that those two numbers are
  * never summed into the faction's own wealth, and a shared y-domain made the
  * faction stack unreadable next to server-wide totals on any real map. */
-function WealthChart({
+/** Everything `WealthChart` derives from `series`/`faction` alone — no
+ * `cursorDay` in sight, so `useMemo([series, faction])` in the component below
+ * only recomputes it when the underlying data actually changes, not once per
+ * RAF tick during playback. */
+type WealthGeometry = {
+  stacked: StackedBreakdown;
+  wealth: Array<number | null>;
+  ticks: number[];
+  xScale: (i: number) => number;
+  yScale: (v: number) => number;
+  globalsTicks: number[];
+  globalsYScale: (v: number) => number;
+  pouchPath: string | null;
+  bankPath: string | null;
+};
+
+function wealthGeometry(series: LedgerSeries, faction: MergedLedgerFaction): WealthGeometry {
+  const dayCount = series.days.length;
+  const stacked = stackBreakdown(faction.breakdowns.wealth, dayCount);
+  const pouch = series.global.pouch_wealth ?? [];
+  const bank = series.global.player_bank_wealth ?? [];
+  const wealth = faction.series.wealth ?? [];
+
+  const topTotals = stacked.tops.map((row) => row[row.length - 1] ?? 0);
+  const max = Math.max(maxOf(topTotals, wealth), 1);
+  const ticks = niceTicks(0, max, 4);
+  const xScale = makeXScale(dayCount);
+  const yScale = makeYScale(0, ticks[ticks.length - 1] ?? max);
+
+  const globalsMax = Math.max(maxOf(pouch, bank), 1);
+  const globalsTicks = niceTicks(0, globalsMax, 3);
+  const globalsYScale = makeYScale(
+    0,
+    globalsTicks[globalsTicks.length - 1] ?? globalsMax,
+    GLOBALS_STRIP_MARGIN_TOP,
+    GLOBALS_STRIP_INNER_HEIGHT
+  );
+  const pouchPath = buildLinePath(pouch, xScale, globalsYScale);
+  const bankPath = buildLinePath(bank, xScale, globalsYScale);
+
+  return { stacked, wealth, ticks, xScale, yScale, globalsTicks, globalsYScale, pouchPath, bankPath };
+}
+
+const WealthChart = memo(function WealthChart({
   series,
   faction,
   cursorDay,
@@ -327,7 +376,12 @@ function WealthChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  if (!series || !faction) {
+  const geometry = useMemo(
+    () => (series && faction ? wealthGeometry(series, faction) : null),
+    [series, faction]
+  );
+
+  if (!series || !faction || !geometry) {
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <CardHeader title="Wealth" options={options} selectedKey={selectedKey} onSelect={onSelect} />
@@ -336,30 +390,20 @@ function WealthChart({
     );
   }
 
+  const {
+    stacked,
+    wealth,
+    ticks,
+    xScale,
+    yScale,
+    globalsTicks,
+    globalsYScale,
+    pouchPath,
+    bankPath,
+  } = geometry;
   const dayCount = series.days.length;
-  const stacked = stackBreakdown(faction.breakdowns.wealth, dayCount);
-  const pouch = series.global.pouch_wealth ?? [];
-  const bank = series.global.player_bank_wealth ?? [];
-  const wealth = faction.series.wealth ?? [];
-
-  const topTotals = stacked.tops.map((row) => row[row.length - 1] ?? 0);
-  const max = Math.max(maxOf(topTotals, wealth), 1);
-  const ticks = niceTicks(0, max, 4);
-  const xScale = makeXScale(dayCount);
-  const yScale = makeYScale(0, ticks[ticks.length - 1] ?? max);
   const cursor = cursorIndex(series.days, cursorDay);
   const readout = ledgerCursorReadout(cursorDay, cursor, wealth);
-
-  const globalsMax = Math.max(maxOf(pouch, bank), 1);
-  const globalsTicks = niceTicks(0, globalsMax, 3);
-  const globalsYScale = makeYScale(
-    0,
-    globalsTicks[globalsTicks.length - 1] ?? globalsMax,
-    GLOBALS_STRIP_MARGIN_TOP,
-    GLOBALS_STRIP_INNER_HEIGHT
-  );
-  const pouchPath = buildLinePath(pouch, xScale, globalsYScale);
-  const bankPath = buildLinePath(bank, xScale, globalsYScale);
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
@@ -442,7 +486,7 @@ function WealthChart({
       ) : null}
     </div>
   );
-}
+});
 
 /** Prestige: line + `prestige_breakdown` stack, plus the real promotion/
  * demotion thresholds from this faction's own per-day `rank_up_at` /
@@ -460,7 +504,64 @@ function WealthChart({
  * of that pool, not an absolute amount, so this faction's prestige can drop
  * even while its own finances hold steady, purely because rivals grew
  * theirs faster. */
-function PrestigeChart({
+/** Everything `PrestigeChart` derives from `series`/`faction` alone — see
+ * `WealthGeometry` above for why `cursorDay` stays out of this. */
+type PrestigeGeometry = {
+  dayCount: number;
+  stacked: StackedBreakdown;
+  wealth: Array<number | null>;
+  ticks: number[];
+  xScale: (i: number) => number;
+  yScale: (v: number) => number;
+  linePath: string | null;
+  rankUpPath: string | null;
+  rankDownPath: string | null;
+  rankChanges: number[];
+  wealthPool: Array<number | null>;
+};
+
+function prestigeGeometry(series: LedgerSeries, faction: MergedLedgerFaction): PrestigeGeometry {
+  const dayCount = series.days.length;
+  const stacked = stackBreakdown(faction.breakdowns.prestige, dayCount);
+  const prestige = faction.series.prestige ?? [];
+  const rankUpAt = faction.series.rank_up_at ?? [];
+  const rankDownAt = faction.series.rank_down_at ?? [];
+  const topTotals = stacked.tops.map((row) => row[row.length - 1] ?? 0);
+  const max = Math.max(maxOf(topTotals, prestige, rankUpAt, rankDownAt), 1);
+  const min = Math.min(minOf(topTotals, prestige, rankUpAt, rankDownAt), 0);
+  const ticks = niceTicks(min, max, 4);
+  const xScale = makeXScale(dayCount);
+  const yScale = makeYScale(ticks[0] ?? min, ticks[ticks.length - 1] ?? max);
+  const linePath = buildLinePath(prestige, xScale, yScale);
+  const rankUpPath = buildStepPath(rankUpAt, xScale, yScale);
+  const rankDownPath = buildStepPath(rankDownAt, xScale, yScale);
+
+  const rankChanges: number[] = [];
+  for (let i = 1; i < faction.rank.length; i++) {
+    if (faction.rank[i] != null && faction.rank[i] !== faction.rank[i - 1]) {
+      rankChanges.push(i);
+    }
+  }
+
+  const wealthPool = series.global.faction_wealth ?? [];
+  const wealth = faction.series.wealth ?? [];
+
+  return {
+    dayCount,
+    stacked,
+    wealth,
+    ticks,
+    xScale,
+    yScale,
+    linePath,
+    rankUpPath,
+    rankDownPath,
+    rankChanges,
+    wealthPool,
+  };
+}
+
+const PrestigeChart = memo(function PrestigeChart({
   series,
   faction,
   cursorDay,
@@ -474,7 +575,12 @@ function PrestigeChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  if (!series || !faction) {
+  const geometry = useMemo(
+    () => (series && faction ? prestigeGeometry(series, faction) : null),
+    [series, faction]
+  );
+
+  if (!series || !faction || !geometry) {
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <CardHeader title="Prestige" options={options} selectedKey={selectedKey} onSelect={onSelect} />
@@ -483,38 +589,23 @@ function PrestigeChart({
     );
   }
 
-  const dayCount = series.days.length;
-  const stacked = stackBreakdown(faction.breakdowns.prestige, dayCount);
-  const prestige = faction.series.prestige ?? [];
-  const rankUpAt = faction.series.rank_up_at ?? [];
-  const rankDownAt = faction.series.rank_down_at ?? [];
-  const topTotals = stacked.tops.map((row) => row[row.length - 1] ?? 0);
-  const max = Math.max(maxOf(topTotals, prestige, rankUpAt, rankDownAt), 1);
-  const min = Math.min(minOf(topTotals, prestige, rankUpAt, rankDownAt), 0);
-  const ticks = niceTicks(min, max, 4);
-  const xScale = makeXScale(dayCount);
-  const yScale = makeYScale(
-    ticks[0] ?? min,
-    ticks[ticks.length - 1] ?? max
-  );
+  const {
+    dayCount,
+    stacked,
+    wealth,
+    ticks,
+    xScale,
+    yScale,
+    linePath,
+    rankUpPath,
+    rankDownPath,
+    rankChanges,
+    wealthPool,
+  } = geometry;
   const cursor = cursorIndex(series.days, cursorDay);
-  const readout = ledgerCursorReadout(cursorDay, cursor, faction.series.wealth ?? []);
-  const linePath = buildLinePath(prestige, xScale, yScale);
-  const rankUpPath = buildStepPath(rankUpAt, xScale, yScale);
-  const rankDownPath = buildStepPath(rankDownAt, xScale, yScale);
-
-  const rankChanges: number[] = [];
-  for (let i = 1; i < faction.rank.length; i++) {
-    if (faction.rank[i] != null && faction.rank[i] !== faction.rank[i - 1]) {
-      rankChanges.push(i);
-    }
-  }
-
-  const wealthPool = series.global.faction_wealth ?? [];
+  const readout = ledgerCursorReadout(cursorDay, cursor, wealth);
   const share =
-    cursor != null
-      ? wealthShare(faction.series.wealth?.[cursor] ?? null, wealthPool[cursor] ?? null)
-      : null;
+    cursor != null ? wealthShare(wealth[cursor] ?? null, wealthPool[cursor] ?? null) : null;
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
@@ -590,7 +681,7 @@ function PrestigeChart({
       ) : null}
     </div>
   );
-}
+});
 
 /** Income: `net_income` / `inflation_delta` (this faction) + `guild_income`
  * (server-wide) are full-day projections from the game, kept visually
@@ -598,7 +689,57 @@ function PrestigeChart({
  * computed client-side. The two are different quantities (a full-day
  * projection vs. a client-computed observed change) and must never be
  * blended, summed, or overlaid into one series. */
-function IncomeChart({
+/** Everything `IncomeChart` derives from `series`/`faction` alone — see
+ * `WealthGeometry` above for why `cursorDay` stays out of this. */
+type IncomeGeometry = {
+  dayCount: number;
+  netIncome: Array<number | null>;
+  observedDelta: Array<number | null>;
+  ticks: number[];
+  xScale: (i: number) => number;
+  yScale: (v: number) => number;
+  zeroY: number;
+  netPath: string | null;
+  inflationPath: string | null;
+  guildPath: string | null;
+  barMax: number;
+};
+
+function incomeGeometry(series: LedgerSeries, faction: MergedLedgerFaction): IncomeGeometry {
+  const dayCount = series.days.length;
+  const netIncome = faction.series.net_income ?? [];
+  const inflationDelta = faction.series.inflation_delta ?? [];
+  const guildIncome = series.global.guild_income ?? [];
+  const observedDelta = diffConsecutive(series.days, faction.series.wealth ?? []);
+
+  const max = maxOf(netIncome, inflationDelta, guildIncome, observedDelta);
+  const min = minOf(netIncome, inflationDelta, guildIncome, observedDelta);
+  const ticks = niceTicks(min, max, 4);
+  const xScale = makeXScale(dayCount);
+  const yScale = makeYScale(ticks[0] ?? min, ticks[ticks.length - 1] ?? max);
+  const zeroY = yScale(0);
+
+  const netPath = buildLinePath(netIncome, xScale, yScale);
+  const inflationPath = buildLinePath(inflationDelta, xScale, yScale);
+  const guildPath = buildLinePath(guildIncome, xScale, yScale);
+  const barMax = Math.max(maxOf(observedDelta.map((v) => Math.abs(v ?? 0))), 1);
+
+  return {
+    dayCount,
+    netIncome,
+    observedDelta,
+    ticks,
+    xScale,
+    yScale,
+    zeroY,
+    netPath,
+    inflationPath,
+    guildPath,
+    barMax,
+  };
+}
+
+const IncomeChart = memo(function IncomeChart({
   series,
   faction,
   cursorDay,
@@ -612,7 +753,12 @@ function IncomeChart({
   faction: MergedLedgerFaction | null;
   cursorDay: string | null;
 } & CardSelectProps) {
-  if (!series || !faction) {
+  const geometry = useMemo(
+    () => (series && faction ? incomeGeometry(series, faction) : null),
+    [series, faction]
+  );
+
+  if (!series || !faction || !geometry) {
     return (
       <div className={`${chroniclePanelClass} p-3`}>
         <CardHeader title="Income" options={options} selectedKey={selectedKey} onSelect={onSelect} />
@@ -621,24 +767,20 @@ function IncomeChart({
     );
   }
 
-  const dayCount = series.days.length;
-  const netIncome = faction.series.net_income ?? [];
-  const inflationDelta = faction.series.inflation_delta ?? [];
-  const guildIncome = series.global.guild_income ?? [];
-  const observedDelta = diffConsecutive(series.days, faction.series.wealth ?? []);
-
-  const max = maxOf(netIncome, inflationDelta, guildIncome, observedDelta);
-  const min = minOf(netIncome, inflationDelta, guildIncome, observedDelta);
-  const ticks = niceTicks(min, max, 4);
-  const xScale = makeXScale(dayCount);
-  const yScale = makeYScale(ticks[0] ?? min, ticks[ticks.length - 1] ?? max);
+  const {
+    netIncome,
+    observedDelta,
+    ticks,
+    xScale,
+    yScale,
+    zeroY,
+    netPath,
+    inflationPath,
+    guildPath,
+    barMax,
+  } = geometry;
   const cursor = cursorIndex(series.days, cursorDay);
   const readout = ledgerCursorReadout(cursorDay, cursor, faction.series.wealth ?? []);
-  const zeroY = yScale(0);
-
-  const netPath = buildLinePath(netIncome, xScale, yScale);
-  const inflationPath = buildLinePath(inflationDelta, xScale, yScale);
-  const guildPath = buildLinePath(guildIncome, xScale, yScale);
 
   return (
     <div className={`${chroniclePanelClass} p-3`}>
@@ -704,10 +846,6 @@ function IncomeChart({
         </p>
         <svg viewBox={`0 0 ${CHART_WIDTH} 36`} className="mt-1 w-full">
           {(() => {
-            const barMax = Math.max(
-              maxOf(observedDelta.map((v) => Math.abs(v ?? 0))),
-              1
-            );
             const half = 18;
             return observedDelta.map((value, i) => {
               if (value == null) return null;
@@ -747,7 +885,7 @@ function IncomeChart({
       </div>
     </div>
   );
-}
+});
 
 export default function LedgerChartsPanel({
   result,
@@ -757,6 +895,33 @@ export default function LedgerChartsPanel({
   /** `frames[playIndex].day` — the day the playhead is on right now. */
   cursorDay: string | null;
 }) {
+  // `factionForKey` runs `spliceLedgerFaction`, an O(days) walk over every
+  // field this faction reports — cheap once, not once per RAF tick.
+  // `cursorDay` changes every tick during playback and would otherwise force
+  // a fresh splice on every one of these three calls each time, which is the
+  // actual root of the "recomputes on every render" finding: the memoised
+  // geometry inside each card is only as stable as the `faction` object it is
+  // keyed on. Computed unconditionally, ahead of every early return below, so
+  // these hooks run in the same order on every render regardless of `result`'s
+  // status — `factionForKey` already tolerates a null series/empty options.
+  const ready = result.status === "ready" ? result : null;
+  const readySeries = ready?.series ?? null;
+  const readyOptions = ready?.options ?? EMPTY_OPTIONS;
+  const readySelections = ready?.selections;
+
+  const wealthFaction = useMemo(
+    () => factionForKey(readySeries, readyOptions, readySelections?.wealth ?? null),
+    [readySeries, readyOptions, readySelections?.wealth]
+  );
+  const prestigeFaction = useMemo(
+    () => factionForKey(readySeries, readyOptions, readySelections?.prestige ?? null),
+    [readySeries, readyOptions, readySelections?.prestige]
+  );
+  const incomeFaction = useMemo(
+    () => factionForKey(readySeries, readyOptions, readySelections?.income ?? null),
+    [readySeries, readyOptions, readySelections?.income]
+  );
+
   if (result.status === "idle") return null;
 
   if (result.status === "loading") {
@@ -811,7 +976,7 @@ export default function LedgerChartsPanel({
       <WealthChart
         {...cardProps}
         series={series}
-        faction={factionForKey(series, options, selections.wealth)}
+        faction={wealthFaction}
         cursorDay={cursorDay}
         selectedKey={selections.wealth}
         onSelect={(key) => onSelect("wealth", key)}
@@ -819,7 +984,7 @@ export default function LedgerChartsPanel({
       <PrestigeChart
         {...cardProps}
         series={series}
-        faction={factionForKey(series, options, selections.prestige)}
+        faction={prestigeFaction}
         cursorDay={cursorDay}
         selectedKey={selections.prestige}
         onSelect={(key) => onSelect("prestige", key)}
@@ -827,7 +992,7 @@ export default function LedgerChartsPanel({
       <IncomeChart
         {...cardProps}
         series={series}
-        faction={factionForKey(series, options, selections.income)}
+        faction={incomeFaction}
         cursorDay={cursorDay}
         selectedKey={selections.income}
         onSelect={(key) => onSelect("income", key)}
