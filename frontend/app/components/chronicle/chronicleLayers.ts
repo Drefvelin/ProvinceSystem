@@ -11,6 +11,7 @@ import {
 } from "../../lib/settlementMarkers";
 import { warBattleMarkersFromWars } from "../../lib/warBattleMarkers";
 import type { MapMarker } from "../../lib/mapMarkers";
+import type { ChronicleBorderMask } from "../../lib/map/chronicleBorderMask";
 import type {
   LabelMapObject,
   NationLabelSpec,
@@ -25,8 +26,10 @@ import type {
 
 export type ChronicleToggleKey =
   | "nationFill"
+  | "nationBorders"
   | "nationNames"
   | "settlements"
+  | "markerNames"
   | "forts"
   | "wars";
 
@@ -35,8 +38,10 @@ export type ChronicleToggles = Record<ChronicleToggleKey, boolean>;
 /** The map opens bare: every layer off, parchment only. */
 export const CHRONICLE_TOGGLES_OFF: ChronicleToggles = {
   nationFill: false,
+  nationBorders: false,
   nationNames: false,
   settlements: false,
+  markerNames: false,
   forts: false,
   wars: false,
 };
@@ -46,29 +51,51 @@ export const CHRONICLE_TOGGLE_ORDER: {
   label: string;
   detail: string;
 }[] = [
-  { key: "nationFill", label: "Nation fill", detail: "Painted borders" },
+  { key: "nationFill", label: "Nation fill", detail: "Painted territory" },
+  {
+    key: "nationBorders",
+    label: "Nation borders",
+    detail: "Outlines only, no fill",
+  },
   { key: "nationNames", label: "Nation names", detail: "Realm labels" },
   {
     key: "settlements",
     label: "Settlements & installations",
     detail: "Towns, ports, airports",
   },
+  {
+    key: "markerNames",
+    label: "Marker names",
+    detail: "Name chips under pins",
+  },
   { key: "forts", label: "Forts", detail: "Fort pins" },
   { key: "wars", label: "Wars", detail: "Campaign lines and battles" },
 ];
 
-/** Both nation layers read the same `nation` day file. */
+/** Every nation layer reads the same `nation` day file. */
 export function needsNationFile(toggles: ChronicleToggles): boolean {
-  return toggles.nationFill || toggles.nationNames;
+  return toggles.nationFill || toggles.nationBorders || toggles.nationNames;
 }
 
-/** Settlements, forts and wars all come out of the one markers payload. */
+/**
+ * Settlements, forts and wars all come out of the one markers payload.
+ *
+ * `markerNames` is deliberately absent: it fetches nothing of its own and only
+ * restyles pins the three layers above already produced.
+ */
 export function needsMarkers(toggles: ChronicleToggles): boolean {
   return toggles.settlements || toggles.forts || toggles.wars;
 }
 
+/**
+ * Whether anything would actually be drawn. Gates the "Pick a date range"
+ * button, so `markerNames` must not count — on its own it draws nothing, and
+ * letting it through would offer to build a range of empty frames.
+ */
 export function anyChronicleToggleOn(toggles: ChronicleToggles): boolean {
-  return Object.values(toggles).some(Boolean);
+  return CHRONICLE_TOGGLE_ORDER.some(
+    ({ key }) => key !== "markerNames" && toggles[key]
+  );
 }
 
 /**
@@ -181,12 +208,15 @@ export function chronicleWars(
 
 export type ChronicleFrameLayers = {
   labels: NationLabelSpec[];
+  /** Packed border bitmask for the day, or null when borders are off. */
+  borders: ChronicleBorderMask | null;
   markers: MapMarker[];
   wars: WarExport[];
 };
 
 export const EMPTY_CHRONICLE_LAYERS: ChronicleFrameLayers = {
   labels: [],
+  borders: null,
   markers: [],
   wars: [],
 };
@@ -201,9 +231,21 @@ export function buildChronicleLayers(options: {
   markers: MapMarkersResponse | null;
   labels: NationLabelSpec[];
   labelObjects: LabelMapObject[];
+  /**
+   * Pre-computed like `labels`, and for the same reason: the border pass needs
+   * the province grid, which the caller owns for the whole session rather than
+   * per day.
+   */
+  borders?: ChronicleBorderMask | null;
 }): ChronicleFrameLayers {
-  const { toggles, markers, labels, labelObjects } = options;
+  const { toggles, markers, labels, labelObjects, borders = null } = options;
   const pins: MapMarker[] = [];
+  // Name chips are decided here rather than in `MapMarkerLayer` because the
+  // per-kind default is baked into the markers themselves: installations, forts
+  // and battles ship `showLabelOnlyOnHover: true`, and a built timelapse is
+  // never hovered, so those pins would be permanently nameless. One stamp over
+  // every pin makes the toggle mean the same thing for all of them.
+  const nameChips = toggles.markerNames;
 
   if (toggles.settlements) {
     pins.push(...chronicleSettlementMarkers(markers, labelObjects));
@@ -217,7 +259,11 @@ export function buildChronicleLayers(options: {
 
   return {
     labels: toggles.nationNames ? labels : [],
-    markers: pins,
+    borders: toggles.nationBorders ? borders : null,
+    markers: pins.map((pin) => ({
+      ...pin,
+      showLabelOnlyOnHover: !nameChips,
+    })),
     wars: toggles.wars ? chronicleWars(markers) : [],
   };
 }

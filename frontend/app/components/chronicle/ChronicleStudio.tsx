@@ -9,6 +9,11 @@ import { useMapViewport } from "../../hooks/useMapViewport";
 import { computeVisibleNationLabels } from "../../lib/mapLabels";
 import type { NationLabelSpec } from "../../lib/mapLabels";
 import { buildNationColorLut } from "../../lib/map/chroniclePaint";
+import {
+  computeChronicleBorderMask,
+  type ChronicleBorderMask,
+} from "../../lib/map/chronicleBorderMask";
+import ChronicleBorderCanvas from "./ChronicleBorderCanvas";
 import type { ProvinceIdGrid } from "../../lib/map/chroniclePaint";
 import {
   CHRONICLE_FETCH_CONCURRENCY,
@@ -151,6 +156,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   // and each only required when the toggle that pays for it is on.
   const [frameMs, setFrameMs] = useState<number | null>(null);
   const [labelMs, setLabelMs] = useState<number | null>(null);
+  const [borderMs, setBorderMs] = useState<number | null>(null);
   const [layerMs, setLayerMs] = useState<number | null>(null);
   const [nationCost, setNationCost] = useState<SourceCost | null>(null);
   const [markersCost, setMarkersCost] = useState<SourceCost | null>(null);
@@ -512,6 +518,27 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     previewLabelObjects,
   ]);
 
+  // Computed on the preview day so the estimate quotes a measured border pass,
+  // exactly as it does for the label pass. `gridVersion` is the dependency
+  // rather than the ref, which React cannot see change.
+  const previewBorders = useMemo(() => {
+    const grid = gridRef.current;
+    if (!toggles.nationBorders || !grid || !previewNation) {
+      return {
+        mask: null as ChronicleBorderMask | null,
+        ms: null as number | null,
+      };
+    }
+    const startedAt = performance.now();
+    const mask = computeChronicleBorderMask(grid, previewNation);
+    return { mask, ms: performance.now() - startedAt };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toggles.nationBorders, previewNation, gridVersion]);
+
+  useEffect(() => {
+    if (previewBorders.ms != null) setBorderMs(previewBorders.ms);
+  }, [previewBorders]);
+
   const previewLayers = useMemo(() => {
     const startedAt = performance.now();
     const layers = buildChronicleLayers({
@@ -519,13 +546,20 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       markers: previewMarkers,
       labels: previewLabels.labels,
       labelObjects: previewLabelObjects,
+      borders: previewBorders.mask,
     });
     return {
       layers,
       // Marker layout is only worth timing when there were markers to lay out.
       ms: previewMarkers ? performance.now() - startedAt : null,
     };
-  }, [toggles, previewMarkers, previewLabels.labels, previewLabelObjects]);
+  }, [
+    toggles,
+    previewMarkers,
+    previewLabels.labels,
+    previewLabelObjects,
+    previewBorders.mask,
+  ]);
 
   useEffect(() => {
     if (previewLabels.ms != null) setLabelMs(previewLabels.ms);
@@ -612,6 +646,9 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     if (toggles.nationFill && frameMs == null) {
       return EMPTY_CHRONICLE_COST_SAMPLE;
     }
+    if (toggles.nationBorders && borderMs == null) {
+      return EMPTY_CHRONICLE_COST_SAMPLE;
+    }
     if (toggles.nationNames && labelMs == null) {
       return EMPTY_CHRONICLE_COST_SAMPLE;
     }
@@ -628,6 +665,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       // runs the label pass, so its cost must not be carried into the estimate.
       cpuMsPerDay:
         (toggles.nationFill ? frameMs! : 0) +
+        (toggles.nationBorders ? borderMs! : 0) +
         (toggles.nationNames ? labelMs! : 0) +
         (wantMarkers ? layerMs! : 0),
     };
@@ -637,6 +675,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     nationCost,
     markersCost,
     frameMs,
+    borderMs,
     labelMs,
     layerMs,
   ]);
@@ -773,7 +812,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       // The same target the compose preview painted through: one
       // grid-resolution scratch buffer and one small output canvas, reused for
       // every day of the build.
-      const target = grid && toggles.nationFill ? ensureRenderTarget(grid) : null;
+      const target =
+        grid && toggles.nationFill ? ensureRenderTarget(grid) : null;
 
       // Labels are a pure function of the nation file, so a day whose
       // fingerprint matches the one before it reuses them exactly as it reuses
@@ -782,6 +822,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       let lastLabels: {
         fingerprint: string | null;
         labels: NationLabelSpec[];
+      } | null = null;
+      // Borders are a pure function of the nation file too, so an unchanged day
+      // shares the previous day's mask object rather than walking 2.5M grid
+      // cells again — a reused day costs zero extra bytes, not even a copy.
+      let lastBorders: {
+        fingerprint: string | null;
+        mask: ChronicleBorderMask | null;
       } | null = null;
 
       const result = await runChronicleBuild<
@@ -841,11 +888,27 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               lastLabels = { fingerprint: load.nationFingerprint, labels };
             }
 
+            let borders: ChronicleBorderMask | null = null;
+            if (toggles.nationBorders && grid && load.nation) {
+              const reusable =
+                lastBorders != null &&
+                load.nationFingerprint != null &&
+                lastBorders.fingerprint === load.nationFingerprint;
+              borders = reusable
+                ? lastBorders!.mask
+                : computeChronicleBorderMask(grid, load.nation);
+              lastBorders = {
+                fingerprint: load.nationFingerprint,
+                mask: borders,
+              };
+            }
+
             return buildChronicleLayers({
               toggles,
               markers: load.markers,
               labels,
               labelObjects,
+              borders,
             });
           },
           disposeImage: (bitmap) => bitmap.close(),
@@ -1005,6 +1068,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               className="pointer-events-none absolute inset-0 z-[12] h-full w-full"
               style={{ opacity: CHRONICLE_FILL_OPACITY }}
             />
+            <ChronicleBorderCanvas mask={layers.borders} />
             {layers.wars.length ? (
               <WarCampaignLineLayer
                 wars={layers.wars}
@@ -1013,6 +1077,12 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 mapH={mapSize.h}
               />
             ) : null}
+            {/*
+              `alwaysVisible` on both: every layer here is one the user ticked
+              on in Compose, so the live map's zoom-size gate would hide the
+              thing they asked for. Crowding is theirs to judge — the toggle
+              that switched the layer on switches it back off.
+            */}
             <MapMarkerLayer
               markers={layers.markers}
               mapW={mapSize.w}
@@ -1020,12 +1090,14 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               mapType="nation"
               displayScale={viewport.displayScale}
               layer="base"
+              alwaysVisible
             />
             <LabelLayer
               labels={layers.labels}
               mapW={mapSize.w}
               mapH={mapSize.h}
               displayScale={viewport.displayScale}
+              alwaysVisible
             />
           </MapViewport>
         </div>

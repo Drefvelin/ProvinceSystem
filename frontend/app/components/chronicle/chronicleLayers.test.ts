@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { MapMarkersResponse, RegionRecord } from "../map/types";
 import {
   CHRONICLE_TOGGLES_OFF,
+  anyChronicleToggleOn,
   buildChronicleLayers,
   chronicleLabelMapObjects,
   chronicleFortMarkers,
@@ -60,6 +61,31 @@ describe("chronicleLabelMapObjects", () => {
   });
 });
 
+describe("nation borders", () => {
+  it("needs the nation file, but no markers", () => {
+    const borders = { ...CHRONICLE_TOGGLES_OFF, nationBorders: true };
+    expect(needsNationFile(borders)).toBe(true);
+    expect(needsMarkers(borders)).toBe(false);
+  });
+
+  it("carries the computed mask only while the toggle is on", () => {
+    // The very same object, not a copy: a build stores one mask per distinct
+    // day, and layers must not multiply the 320 KB it costs.
+    const mask = { width: 4, height: 4, bits: new Uint8Array(2) };
+    const build = (nationBorders: boolean) =>
+      buildChronicleLayers({
+        toggles: { ...CHRONICLE_TOGGLES_OFF, nationBorders },
+        markers: null,
+        labels: [],
+        labelObjects: [],
+        borders: mask,
+      }).borders;
+
+    expect(build(true)).toBe(mask);
+    expect(build(false)).toBeNull();
+  });
+});
+
 describe("toggle data needs", () => {
   it("maps each toggle onto the day file it costs", () => {
     expect(needsNationFile(CHRONICLE_TOGGLES_OFF)).toBe(false);
@@ -68,6 +94,66 @@ describe("toggle data needs", () => {
       needsNationFile({ ...CHRONICLE_TOGGLES_OFF, nationNames: true })
     ).toBe(true);
     expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, forts: true })).toBe(true);
+  });
+});
+
+describe("marker names", () => {
+  const labels = [] as never[];
+  const labelObjects = [{ id: "suzerain", visible: true }];
+  const withMarkers = (markerNames: boolean) =>
+    buildChronicleLayers({
+      toggles: {
+        ...CHRONICLE_TOGGLES_OFF,
+        settlements: true,
+        forts: true,
+        markerNames,
+      },
+      markers,
+      labels,
+      labelObjects,
+    });
+
+  it("names every pin when the toggle is on", () => {
+    // Installations and forts ship `showLabelOnlyOnHover: true` and a built
+    // timelapse is never hovered, so without this stamp they are permanently
+    // nameless while settlements beside them are labelled.
+    const layers = withMarkers(true);
+    expect(layers.markers.length).toBeGreaterThan(1);
+    expect(
+      layers.markers.every((marker) => marker.showLabelOnlyOnHover === false)
+    ).toBe(true);
+  });
+
+  it("strips every name when the toggle is off, settlements included", () => {
+    const layers = withMarkers(false);
+    expect(layers.markers.length).toBeGreaterThan(1);
+    expect(
+      layers.markers.every((marker) => marker.showLabelOnlyOnHover === true)
+    ).toBe(true);
+  });
+
+  it("costs no extra day file", () => {
+    expect(
+      needsMarkers({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
+    ).toBe(false);
+    expect(
+      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
+    ).toBe(false);
+  });
+
+  it("does not on its own count as something to draw", () => {
+    // It gates the "Pick a date range" button; alone it would offer to build a
+    // range of empty frames.
+    expect(
+      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, markerNames: true })
+    ).toBe(false);
+    expect(
+      anyChronicleToggleOn({
+        ...CHRONICLE_TOGGLES_OFF,
+        markerNames: true,
+        forts: true,
+      })
+    ).toBe(true);
   });
 });
 
@@ -114,7 +200,7 @@ describe("buildChronicleLayers", () => {
       labels,
       labelObjects,
     });
-    expect(layers).toEqual({ labels: [], markers: [], wars: [] });
+    expect(layers).toEqual({ labels: [], borders: null, markers: [], wars: [] });
   });
 
   it("splits forts out of the settlement layer", () => {
@@ -248,6 +334,6 @@ describe("marker layers against malformed day payloads", () => {
       labelObjects: [],
     });
 
-    expect(layers).toEqual({ labels: [], markers: [], wars: [] });
+    expect(layers).toEqual({ labels: [], borders: null, markers: [], wars: [] });
   });
 });
