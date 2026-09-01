@@ -299,7 +299,7 @@ def test_background_capture_swallows_and_logs_failures(chronicle_env, monkeypatc
 
     with caplog.at_level("WARNING"):
         # Must not raise: this runs in a BackgroundTask after the 200 was sent.
-        chronicle_routes._run_capture("main", "2026-01-01", False)
+        chronicle_routes._run_capture("main", "2026-01-01")
 
     assert "Chronicle capture failed" in caplog.text
     assert "2026-01-01" in caplog.text
@@ -382,7 +382,7 @@ def test_snapshot_post_normalises_the_map_id(chronicle_env, monkeypatch):
 
     assert res.status_code == 200
     assert res.json()["map"] == "main"
-    assert calls == [("main", None, False)]
+    assert calls == [("main", None)]
 
 
 @pytest.mark.parametrize("day", ["9999-12-31", "0001-01-01", "2000-06-01"])
@@ -414,7 +414,7 @@ def test_snapshot_post_accepts_a_recent_day(chronicle_env, monkeypatch):
         res = test_client.post(f"/main/chronicle/snapshot?day={day}")
 
     assert res.status_code == 200
-    assert calls == [("main", day, False)]
+    assert calls == [("main", day)]
 
 
 # ---------------------------------------------------------------------------
