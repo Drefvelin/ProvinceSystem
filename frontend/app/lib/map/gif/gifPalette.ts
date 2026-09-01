@@ -13,8 +13,10 @@
  * triples the file. Flat map art quantises cleanly without it.
  *
  * Pure over typed arrays — no `ImageData`, no canvas — so this runs under node
- * in the tests and, via `gifEncode.worker.ts`, on a dedicated Worker thread in
- * the studio.
+ * in the tests and on the studio's main thread in the browser. Note that
+ * `buildGifPalette` is the one part of the encode that reads every frame at
+ * once and so cannot be chunked between frames the way the rest of
+ * `encodeGifSteps` is; it is a single scan, not the per-pixel LZW pass.
  */
 
 /**

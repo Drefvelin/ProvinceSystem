@@ -1,7 +1,7 @@
 "use client";
 
 import { CHRONICLE_MEMORY_CEILING_BYTES } from "../../lib/map/chronicleBuild";
-import { startGifEncodeWorker } from "@/app/lib/map/gif/gifEncodeWorkerClient";
+import { encodeGifSteps, type GifSourceFrame } from "@/app/lib/map/gif/encodeGif";
 import {
   CHRONICLE_BORDER_INK_RGBA,
   expandChronicleBorderMask,
@@ -50,12 +50,21 @@ import type { ChronicleFrameLayers } from "./chronicleLayers";
  * ceiling — before a single frame is rendered, the same up-front refusal
  * `estimate.overCeiling` gives the build step, so a request that would hold
  * hundreds of megabytes of raw pixels fails with a clear message instead of
- * quietly trying. And every frame is streamed to `gifEncode.worker.ts` the
- * moment it is painted (`session.postFrame`, transferring the pixel buffer)
- * rather than collected into a local array first — the main thread's copy of
- * a frame is gone the instant the worker has it, and the actual palette
- * build + LZW pass (the part that used to block the tab outright) runs off
- * this thread entirely. See `gifEncodeWorkerClient.ts` for the worker side.
+ * quietly trying. And the encode itself runs here, on this thread, chunked:
+ * `encodeGifSteps` is a generator that yields after each frame it writes, and
+ * the loop below `await`s between those steps exactly the way the render loop
+ * does, so the progress bar repaints and Cancel stays clickable through the
+ * whole encode.
+ *
+ * Not a Worker, deliberately and reluctantly: Turbopack does not bundle
+ * `new Worker(new URL(..., import.meta.url))` in a production `next build` —
+ * it emits the worker file as a raw static asset the browser then rejects, so
+ * a worker-based export is dead on deploy while looking fine in review. The
+ * evidence and the variants tried are in `encodeGif.ts`'s module doc. The one
+ * thing lost with the worker is the per-frame buffer transfer, so the frames
+ * *are* held in a local array until the encode finishes — which is precisely
+ * what the ceiling above is sized for (it is computed from the same
+ * `size * size * 4 * frames.length` this array holds).
  *
  * There is no error boundary anywhere under `app/`, so a throw here would blank
  * the page rather than fail the button. Everything that touches day-file data
@@ -165,8 +174,19 @@ function context2d(canvas: AnyCanvas): AnyCanvasContext {
   return ctx;
 }
 
-/** Lets the browser repaint and lets the user click Pause. */
+/**
+ * Lets the browser repaint and lets the user click Cancel.
+ *
+ * `scheduler.yield` when the browser has it — it resumes ahead of ordinary
+ * tasks, so a long render or encode is not overtaken by every other timer on
+ * the page — and a plain `setTimeout(0)` everywhere else.
+ */
 function yieldToEventLoop(): Promise<void> {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } })
+    .scheduler;
+  if (typeof scheduler?.yield === "function") {
+    return scheduler.yield().catch(() => undefined);
+  }
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
@@ -624,25 +644,16 @@ export async function exportChronicleGif(
   const fortControl = new MaskScratch(CHRONICLE_ZOC_HATCH_RGBA);
   const occupationSeam = new MaskScratch(CHRONICLE_OCCUPATION_SEAM_RGBA);
 
-  // Spawned before the render loop, not after: each frame is transferred to
-  // it as soon as it is painted below, so the worker — not this thread — is
-  // what ends up holding the full frame set by the time encoding starts.
-  const encodeSession = startGifEncodeWorker({
-    width: edge,
-    height: edge,
-    loop,
-    onProgress: (completed, total) =>
-      onProgress?.({ phase: "encode", completed, total }),
-    signal,
-  });
+  // `encodeGifSteps` builds one palette across every frame, so the whole set
+  // has to be in hand before the first encode step. `sourceBytes` above is the
+  // size of exactly this array, checked before any of it was allocated.
+  const sourceFrames: GifSourceFrame[] = [];
 
-  // Everything from here through a successful `finish()` is one guarded
-  // region: a throw anywhere in the render loop (a tainted canvas, an abort,
-  // a layer painter blowing up on bad day data) must not leave the worker —
-  // and every frame already transferred to it — parked for the rest of the
-  // tab's life, nor leave a retried export spawning another one alongside
-  // it. Only the success path skips the `catch`; every other exit
-  // terminates the session before propagating.
+  // Everything from here through the finished bytes is one guarded region: a
+  // throw anywhere in the render or encode loop (a tainted canvas, an abort, a
+  // layer painter blowing up on bad day data) must drop the frames it has
+  // rather than leave hundreds of megabytes of pixels reachable from a
+  // half-finished export while the user retries.
   let bytes: Uint8Array;
   try {
     for (let i = 0; i < frames.length; i++) {
@@ -710,31 +721,46 @@ export async function exportChronicleGif(
           "The browser blocked reading this frame's pixels, so the GIF cannot be built."
         );
       }
-      // Transferred, not copied — `pixels.data`'s buffer belongs to the worker
-      // from this call onward, so nothing here may read `pixels` again.
-      encodeSession.postFrame({ data: pixels.data, delayMs });
+      sourceFrames.push({ data: pixels.data, delayMs });
 
-      // Between days, not after the last one: the encode phase yields on its own.
+      // Between days, not after the last one: the encode loop below opens with
+      // its own yield.
       if (i < frames.length - 1) await yieldToEventLoop();
     }
 
     throwIfAborted(signal);
     onProgress?.({ phase: "encode", completed: 0, total: frames.length });
 
-    bytes = await encodeSession.finish();
+    // One `await` per written frame. The generator's own `onProgress` fires
+    // just before each yield, so the bar's number is already updated by the
+    // time the browser gets the thread back to paint it — and `throwIfAborted`
+    // between steps is what makes Cancel land during the encode instead of
+    // only during the render.
+    const steps = encodeGifSteps({
+      width: edge,
+      height: edge,
+      frames: sourceFrames,
+      loop,
+      onProgress: (completed, total) =>
+        onProgress?.({ phase: "encode", completed, total }),
+    });
+    let step = steps.next();
+    while (!step.done) {
+      await yieldToEventLoop();
+      throwIfAborted(signal);
+      step = steps.next();
+    }
+    bytes = step.value;
   } catch (err) {
-    // Reaching here means `finish()` either was never called (the loop threw
-    // first) or was called and itself rejected — either way the worker is
-    // not left holding the frames it already has. `terminate()` is a no-op
-    // when the session already settled on its own (a `finish()` rejection
-    // already terminated it internally), so this is safe to call
-    // unconditionally rather than tracking which case happened.
-    encodeSession.terminate();
-    // The session already rejects with an abort-flavoured error when
-    // `signal` fires; re-flagging it as the type the rest of the studio
-    // (`isChronicleGifCancelled`) actually checks for keeps `exportGif`'s
-    // cancel handling in `ChronicleStudio.tsx` the one place that decides
-    // what a cancelled export looks like.
+    // Drop every frame this export is holding before the error leaves: the
+    // array is the largest thing in the function by orders of magnitude, and a
+    // retried export allocates a second one.
+    sourceFrames.length = 0;
+    // `throwIfAborted` already throws the right type, but a cancel that lands
+    // inside some other awaited call would not; re-flagging keeps
+    // `isChronicleGifCancelled` — and so `exportGif`'s cancel handling in
+    // `ChronicleStudio.tsx` — the one place that decides what a cancelled
+    // export looks like.
     if (signal?.aborted) throw new ChronicleGifCancelled();
     throw err;
   }

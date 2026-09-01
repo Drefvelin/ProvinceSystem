@@ -1,8 +1,10 @@
 /**
  * GIF's flavour of LZW, plus the byte plumbing every part of the encoder
- * shares. Pure over typed arrays — no DOM, no canvas — which is what lets
- * `gifEncode.worker.ts` run the whole encode (this file included) on a
- * dedicated Worker thread in the studio, and lets the tests run it under node.
+ * shares. Pure over typed arrays — no DOM, no canvas, no timers — which lets
+ * the tests run it under node and lets `encodeGif`'s frame-by-frame generator
+ * pause between frames without this file knowing anything about it. The encode
+ * runs on the studio's main thread, not a Worker; `encodeGif.ts`'s module doc
+ * records why (Turbopack does not bundle browser Workers).
  *
  * GIF LZW is *not* the same as the LZW in TIFF or `compress`: codes are packed
  * least-significant-bit first, the code width grows from `minCodeSize + 1`, and

@@ -5,10 +5,26 @@
  * frame as `ImageData`, and the alternative is shipping a general-purpose GIF
  * library to do one thing this file does in a few hundred lines.
  *
- * Pure over typed arrays — nothing here touches a canvas or `ImageData` — so
- * `gifEncode.worker.ts` can call this exact function on a dedicated Worker
- * thread (`gifEncodeWorkerClient.ts` is what spawns that worker from the
- * studio) while `encodeGif.test.ts` keeps calling it directly under node.
+ * Pure over typed arrays — nothing here touches a canvas, `ImageData`, the DOM
+ * or any timer — so `encodeGif.test.ts` calls it directly under node and the
+ * studio calls it from the browser's main thread.
+ *
+ * It runs on the main thread and not on a Worker. Turbopack — this project's
+ * bundler, see `next.config.ts` — does not bundle a browser `Worker` in a
+ * production `next build`: `new Worker(new URL("./x.worker.ts", import.meta.url))`
+ * emits the worker file as an *unprocessed static asset* (a raw `.ts` under
+ * `.next/static/media/`, which a browser then refuses as a SyntaxError) rather
+ * than as a compiled worker chunk. Verified empirically on Next 16.0.10 against
+ * `.ts`, `.js` and `.mjs` worker files, with and without `{ type: "module" }`;
+ * all four emitted raw source. Turbopack's documented worker bundling covers
+ * server-side `node:worker_threads` and `navigator.serviceWorker.register`,
+ * not `new Worker`.
+ *
+ * So the encode is chunked instead of moved: `encodeGifSteps` below is a
+ * generator that yields once per written frame, and `chronicleGifExport.ts`
+ * drives it with an `await` between frames so the tab repaints its progress
+ * bar and can be cancelled. `encodeGif` drains the same generator in one go
+ * for callers (the tests) that want the plain synchronous function.
  */
 
 import { ByteWriter, lzwCompress, writeSubBlocks } from "./gifLzw";
@@ -82,7 +98,25 @@ function validate(options: EncodeGifOptions): void {
   }
 }
 
-export function encodeGif(options: EncodeGifOptions): Uint8Array {
+/**
+ * The encoder as a resumable generator: one `yield` per frame written, valued
+ * with the number of frames done so far, returning the finished GIF bytes.
+ *
+ * The palette is global to the file — `buildGifPalette` reads every frame — so
+ * the frames must all be in hand before the first step, and the up-front
+ * `CHRONICLE_MEMORY_CEILING_BYTES` refusal in `chronicleGifExport.ts` is what
+ * keeps that bounded. Everything after the palette is per-frame, and that
+ * per-frame work (nearest-colour mapping plus LZW over `width*height` pixels)
+ * is the part that used to block the tab outright, which is what the yields
+ * are for.
+ *
+ * `validate` runs on the first `next()`, not at call time — generators do not
+ * execute their body until then. Both drivers below step immediately, so a bad
+ * request still throws before anything observable happens.
+ */
+export function* encodeGifSteps(
+  options: EncodeGifOptions
+): Generator<number, Uint8Array, void> {
   validate(options);
   const { width, height, frames } = options;
   const loop = options.loop ?? true;
@@ -154,8 +188,22 @@ export function encodeGif(options: EncodeGifOptions): Uint8Array {
     writeSubBlocks(out, lzwCompress(indices, minCodeSize));
 
     options.onProgress?.(i + 1, frames.length);
+    yield i + 1;
   }
 
   out.byte(0x3b); // Trailer.
   return out.toUint8Array();
+}
+
+/**
+ * The whole encode in one synchronous call — every step drained back to back.
+ *
+ * This is the shape `encodeGif.test.ts` exercises and the shape any non-UI
+ * caller wants; the studio uses `encodeGifSteps` directly so it can yield.
+ */
+export function encodeGif(options: EncodeGifOptions): Uint8Array {
+  const steps = encodeGifSteps(options);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
 }
