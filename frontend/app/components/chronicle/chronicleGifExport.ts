@@ -636,86 +636,100 @@ export async function exportChronicleGif(
     signal,
   });
 
-  for (let i = 0; i < frames.length; i++) {
-    throwIfAborted(signal);
-    const frame = frames[i]!;
-    onProgress?.({
-      phase: "render",
-      completed: i,
-      total: frames.length,
-      day: frame.day,
-    });
-
-    ctx.clearRect(0, 0, edge, edge);
-    // The letterbox bars and any hole in the parchment read as the map's own
-    // deep-forest ground rather than as transparency the GIF cannot express.
-    ctx.fillStyle = "#0f1c16";
-    ctx.fillRect(0, 0, edge, edge);
-
-    if (baseReady) {
-      ctx.drawImage(
-        baseImage,
-        transform.offsetX,
-        transform.offsetY,
-        transform.drawWidth,
-        transform.drawHeight
-      );
-    }
-
-    if (frame.image) {
-      ctx.save();
-      ctx.globalAlpha = fillOpacity;
-      ctx.drawImage(
-        frame.image,
-        transform.offsetX,
-        transform.offsetY,
-        transform.drawWidth,
-        transform.drawHeight
-      );
-      ctx.restore();
-    }
-
-    if (frame.layers.fortControl) {
-      fortControl.draw(ctx, frame.layers.fortControl, transform);
-    }
-    if (frame.layers.borders) {
-      borders.draw(ctx, frame.layers.borders, transform);
-    }
-    if (frame.layers.occupationSeam) {
-      occupationSeam.draw(ctx, frame.layers.occupationSeam, transform);
-    }
-    drawWarLines(ctx, frame.layers.wars, centroids, transform);
-    drawMarkers(ctx, frame.layers.markers, images, transform, sans);
-    drawNationLabels(ctx, frame.layers, transform, serif);
-    drawWatermark(ctx, edge, logo, sans, stampDay ? frame.day : null);
-
-    let pixels: ImageData;
-    try {
-      pixels = ctx.getImageData(0, 0, edge, edge);
-    } catch {
-      // The probe already cleared the one image that arrives from another
-      // origin, so reaching here means something else tainted the canvas —
-      // there is nothing to drop and retry, and a half-written GIF is worse
-      // than a message.
-      throw new Error(
-        "The browser blocked reading this frame's pixels, so the GIF cannot be built."
-      );
-    }
-    // Transferred, not copied — `pixels.data`'s buffer belongs to the worker
-    // from this call onward, so nothing here may read `pixels` again.
-    encodeSession.postFrame({ data: pixels.data, delayMs });
-
-    // Between days, not after the last one: the encode phase yields on its own.
-    if (i < frames.length - 1) await yieldToEventLoop();
-  }
-
-  throwIfAborted(signal);
-  onProgress?.({ phase: "encode", completed: 0, total: frames.length });
-
+  // Everything from here through a successful `finish()` is one guarded
+  // region: a throw anywhere in the render loop (a tainted canvas, an abort,
+  // a layer painter blowing up on bad day data) must not leave the worker —
+  // and every frame already transferred to it — parked for the rest of the
+  // tab's life, nor leave a retried export spawning another one alongside
+  // it. Only the success path skips the `catch`; every other exit
+  // terminates the session before propagating.
   let bytes: Uint8Array;
   try {
+    for (let i = 0; i < frames.length; i++) {
+      throwIfAborted(signal);
+      const frame = frames[i]!;
+      onProgress?.({
+        phase: "render",
+        completed: i,
+        total: frames.length,
+        day: frame.day,
+      });
+
+      ctx.clearRect(0, 0, edge, edge);
+      // The letterbox bars and any hole in the parchment read as the map's own
+      // deep-forest ground rather than as transparency the GIF cannot express.
+      ctx.fillStyle = "#0f1c16";
+      ctx.fillRect(0, 0, edge, edge);
+
+      if (baseReady) {
+        ctx.drawImage(
+          baseImage,
+          transform.offsetX,
+          transform.offsetY,
+          transform.drawWidth,
+          transform.drawHeight
+        );
+      }
+
+      if (frame.image) {
+        ctx.save();
+        ctx.globalAlpha = fillOpacity;
+        ctx.drawImage(
+          frame.image,
+          transform.offsetX,
+          transform.offsetY,
+          transform.drawWidth,
+          transform.drawHeight
+        );
+        ctx.restore();
+      }
+
+      if (frame.layers.fortControl) {
+        fortControl.draw(ctx, frame.layers.fortControl, transform);
+      }
+      if (frame.layers.borders) {
+        borders.draw(ctx, frame.layers.borders, transform);
+      }
+      if (frame.layers.occupationSeam) {
+        occupationSeam.draw(ctx, frame.layers.occupationSeam, transform);
+      }
+      drawWarLines(ctx, frame.layers.wars, centroids, transform);
+      drawMarkers(ctx, frame.layers.markers, images, transform, sans);
+      drawNationLabels(ctx, frame.layers, transform, serif);
+      drawWatermark(ctx, edge, logo, sans, stampDay ? frame.day : null);
+
+      let pixels: ImageData;
+      try {
+        pixels = ctx.getImageData(0, 0, edge, edge);
+      } catch {
+        // The probe already cleared the one image that arrives from another
+        // origin, so reaching here means something else tainted the canvas —
+        // there is nothing to drop and retry, and a half-written GIF is worse
+        // than a message.
+        throw new Error(
+          "The browser blocked reading this frame's pixels, so the GIF cannot be built."
+        );
+      }
+      // Transferred, not copied — `pixels.data`'s buffer belongs to the worker
+      // from this call onward, so nothing here may read `pixels` again.
+      encodeSession.postFrame({ data: pixels.data, delayMs });
+
+      // Between days, not after the last one: the encode phase yields on its own.
+      if (i < frames.length - 1) await yieldToEventLoop();
+    }
+
+    throwIfAborted(signal);
+    onProgress?.({ phase: "encode", completed: 0, total: frames.length });
+
     bytes = await encodeSession.finish();
   } catch (err) {
+    // Reaching here means `finish()` either was never called (the loop threw
+    // first) or was called and itself rejected — either way the worker is
+    // not left holding the frames it already has. `terminate()` is a no-op
+    // when the session already settled on its own (a `finish()` rejection
+    // already terminated it internally), so this is safe to call
+    // unconditionally rather than tracking which case happened.
+    encodeSession.terminate();
     // The session already rejects with an abort-flavoured error when
     // `signal` fires; re-flagging it as the type the rest of the studio
     // (`isChronicleGifCancelled`) actually checks for keeps `exportGif`'s

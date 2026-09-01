@@ -30,8 +30,24 @@ export type GifEncodeSession = {
    * afterward, which is exactly the point: the main thread's copy is gone.
    */
   postFrame(frame: GifSourceFrame): void;
-  /** Signals that no more frames are coming and resolves with the finished GIF. */
+  /**
+   * Signals that no more frames are coming and resolves with the finished
+   * GIF. Idempotent — a second call does not re-post the "finish" message,
+   * it just returns the same promise the first call did.
+   */
   finish(): Promise<Uint8Array>;
+  /**
+   * Terminates the worker immediately and abandons whatever it was holding —
+   * every frame transferred to it so far included. For any exit out of the
+   * caller's render loop other than a successful `finish()`: a thrown error,
+   * a tainted canvas, an abort caught before `finish()` was even called.
+   * Without this, an exception between spawning the session and awaiting
+   * `finish()` leaves a live worker (and every frame it already owns) parked
+   * for the rest of the tab's life, and a retried export spawns another.
+   * Idempotent and safe to call after the session has already settled on its
+   * own (done/error/abort) — a no-op then, same as a second `postFrame`.
+   */
+  terminate(): void;
 };
 
 export type StartGifEncodeWorkerOptions = {
@@ -114,6 +130,8 @@ export function startGifEncodeWorker(
     else signal.addEventListener("abort", onAbort, { once: true });
   }
 
+  let finishRequested = false;
+
   return {
     postFrame(frame) {
       if (settled) return;
@@ -126,11 +144,19 @@ export function startGifEncodeWorker(
       worker.postMessage(request, [buffer]);
     },
     finish() {
-      if (!settled) {
-        const request: GifWorkerRequest = { type: "finish", width, height, loop };
-        worker.postMessage(request);
+      if (!finishRequested) {
+        finishRequested = true;
+        if (!settled) {
+          const request: GifWorkerRequest = { type: "finish", width, height, loop };
+          worker.postMessage(request);
+        }
       }
       return done;
+    },
+    terminate() {
+      settle(() =>
+        rejectDone(new DOMException("GIF encode session terminated", "AbortError"))
+      );
     },
   };
 }

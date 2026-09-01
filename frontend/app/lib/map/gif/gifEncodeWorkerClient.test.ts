@@ -192,4 +192,50 @@ describe("startGifEncodeWorker", () => {
     expect(worker.terminated).toBe(true);
     await expect(session.finish()).rejects.toThrow(/cancelled|aborted/i);
   });
+
+  it("terminate() kills the worker and rejects an in-flight finish(), even with no signal", async () => {
+    installFakeWorker();
+    const session = startGifEncodeWorker({ width: 1, height: 1, loop: true });
+    const worker = FakeWorker.instances[0]!;
+
+    session.postFrame(frame(1));
+    const finishPromise = session.finish();
+    expect(worker.terminated).toBe(false);
+
+    session.terminate();
+
+    expect(worker.terminated).toBe(true);
+    await expect(finishPromise).rejects.toThrow(/terminated/i);
+  });
+
+  it("terminate() is a no-op once the session already settled on its own", async () => {
+    installFakeWorker();
+    const session = startGifEncodeWorker({ width: 1, height: 1, loop: true });
+    const worker = FakeWorker.instances[0]!;
+
+    const finishPromise = session.finish();
+    worker.emitMessage({ type: "done", bytes: new Uint8Array([9]).buffer });
+    await expect(finishPromise).resolves.toEqual(new Uint8Array([9]));
+
+    const terminateCallsBefore = worker.terminated;
+    expect(terminateCallsBefore).toBe(true);
+
+    // Calling terminate() after a real done must not flip the resolved
+    // promise into a rejection, or double-terminate in a way that throws.
+    expect(() => session.terminate()).not.toThrow();
+    await expect(finishPromise).resolves.toEqual(new Uint8Array([9]));
+  });
+
+  it("finish() called twice posts the finish message only once and returns the same promise", () => {
+    installFakeWorker();
+    const session = startGifEncodeWorker({ width: 2, height: 2, loop: false });
+    const worker = FakeWorker.instances[0]!;
+
+    const first = session.finish();
+    const second = session.finish();
+
+    expect(first).toBe(second);
+    const finishMessages = worker.posted.filter((p) => p.message.type === "finish");
+    expect(finishMessages).toHaveLength(1);
+  });
 });
