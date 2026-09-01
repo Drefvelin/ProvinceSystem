@@ -295,6 +295,9 @@ CREATE TABLE IF NOT EXISTS map_chronicle_snapshots_archive (
     PRIMARY KEY (map_id, day, archived_at)
 );
 
+CREATE INDEX IF NOT EXISTS idx_map_chronicle_snapshots_archive_map
+    ON map_chronicle_snapshots_archive(map_id, archived_at);
+
 -- Audit trail for staff-triggered chronicle wipes (and their restores).
 -- `wiped_at` is the archive stamp the wipe used: it is both the audit clock and
 -- the key that ties this row to its `map_chronicle_snapshots_archive` rows and
