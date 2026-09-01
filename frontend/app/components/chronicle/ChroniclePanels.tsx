@@ -8,6 +8,7 @@ import {
   type ChronicleEstimate,
   type ChronicleRangeSelection,
 } from "../../lib/map/chronicleBuild";
+import { CHRONICLE_GIF_SIZES } from "../../lib/map/chronicleGifFrame";
 import {
   CHRONICLE_TOGGLE_ORDER,
   anyChronicleToggleOn,
@@ -332,6 +333,12 @@ export function ChroniclePlaybackPanel({
   incomplete,
   skippedDays,
   exploreHref,
+  gifSize,
+  onGifSizeChange,
+  onExportGif,
+  gifStatus,
+  gifError,
+  gifNotice,
   onDiscard,
 }: {
   days: string[];
@@ -352,8 +359,21 @@ export function ChroniclePlaybackPanel({
    * a second place that has to remember the `dev` -> `r3b1rth` rename.
    */
   exploreHref?: string | null;
+  gifSize: number;
+  onGifSizeChange: (size: number) => void;
+  onExportGif: () => void;
+  /**
+   * What the export is doing right now, or null when idle. Non-null is also
+   * what disables the button, so a busy export cannot be started twice and the
+   * button can never be left disabled with no reason showing beside it.
+   */
+  gifStatus: string | null;
+  gifError: string | null;
+  /** A GIF that was produced with something missing from it. Not a failure. */
+  gifNotice: string | null;
   onDiscard: () => void;
 }) {
+  const exporting = gifStatus != null;
   return (
     <div className={`${chroniclePanelClass} p-3`}>
       <SectionHeading title="Play" />
@@ -436,6 +456,41 @@ export function ChroniclePlaybackPanel({
           Explore this day on the full map &rarr;
         </Link>
       ) : null}
+
+      <div className="mt-3 border-t border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] pt-3">
+        <SectionHeading title="Export" />
+        <label className="mt-2 block text-xs text-[var(--tfmc-mist)]">
+          GIF size
+          <select
+            className={`${selectClass} mt-1`}
+            value={gifSize}
+            disabled={exporting}
+            onChange={(e) => onGifSizeChange(Number(e.target.value))}
+          >
+            {CHRONICLE_GIF_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size} x {size} px
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={`${primaryButtonClass} mt-2 w-full`}
+          onClick={onExportGif}
+          disabled={exporting}
+        >
+          {gifStatus ?? "Export GIF"}
+        </button>
+        {gifError ? (
+          <p className="mt-2 text-xs text-[var(--tfmc-accent)]">{gifError}</p>
+        ) : null}
+        {gifNotice ? (
+          <p className="mt-2 text-xs leading-snug text-[var(--tfmc-stone)]">
+            {gifNotice}
+          </p>
+        ) : null}
+      </div>
 
       {skippedDays.length ? (
         <p className="mt-1 text-xs text-[var(--tfmc-accent)]">

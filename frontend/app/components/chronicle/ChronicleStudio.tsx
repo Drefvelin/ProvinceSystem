@@ -60,6 +60,16 @@ import {
 } from "../map/types";
 import { chronicleDayHref } from "../../lib/map/chronicleDayRoute";
 import {
+  DEFAULT_CHRONICLE_GIF_SIZE,
+  chronicleGifDelayMs,
+  chronicleGifFilename,
+} from "../../lib/map/chronicleGifFrame";
+import {
+  downloadGif,
+  exportChronicleGif,
+  isChronicleGifCancelled,
+} from "./chronicleGifExport";
+import {
   ChronicleBuildPanel,
   ChroniclePlaybackPanel,
   ChronicleRangePanel,
@@ -148,6 +158,23 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [speed, setSpeed] = useState(4);
   const [loop, setLoop] = useState(true);
 
+  const [gifSize, setGifSize] = useState<number>(DEFAULT_CHRONICLE_GIF_SIZE);
+  const [gifStatus, setGifStatus] = useState<string | null>(null);
+  const [gifError, setGifError] = useState<string | null>(null);
+  const [gifNotice, setGifNotice] = useState<string | null>(null);
+  /**
+   * Set when the base map failed to load *with* `crossOrigin="anonymous"`.
+   *
+   * The attribute is what makes the decoded image safe to read back out of a
+   * canvas, and the API serves the asset with an `Access-Control-Allow-Origin`
+   * for every deployed origin — but a deployment that ever stopped doing so
+   * would make the attributed request fail outright, and a studio with no base
+   * map at all is a far worse bug than a GIF with no parchment. So the failure
+   * is caught and the image is re-rendered bare. The flag is only ever set,
+   * never cleared by an error, which is what stops the retry from looping.
+   */
+  const [baseCorsFailed, setBaseCorsFailed] = useState(false);
+
   const [mapSize, setMapSize] = useState({
     w: MAP_BOUNDS[mapId],
     h: MAP_BOUNDS[mapId],
@@ -162,6 +189,13 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [markersCost, setMarkersCost] = useState<SourceCost | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // The base map the page already decoded. The GIF composites the parchment
+  // under every frame, and re-requesting a multi-megabyte authenticated asset
+  // to do it would double the map's download for a picture already on screen.
+  const baseImageRef = useRef<HTMLImageElement | null>(null);
+  // One export at a time, guarded by a ref for the same reason the build is:
+  // two clicks can land inside one tick, before the disabled button re-renders.
+  const exportingRef = useRef(false);
   const gridRef = useRef<ProvinceIdGrid | null>(null);
   const gridPromiseRef = useRef<Promise<ProvinceIdGrid> | null>(null);
   const previewTargetRef = useRef<{
@@ -258,6 +292,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     gridPromiseRef.current = null;
     previewTargetRef.current = null;
     setGridVersion((version) => version + 1);
+    // A different asset gets its own verdict: the previous one's CORS failure
+    // says nothing about this one, and staying latched would silently give up
+    // the parchment in every later export.
+    setBaseCorsFailed(false);
   }, [mapId, authToken]);
 
   const ensureGrid = useCallback(
@@ -1016,6 +1054,77 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     return () => cancelAnimationFrame(raf);
   }, [stage, playing, speed, loop, framesVersion]);
 
+  /**
+   * Flattens the built frames into a GIF and hands it to the browser.
+   *
+   * Everything is inside one try/catch that lands in `gifError`: there is no
+   * error boundary under `app/`, so an escaping throw here would not fail the
+   * button, it would blank the page. The `finally` is what guarantees the
+   * button comes back — a stuck "Encoding…" with no way out is worse than the
+   * failure it is hiding.
+   */
+  const exportGif = useCallback(async () => {
+    if (exportingRef.current) return;
+    const built = framesRef.current;
+    if (!built.length) return;
+
+    exportingRef.current = true;
+    // The render loop yields between days, so a playback still running would
+    // keep repainting the preview canvas and stealing the frames' turn on the
+    // main thread for the whole export.
+    setPlaying(false);
+    setGifError(null);
+    setGifNotice(null);
+    setGifStatus("Preparing…");
+
+    try {
+      const { bytes, baseMapOmitted } = await exportChronicleGif({
+        frames: built.map((frame) => ({
+          day: frame.day,
+          image: frame.image,
+          layers: frame.layers,
+        })),
+        size: gifSize,
+        mapW: mapSize.w,
+        mapH: mapSize.h,
+        baseImage: baseImageRef.current,
+        fillOpacity: CHRONICLE_FILL_OPACITY,
+        delayMs: chronicleGifDelayMs(speed),
+        loop,
+        centroids: geometry.centroids,
+        onProgress: (progress) => {
+          setGifStatus(
+            progress.phase === "render"
+              ? `Rendering day ${progress.completed + 1} of ${progress.total}…`
+              : "Encoding…"
+          );
+        },
+      });
+      downloadGif(
+        bytes,
+        chronicleGifFilename(
+          mapDisplayName,
+          built[0]!.day,
+          built[built.length - 1]!.day
+        )
+      );
+      if (baseMapOmitted) {
+        setGifNotice(
+          "Exported without the base map — the browser would not let its pixels be read."
+        );
+      }
+    } catch (err) {
+      if (!isChronicleGifCancelled(err)) {
+        setGifError(
+          err instanceof Error ? err.message : "The GIF export failed."
+        );
+      }
+    } finally {
+      exportingRef.current = false;
+      setGifStatus(null);
+    }
+  }, [gifSize, mapSize, speed, loop, geometry.centroids, mapDisplayName]);
+
   const toggleLayer = useCallback((key: ChronicleToggleKey) => {
     setNotice(null);
     setToggles((current) => ({ ...current, [key]: !current[key] }));
@@ -1051,6 +1160,21 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               sessionToken={authToken}
               alt={`${mapDisplayName} base map`}
               className="pointer-events-none block h-full w-full"
+              // The GIF export composites this exact decoded image, and a
+              // canvas it taints can never be read back. Asking for it with
+              // CORS costs nothing when the header is there — it is the same
+              // request, so the ~34 MB asset is not fetched twice — and the
+              // `onError` swap below covers the case where it is not.
+              crossOrigin={baseCorsFailed ? undefined : "anonymous"}
+              onError={() => {
+                // Idempotent on purpose: the bare retry this triggers can fail
+                // again (a genuinely missing asset), and React bails out of a
+                // set to the value already held, so there is no render loop.
+                setBaseCorsFailed(true);
+              }}
+              imgRef={(node) => {
+                baseImageRef.current = node;
+              }}
               onLoad={(event) => {
                 const img = event.currentTarget;
                 if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -1205,9 +1329,30 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 onLoopChange={setLoop}
                 incomplete={Boolean(activeFrame?.incomplete)}
                 exploreHref={
-                  activeFrame ? chronicleDayHref(mapId, activeFrame.day) : null
+                  activeFrame
+                    ? chronicleDayHref(
+                        mapId,
+                        activeFrame.day,
+                        // The span of the timelapse as it was actually built,
+                        // not the range inputs: skipped days move the ends, and
+                        // the day page's previous/next must walk what the
+                        // reader watched.
+                        frames.length
+                          ? {
+                              start: frames[0].day,
+                              end: frames[frames.length - 1].day,
+                            }
+                          : null
+                      )
+                    : null
                 }
                 skippedDays={skippedDays}
+                gifSize={gifSize}
+                onGifSizeChange={setGifSize}
+                onExportGif={() => void exportGif()}
+                gifStatus={gifStatus}
+                gifError={gifError}
+                gifNotice={gifNotice}
                 onDiscard={() => {
                   discardFrames();
                   setStage("compose");
