@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { MapEngineProvider } from "../../../../core/MapEngineContext";
 import ChronicleDayViewer from "../../../../components/chronicle/ChronicleDayViewer";
 import { ChronicleDayProvider } from "../../../../lib/map/chronicleDayContext";
@@ -33,7 +35,14 @@ export default async function Page({
           frame can show the previous day's painted canvases and region
           records under the new day's date.
         */}
-        <ChronicleDayViewer key={day} mapId={"dev"} day={day} />
+        {/*
+          The viewer reads the timelapse range off the query with
+          `useSearchParams`, which the production build refuses to prerender
+          outside a Suspense boundary.
+        */}
+        <Suspense fallback={null}>
+          <ChronicleDayViewer key={day} mapId={"dev"} day={day} />
+        </Suspense>
       </ChronicleDayProvider>
     </MapEngineProvider>
   );

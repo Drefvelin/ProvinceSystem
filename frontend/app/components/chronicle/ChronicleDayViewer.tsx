@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import MapViewer from "../MapViewer";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
@@ -17,14 +18,20 @@ import {
   type ChronicleIndex,
 } from "../../lib/map/chronicleData";
 import {
+  chronicleDayHref,
+  chronicleDayWalk,
   chronicleStudioHref,
   liveMapHref,
+  parseChronicleDayRange,
+  type ChronicleDayRange,
 } from "../../lib/map/chronicleDayRoute";
 import { useChronicleDay } from "../../lib/map/chronicleDayContext";
 import { chroniclePanelClass } from "./ChroniclePanels";
 
 const bannerLinkClass =
   "text-xs text-[var(--tfmc-accent)] underline-offset-2 hover:underline";
+
+const bannerDisabledClass = "text-xs text-[var(--tfmc-stone)]";
 
 const shellClass =
   "flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center";
@@ -43,7 +50,14 @@ type DayStatus =
   | { kind: "gated"; reason: MapAccessGateReason }
   | { kind: "error"; message: string }
   | { kind: "unknown-day" }
-  | { kind: "ready"; incomplete: boolean; staleGeometry: boolean };
+  | {
+      kind: "ready";
+      incomplete: boolean;
+      staleGeometry: boolean;
+      // Carried through so the banner can walk to the neighbouring days without
+      // fetching the index a second time.
+      days: string[];
+    };
 
 /**
  * Everything read out of the index is shape-checked before it is iterated.
@@ -82,7 +96,7 @@ export function describeChronicleDay(
     .stale_geometry_days;
   const staleGeometry = Array.isArray(staleDays) ? staleDays.includes(day) : false;
 
-  return { kind: "ready", incomplete, staleGeometry };
+  return { kind: "ready", incomplete, staleGeometry, days };
 }
 
 /**
@@ -102,11 +116,15 @@ function ChronicleDateBanner({
   day,
   incomplete,
   staleGeometry,
+  range,
+  walk,
 }: {
   mapId: MapId;
   day: string;
   incomplete: boolean;
   staleGeometry: boolean;
+  range: ChronicleDayRange | null;
+  walk: ReturnType<typeof chronicleDayWalk>;
 }) {
   return (
     <div className="pointer-events-none fixed left-1/2 top-[calc(var(--tfmc-header-h)+0.5rem)] z-30 w-[min(92vw,32rem)] -translate-x-1/2">
@@ -132,6 +150,35 @@ function ChronicleDateBanner({
             borders may not line up.
           </p>
         ) : null}
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {walk.previous ? (
+            <Link
+              href={chronicleDayHref(mapId, walk.previous, range)}
+              className={bannerLinkClass}
+            >
+              &larr; Previous day
+            </Link>
+          ) : (
+            // Dimmed rather than dropped: removing the control at the ends
+            // reflows the row under the date as the reader steps through days.
+            <span className={bannerDisabledClass}>&larr; Previous day</span>
+          )}
+          {walk.total > 0 && walk.position > 0 ? (
+            <span className="text-[0.65rem] font-medium tracking-widest text-[var(--tfmc-mist)]">
+              {walk.position} / {walk.total}
+            </span>
+          ) : null}
+          {walk.next ? (
+            <Link
+              href={chronicleDayHref(mapId, walk.next, range)}
+              className={bannerLinkClass}
+            >
+              Next day &rarr;
+            </Link>
+          ) : (
+            <span className={bannerDisabledClass}>Next day &rarr;</span>
+          )}
+        </div>
         <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           <Link href={chronicleStudioHref(mapId)} className={bannerLinkClass}>
             &larr; Timelapse
@@ -183,6 +230,26 @@ export default function ChronicleDayViewer({
   const activeDay = contextDay ?? day;
 
   const [status, setStatus] = useState<DayStatus>({ kind: "loading" });
+
+  /**
+   * The timelapse the reader arrived from, if any. Nothing here is trusted —
+   * these are query values anyone can type — so a malformed pair simply means
+   * previous/next walks every stored day instead.
+   */
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  const range = useMemo(() => parseChronicleDayRange(from, to), [from, to]);
+
+  const walk = useMemo(
+    () =>
+      chronicleDayWalk(
+        status.kind === "ready" ? status.days : [],
+        activeDay,
+        range
+      ),
+    [status, activeDay, range]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -278,6 +345,8 @@ export default function ChronicleDayViewer({
         day={activeDay}
         incomplete={status.incomplete}
         staleGeometry={status.staleGeometry}
+        range={range}
+        walk={walk}
       />
       <MapViewer mapId={mapId} day={activeDay} />
     </>
