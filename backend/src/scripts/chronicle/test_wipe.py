@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import errno
 import gzip
 import json
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -21,6 +23,7 @@ if str(_BACKEND_SRC) not in sys.path:
 os.environ.setdefault("SKINS_DEV", "1")
 
 from src.scripts.chronicle import store, wipe  # noqa: E402
+from src.scripts.util import maplock  # noqa: E402
 from src.skins import db as skins_db  # noqa: E402
 
 
@@ -201,7 +204,7 @@ def test_rows_survive_a_failure_during_the_directory_move(chronicle_env, monkeyp
     def boom(*_args, **_kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr(wipe.shutil, "move", boom)
+    monkeypatch.setattr(wipe.os, "rename", boom)
 
     with pytest.raises(OSError):
         wipe.wipe_map("dev")
@@ -210,3 +213,52 @@ def test_rows_survive_a_failure_during_the_directory_move(chronicle_env, monkeyp
     assert os.path.isdir(store.chronicle_root("dev"))
     # The archive copy is already there; a re-run REPLACEs it harmlessly.
     assert _archive_rows("dev") == ["2026-01-01"]
+
+
+def test_cross_device_backup_fails_loudly_instead_of_copying(chronicle_env, monkeypatch):
+    """`shutil.move` degrades to copytree+rmtree across a filesystem boundary,
+    which is not the "renamed aside" this module promises. Say so instead."""
+    _capture_day("dev", "2026-01-01")
+
+    def exdev(*_args, **_kwargs):
+        raise OSError(errno.EXDEV, "Invalid cross-device link")
+
+    monkeypatch.setattr(wipe.os, "rename", exdev)
+
+    with pytest.raises(wipe.WipeError) as excinfo:
+        wipe.perform_wipe("dev")
+    assert "same filesystem" in str(excinfo.value)
+
+    # Nothing was copied, nothing was deleted: the live rows and tree stand.
+    assert _live_rows("dev") == ["2026-01-01"]
+    assert os.path.isdir(store.chronicle_root("dev"))
+    assert _backup_dirs(store.chronicle_root("dev")) == []
+
+
+def test_a_second_wipe_is_refused_while_one_is_running(chronicle_env):
+    """The staff routes' 'already running' answer, and the CLI's protection
+    against being run twice against the same live server."""
+    _capture_day("dev", "2026-01-01")
+    lock_path = store.chronicle_lock_path("dev")
+
+    held = threading.Event()
+    release = threading.Event()
+
+    def holder():
+        with maplock.map_lock(lock_path):
+            held.set()
+            release.wait(30)
+
+    thread = threading.Thread(target=holder)
+    thread.start()
+    try:
+        assert held.wait(30)
+        with pytest.raises(maplock.MapLockBusy):
+            with maplock.map_lock(lock_path, blocking=False):
+                pass
+    finally:
+        release.set()
+        thread.join(30)
+
+    # Untouched by the refusal.
+    assert _live_rows("dev") == ["2026-01-01"]

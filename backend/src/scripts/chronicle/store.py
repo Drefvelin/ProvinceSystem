@@ -60,6 +60,15 @@ def chronicle_root(map_name: str) -> str:
     return os.path.join(OUTPUT_DIR, map_name, "chronicle")
 
 
+def chronicle_lock_path(map_name: str) -> str:
+    """The per-map chronicle lock file — a sibling of the tree, never inside it.
+
+    A wipe renames `chronicle/` aside, so a lock file living under it would be
+    carried off mid-operation and the next acquire would create a fresh one.
+    """
+    return chronicle_root(map_name) + ".lock"
+
+
 def chronicle_day_dir(map_name: str, day: str) -> str:
     if not is_valid_day(day):
         raise ValueError("Invalid chronicle day")

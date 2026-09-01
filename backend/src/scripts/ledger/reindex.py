@@ -15,8 +15,9 @@ import sys
 from src.skins.db import migrate
 
 from ..util.dirs import validate_map
+from ..util.maplock import map_lock
 from .ingest import promote_day, reindex_day
-from .store import daily_root, is_valid_day, raw_root
+from .store import daily_root, is_valid_day, ledger_lock_path, raw_root
 
 
 def _days_on_disk(root: str, suffix: str) -> list[str]:
@@ -51,13 +52,22 @@ def reindex_map(map_name: str, *, from_raw: bool = False, dry_run: bool = False)
         print(f"[dry-run] would reindex {len(days)} day(s) from {source} ({days[0]}..{days[-1]})")
         return 0
 
+    # One lock for the whole loop, not one per day: a server that is still
+    # ingesting would otherwise slip a promote (or a staff wipe) between two
+    # days of the rebuild and leave the index half old, half new. The lock is
+    # reentrant, so the per-day acquire inside promote_day/reindex_day is free.
     done = 0
-    for day in days:
-        result = promote_day(map_name, day) if from_raw else reindex_day(map_name, day)
-        if result is None:
-            print(f"  skipped {day} (nothing readable)")
-            continue
-        done += 1
+    with map_lock(ledger_lock_path(map_name)):
+        for day in days:
+            result = (
+                promote_day(map_name, day)
+                if from_raw
+                else reindex_day(map_name, day)
+            )
+            if result is None:
+                print(f"  skipped {day} (nothing readable)")
+                continue
+            done += 1
     print(f"Reindexed {done}/{len(days)} day(s) for map '{map_name}' from {source}.")
     return 0
 

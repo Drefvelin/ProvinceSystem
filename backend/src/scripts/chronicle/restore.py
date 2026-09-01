@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from src.skins.db import connect, migrate
 
 from ..util.dirs import validate_map
-from .store import chronicle_root, is_valid_day
+from ..util.maplock import map_lock
+from .store import chronicle_lock_path, chronicle_root, is_valid_day
 
 _LIVE_TABLE = "map_chronicle_snapshots"
 _ARCHIVE_TABLE = "map_chronicle_snapshots_archive"
@@ -195,6 +196,28 @@ def restore_wipe(
     validate_map(map_id)
     migrate()
 
+    # Held for the whole restore, across processes: the directory moves and the
+    # row re-insert are separate steps, and `capture_if_due` runs from every
+    # upload. A capture landing between them would occupy a day directory the
+    # archived row is about to be published for. Reentrant, so an HTTP caller
+    # already holding it can still call this.
+    with map_lock(chronicle_lock_path(map_id)):
+        return _restore_locked(
+            map_id, archived_at=archived_at, backup_path=backup_path
+        )
+
+
+def _restore_locked(
+    map_id: str,
+    *,
+    archived_at: int,
+    backup_path: str | None,
+) -> RestoreResult:
+    """Body of `restore_wipe`; caller holds the map lock.
+
+    `merge` is not threaded through on purpose: the merge decision is entirely
+    "a day directory that already exists wins", which this does unconditionally.
+    """
     root = chronicle_root(map_id)
     resolved = validate_backup_path(map_id, backup_path) if backup_path else None
 
@@ -224,7 +247,18 @@ def restore_wipe(
             shutil.move(source, destination)
             restored_days.append(name)
 
-    inserted = _reinsert_rows(map_id, archived_at, exclude=set(skipped_days))
+    exclude = set(skipped_days)
+    if not backup_exists:
+        # The backup directory is gone (consumed by an earlier restore, or
+        # removed outside the app) but archive rows survive. Publishing a row
+        # for a day with no directory would make the index advertise a day that
+        # 404s file by file, so only re-insert the days whose bytes are
+        # actually back in the live tree.
+        exclude.update(
+            day for day in archived if not os.path.isdir(os.path.join(root, day))
+        )
+
+    inserted = _reinsert_rows(map_id, archived_at, exclude=exclude)
 
     if backup_exists:
         try:

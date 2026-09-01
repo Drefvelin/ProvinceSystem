@@ -16,7 +16,6 @@ There is deliberately no "all maps" form: one request, one named map, always.
 from __future__ import annotations
 
 import os
-import threading
 import time
 
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -37,7 +36,9 @@ from ..scripts.chronicle.restore import (
     restore_wipe,
     validate_backup_path,
 )
+from ..scripts.chronicle.store import chronicle_lock_path
 from ..scripts.chronicle.wipe import perform_wipe
+from ..scripts.util.maplock import MapLockBusy, map_lock
 
 chronicle_staff_router = APIRouter()
 
@@ -55,17 +56,61 @@ _UNKNOWN_ACTOR = "unknown"
 # One in-flight destructive chronicle operation per map. A wipe racing a restore
 # (or another wipe) on the same map interleaves a directory move with a row
 # delete, which is the one thing the crash ordering cannot make safe.
-_locks_guard = threading.Lock()
-_map_locks: dict[str, threading.Lock] = {}
+#
+# This used to be a process-local `threading.Lock`, which is exactly nothing
+# under more than one uvicorn worker: two wipes on the same map land on
+# different workers, both acquire their own lock and both proceed. The lock in
+# `scripts/util/maplock.py` is held against every process, including the
+# `python -m src.scripts.chronicle.wipe` CLI, and captures take it too — see
+# `capture.capture_if_due`, which every SF upload schedules as a background
+# task and which used to be able to run straight through a wipe.
+#
+# It has to be acquired *inside* the threadpool call rather than around it: the
+# lock is reentrant per thread (so `perform_wipe` can take it again), and
+# `run_in_threadpool` runs the body on a different thread from the event loop.
+_BUSY_DETAIL = "A chronicle wipe or restore is already running for '{map_id}'."
 
 
-def _map_lock(map_id: str) -> threading.Lock:
-    with _locks_guard:
-        lock = _map_locks.get(map_id)
-        if lock is None:
-            lock = threading.Lock()
-            _map_locks[map_id] = lock
-        return lock
+def _wipe_under_lock(map_id: str, actor: str, reason: str):
+    """perform_wipe plus its audit row, as one uninterruptible unit."""
+    with map_lock(chronicle_lock_path(map_id), blocking=False):
+        result = perform_wipe(map_id)
+        if not result.performed:
+            return result, None
+        wipe_id = audit.record_wipe(
+            map_id,
+            wiped_at=result.archived_at,
+            wiped_by=actor,
+            day_count=result.day_count,
+            backup_path=result.backup_path,
+            reason=reason,
+        )
+        return result, wipe_id
+
+
+def _restore_under_lock(map_id: str, record: audit.WipeRecord, merge: bool, actor: str):
+    """The live-data check, the restore and its audit row, as one unit.
+
+    Returns None for the live-data refusal, so the route can answer 409 without
+    the check and the restore it guards being two separately-decided things.
+    """
+    with map_lock(chronicle_lock_path(map_id), blocking=False):
+        if not merge and has_live_data(map_id):
+            return None
+        result = restore_wipe(
+            map_id,
+            archived_at=record.wiped_at,
+            backup_path=record.backup_path,
+            merge=merge,
+        )
+        restored_at = int(time.time())
+        audit.mark_restored(
+            map_id,
+            record.id,
+            restored_at=restored_at,
+            restored_by=actor,
+        )
+        return result, restored_at
 
 
 def _staff_actor(authorization: str | None) -> str:
@@ -171,44 +216,31 @@ async def wipe_chronicle(
     reason = _require_reason(payload)
     actor = _staff_actor(authorization)
 
-    lock = _map_lock(map_id)
-    if not lock.acquire(blocking=False):
-        raise HTTPException(
-            status_code=429,
-            detail=f"A chronicle wipe or restore is already running for '{map_id}'.",
-        )
     try:
-        result = await run_in_threadpool(perform_wipe, map_id)
+        result, wipe_id = await run_in_threadpool(
+            _wipe_under_lock, map_id, actor, reason
+        )
+    except MapLockBusy:
+        raise HTTPException(
+            status_code=429, detail=_BUSY_DETAIL.format(map_id=map_id)
+        ) from None
 
-        if not result.performed:
-            return add_no_cache(
-                JSONResponse(
-                    {
-                        "ok": True,
-                        "map": map_id,
-                        "performed": False,
-                        "wipe_id": None,
-                        "day_count": 0,
-                        "backup_path": None,
-                        "wiped_at": None,
-                        "wiped_by": actor,
-                        "message": f"Nothing to wipe for map '{map_id}'.",
-                    }
-                )
-            )
-
-        wipe_id = await run_in_threadpool(
-            lambda: audit.record_wipe(
-                map_id,
-                wiped_at=result.archived_at,
-                wiped_by=actor,
-                day_count=result.day_count,
-                backup_path=result.backup_path,
-                reason=reason,
+    if not result.performed:
+        return add_no_cache(
+            JSONResponse(
+                {
+                    "ok": True,
+                    "map": map_id,
+                    "performed": False,
+                    "wipe_id": None,
+                    "day_count": 0,
+                    "backup_path": None,
+                    "wiped_at": None,
+                    "wiped_by": actor,
+                    "message": f"Nothing to wipe for map '{map_id}'.",
+                }
             )
         )
-    finally:
-        lock.release()
 
     return add_no_cache(
         JSONResponse(
@@ -326,58 +358,39 @@ async def restore_chronicle(
     if record is None:
         raise HTTPException(status_code=404, detail="Backup not found for this map")
 
-    lock = _map_lock(map_id)
-    if not lock.acquire(blocking=False):
-        raise HTTPException(
-            status_code=429,
-            detail=f"A chronicle wipe or restore is already running for '{map_id}'.",
-        )
     try:
-        if not merge and await run_in_threadpool(has_live_data, map_id):
-            return add_no_cache(
-                JSONResponse(
-                    {
-                        "ok": False,
-                        "code": "live_data",
-                        "detail": (
-                            "This map already has chronicle data. Restoring would "
-                            "mix two histories; wipe first, or resend with "
-                            "merge: true to keep the live days and fill in the rest."
-                        ),
-                    },
-                    status_code=409,
-                )
-            )
-
-        try:
-            result = await run_in_threadpool(
-                lambda: restore_wipe(
-                    map_id,
-                    archived_at=record.wiped_at,
-                    backup_path=record.backup_path,
-                    merge=merge,
-                )
-            )
-        except RestoreError as exc:
-            status = 404 if exc.code == "nothing_to_restore" else 400
-            return add_no_cache(
-                JSONResponse(
-                    {"ok": False, "code": exc.code, "detail": str(exc)},
-                    status_code=status,
-                )
-            )
-
-        restored_at = int(time.time())
-        await run_in_threadpool(
-            lambda: audit.mark_restored(
-                map_id,
-                record.id,
-                restored_at=restored_at,
-                restored_by=actor,
+        outcome = await run_in_threadpool(
+            _restore_under_lock, map_id, record, merge, actor
+        )
+    except MapLockBusy:
+        raise HTTPException(
+            status_code=429, detail=_BUSY_DETAIL.format(map_id=map_id)
+        ) from None
+    except RestoreError as exc:
+        status = 404 if exc.code == "nothing_to_restore" else 400
+        return add_no_cache(
+            JSONResponse(
+                {"ok": False, "code": exc.code, "detail": str(exc)},
+                status_code=status,
             )
         )
-    finally:
-        lock.release()
+
+    if outcome is None:
+        return add_no_cache(
+            JSONResponse(
+                {
+                    "ok": False,
+                    "code": "live_data",
+                    "detail": (
+                        "This map already has chronicle data. Restoring would "
+                        "mix two histories; wipe first, or resend with "
+                        "merge: true to keep the live days and fill in the rest."
+                    ),
+                },
+                status_code=409,
+            )
+        )
+    result, restored_at = outcome
 
     return add_no_cache(
         JSONResponse(

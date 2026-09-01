@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -200,3 +201,35 @@ def test_has_live_data_sees_rows_and_bare_directories(chronicle_env):
     # move, or a capture that started refilling, must block a blind restore.
     os.makedirs(os.path.join(store.chronicle_root("dev"), "2026-03-01"))
     assert restore.has_live_data("dev") is True
+
+
+def test_missing_backup_does_not_republish_rows_for_absent_days(chronicle_env):
+    """Archive rows outlive the backup directory. Re-inserting a row for a day
+    whose bytes are gone publishes a day that 404s file by file."""
+    _capture_day("dev", "2026-01-01")
+    _capture_day("dev", "2026-01-02")
+    result = wipe.perform_wipe("dev")
+
+    root = store.chronicle_root("dev")
+    # One day put back by hand; the backup directory then removed entirely, as
+    # a half-finished restore plus an operator tidy-up would leave it.
+    os.makedirs(root, exist_ok=True)
+    shutil.move(
+        os.path.join(result.backup_path, "2026-01-01"),
+        os.path.join(root, "2026-01-01"),
+    )
+    shutil.rmtree(result.backup_path)
+
+    restored = restore.restore_wipe(
+        "dev",
+        archived_at=result.archived_at,
+        backup_path=result.backup_path,
+        merge=True,
+    )
+
+    assert restored.restored_days == []
+    assert restored.restored_rows == 1
+    # Only the day whose directory is actually back is live again.
+    assert store.list_days("dev") == ["2026-01-01"]
+    for day in store.list_days("dev"):
+        assert os.path.isdir(store.chronicle_day_dir("dev", day))

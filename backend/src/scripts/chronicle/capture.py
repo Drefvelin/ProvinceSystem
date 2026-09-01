@@ -14,10 +14,12 @@ import time
 
 from ..util.atomic import _day_lock, _fsync_dir, _write_atomic  # noqa: F401
 from ..util.dirs import defines_file, input_file, validate_map
+from ..util.maplock import map_lock
 from .store import (
     CHRONICLE_FILES,
     OPTIONAL_CHRONICLE_FILES,
     chronicle_day_dir,
+    chronicle_lock_path,
     days_referencing,
     geometry_version,
     get_snapshot,
@@ -78,7 +80,11 @@ def capture_snapshot(
     if not is_valid_day(day):
         raise ValueError("Invalid chronicle day")
 
-    with _day_lock(map_name, day):
+    # Map lock outside, day lock inside — always this order, everywhere, so a
+    # capture can never hold the day lock while waiting for the map lock a wipe
+    # is holding. The map lock keeps this whole write out of the middle of a
+    # wipe or restore, which move the day tree and rewrite the index rows.
+    with map_lock(chronicle_lock_path(map_name)), _day_lock(map_name, day):
         return _capture_locked(map_name, day, force)
 
 
@@ -247,9 +253,11 @@ def capture_if_due(map_name: str) -> dict | None:
     """
     try:
         day = today_utc()
-        # Take the lock once so the completeness decision and the capture it
-        # implies cannot interleave with a concurrent capture of the same day.
-        with _day_lock(map_name, day):
+        # Take both locks once so the completeness decision and the capture it
+        # implies cannot interleave with a concurrent capture of the same day
+        # (day lock) or with a staff wipe/restore of the whole map (map lock).
+        # Same nesting order as `capture_snapshot`.
+        with map_lock(chronicle_lock_path(map_name)), _day_lock(map_name, day):
             existing = get_snapshot(map_name, day)
             if existing is not None and not _is_incomplete(existing["manifest"]):
                 return None

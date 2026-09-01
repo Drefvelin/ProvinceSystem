@@ -22,7 +22,8 @@ import time
 from src.skins.db import connect, migrate
 
 from ..util.dirs import validate_map
-from .store import ledger_root
+from ..util.maplock import map_lock
+from .store import ledger_lock_path, ledger_root
 
 _TABLES = (
     "map_ledger_faction_days",
@@ -60,7 +61,16 @@ def _unique_backup_path(root: str, stamp: int) -> str:
 def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
     validate_map(map_name)
     migrate()
+    # `promote_day` runs as a BackgroundTask on every upload and only takes the
+    # per-(map, day) lock, so without this a promote landing between the move
+    # below and the DELETE loop re-creates `daily/{day}.json.gz` in a fresh root
+    # and re-inserts rows the loop then deletes. Cross-process, because the CLI
+    # is a different process from the server it is wiping under.
+    with map_lock(ledger_lock_path(map_name)):
+        return _wipe_locked(map_name, dry_run=dry_run)
 
+
+def _wipe_locked(map_name: str, *, dry_run: bool) -> int:
     root = ledger_root(map_name)
     has_dir = os.path.isdir(root)
     conn = connect()
@@ -95,14 +105,21 @@ def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
     else:
         print(f"No ledger directory at {root} (index rows only).")
 
+    # Count what the DELETEs actually removed, not what the pre-move census
+    # said: the two disagree whenever anything changed in between, and the
+    # printed number is the only record the operator gets.
+    deleted = 0
     conn = connect()
     try:
         with conn:
             for table in _TABLES:
-                conn.execute(f"DELETE FROM {table} WHERE map_id = ?", (map_name,))
+                cursor = conn.execute(
+                    f"DELETE FROM {table} WHERE map_id = ?", (map_name,)
+                )
+                deleted += cursor.rowcount or 0
     finally:
         conn.close()
-    print(f"Deleted {total} index row(s) for map '{map_name}'.")
+    print(f"Deleted {deleted} index row(s) for map '{map_name}'.")
 
     return 0
 

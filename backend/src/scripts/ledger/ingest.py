@@ -10,12 +10,13 @@ import os
 import shutil
 
 from ..util.atomic import _day_lock, _write_atomic
+from ..util.maplock import map_lock
 from .schema import is_deletion_safe, json_safe, normalize_snapshot  # noqa: F401
 from .store import (
     daily_path,
     daily_root,
-    delete_day,
     is_valid_day,
+    ledger_lock_path,
     mark_deleted,
     open_connection,
     raw_day_dir,
@@ -157,12 +158,17 @@ def promote_day(map_id: str, day: str) -> dict | None:
     Runs as a BackgroundTask behind a logging wrapper, and takes the same
     per-(map, day) lock as the chronicle capture so two uploads landing in the
     same 5-minute window cannot interleave a half-written index.
+
+    It also takes this map's cross-process ledger lock, outer to the day lock
+    (the same nesting order the chronicle capture uses), so a promote cannot
+    land in the middle of `ledger/wipe.py` moving the tree aside and deleting
+    the rows, or of a `reindex` rebuilding them.
     """
     validate_map(map_id)
     if not is_valid_day(day):
         raise ValueError("Invalid ledger day")
 
-    with _day_lock(f"ledger:{map_id}", day):
+    with map_lock(ledger_lock_path(map_id)), _day_lock(f"ledger:{map_id}", day):
         return _promote_locked(map_id, day)
 
 
@@ -200,6 +206,11 @@ def index_snapshot(map_id: str, snapshot: dict) -> None:
     connect/commit pairs they were five separately visible states, so a reader
     landing between them saw the new `map_ledger_days` row against the previous
     promotion's faction rows — a day that reports 40 factions and serves 12.
+
+    The same reasoning is why `reindex_day` does *not* call `store.delete_day`
+    first: `upsert_day` and the two `replace_day_*` calls already replace every
+    row this day owns, inside this transaction, so a separate delete only
+    published a state where the day had vanished.
     """
     day = snapshot["day"]
     factions = snapshot.get("factions") or []
@@ -239,14 +250,25 @@ def index_snapshot(map_id: str, snapshot: dict) -> None:
 
 
 def reindex_day(map_id: str, day: str) -> dict | None:
-    """Re-index one day from its stored `daily/` file, no raw scan."""
+    """Re-index one day from its stored `daily/` file, no raw scan.
+
+    Same locks as `promote_day`: this rewrites the day's index rows, so it must
+    not run inside a wipe, and it must not race a promote of the same day.
+    """
     validate_map(map_id)
     if not is_valid_day(day):
         raise ValueError("Invalid ledger day")
+    with map_lock(ledger_lock_path(map_id)), _day_lock(f"ledger:{map_id}", day):
+        return _reindex_locked(map_id, day)
+
+
+def _reindex_locked(map_id: str, day: str) -> dict | None:
     snapshot = _read_raw(daily_path(map_id, day))
     if snapshot is None:
         return None
-    delete_day(map_id, day)
+    # One transaction: see `index_snapshot`. The delete that used to run here
+    # was both redundant (the replace_day_* calls delete inside the same
+    # transaction) and visible, so a reader between the two saw the day gone.
     index_snapshot(map_id, snapshot)
     return snapshot
 

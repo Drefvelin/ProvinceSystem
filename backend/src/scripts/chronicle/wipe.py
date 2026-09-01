@@ -9,8 +9,8 @@ the live table, mirroring the snapshot-then-mutate pattern in
 from __future__ import annotations
 
 import argparse
+import errno
 import os
-import shutil
 import sys
 import time
 from dataclasses import dataclass
@@ -18,7 +18,13 @@ from dataclasses import dataclass
 from src.skins.db import connect, migrate
 
 from ..util.dirs import validate_map
-from .store import chronicle_root
+from ..util.maplock import map_lock
+from .store import chronicle_lock_path, chronicle_root
+
+
+class WipeError(RuntimeError):
+    """A wipe that must not proceed, with an operator-readable reason."""
+
 
 _LIVE_TABLE = "map_chronicle_snapshots"
 _ARCHIVE_TABLE = "map_chronicle_snapshots_archive"
@@ -85,12 +91,35 @@ def _delete_rows(map_name: str) -> None:
         conn.close()
 
 
+def _rename_aside(root: str, backup: str) -> None:
+    """Rename the tree aside, or refuse. Never a copy.
+
+    `shutil.move` silently degrades to copytree+rmtree across a device
+    boundary, which is not what this module's docstring or `WipeResult`
+    promise: it doubles the disk footprint of the whole chronicle, takes
+    unbounded time under the lock, and deletes the original afterwards, so a
+    failure part-way through leaves the days split across two trees. An
+    operator who has put the output directory on a different filesystem needs
+    to hear about it, not have the wipe quietly become a copy.
+    """
+    try:
+        os.rename(root, backup)
+    except OSError as exc:
+        if exc.errno == errno.EXDEV:
+            raise WipeError(
+                f"Cannot set aside {root}: the backup directory {backup} is on a "
+                "different filesystem, and this wipe only ever renames. Put the "
+                "map's output directory and its backups on the same filesystem."
+            ) from exc
+        raise
+
+
 def _unique_backup_path(root: str, archived_at: int) -> str:
     """A backup path nothing occupies yet.
 
-    `shutil.move` onto an *existing* directory moves the source **inside** it
-    rather than failing, so two wipes in the same second would nest one
-    chronicle inside the other's backup.
+    Renaming onto an *existing* directory either fails or (via the old
+    `shutil.move`) moved the source **inside** it, so two wipes in the same
+    second would nest one chronicle inside the other's backup.
     """
     backup = f"{root}.bak.{archived_at}"
     suffix = 1
@@ -141,7 +170,20 @@ def perform_wipe(map_name: str) -> WipeResult:
     This is `wipe_map` minus the CLI: the ordering comment below is the whole
     reason the function exists in this shape, so the HTTP route reuses it rather
     than growing a second, subtly different implementation.
+
+    Held under this map's cross-process lock for the whole run, including the
+    state read: the three steps below are three separate transactions plus a
+    rename, and `capture_if_due` runs from every upload. Without the lock a
+    capture landing after the archive insert writes a live row that the delete
+    at the end removes with no archive copy — that day is then unrecoverable by
+    `restore_wipe`. The lock is reentrant, so an HTTP caller that already holds
+    it (to answer "already running" without blocking) can still call this.
     """
+    with map_lock(chronicle_lock_path(map_name)):
+        return _perform_wipe_locked(map_name)
+
+
+def _perform_wipe_locked(map_name: str) -> WipeResult:
     root, has_dir, rows, archived_at = _wipe_state(map_name)
 
     if not has_dir and not rows:
@@ -162,12 +204,13 @@ def perform_wipe(map_name: str) -> WipeResult:
     # for a directory already set aside, which reads as a broken chronicle and
     # is fixed by re-running. Deleting the rows *first* is the one order that
     # can end with a live row for a day whose directory has just been moved
-    # away — a concurrent capture landing between the commit and the move
-    # writes exactly that row.
+    # away — a crashed re-run landing between the commit and the move writes
+    # exactly that row. (Concurrent captures are excluded by the map lock the
+    # caller holds; this ordering is about crashes.)
     moved = _archive_rows(map_name, archived_at)
 
     if has_dir:
-        shutil.move(root, backup)
+        _rename_aside(root, backup)
 
     _delete_rows(map_name)
 
@@ -229,7 +272,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return wipe_map(args.map, dry_run=args.dry_run)
-    except ValueError as exc:
+    except (ValueError, WipeError) as exc:
         parser.error(str(exc))
         return 2
 

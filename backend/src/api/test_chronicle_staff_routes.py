@@ -540,3 +540,46 @@ def test_an_oversize_body_is_refused(client):
     )
 
     assert response.status_code == 413
+
+
+def test_a_wipe_is_refused_while_another_process_holds_the_map_lock(client):
+    """The lock used to be a process-local `threading.Lock`, so a second uvicorn
+    worker saw nothing. It is now a lock file every process contends for — a
+    subprocess standing in for that second worker gets the 429."""
+    import subprocess
+    import textwrap
+
+    _capture_day("main", "2026-01-01")
+    lock_path = store.chronicle_lock_path("main")
+    script = textwrap.dedent(
+        f"""
+        import sys, time
+        sys.path.insert(0, {str(_BACKEND_ROOT)!r})
+        sys.path.insert(0, {str(_BACKEND_SRC)!r})
+        from src.scripts.util.maplock import map_lock
+        with map_lock({lock_path!r}):
+            print("held", flush=True)
+            time.sleep(30)
+        """
+    )
+    holder = subprocess.Popen(
+        [sys.executable, "-c", script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert holder.stdout.readline().strip() == "held"
+        response = _wipe(client)
+        assert response.status_code == 429
+        assert "already running" in response.json()["detail"]
+    finally:
+        holder.kill()
+        holder.wait(timeout=30)
+
+    # Nothing happened: the chronicle is untouched and there is no audit row.
+    assert store.list_days("main") == ["2026-01-01"]
+    assert audit.list_wipes("main", 10) == []
+
+    # And once the other process lets go, the same request goes through.
+    assert _wipe(client).status_code == 200

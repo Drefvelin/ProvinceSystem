@@ -580,3 +580,81 @@ def test_a_day_captured_before_the_new_files_existed_still_resolves(env: Path) -
     # The pre-existing file is untouched.
     assert store.resolve_stored_file(MAP, "2026-01-01", "nation") is not None
     assert capture_mod._is_incomplete(legacy) is False
+
+
+def test_a_capture_cannot_land_in_the_middle_of_a_wipe(env: Path, monkeypatch) -> None:
+    """The destructive race: archive -> move -> delete is three steps, and
+    `capture_if_due` runs from every upload. A capture landing after the archive
+    insert used to write a live row the delete then removed with no archive
+    copy, losing that day for good."""
+    from src.scripts.chronicle import wipe as wipe_mod
+
+    _write_all_sources(env)
+    day = store.today_utc()
+    assert capture_mod.capture_snapshot(MAP, day=day) is not None
+
+    order: list[str] = []
+    at_move = threading.Event()
+    release = threading.Event()
+    real_rename = wipe_mod._rename_aside
+
+    def gated_rename(root: str, backup: str) -> None:
+        at_move.set()
+        assert release.wait(30)
+        real_rename(root, backup)
+
+    monkeypatch.setattr(wipe_mod, "_rename_aside", gated_rename)
+
+    wiped: list[object] = []
+
+    def run_wipe() -> None:
+        wiped.append(wipe_mod.perform_wipe(MAP))
+        order.append("wipe-done")
+
+    wipe_thread = threading.Thread(target=run_wipe)
+    wipe_thread.start()
+    assert at_move.wait(30)
+
+    captured: list[object] = []
+    at_capture = threading.Event()
+
+    def run_capture() -> None:
+        at_capture.set()
+        captured.append(capture_mod.capture_if_due(MAP))
+        order.append("capture-done")
+
+    capture_thread = threading.Thread(target=run_capture)
+    capture_thread.start()
+    assert at_capture.wait(30)
+    # Blocked on the map lock: the wipe is parked mid-move and has not finished,
+    # so the capture must still be waiting when this join times out.
+    capture_thread.join(1.0)
+    assert capture_thread.is_alive()
+    assert order == []
+
+    release.set()
+    wipe_thread.join(30)
+    capture_thread.join(30)
+    assert not wipe_thread.is_alive() and not capture_thread.is_alive()
+
+    # The capture ran strictly after the wipe, never inside it.
+    assert order == ["wipe-done", "capture-done"]
+    assert captured and captured[0] is not None
+
+    result = wiped[0]
+    # The wiped day went to the archive *and* to the backup: fully archived.
+    assert result.day_count == 1
+    with skins_db.connect() as conn:
+        archived = [
+            row["day"]
+            for row in conn.execute(
+                "SELECT day FROM map_chronicle_snapshots_archive WHERE map_id = ?",
+                (MAP,),
+            ).fetchall()
+        ]
+    assert archived == [day]
+    assert os.path.isdir(os.path.join(result.backup_path, day))
+
+    # And every live row that exists now has its bytes in the live tree.
+    for live_day in store.list_days(MAP):
+        assert os.path.isdir(store.chronicle_day_dir(MAP, live_day))
