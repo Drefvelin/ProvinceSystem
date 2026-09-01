@@ -13,7 +13,8 @@
  * triples the file. Flat map art quantises cleanly without it.
  *
  * Pure over typed arrays — no `ImageData`, no canvas — so this runs under node
- * in the tests and off a worker in the studio.
+ * in the tests and, via `gifEncode.worker.ts`, on a dedicated Worker thread in
+ * the studio.
  */
 
 /**

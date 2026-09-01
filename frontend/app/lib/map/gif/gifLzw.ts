@@ -1,8 +1,8 @@
 /**
  * GIF's flavour of LZW, plus the byte plumbing every part of the encoder
- * shares. Pure over typed arrays — no DOM, no canvas — so the timelapse studio
- * can run this off a worker and the tests can run it under node, exactly like
- * `chroniclePaint.ts`.
+ * shares. Pure over typed arrays — no DOM, no canvas — which is what lets
+ * `gifEncode.worker.ts` run the whole encode (this file included) on a
+ * dedicated Worker thread in the studio, and lets the tests run it under node.
  *
  * GIF LZW is *not* the same as the LZW in TIFF or `compress`: codes are packed
  * least-significant-bit first, the code width grows from `minCodeSize + 1`, and

@@ -5,9 +5,10 @@
  * frame as `ImageData`, and the alternative is shipping a general-purpose GIF
  * library to do one thing this file does in a few hundred lines.
  *
- * Pure over typed arrays — nothing here touches a canvas or `ImageData`, so it
- * runs off a worker in the browser and under node in the tests, exactly like
- * `chroniclePaint.ts`.
+ * Pure over typed arrays — nothing here touches a canvas or `ImageData` — so
+ * `gifEncode.worker.ts` can call this exact function on a dedicated Worker
+ * thread (`gifEncodeWorkerClient.ts` is what spawns that worker from the
+ * studio) while `encodeGif.test.ts` keeps calling it directly under node.
  */
 
 import { ByteWriter, lzwCompress, writeSubBlocks } from "./gifLzw";

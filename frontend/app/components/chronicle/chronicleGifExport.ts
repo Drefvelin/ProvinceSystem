@@ -1,6 +1,7 @@
 "use client";
 
-import { encodeGif, type GifSourceFrame } from "@/app/lib/map/gif/encodeGif";
+import { CHRONICLE_MEMORY_CEILING_BYTES } from "../../lib/map/chronicleBuild";
+import { startGifEncodeWorker } from "@/app/lib/map/gif/gifEncodeWorkerClient";
 import {
   CHRONICLE_BORDER_INK_RGBA,
   expandChronicleBorderMask,
@@ -40,9 +41,21 @@ import type { ChronicleFrameLayers } from "./chronicleLayers";
  *
  * And it must not wedge the tab. Fourteen days at 1080² is 65 MB of pixels
  * moved through `getImageData` before the encoder has even started, and the
- * whole thing runs on the main thread; without a yield between days the
+ * render loop runs on the main thread; without a yield between days the
  * progress text never repaints and the studio looks hung for the entire run.
  * Every loop below yields.
+ *
+ * Two more things follow from that same memory budget. `sourceBytes` below is
+ * checked against `CHRONICLE_MEMORY_CEILING_BYTES` — the studio's own build
+ * ceiling — before a single frame is rendered, the same up-front refusal
+ * `estimate.overCeiling` gives the build step, so a request that would hold
+ * hundreds of megabytes of raw pixels fails with a clear message instead of
+ * quietly trying. And every frame is streamed to `gifEncode.worker.ts` the
+ * moment it is painted (`session.postFrame`, transferring the pixel buffer)
+ * rather than collected into a local array first — the main thread's copy of
+ * a frame is gone the instant the worker has it, and the actual palette
+ * build + LZW pass (the part that used to block the tab outright) runs off
+ * this thread entirely. See `gifEncodeWorkerClient.ts` for the worker side.
  *
  * There is no error boundary anywhere under `app/`, so a throw here would blank
  * the page rather than fail the button. Everything that touches day-file data
@@ -562,6 +575,21 @@ export async function exportChronicleGif(
 
   if (!frames.length) throw new Error("There are no built frames to export.");
 
+  // Checked before anything is rendered, exactly like the build's own
+  // `estimate.overCeiling`: a raster this size times this many days is what
+  // `sourceFrames` used to hold in full before handing it to the encoder, and
+  // refusing up front beats discovering the browser cannot hold it midway
+  // through a render pass.
+  const sourceBytes = size * size * 4 * frames.length;
+  if (sourceBytes > CHRONICLE_MEMORY_CEILING_BYTES) {
+    const mb = (bytes: number) => `${Math.ceil(bytes / (1024 * 1024))} MB`;
+    throw new Error(
+      `This export would hold ${mb(sourceBytes)} of frame pixels at once, more ` +
+        `than this browser should — over the ${mb(CHRONICLE_MEMORY_CEILING_BYTES)} limit. ` +
+        `Export fewer days or a smaller size.`
+    );
+  }
+
   const transform = chronicleGifTransform(mapW, mapH, size);
   const edge = transform.size;
   const canvas = createCanvas(edge, edge);
@@ -595,7 +623,18 @@ export async function exportChronicleGif(
   // the preview agree about what covers what.
   const fortControl = new MaskScratch(CHRONICLE_ZOC_HATCH_RGBA);
   const occupationSeam = new MaskScratch(CHRONICLE_OCCUPATION_SEAM_RGBA);
-  const sourceFrames: GifSourceFrame[] = [];
+
+  // Spawned before the render loop, not after: each frame is transferred to
+  // it as soon as it is painted below, so the worker — not this thread — is
+  // what ends up holding the full frame set by the time encoding starts.
+  const encodeSession = startGifEncodeWorker({
+    width: edge,
+    height: edge,
+    loop,
+    onProgress: (completed, total) =>
+      onProgress?.({ phase: "encode", completed, total }),
+    signal,
+  });
 
   for (let i = 0; i < frames.length; i++) {
     throwIfAborted(signal);
@@ -662,7 +701,9 @@ export async function exportChronicleGif(
         "The browser blocked reading this frame's pixels, so the GIF cannot be built."
       );
     }
-    sourceFrames.push({ data: pixels.data, delayMs });
+    // Transferred, not copied — `pixels.data`'s buffer belongs to the worker
+    // from this call onward, so nothing here may read `pixels` again.
+    encodeSession.postFrame({ data: pixels.data, delayMs });
 
     // Between days, not after the last one: the encode phase yields on its own.
     if (i < frames.length - 1) await yieldToEventLoop();
@@ -670,18 +711,19 @@ export async function exportChronicleGif(
 
   throwIfAborted(signal);
   onProgress?.({ phase: "encode", completed: 0, total: frames.length });
-  // One more yield so "Encoding…" is on screen before the encoder takes the
-  // thread; it does not yield internally.
-  await yieldToEventLoop();
 
-  const bytes = encodeGif({
-    width: edge,
-    height: edge,
-    frames: sourceFrames,
-    loop,
-    onProgress: (completed: number, total: number) =>
-      onProgress?.({ phase: "encode", completed, total }),
-  });
+  let bytes: Uint8Array;
+  try {
+    bytes = await encodeSession.finish();
+  } catch (err) {
+    // The session already rejects with an abort-flavoured error when
+    // `signal` fires; re-flagging it as the type the rest of the studio
+    // (`isChronicleGifCancelled`) actually checks for keeps `exportGif`'s
+    // cancel handling in `ChronicleStudio.tsx` the one place that decides
+    // what a cancelled export looks like.
+    if (signal?.aborted) throw new ChronicleGifCancelled();
+    throw err;
+  }
 
   return { bytes, baseMapOmitted: baseUsable && !baseReady };
 }
