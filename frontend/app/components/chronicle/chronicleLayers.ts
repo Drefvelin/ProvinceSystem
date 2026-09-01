@@ -10,6 +10,10 @@ import {
   visibleSettlementKind,
 } from "../../lib/settlementMarkers";
 import { warBattleMarkersFromWars } from "../../lib/warBattleMarkers";
+import {
+  focusChronicleLabels,
+  focusOwnsMarker,
+} from "../../lib/map/chronicleFocus";
 import type { MapMarker } from "../../lib/mapMarkers";
 import type { ChronicleBorderMask } from "../../lib/map/chronicleBorderMask";
 import type {
@@ -27,10 +31,14 @@ import type {
 export type ChronicleToggleKey =
   | "nationFill"
   | "nationBorders"
+  | "occupation"
+  | "tradeLeagues"
+  | "prosperity"
   | "nationNames"
   | "settlements"
   | "markerNames"
   | "forts"
+  | "fortControl"
   | "wars";
 
 export type ChronicleToggles = Record<ChronicleToggleKey, boolean>;
@@ -39,10 +47,14 @@ export type ChronicleToggles = Record<ChronicleToggleKey, boolean>;
 export const CHRONICLE_TOGGLES_OFF: ChronicleToggles = {
   nationFill: false,
   nationBorders: false,
+  occupation: false,
+  tradeLeagues: false,
+  prosperity: false,
   nationNames: false,
   settlements: false,
   markerNames: false,
   forts: false,
+  fortControl: false,
   wars: false,
 };
 
@@ -57,6 +69,21 @@ export const CHRONICLE_TOGGLE_ORDER: {
     label: "Nation borders",
     detail: "Outlines only, no fill",
   },
+  {
+    key: "occupation",
+    label: "Occupation",
+    detail: "Held land, greyed and seamed",
+  },
+  {
+    key: "tradeLeagues",
+    label: "Trade leagues",
+    detail: "League territory, over any fill",
+  },
+  {
+    key: "prosperity",
+    label: "Prosperity",
+    detail: "Per-province heat, over any fill",
+  },
   { key: "nationNames", label: "Nation names", detail: "Realm labels" },
   {
     key: "settlements",
@@ -69,28 +96,104 @@ export const CHRONICLE_TOGGLE_ORDER: {
     detail: "Name chips under pins",
   },
   { key: "forts", label: "Forts", detail: "Fort pins" },
+  {
+    key: "fortControl",
+    label: "Fort control",
+    detail: "Hatched zones of control",
+  },
   { key: "wars", label: "Wars", detail: "Campaign lines and battles" },
 ];
 
 /** Every nation layer reads the same `nation` day file. */
 export function needsNationFile(toggles: ChronicleToggles): boolean {
-  return toggles.nationFill || toggles.nationBorders || toggles.nationNames;
+  return (
+    toggles.nationFill ||
+    toggles.nationBorders ||
+    toggles.occupation ||
+    toggles.nationNames
+  );
 }
 
 /**
- * Settlements, forts and wars all come out of the one markers payload.
+ * The `trade` day file, which the trade-league fill is the only reader of.
+ *
+ * Structurally a nation file, but a *separate* fetch: a day can be missing its
+ * `trade` capture while its `nation` capture is intact, and a build with only
+ * leagues switched on must not pull a nation file nothing draws.
+ */
+export function needsTradeFile(toggles: ChronicleToggles): boolean {
+  return toggles.tradeLeagues;
+}
+
+/** The `province_data` day file, which only the prosperity heat map reads. */
+export function needsProvinceData(toggles: ChronicleToggles): boolean {
+  return toggles.prosperity;
+}
+
+/**
+ * Settlements, forts, fort zones of control and wars all come out of the one
+ * markers payload.
  *
  * `markerNames` is deliberately absent: it fetches nothing of its own and only
  * restyles pins the three layers above already produced.
  */
 export function needsMarkers(toggles: ChronicleToggles): boolean {
-  return toggles.settlements || toggles.forts || toggles.wars;
+  return (
+    toggles.settlements ||
+    toggles.forts ||
+    toggles.fortControl ||
+    toggles.wars
+  );
+}
+
+/**
+ * Whether the quarter-scale province id grid has to be in hand.
+ *
+ * Not the same question as `needsNationFile`: `fortControl` paints provinces
+ * without reading the nation file at all, and `nationNames` reads the nation
+ * file without touching the grid. Deriving the grid fetch from the nation file
+ * left a build with only fort control switched on waiting forever on a grid
+ * nothing had asked for.
+ */
+export function needsProvinceGrid(toggles: ChronicleToggles): boolean {
+  return (
+    toggles.nationFill ||
+    toggles.nationBorders ||
+    toggles.occupation ||
+    toggles.tradeLeagues ||
+    toggles.prosperity ||
+    toggles.fortControl
+  );
+}
+
+/**
+ * Whether the frame's fill canvas has anything to paint.
+ *
+ * Four layers share that one canvas — home territory, occupied territory,
+ * league territory and the prosperity heat — because they are all the same kind
+ * of mark, a province painted a colour, and they are composited into a single
+ * province -> colour table by `stackChronicleFillLuts` rather than into four
+ * `ImageBitmap`s per frame. So the paint pass runs, and is timed, once for the
+ * whole group.
+ */
+export function paintsChronicleFill(toggles: ChronicleToggles): boolean {
+  return (
+    toggles.nationFill ||
+    toggles.occupation ||
+    toggles.tradeLeagues ||
+    toggles.prosperity
+  );
 }
 
 /**
  * Whether anything would actually be drawn. Gates the "Pick a date range"
  * button, so `markerNames` must not count — on its own it draws nothing, and
  * letting it through would offer to build a range of empty frames.
+ *
+ * `occupation`, `fortControl`, `tradeLeagues` and `prosperity` all count: each
+ * paints its own marks with every other layer off — muted occupied land plus
+ * its seam, the hatched zones, league territory on bare parchment, the heat
+ * wash over the whole map.
  */
 export function anyChronicleToggleOn(toggles: ChronicleToggles): boolean {
   return CHRONICLE_TOGGLE_ORDER.some(
@@ -169,34 +272,55 @@ function asArray<T>(value: T[] | undefined | null | unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+/**
+ * `focusNationId` narrows the pins to one realm. Both payloads carry an
+ * optional `faction_id`, and it holds the same realm ids the nation file is
+ * keyed by, so the filter is exact — but it is applied here, on the raw rows,
+ * because `MapMarker` deliberately does not carry an owner and adding one for
+ * this would put a field on every pin the live map draws.
+ */
 export function chronicleSettlementMarkers(
   markers: MapMarkersResponse | null,
-  labelObjects: LabelMapObject[]
+  labelObjects: LabelMapObject[],
+  focusNationId: string | null = null
 ): MapMarker[] {
   if (!markers) return [];
   return [
-    ...filterPlacedSettlements(asArray(markers.settlements)).map((settlement) =>
-      settlementToMapMarker({
-        ...settlement,
-        kind: visibleSettlementKind(
-          settlement.kind,
-          settlement.faction_id,
-          labelObjects
-        ),
-      })
-    ),
+    ...filterPlacedSettlements(asArray(markers.settlements))
+      .filter((settlement) =>
+        focusOwnsMarker(settlement.faction_id, focusNationId)
+      )
+      .map((settlement) =>
+        settlementToMapMarker({
+          ...settlement,
+          kind: visibleSettlementKind(
+            settlement.kind,
+            settlement.faction_id,
+            labelObjects
+          ),
+        })
+      ),
     ...filterPlacedInstallations(asArray(markers.installations))
-      .filter((installation) => installation.kind !== "fort")
+      .filter(
+        (installation) =>
+          installation.kind !== "fort" &&
+          focusOwnsMarker(installation.faction_id, focusNationId)
+      )
       .map(installationToMapMarker),
   ];
 }
 
 export function chronicleFortMarkers(
-  markers: MapMarkersResponse | null
+  markers: MapMarkersResponse | null,
+  focusNationId: string | null = null
 ): MapMarker[] {
   if (!markers) return [];
   return filterPlacedInstallations(asArray(markers.installations))
-    .filter((installation) => installation.kind === "fort")
+    .filter(
+      (installation) =>
+        installation.kind === "fort" &&
+        focusOwnsMarker(installation.faction_id, focusNationId)
+    )
     .map(installationToMapMarker);
 }
 
@@ -210,6 +334,14 @@ export type ChronicleFrameLayers = {
   labels: NationLabelSpec[];
   /** Packed border bitmask for the day, or null when borders are off. */
   borders: ChronicleBorderMask | null;
+  /**
+   * Packed occupation seam for the day. Only half of the occupation layer —
+   * its fill rides in the frame's own colour table, not here, because a
+   * province painted a colour is what the fill canvas already does.
+   */
+  occupationSeam: ChronicleBorderMask | null;
+  /** Packed, pre-hatched fort zones of control for the day. */
+  fortControl: ChronicleBorderMask | null;
   markers: MapMarker[];
   wars: WarExport[];
 };
@@ -217,6 +349,8 @@ export type ChronicleFrameLayers = {
 export const EMPTY_CHRONICLE_LAYERS: ChronicleFrameLayers = {
   labels: [],
   borders: null,
+  occupationSeam: null,
+  fortControl: null,
   markers: [],
   wars: [],
 };
@@ -237,8 +371,30 @@ export function buildChronicleLayers(options: {
    * per day.
    */
   borders?: ChronicleBorderMask | null;
+  /** Pre-computed for the same reason `borders` is: both walk the grid. */
+  occupationSeam?: ChronicleBorderMask | null;
+  /** Pre-computed for the same reason `borders` is: both walk the grid. */
+  fortControl?: ChronicleBorderMask | null;
+  /**
+   * The realm the frame is narrowed to, or null for the whole map.
+   *
+   * Applied here rather than in the studio so the compose preview, the built
+   * frames and the GIF export are narrowed by one piece of code. A focus that
+   * held for the preview and quietly lapsed in the export is the bug this
+   * feature invites, and a second copy of the filter is how it gets in.
+   */
+  focusNationId?: string | null;
 }): ChronicleFrameLayers {
-  const { toggles, markers, labels, labelObjects, borders = null } = options;
+  const {
+    toggles,
+    markers,
+    labels,
+    labelObjects,
+    borders = null,
+    occupationSeam = null,
+    fortControl = null,
+    focusNationId = null,
+  } = options;
   const pins: MapMarker[] = [];
   // Name chips are decided here rather than in `MapMarkerLayer` because the
   // per-kind default is baked into the markers themselves: installations, forts
@@ -248,18 +404,30 @@ export function buildChronicleLayers(options: {
   const nameChips = toggles.markerNames;
 
   if (toggles.settlements) {
-    pins.push(...chronicleSettlementMarkers(markers, labelObjects));
+    pins.push(
+      ...chronicleSettlementMarkers(markers, labelObjects, focusNationId)
+    );
   }
   if (toggles.forts) {
-    pins.push(...chronicleFortMarkers(markers));
+    pins.push(...chronicleFortMarkers(markers, focusNationId));
   }
   if (toggles.wars) {
+    // Wars and their battle pins are deliberately left whole under a focus.
+    // `WarExport` names its sides by *leader* id (`attacker_leader_id`,
+    // `defender_leader_id`) and its `belligerents` list is untyped and unread
+    // anywhere else in the app, so there is no field here that reliably says
+    // which realm a campaign belongs to. Guessing one would drop the wars a
+    // realm is actually fighting; showing them all is merely more than asked.
     pins.push(...warBattleMarkersFromWars(chronicleWars(markers)));
   }
 
   return {
-    labels: toggles.nationNames ? labels : [],
+    labels: toggles.nationNames
+      ? focusChronicleLabels(labels, focusNationId)
+      : [],
     borders: toggles.nationBorders ? borders : null,
+    occupationSeam: toggles.occupation ? occupationSeam : null,
+    fortControl: toggles.fortControl ? fortControl : null,
     markers: pins.map((pin) => ({
       ...pin,
       showLabelOnlyOnHover: !nameChips,

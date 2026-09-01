@@ -16,6 +16,7 @@ from .http_headers import add_no_cache, conditional_file_response, conditional_j
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
 from .map_registry import get_map_entry
+from ..scripts.chronicle.audit import last_wiped_at
 from ..scripts.chronicle.store import (
     CHRONICLE_FILES,
     geometry_version,
@@ -209,6 +210,11 @@ def get_chronicle_index(
             # different province geometry than the one the client will paint it
             # onto, so its borders/labels cannot be trusted for that date.
             "stale_geometry_days": stale_geometry,
+            # Additive only. An empty `days` means "never captured" *or* "wiped",
+            # and the viewer told users the first thing in both cases. This is
+            # the unix stamp of the newest staff wipe of this map (null when it
+            # has never been wiped), so the two can be told apart.
+            "last_wiped_at": last_wiped_at(map_id),
         },
         if_none_match=if_none_match,
     )

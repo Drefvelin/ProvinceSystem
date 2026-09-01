@@ -321,11 +321,21 @@ export function isChronicleBuildCancelled(
 /** The part of a loaded day the runner itself reads. Effects extend it. */
 export type ChronicleDayLoad = {
   /**
-   * Content hash of the day's `nation` file, or null when no enabled layer
-   * needs one. Equal fingerprints on consecutive days mean the map did not move
-   * and the previous frame can stand in for this one.
+   * Content hash of every source that feeds the day's *painted frame*, or null
+   * when nothing enabled paints one. Equal fingerprints on consecutive days
+   * mean nothing the frame shows moved, so the previous frame can stand in for
+   * this one.
+   *
+   * Deliberately not "the nation file's hash", which is what this was while the
+   * fill had a single source. The frame now composites league territory and the
+   * prosperity heat alongside nation ownership, and keying reuse on the nation
+   * file alone silently reused a stale frame across a day where only prosperity
+   * had moved. Whoever supplies this must fold in every source the frame draws
+   * from and nothing else — a source that only feeds the overlay layers
+   * (markers, and so the fort hatch) must stay out of it, or a quiet map with
+   * busy pins would repaint every day for nothing.
    */
-  nationFingerprint: string | null;
+  imageFingerprint: string | null;
   /** Decompressed bytes this day cost, fed back into the next estimate. */
   byteLength: number;
   incomplete: boolean;
@@ -453,8 +463,8 @@ export async function runChronicleBuild<
 
         const canReuse =
           previous != null &&
-          load.nationFingerprint != null &&
-          load.nationFingerprint === previous.fingerprint;
+          load.imageFingerprint != null &&
+          load.imageFingerprint === previous.fingerprint;
 
         let image: TImage | null;
         if (canReuse) {
@@ -476,7 +486,7 @@ export async function runChronicleBuild<
           incomplete: load.incomplete,
           reusedImage: canReuse,
         });
-        previous = { fingerprint: load.nationFingerprint, image };
+        previous = { fingerprint: load.imageFingerprint, image };
         throwIfCancelled(signal);
       }
 

@@ -10,6 +10,10 @@ import {
 } from "../../lib/map/chronicleBuild";
 import { CHRONICLE_GIF_SIZES } from "../../lib/map/chronicleGifFrame";
 import {
+  CHRONICLE_FOCUS_NONE,
+  type ChronicleFocusOption,
+} from "../../lib/map/chronicleFocus";
+import {
   CHRONICLE_TOGGLE_ORDER,
   anyChronicleToggleOn,
   type ChronicleToggleKey,
@@ -25,19 +29,19 @@ import {
 export const chroniclePanelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_92%,transparent)] shadow-xl backdrop-blur-sm";
 
-const primaryButtonClass =
+export const primaryButtonClass =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_20%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_45%,var(--tfmc-forest-deep))] px-3 py-2 text-sm font-medium text-[var(--tfmc-cream)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45";
 
-const quietButtonClass =
+export const quietButtonClass =
   "rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] px-3 py-1.5 text-xs text-[var(--tfmc-stone)] transition hover:text-[var(--tfmc-cream)] disabled:cursor-not-allowed disabled:opacity-45";
 
-const selectClass =
+export const selectClass =
   "w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,var(--tfmc-forest-deep))] px-2 py-1.5 text-sm text-[var(--tfmc-cream)]";
 
 const headingClass =
   "text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]";
 
-function SectionHeading({ title }: { title: string }) {
+export function SectionHeading({ title }: { title: string }) {
   return <p className={headingClass}>{title}</p>;
 }
 
@@ -48,6 +52,10 @@ export function ChronicleTogglePanel({
   busy,
   blockReason,
   notice,
+  focusOptions,
+  focusNationId,
+  onFocusChange,
+  focusDisabledReason,
   onNext,
 }: {
   toggles: ChronicleToggles;
@@ -57,6 +65,16 @@ export function ChronicleTogglePanel({
   /** Set when the composed look cannot be carried forward yet. Blocks Next. */
   blockReason: string | null;
   notice: string | null;
+  /** The realms the latest stored day knows about, already sorted by name. */
+  focusOptions: ChronicleFocusOption[];
+  focusNationId: string;
+  onFocusChange: (nationId: string) => void;
+  /**
+   * Why a realm cannot be picked right now, or null. Unlike `blockReason` this
+   * does not gate Next: a focus is an optional narrowing, and not being able to
+   * set one is never a reason to refuse a timelapse of the whole map.
+   */
+  focusDisabledReason: string | null;
   onNext: () => void;
 }) {
   return (
@@ -97,6 +115,27 @@ export function ChronicleTogglePanel({
           );
         })}
       </ul>
+
+      <label className="mt-3 block text-xs text-[var(--tfmc-mist)]">
+        Focus a Nation
+        <select
+          className={`${selectClass} mt-1`}
+          value={focusNationId}
+          disabled={Boolean(focusDisabledReason)}
+          onChange={(e) => onFocusChange(e.target.value)}
+        >
+          <option value={CHRONICLE_FOCUS_NONE}>Every nation</option>
+          {focusOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+        <span className="mt-1 block text-xs text-[var(--tfmc-stone)]">
+          {focusDisabledReason ??
+            "One nation keeps its color. The rest are shaded."}
+        </span>
+      </label>
 
       {notice ? (
         <p className="mt-3 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] px-2 py-1.5 text-xs leading-snug text-[var(--tfmc-cream)]">
@@ -333,8 +372,12 @@ export function ChroniclePlaybackPanel({
   incomplete,
   skippedDays,
   exploreHref,
+  chartsOpen,
+  onToggleCharts,
   gifSize,
   onGifSizeChange,
+  gifStampDay,
+  onGifStampDayChange,
   onExportGif,
   gifStatus,
   gifError,
@@ -352,6 +395,9 @@ export function ChroniclePlaybackPanel({
   onLoopChange: (loop: boolean) => void;
   incomplete: boolean;
   skippedDays: string[];
+  /** Whether the ledger charts rail (right side) is showing. */
+  chartsOpen: boolean;
+  onToggleCharts: () => void;
   /**
    * Route to the standalone viewer for the day currently on screen, or `null`
    * when there is no day to explore. Built by `ChronicleStudio`, which is the
@@ -361,6 +407,12 @@ export function ChroniclePlaybackPanel({
   exploreHref?: string | null;
   gifSize: number;
   onGifSizeChange: (size: number) => void;
+  /**
+   * Whether each exported frame carries its own day. A property of the file
+   * only — the preview never draws it.
+   */
+  gifStampDay: boolean;
+  onGifStampDayChange: (stamp: boolean) => void;
   onExportGif: () => void;
   /**
    * What the export is doing right now, or null when idle. Non-null is also
@@ -385,6 +437,15 @@ export function ChroniclePlaybackPanel({
           This day was captured with missing sources.
         </p>
       ) : null}
+
+      <button
+        type="button"
+        className={`${quietButtonClass} mt-2`}
+        onClick={onToggleCharts}
+        aria-pressed={chartsOpen}
+      >
+        {chartsOpen ? "Hide charts" : "Show charts"}
+      </button>
 
       <input
         type="range"
@@ -473,6 +534,22 @@ export function ChroniclePlaybackPanel({
               </option>
             ))}
           </select>
+        </label>
+        <label
+          className={`mt-2 flex items-start gap-2 text-sm ${
+            exporting
+              ? "cursor-not-allowed text-[var(--tfmc-stone)] opacity-60"
+              : "cursor-pointer text-[var(--tfmc-cream)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            className="mt-1 accent-[var(--tfmc-accent)]"
+            checked={gifStampDay}
+            disabled={exporting}
+            onChange={(e) => onGifStampDayChange(e.target.checked)}
+          />
+          <span>Stamp the date</span>
         </label>
         <button
           type="button"

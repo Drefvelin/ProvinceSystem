@@ -13,3 +13,15 @@ Planning
 *.md
 .env
 .env.*
+
+# Generated map output and the local SQLite DB. `backend/Dockerfile` does
+# `COPY backend/ .`, so without these a build bakes whatever happens to be in
+# the working tree into the image — including seeded/spoof ledger history.
+backend/src/output
+backend/src/data/*.db
+backend/src/data/*.db-wal
+backend/src/data/*.db-shm
+**/*.bak.*
+
+# Test-data generators must never reach a production image.
+backend/src/scripts/tools/generate_spoof_*.py

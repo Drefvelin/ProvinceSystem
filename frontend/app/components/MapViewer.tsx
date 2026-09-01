@@ -70,7 +70,9 @@ import { chronicleStudioHref } from "@/app/lib/map/chronicleDayRoute";
 import ChronicleOwnershipLayer from "./chronicle/ChronicleOwnershipLayer";
 import { fetchProvinceIdGridQ4 } from "@/app/lib/map/chronicleData";
 import { directOwnership } from "@/app/lib/map/chronicleOwnership";
-import { CHRONICLE_MODE_SOURCE } from "@/app/lib/map/dataSource";
+import ChronicleProvincePaintLayer from "./chronicle/ChronicleProvincePaintLayer";
+import { useChronicleProvincePaint } from "../hooks/useChronicleProvincePaint";
+import { usesChronicleProvincePaint } from "@/app/lib/map/chronicleDayModes";
 import {
   buildNationColorLut,
   paintChronicleFrameToImageData,
@@ -109,19 +111,19 @@ type MapViewerProps = {
 
 const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const chronicle = day !== null;
-  /**
-   * The modes a stored day can honestly answer for, derived from the same
-   * constant the data layer switches on so the toolbar and the fetcher can
-   * never disagree about which two those are. `undefined` on the live map,
-   * which is what makes `MapToolbar` render its full, unchanged list.
+  /*
+   * A stored day offers the *same* mode list as the live map, with no
+   * filtering. Every mode now has an honest day answer: the day-varying ones
+   * (`nation`, `trade`, `empire`, `prosperity`, `infestation`) come out of that
+   * day's capture, and the static ones (`terrain`, `fertility`, `county`,
+   * `duchy`, `kingdom`) are geography and de jure structure that do not change
+   * day to day, so their live source *is* their historical answer.
+   *
+   * A mode with nothing stored for a particular day still falls through to the
+   * "missing from this capture" panel below rather than being hidden — the
+   * capture set is still growing, and an option that disappears per day is
+   * harder to reason about than one that says what it does not have.
    */
-  const availableModes = useMemo(
-    () =>
-      chronicle
-        ? new Set(Object.keys(CHRONICLE_MODE_SOURCE) as MapMode[])
-        : undefined,
-    [chronicle]
-  );
   const sessionToken = useCharacterSessionToken();
   const { canEdit, loading: canEditLoading } = useCanEditMap(mapId, sessionToken);
   const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
@@ -210,6 +212,18 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     loadData,
     sessionToken: authToken,
     day,
+  });
+  /**
+   * `prosperity` and `infestation` under a stored day. Both are drawn on the
+   * live map as `/{mapId}/mapdata/{mode}`, a raster regenerated from today's
+   * data with no per-day variant, so the day page paints them itself from that
+   * day's captured file — see `ChronicleProvincePaintLayer`.
+   */
+  const provincePaint = useChronicleProvincePaint({
+    mapId,
+    mapType,
+    day,
+    sessionToken: authToken,
   });
   const { layers: titleLayers } = useTitleLayerData(
     mapId,
@@ -660,22 +674,25 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     );
   }
 
-  if (gateReason || accessError) {
+  if (gateReason || accessError || provincePaint.accessError) {
     return (
       <MapAccessGate
-        reason={gateReason ?? accessError ?? "unknown"}
+        reason={
+          gateReason ?? accessError ?? provincePaint.accessError ?? "unknown"
+        }
         mapDisplayName={mapDisplayName}
       />
     );
   }
 
   /**
-   * Belt and braces with the filtered toolbar above. The toolbar makes these
-   * modes unreachable through the UI; this makes them harmless if one is
-   * reached anyway — a bookmarked URL, a future mode nobody remembers to add
-   * to `CHRONICLE_MODE_SOURCE`, a state bug. `notCapturedForDay` is only ever
-   * set from `MapModeNotCapturedError`, which `mapModeDataSource` only throws
-   * for a non-null day, so this branch is unreachable on the live map.
+   * The toolbar now offers every mode on a stored day, so this is no longer a
+   * belt-and-braces guard for an unreachable option: it is the answer for any
+   * mode that is neither classified as static nor present in
+   * `CHRONICLE_MODE_SOURCE` — a future mode nobody has classified yet, or a
+   * bookmarked URL from before one was. `notCapturedForDay` is only ever set
+   * from `MapModeNotCapturedError`, which `mapModeDataSource` only throws for
+   * a non-null day, so this branch is unreachable on the live map.
    */
   if (notCapturedForDay) {
     return (
@@ -684,9 +701,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           Not recorded for {day}
         </p>
         <p className="max-w-md text-sm leading-snug text-[var(--tfmc-stone)]">
-          The daily capture stores nation and trade data only. There is no
-          stored answer for this map mode on this day, and showing today&rsquo;s
-          would be a lie about the past.
+          Nothing in this day&rsquo;s capture answers for this map mode, and it
+          is not one of the modes that stays the same on every day, so showing
+          today&rsquo;s would be a lie about the past.
         </p>
         <button
           type="button"
@@ -707,7 +724,13 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * would render bare terrain with no nations under a banner asserting a real
    * date — an empty world that reads as a real historical state.
    */
-  if (dayFileMissing) {
+  /**
+   * Either the region source for this mode is missing from the day, or (for
+   * `prosperity`/`infestation`) the raster source is. `main` has no
+   * `infestation_data.json` at all, so that mode lands here on every day —
+   * which is the honest answer, not an error.
+   */
+  if (dayFileMissing || provincePaint.dayFileMissing) {
     return (
       <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
@@ -792,7 +815,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             mapType={mapType}
             onMapTypeChange={handleMapTypeChange}
             variant="bar"
-            availableModes={availableModes}
           />
         }
         mapModeSelectorDesktop={
@@ -801,7 +823,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
             mapType={mapType}
             onMapTypeChange={handleMapTypeChange}
             variant="sidebar"
-            availableModes={availableModes}
           />
         }
         drillStackBar={
@@ -868,7 +889,16 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
           isHoveringClickable={isHoveringClickable}
           fill
           fitMode={fitMode}
+          day={day}
           paint={chronicle ? undefined : paint}
+          provinceOverlay={
+            usesChronicleProvincePaint(mapType, day) ? (
+              <ChronicleProvincePaintLayer
+                grid={chronicleGrid}
+                lut={provincePaint.lut}
+              />
+            ) : undefined
+          }
           regionOverlay={
             chronicle ? (
               <ChronicleOwnershipLayer

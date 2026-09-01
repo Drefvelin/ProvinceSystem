@@ -172,6 +172,66 @@ class MapStaffWriteTest(unittest.TestCase):
         self.assertEqual(entry.id, "main")
         check.assert_called_once_with(player, "main", EDITOR_STAFF_PERMISSION)
 
+    def test_staff_write_uses_the_maps_own_permission_and_realm(self) -> None:
+        """The destructive gate must not be broader than the read gate it guards.
+
+        `dev` is guarded by `tfmc.map.staff` in realm `dev`. Checking the
+        hardcoded global node against the *session's* realm instead would let a
+        holder of the broad node in another realm wipe or edit this map.
+        """
+        player = "00000000-0000-4000-8000-000000000098"
+        with mock.patch(
+            "api.map_access.get_character_session",
+            return_value=_staff_session(player),  # session realm is "main"
+        ), mock.patch(
+            "api.map_access.has_map_staff_access",
+            return_value=True,
+        ) as check:
+            entry = ensure_map_staff_write("dev", "Bearer token")
+        self.assertEqual(entry.id, "dev")
+        check.assert_called_once_with(player, "dev", "tfmc.map.staff")
+
+    def test_ui_dev_bypass_does_not_reach_staff_writes(self) -> None:
+        """The ui-dev bearer is refused by the write gate even with the flag on.
+
+        `ensure_map_access` honours `_ui_dev_staff_bypass` so staff-only reads
+        can be developed without a real session. `ensure_map_staff_write` must
+        not: the token is a literal constant in this repo, so honouring it
+        would put the title editor and chronicle wipe/restore behind an env
+        var. The `has_map_staff_access` mock returns True here on purpose — if
+        the bypass were ever restored, this test would pass for the wrong
+        reason without it, so the refusal has to come from the token check.
+        """
+        import api.map_access as map_access_module
+
+        prior = os.environ.get("CHARACTER_UI_DEV")
+        os.environ["CHARACTER_UI_DEV"] = "1"
+        try:
+            with mock.patch(
+                "api.map_access.has_map_staff_access", return_value=True
+            ):
+                with self.assertRaises(HTTPException) as flagged:
+                    ensure_map_staff_write(
+                        "main",
+                        f"Bearer {map_access_module.UI_DEV_SESSION_TOKEN}",
+                    )
+            self.assertEqual(flagged.exception.status_code, 403)
+        finally:
+            if prior is None:
+                os.environ.pop("CHARACTER_UI_DEV", None)
+            else:
+                os.environ["CHARACTER_UI_DEV"] = prior
+
+        # With the env var unset, the same bearer is not a valid session.
+        os.environ.pop("CHARACTER_UI_DEV", None)
+        with self.assertRaises(HTTPException) as ctx:
+            ensure_map_staff_write(
+                "main",
+                f"Bearer {map_access_module.UI_DEV_SESSION_TOKEN}",
+            )
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertEqual(ctx.exception.detail, STAFF_MAP_FORBIDDEN_DETAIL)
+
 
 class EditorRoutesApiTest(unittest.TestCase):
     def setUp(self) -> None:

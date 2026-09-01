@@ -131,7 +131,10 @@ def test_missing_sources_are_recorded_not_fatal(env: Path) -> None:
     _write_source(env, "nation", {"a": 1})
     manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
 
-    assert set(manifest["missing"]) == set(store.CHRONICLE_FILES) - {"nation"}
+    required = set(store.CHRONICLE_FILES) - set(store.OPTIONAL_CHRONICLE_FILES)
+    assert set(manifest["missing"]) == required - {"nation"}
+    # The optional sources are absent, not missing — see OPTIONAL_CHRONICLE_FILES.
+    assert set(manifest["absent"]) == set(store.OPTIONAL_CHRONICLE_FILES)
     assert manifest["invalid"] == []
     assert list(manifest["files"]) == ["nation"]
     assert manifest["geometry_version"] is None
@@ -440,3 +443,140 @@ def test_empty_json_containers_are_still_captured(env: Path, payload: str) -> No
     assert "zoc_overlays" in manifest["files"]
     resolved = Path(store.resolve_stored_file(MAP, "2026-01-01", "zoc_overlays"))
     assert gzip.decompress(resolved.read_bytes()).decode("utf-8") == payload
+
+
+# --- empire + infestation_data: optional sources added to the captured set ---
+
+
+_NEW_FILES = ("empire", "infestation_data")
+
+
+def test_new_optional_sources_are_captured_when_present(env: Path) -> None:
+    """Both new names round-trip, which also proves the defines/ vs input/
+    split: a title tier looked for in input/ would come back absent."""
+    _write_all_sources(env)
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert manifest["missing"] == []
+    assert manifest["absent"] == []
+    assert manifest["invalid"] == []
+    for name in _NEW_FILES:
+        assert name in manifest["files"], name
+        resolved = Path(store.resolve_stored_file(MAP, "2026-01-01", name))
+        assert json.loads(gzip.decompress(resolved.read_bytes())) == {"n": name}
+
+
+def test_empire_is_read_from_defines_not_input(env: Path) -> None:
+    """The trap: omitting empire from _DEFINES_SOURCES makes capture look in
+    input/, find nothing, and flag every day."""
+    assert "empire" in capture_mod._DEFINES_SOURCES
+    assert capture_mod._source_path(MAP, "empire") == str(
+        env / "defines" / MAP / "empire.json"
+    )
+    # The fixed-geography tiers are deliberately not captured at all.
+    for name in ("county", "duchy", "kingdom"):
+        assert name not in store.CHRONICLE_FILES
+    # infestation_data is an upload, so it stays in input/.
+    assert "infestation_data" not in capture_mod._DEFINES_SOURCES
+    assert capture_mod._source_path(MAP, "infestation_data") == str(
+        env / "input" / MAP / "infestation_data.json"
+    )
+
+
+def test_absent_optional_sources_do_not_degrade_the_day(env: Path) -> None:
+    """A map with no empires and no infestation feed -- i.e. `main` today --
+    must still produce a complete day."""
+    for name in store.CHRONICLE_FILES:
+        if name not in store.OPTIONAL_CHRONICLE_FILES:
+            _write_source(env, name, {"n": name})
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert manifest["missing"] == []
+    assert manifest["invalid"] == []
+    assert set(manifest["absent"]) == set(_NEW_FILES)
+    # The whole point: not incomplete, so the index will not list it as degraded
+    # and capture_if_due will not force a re-capture on every upload.
+    assert capture_mod._is_incomplete(manifest) is False
+
+
+def test_capture_if_due_stops_retrying_when_only_optional_sources_are_absent(
+    env: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(store, "today_utc", lambda: "2026-01-01")
+    monkeypatch.setattr(capture_mod, "today_utc", lambda: "2026-01-01")
+    for name in store.CHRONICLE_FILES:
+        if name not in store.OPTIONAL_CHRONICLE_FILES:
+            _write_source(env, name, {"n": name})
+
+    assert capture_mod.capture_if_due(MAP) is not None
+    assert capture_mod.capture_if_due(MAP) is None
+
+
+def test_present_but_torn_optional_source_is_still_invalid(env: Path) -> None:
+    """Optional means "may not exist", not "may be corrupt"."""
+    _write_all_sources(env)
+    (env / "defines" / MAP / "empire.json").write_text('{"a": 1', encoding="utf-8")
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert manifest["invalid"] == ["empire"]
+    assert manifest["absent"] == []
+    assert "empire" not in manifest["files"]
+    assert capture_mod._is_incomplete(manifest) is True
+
+
+def test_unchanged_empire_dedups_via_same_as(env: Path) -> None:
+    """Empires change rarely, so same_as is the common path for them."""
+    _write_all_sources(env)
+    capture_mod.capture_snapshot(MAP, day="2026-01-01")
+    # Only nation moves; the new files are byte-identical.
+    _write_source(env, "nation", {"n": "changed"})
+    second = capture_mod.capture_snapshot(MAP, day="2026-01-02")
+
+    assert "same_as" not in second["files"]["nation"]
+    for name in _NEW_FILES:
+        assert second["files"][name]["same_as"] == "2026-01-01"
+        assert not os.path.exists(store.stored_file_path(MAP, "2026-01-02", name))
+        assert store.resolve_stored_file(
+            MAP, "2026-01-02", name
+        ) == store.stored_file_path(MAP, "2026-01-01", name)
+
+    # A third identical day collapses to the same root, not a chain.
+    third = capture_mod.capture_snapshot(MAP, day="2026-01-03")
+    assert third["files"]["empire"]["same_as"] == "2026-01-01"
+
+
+def test_a_day_captured_before_the_new_files_existed_still_resolves(env: Path) -> None:
+    """Old stored days simply have no entry for the new names: resolve returns
+    None (which the read route turns into its 404), never an exception."""
+    _write_source(env, "nation", {"a": 1})
+    capture_mod.capture_snapshot(MAP, day="2026-01-01")
+    # Rewrite the row exactly as a pre-change capture left it: no new names in
+    # `files`, no `absent` key at all.
+    snapshot = store.get_snapshot(MAP, "2026-01-01")
+    legacy = {
+        "map": MAP,
+        "day": "2026-01-01",
+        "captured_at": 0,
+        "geometry_version": None,
+        "files": {"nation": snapshot["manifest"]["files"]["nation"]},
+        "missing": [],
+        "invalid": [],
+    }
+    store.upsert_snapshot(
+        map_id=MAP,
+        day="2026-01-01",
+        realm_id="main",
+        captured_at=0,
+        byte_count=0,
+        geometry_version=None,
+        manifest=legacy,
+    )
+
+    for name in _NEW_FILES:
+        assert store.resolve_stored_file(MAP, "2026-01-01", name) is None
+    # The pre-existing file is untouched.
+    assert store.resolve_stored_file(MAP, "2026-01-01", "nation") is not None
+    assert capture_mod._is_incomplete(legacy) is False

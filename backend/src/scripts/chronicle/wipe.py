@@ -13,6 +13,7 @@ import os
 import shutil
 import sys
 import time
+from dataclasses import dataclass
 
 from src.skins.db import connect, migrate
 
@@ -99,7 +100,27 @@ def _unique_backup_path(root: str, archived_at: int) -> str:
     return backup
 
 
-def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
+@dataclass(frozen=True)
+class WipeResult:
+    """What one wipe actually did — the record an audit row is written from."""
+
+    map_id: str
+    # The archive stamp: keys the archived index rows *and* the backup dir name.
+    archived_at: int
+    # Index rows copied into the archive and removed from the live table.
+    day_count: int
+    # Where the day directories went, or None when there was no directory.
+    backup_path: str | None
+    # False when there was nothing to wipe at all (no directory, no rows).
+    performed: bool
+
+
+def _wipe_state(map_name: str) -> tuple[str, bool, int, int]:
+    """(root, has_dir, live_row_count, free_archive_stamp) for one map.
+
+    Split out so the dry-run print and the real wipe read the same state, and so
+    an HTTP caller can reuse the whole flow without argparse or stdout.
+    """
     validate_map(map_name)
     migrate()
 
@@ -111,20 +132,28 @@ def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
         archived_at = _free_archived_at(conn, map_name, int(time.time()))
     finally:
         conn.close()
+    return root, has_dir, rows, archived_at
+
+
+def perform_wipe(map_name: str) -> WipeResult:
+    """Archive + set aside one map's chronicle. Prints nothing; returns the record.
+
+    This is `wipe_map` minus the CLI: the ordering comment below is the whole
+    reason the function exists in this shape, so the HTTP route reuses it rather
+    than growing a second, subtly different implementation.
+    """
+    root, has_dir, rows, archived_at = _wipe_state(map_name)
 
     if not has_dir and not rows:
-        print(f"Nothing to wipe for map '{map_name}'.")
-        return 0
+        return WipeResult(
+            map_id=map_name,
+            archived_at=archived_at,
+            day_count=0,
+            backup_path=None,
+            performed=False,
+        )
 
     backup = _unique_backup_path(root, archived_at)
-
-    if dry_run:
-        print(f"[dry-run] would archive {rows} index row(s) for map '{map_name}'")
-        if has_dir:
-            print(f"[dry-run] would move {root} -> {backup}")
-        else:
-            print(f"[dry-run] no chronicle directory at {root}")
-        return 0
 
     # Archive-insert, then move the directory, then delete the live rows.
     # Every failure point leaves a state that is detectable and recoverable:
@@ -136,15 +165,44 @@ def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
     # away — a concurrent capture landing between the commit and the move
     # writes exactly that row.
     moved = _archive_rows(map_name, archived_at)
-    print(f"Archived {moved} index row(s) for map '{map_name}'.")
 
     if has_dir:
         shutil.move(root, backup)
-        print(f"Moved {root} -> {backup}")
-    else:
-        print(f"No chronicle directory at {root} (index rows only).")
 
     _delete_rows(map_name)
+
+    return WipeResult(
+        map_id=map_name,
+        archived_at=archived_at,
+        day_count=moved,
+        backup_path=backup if has_dir else None,
+        performed=True,
+    )
+
+
+def wipe_map(map_name: str, *, dry_run: bool = False) -> int:
+    """CLI entry point: the same work as `perform_wipe`, narrated to stdout."""
+    root, has_dir, rows, archived_at = _wipe_state(map_name)
+
+    if not has_dir and not rows:
+        print(f"Nothing to wipe for map '{map_name}'.")
+        return 0
+
+    if dry_run:
+        backup = _unique_backup_path(root, archived_at)
+        print(f"[dry-run] would archive {rows} index row(s) for map '{map_name}'")
+        if has_dir:
+            print(f"[dry-run] would move {root} -> {backup}")
+        else:
+            print(f"[dry-run] no chronicle directory at {root}")
+        return 0
+
+    result = perform_wipe(map_name)
+    print(f"Archived {result.day_count} index row(s) for map '{map_name}'.")
+    if result.backup_path is not None:
+        print(f"Moved {root} -> {result.backup_path}")
+    else:
+        print(f"No chronicle directory at {root} (index rows only).")
 
     return 0
 

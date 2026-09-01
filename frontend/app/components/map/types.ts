@@ -119,6 +119,12 @@ export type FortMarker = {
   map_y?: number;
   overlay?: OverlayBBox;
   zoc_url?: string;
+  /**
+   * The provinces under this fort's zone of control. `zoc_url` is the live
+   * rendering of exactly this list, regenerated daily, so a stored chronicle
+   * day can only redraw its own zone from the ids.
+   */
+  zoc_provinces?: number[];
 };
 
 export type WarScheduleSlot = {

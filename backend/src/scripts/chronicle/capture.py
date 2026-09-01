@@ -7,13 +7,16 @@ import hashlib
 import json
 import logging
 import os
-import tempfile
-import threading
+# Still imported although only atomic.py calls it: test_capture patches
+# `capture.tempfile.mkstemp` to prove the temp sibling is unique.
+import tempfile  # noqa: F401
 import time
 
+from ..util.atomic import _day_lock, _fsync_dir, _write_atomic  # noqa: F401
 from ..util.dirs import defines_file, input_file, validate_map
 from .store import (
     CHRONICLE_FILES,
+    OPTIONAL_CHRONICLE_FILES,
     chronicle_day_dir,
     days_referencing,
     geometry_version,
@@ -28,10 +31,19 @@ from .store import (
 
 logger = logging.getLogger(__name__)
 
-# `nation`/`trade`/`zoc_overlays` live in defines/ because they are the
-# *resolved* artifacts the map viewer reads; the rest are raw SF uploads
-# that data_routes writes into input/.
-_DEFINES_SOURCES = frozenset({"nation", "trade", "zoc_overlays"})
+# `nation`/`trade`/`zoc_overlays`/`empire` live in defines/ because they are the
+# *resolved* artifacts the map viewer reads; the rest are raw SF uploads that
+# data_routes writes into input/. This must stay in
+# sync with the input_file/defines_file split in data_routes.upload_data — a
+# name missing from here is looked for in input/ and is never found.
+_DEFINES_SOURCES = frozenset(
+    {
+        "nation",
+        "trade",
+        "zoc_overlays",
+        "empire",
+    }
+)
 
 
 class ChronicleForwardReferenceError(RuntimeError):
@@ -45,76 +57,13 @@ def _source_path(map_name: str, name: str) -> str:
     return input_file(map_name, filename)
 
 
-# Captures are scheduled on *every* upload and run synchronously in the
-# threadpool, so several full captures for the same (map, day) can be in flight
-# at once. A `threading.Lock` is the right primitive here rather than an
-# O_EXCL lockfile: everything that captures lives in this one process (the
-# asyncio.Lock in scripts/util/task_lock.py is unusable because this code is
-# not async), and a lockfile would need stale-owner detection to stop a killed
-# process from wedging captures forever. One entry per (map, day) that this
-# process actually captures — bounded by days of uptime, so never pruned.
-_DAY_LOCKS_GUARD = threading.Lock()
-_DAY_LOCKS: dict[tuple[str, str], threading.Lock] = {}
-
-
-def _day_lock(map_name: str, day: str) -> threading.Lock:
-    key = (map_name, day)
-    with _DAY_LOCKS_GUARD:
-        lock = _DAY_LOCKS.get(key)
-        if lock is None:
-            lock = threading.Lock()
-            _DAY_LOCKS[key] = lock
-        return lock
-
-
-def _fsync_dir(directory: str) -> None:
-    """Persist the rename itself. No-op where the platform forbids it."""
-    if not hasattr(os, "O_DIRECTORY"):
-        # Windows cannot open a directory as a file descriptor.
-        return
-    try:
-        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
-    except OSError:
-        return
-    try:
-        os.fsync(fd)
-    except OSError:
-        pass
-    finally:
-        os.close(fd)
-
-
-def _write_atomic(path: str, data: bytes) -> None:
-    """Write via a unique temp sibling so a crash never leaves a truncated file.
-
-    The temp name must be unique, not a fixed `<path>.tmp`: a fixed sibling is
-    atomic against a crash but not against a second writer, and two concurrent
-    captures would either interleave into a corrupt file (POSIX) or raise
-    PermissionError on the loser (Windows).
-    """
-    directory = os.path.dirname(path) or "."
-    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".chronicle-", suffix=".part")
-    try:
-        with os.fdopen(fd, "wb") as fh:
-            fh.write(data)
-            fh.flush()
-            # os.replace orders the rename, not the data: without this a power
-            # loss can leave a zero-length file where the manifest promises
-            # content, and this is the only copy of the day.
-            os.fsync(fh.fileno())
-        os.replace(tmp, path)
-        tmp = None
-    finally:
-        if tmp is not None:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-    _fsync_dir(directory)
-
-
 def _is_incomplete(manifest: dict) -> bool:
-    """True when a capture did not record every source it found or expected."""
+    """True when a capture did not record every source it found or expected.
+
+    `absent` is deliberately not consulted: those are optional sources this map
+    does not have, so they can never become present and a retry would never fix
+    anything.
+    """
     return bool(manifest.get("missing")) or bool(manifest.get("invalid"))
 
 
@@ -165,13 +114,22 @@ def _capture_locked(map_name: str, day: str, force: bool) -> dict | None:
     captured_at = int(time.time())
     files: dict[str, dict] = {}
     missing: list[str] = []
+    absent: list[str] = []
     invalid: list[str] = []
     byte_count = 0
 
     for name in CHRONICLE_FILES:
         source = _source_path(map_name, name)
         if not os.path.exists(source):
-            missing.append(name)
+            # "Expected but gone" vs "not applicable to this map" are different
+            # facts. Only the first is a degraded day: an optional source a map
+            # simply never defines (no empires drawn, no infestation feed)
+            # would otherwise mark every day incomplete forever and make
+            # capture_if_due force a re-capture on every single upload.
+            if name in OPTIONAL_CHRONICLE_FILES:
+                absent.append(name)
+            else:
+                missing.append(name)
             continue
 
         with open(source, "rb") as fh:
@@ -252,6 +210,9 @@ def _capture_locked(map_name: str, day: str, force: bool) -> dict | None:
         "geometry_version": geometry_version(map_name),
         "files": files,
         "missing": missing,
+        # Optional sources this map does not have. Informational only — never
+        # part of the incomplete/degraded decision. See OPTIONAL_CHRONICLE_FILES.
+        "absent": absent,
         # Present on disk but unparsable — a torn read, not an absent source.
         "invalid": invalid,
     }

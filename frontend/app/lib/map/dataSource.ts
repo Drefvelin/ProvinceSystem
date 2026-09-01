@@ -11,10 +11,11 @@ import {
   chronicleDayFilePath,
   chronicleDayMarkersPath,
 } from "./chronicleData";
+import { isChronicleStaticMode } from "./chronicleDayModes";
 
 /**
- * The six names the backend captures per day, defined once in
- * `backend/src/scripts/chronicle/store.py:18` (`CHRONICLE_FILES`) and mirrored
+ * The names the backend captures per day, defined once in
+ * `backend/src/scripts/chronicle/store.py` (`CHRONICLE_FILES`) and mirrored
  * into TypeScript by `CHRONICLE_FILE_NAMES` in `./chronicleData`. Re-exported
  * rather than re-declared: a second literal union here could drift away from
  * the first one silently, and a day-file name that type-checks but does not
@@ -24,24 +25,36 @@ export type { ChronicleFileName } from "./chronicleData";
 import type { ChronicleFileName } from "./chronicleData";
 
 /**
- * Which live map modes a stored day can actually answer for.
+ * Which day-varying map modes a stored day answers with a **region record** —
+ * `{ rgb, provinces, ... }` keyed by id, the shape `fetchMapModeRegionData`
+ * returns and `filterMapModeRegions` filters.
  *
- * `MapMode` has ten values but only two of them have a per-day payload: the
- * capture writes `nation` and `trade`, and nothing else. The title tiers
- * (`county`/`duchy`/`kingdom`/`empire`) and the derived paints
- * (`prosperity`/`terrain`/`fertility`/`infestation`) were never captured, so
- * under a historical date there is simply no answer for them.
+ * Three of the ten modes qualify. `nation` and `trade` are the obvious ones.
+ * `empire` joins them because it is the one title tier that is game state: the
+ * de jure tiers beneath it (`county`, `duchy`, `kingdom`) do not change day to
+ * day, so they are *static* — served live under a stored day by the branch in
+ * `mapModeDataSource`, which is the correct historical answer rather than a
+ * leak. See `CHRONICLE_STATIC_MODES` in `./chronicleDayModes` for that split.
  *
- * This map is deliberately `Partial`, and the absence of a key is the whole
- * point: a lookup miss becomes an explicit `unavailable` source below rather
- * than a fall-through to the live endpoint. Rendering today's duchies beneath
- * a 2026-03-01 date stamp would be a quiet lie, and quiet lies about history
- * are worse than a blank panel that says so.
+ * `prosperity` and `infestation` are day-varying too, and this list still
+ * refuses them on purpose. Their captures (`province_data.json`,
+ * `infestation_data.json`) are *lists of per-province measurements*, not
+ * coloured regions: no `rgb`, no province grouping. Turning them into colour
+ * needs a ramp and a palette, which belong to the layers that choose them
+ * (`chronicleProsperity`, `chronicleInfestation`), not to a data source. They
+ * are routed instead through `CHRONICLE_PROVINCE_PAINT_SOURCE` in
+ * `./chronicleDayModes`, which paints them client-side from that day's file.
+ *
+ * This map stays deliberately `Partial`, and the absence of a key still means
+ * `unavailable` rather than a fall-through to the live endpoint: any *future*
+ * mode nobody has classified gets the honest blank panel, not today's data
+ * under a past date.
  */
 export const CHRONICLE_MODE_SOURCE: Partial<Record<MapMode, ChronicleFileName>> =
   {
     nation: "nation",
     trade: "trade",
+    empire: "empire",
   };
 
 /**
@@ -92,6 +105,16 @@ export function mapModeDataSource(
   day: string | null
 ): MapDataSource {
   if (day === null) {
+    return { kind: "live", path: `/${mapId}/data/${mapType}` };
+  }
+  /**
+   * A static mode's live source *is* its historical answer: county, duchy and
+   * kingdom are de jure structure and terrain/fertility are province geometry,
+   * none of which change from day to day. Serving them live under a date stamp
+   * is therefore honest, and it is the reason the capture does not store them.
+   * The same live path the live map uses, so nothing new can drift.
+   */
+  if (isChronicleStaticMode(mapType)) {
     return { kind: "live", path: `/${mapId}/data/${mapType}` };
   }
   const file = CHRONICLE_MODE_SOURCE[mapType];

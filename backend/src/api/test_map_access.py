@@ -171,8 +171,13 @@ class MapAccessUnitTest(unittest.TestCase):
             ids = [item.id for item in list_accessible_maps(auth)]
             entry = ensure_map_access("dev", auth)
             self.assertEqual(entry.id, "dev")
-            staff_entry = ensure_map_staff_write("dev", auth)
-            self.assertEqual(staff_entry.id, "dev")
+            # The bypass covers reads and map listing only. It deliberately
+            # stops at the destructive write gate — see
+            # `ensure_map_staff_write`'s docstring — because the bearer it
+            # checks for is a literal constant in this repo, not a secret.
+            with self.assertRaises(HTTPException) as ctx:
+                ensure_map_staff_write("dev", auth)
+            self.assertEqual(ctx.exception.status_code, 403)
         self.assertEqual(ids, ["main", "dev"])
 
     def test_ui_dev_session_ignored_when_flag_off(self) -> None:

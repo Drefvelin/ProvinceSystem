@@ -13,6 +13,10 @@ import {
   chronicleWars,
   needsMarkers,
   needsNationFile,
+  needsProvinceData,
+  needsProvinceGrid,
+  needsTradeFile,
+  paintsChronicleFill,
 } from "./chronicleLayers";
 
 const nationFile: RegionRecord = {
@@ -200,7 +204,14 @@ describe("buildChronicleLayers", () => {
       labels,
       labelObjects,
     });
-    expect(layers).toEqual({ labels: [], borders: null, markers: [], wars: [] });
+    expect(layers).toEqual({
+      labels: [],
+      borders: null,
+      occupationSeam: null,
+      fortControl: null,
+      markers: [],
+      wars: [],
+    });
   });
 
   it("splits forts out of the settlement layer", () => {
@@ -334,6 +345,322 @@ describe("marker layers against malformed day payloads", () => {
       labelObjects: [],
     });
 
-    expect(layers).toEqual({ labels: [], borders: null, markers: [], wars: [] });
+    expect(layers).toEqual({
+      labels: [],
+      borders: null,
+      occupationSeam: null,
+      fortControl: null,
+      markers: [],
+      wars: [],
+    });
+  });
+});
+
+describe("occupation and fort control", () => {
+  const mask = () => ({ width: 4, height: 4, bits: new Uint8Array(2) });
+
+  it("maps each onto the day file it costs", () => {
+    expect(
+      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, occupation: true })
+    ).toBe(true);
+    expect(needsMarkers({ ...CHRONICLE_TOGGLES_OFF, occupation: true })).toBe(
+      false
+    );
+    // `zoc_provinces` rides on the fort rows of the markers payload the forts
+    // toggle already pulls, so fort control costs no extra day file.
+    expect(
+      needsMarkers({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
+    ).toBe(true);
+    expect(
+      needsNationFile({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
+    ).toBe(false);
+  });
+
+  it("each counts as something to draw on its own", () => {
+    // Unlike `markerNames`: both of these paint their own marks with every
+    // other layer off, so gating the range step on them is correct.
+    expect(
+      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, occupation: true })
+    ).toBe(true);
+    expect(
+      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, fortControl: true })
+    ).toBe(true);
+  });
+
+  it("carries each computed mask only while its own toggle is on", () => {
+    // The very same objects, not copies: a build stores one mask per distinct
+    // day and layers must not multiply what they cost.
+    const occupationSeam = mask();
+    const fortControl = mask();
+    const build = (toggles: Partial<typeof CHRONICLE_TOGGLES_OFF>) =>
+      buildChronicleLayers({
+        toggles: { ...CHRONICLE_TOGGLES_OFF, ...toggles },
+        markers: null,
+        labels: [],
+        labelObjects: [],
+        occupationSeam,
+        fortControl,
+      });
+
+    expect(build({ occupation: true }).occupationSeam).toBe(occupationSeam);
+    expect(build({ occupation: true }).fortControl).toBeNull();
+    expect(build({ fortControl: true }).fortControl).toBe(fortControl);
+    expect(build({ fortControl: true }).occupationSeam).toBeNull();
+    expect(build({}).occupationSeam).toBeNull();
+  });
+
+  it("keeps them out of a signature that did not switch them on", () => {
+    expect(
+      chronicleToggleSignature({
+        ...CHRONICLE_TOGGLES_OFF,
+        occupation: true,
+        fortControl: true,
+      })
+    ).toBe("occupation+fortControl");
+  });
+});
+
+describe("trade leagues and prosperity", () => {
+  it("each costs its own day file and nothing else's", () => {
+    // `trade` and `province_data` are separate captures: a day can be missing
+    // one and intact in the other, and neither must drag the nation file along.
+    const leagues = { ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true };
+    expect(needsTradeFile(leagues)).toBe(true);
+    expect(needsProvinceData(leagues)).toBe(false);
+    expect(needsNationFile(leagues)).toBe(false);
+    expect(needsMarkers(leagues)).toBe(false);
+
+    const heat = { ...CHRONICLE_TOGGLES_OFF, prosperity: true };
+    expect(needsProvinceData(heat)).toBe(true);
+    expect(needsTradeFile(heat)).toBe(false);
+    expect(needsNationFile(heat)).toBe(false);
+    expect(needsMarkers(heat)).toBe(false);
+  });
+
+  it("neither file is pulled while its toggle is off", () => {
+    expect(needsTradeFile(CHRONICLE_TOGGLES_OFF)).toBe(false);
+    expect(needsProvinceData(CHRONICLE_TOGGLES_OFF)).toBe(false);
+    // Nation layers must not start dragging two new sources with them.
+    const nations = {
+      ...CHRONICLE_TOGGLES_OFF,
+      nationFill: true,
+      nationBorders: true,
+      occupation: true,
+      nationNames: true,
+    };
+    expect(needsTradeFile(nations)).toBe(false);
+    expect(needsProvinceData(nations)).toBe(false);
+  });
+
+  it("each needs the province grid, since each paints provinces", () => {
+    expect(
+      needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })
+    ).toBe(true);
+    expect(
+      needsProvinceGrid({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })
+    ).toBe(true);
+  });
+
+  it("each counts as something to draw on its own", () => {
+    // Unlike `markerNames`: both paint their own marks with every other layer
+    // off — league territory on bare parchment, the heat wash over the map.
+    expect(
+      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, tradeLeagues: true })
+    ).toBe(true);
+    expect(
+      anyChronicleToggleOn({ ...CHRONICLE_TOGGLES_OFF, prosperity: true })
+    ).toBe(true);
+  });
+
+  it("costs one pixel pass however many fill layers are on", () => {
+    // All four composite into the frame's single colour table, so the estimate
+    // must charge the paint once rather than once per layer.
+    expect(paintsChronicleFill(CHRONICLE_TOGGLES_OFF)).toBe(false);
+    for (const key of [
+      "nationFill",
+      "occupation",
+      "tradeLeagues",
+      "prosperity",
+    ] as const) {
+      expect(paintsChronicleFill({ ...CHRONICLE_TOGGLES_OFF, [key]: true })).toBe(
+        true
+      );
+    }
+    // Layers that draw somewhere other than the fill canvas do not light it up.
+    expect(
+      paintsChronicleFill({
+        ...CHRONICLE_TOGGLES_OFF,
+        nationBorders: true,
+        nationNames: true,
+        fortControl: true,
+      })
+    ).toBe(false);
+  });
+
+  it("changes the layer set a timing may be quoted for", () => {
+    // A build with the heat map on pulls an extra day file per day; a sample
+    // measured without it must not be reported as measuring it.
+    expect(
+      chronicleToggleSignature({
+        ...CHRONICLE_TOGGLES_OFF,
+        nationFill: true,
+        tradeLeagues: true,
+        prosperity: true,
+      })
+    ).toBe("nationFill+tradeLeagues+prosperity");
+    expect(
+      chronicleToggleSignature({ ...CHRONICLE_TOGGLES_OFF, nationFill: true })
+    ).not.toBe(
+      chronicleToggleSignature({
+        ...CHRONICLE_TOGGLES_OFF,
+        nationFill: true,
+        prosperity: true,
+      })
+    );
+  });
+
+  it("adds no overlay to the frame layers, because both ride in the fill", () => {
+    // The whole reason `ChronicleFrameLayers` is untouched by these two: they
+    // are composited into the frame's one `ImageBitmap` rather than carried as
+    // separate overlays, which is also what puts them in the GIF for free.
+    expect(
+      buildChronicleLayers({
+        toggles: {
+          ...CHRONICLE_TOGGLES_OFF,
+          tradeLeagues: true,
+          prosperity: true,
+        },
+        markers,
+        labels: [],
+        labelObjects: [],
+      })
+    ).toEqual({
+      labels: [],
+      borders: null,
+      occupationSeam: null,
+      fortControl: null,
+      markers: [],
+      wars: [],
+    });
+  });
+});
+
+describe("buildChronicleLayers under a focus", () => {
+  const owned: MapMarkersResponse = {
+    map_id: "main",
+    exported_at: null,
+    settlements: [
+      { id: "s-ours", name: "Ours", faction_id: "suzerain", map_x: 1, map_y: 1 },
+      { id: "s-theirs", name: "Theirs", faction_id: "vassal", map_x: 2, map_y: 2 },
+      { id: "s-nobody", name: "Nobody", map_x: 3, map_y: 3 },
+    ],
+    installations: [
+      {
+        id: "i-ours",
+        name: "Harbour",
+        kind: "port",
+        faction_id: "suzerain",
+        map_x: 4,
+        map_y: 4,
+      },
+      {
+        id: "i-theirs",
+        name: "Bastion",
+        kind: "fort",
+        faction_id: "vassal",
+        map_x: 5,
+        map_y: 5,
+      },
+      {
+        id: "i-fort",
+        name: "Keep",
+        kind: "fort",
+        faction_id: "suzerain",
+        map_x: 6,
+        map_y: 6,
+      },
+    ],
+    forts: [],
+    wars: [{ id: "w1", name: "The War" }],
+  };
+  const labels = [
+    { nationId: "suzerain" },
+    { nationId: "vassal" },
+  ] as never[];
+  const labelObjects = [{ id: "suzerain", visible: true }];
+
+  it("keeps only the focused realm's names and pins", () => {
+    const layers = buildChronicleLayers({
+      toggles: {
+        ...CHRONICLE_TOGGLES_OFF,
+        nationNames: true,
+        settlements: true,
+        forts: true,
+      },
+      markers: owned,
+      labels,
+      labelObjects,
+      focusNationId: "suzerain",
+    });
+    expect(layers.labels).toEqual([{ nationId: "suzerain" }]);
+    expect(layers.markers.map((marker) => marker.id)).toEqual([
+      "s-ours",
+      "installation:i-ours",
+      "installation:i-fort",
+    ]);
+  });
+
+  it("keeps campaign lines and battle pins whole", () => {
+    // `WarExport` names its sides by leader id, not by realm, so there is no
+    // field to narrow a war on; showing them all beats guessing wrong.
+    const layers = buildChronicleLayers({
+      toggles: { ...CHRONICLE_TOGGLES_OFF, wars: true },
+      markers: owned,
+      labels,
+      labelObjects,
+      focusNationId: "suzerain",
+    });
+    expect(layers.wars).toHaveLength(1);
+  });
+
+  it("empties the frame for a realm the day never had", () => {
+    const layers = buildChronicleLayers({
+      toggles: {
+        ...CHRONICLE_TOGGLES_OFF,
+        nationNames: true,
+        settlements: true,
+      },
+      markers: owned,
+      labels,
+      labelObjects,
+      focusNationId: "atlantis",
+    });
+    expect(layers.labels).toEqual([]);
+    expect(layers.markers).toEqual([]);
+  });
+
+  it("changes nothing at all with no focus set", () => {
+    const toggles = {
+      ...CHRONICLE_TOGGLES_OFF,
+      nationNames: true,
+      settlements: true,
+      forts: true,
+    };
+    const base = buildChronicleLayers({
+      toggles,
+      markers: owned,
+      labels,
+      labelObjects,
+    });
+    expect(
+      buildChronicleLayers({
+        toggles,
+        markers: owned,
+        labels,
+        labelObjects,
+        focusNationId: null,
+      })
+    ).toEqual(base);
+    expect(base.labels).toBe(labels);
   });
 });

@@ -3,20 +3,31 @@ import { useEffect, useState } from "react";
 import type { MapId, MapMode } from "../components/map/types";
 import type { TitleEntity, TitleLayers } from "../lib/titleProvinces";
 import { fetchMapJson } from "@/lib/map/api";
+import { isChronicleStaticMode } from "../lib/map/chronicleDayModes";
 
 const tierCache = new Map<string, Record<string, TitleEntity>>();
 
 /**
- * The day is part of the key even though nothing varies it today.
+ * The day is part of the key even though every tier `fetchTier` fetches is live.
  *
- * `/{mapId}/data/{tier}` is **live** data, and this cache is module-level: it
- * survives client-side navigation from the live map onto a stored day. Today
- * that is unreachable — `ACTIVE_TIER` has no `nation` key, and `trade`
- * resolves from the day's own `regionData` with no extra fetch, so `extra` is
- * empty for both chronicle modes and `fetchTier` is never called under a day.
- * The moment a title tier is added to `CHRONICLE_MODE_SOURCE` it would become
- * a silent live-data leak under a date banner. Keying on the day now costs one
- * template literal and makes that impossible.
+ * `/{mapId}/data/{tier}` is **live** data and this cache is module-level, so it
+ * survives client-side navigation from the live map onto a stored day. That is
+ * safe today, and the reason is a product fact rather than an accident: the
+ * only tiers `EXTRA_FETCHES` ever asks for are `county`, `duchy` and `kingdom`,
+ * and all three are *static* — de jure structure that does not change day to
+ * day, so their live answer is also their historical one. See
+ * `CHRONICLE_STATIC_MODES` in `app/lib/map/chronicleDayModes`.
+ *
+ * `empire` is the one title tier that *is* game state, and it never reaches
+ * this function: it is the active tier, resolved from the day's own captured
+ * `empire.json` through `CHRONICLE_MODE_SOURCE` and handed in as `regionData`.
+ * So an empire map on a stored day draws that day's empires over live
+ * county/duchy/kingdom boundaries, which is correct.
+ *
+ * The day stays in the key anyway. If a tier that *does* vary is ever added to
+ * `EXTRA_FETCHES`, a shared cache entry would serve one day's fetch to another
+ * under a date banner; keying on the day costs one template literal and makes
+ * that class of bug impossible.
  */
 function cacheKey(mapId: MapId, tier: string, day: string | null): string {
   return `${mapId}:${day ?? "live"}:${tier}`;
@@ -32,12 +43,30 @@ async function fetchTier(
   const cached = tierCache.get(key);
   if (cached) return cached;
 
+  // Deliberately live even under a day: `assertStaticTier` is the guard that
+  // this stays true, and it throws rather than silently fetching today's data
+  // for a tier someone has since made day-varying.
+  assertStaticTier(tier, day);
   const data = await fetchMapJson<Record<string, TitleEntity>>(
     `/${mapId}/data/${tier}`,
     { sessionToken }
   );
   tierCache.set(key, data);
   return data;
+}
+
+/**
+ * The live-leak tripwire. Every tier this hook fetches directly must be one the
+ * chronicle classifies as static; anything else would render today's boundaries
+ * under a past date. Throwing lands in the effect's `.catch`, which logs and
+ * clears the layers — a missing tier layer, not fabricated history.
+ */
+function assertStaticTier(tier: string, day: string | null): void {
+  if (day === null) return;
+  if (isChronicleStaticMode(tier)) return;
+  throw new Error(
+    `useTitleLayerData refuses to fetch live "${tier}" under chronicle day ${day}`
+  );
 }
 
 const EXTRA_FETCHES: Partial<Record<MapMode, string[]>> = {

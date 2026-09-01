@@ -230,6 +230,95 @@ describe("chronicleWatermarkLayout", () => {
       expect(Number.isFinite(value)).toBe(true);
     }
   });
+
+  it("omits the date line and matches the link-only box when dateWidth is absent", () => {
+    for (const size of CHRONICLE_GIF_SIZES) {
+      const withoutArg = chronicleWatermarkLayout(size, 120);
+      const withNull = chronicleWatermarkLayout(size, 120, null);
+      expect(withoutArg.date).toBeNull();
+      expect(withNull.date).toBeNull();
+      expect(withNull).toEqual(withoutArg);
+    }
+  });
+
+  it("adds a date line directly below the link, sharing its left edge", () => {
+    for (const size of CHRONICLE_GIF_SIZES) {
+      const w = chronicleWatermarkLayout(size, 120, 90);
+      expect(w.date).not.toBeNull();
+      expect(w.date!.textX).toBe(w.textX);
+      expect(w.date!.textBaselineY).toBeGreaterThan(w.textBaselineY);
+      // Visually subordinate: same family (caller's job), never larger.
+      expect(w.date!.fontSize).toBeLessThanOrEqual(w.fontSize);
+    }
+  });
+
+  it("stacks the date under the link beside the logo without growing the box", () => {
+    for (const size of CHRONICLE_GIF_SIZES) {
+      const linkOnly = chronicleWatermarkLayout(size, 120, null);
+      const withDate = chronicleWatermarkLayout(size, 120, 90);
+
+      // The two lines are one text column to the RIGHT of the logo — the date
+      // hangs off the link's baseline, not off the logo's bottom edge. Getting
+      // this wrong is what once pushed the date away from the link and
+      // stretched the scrim, so pin the spacing, not just the ordering.
+      expect(withDate.date!.textX).toBe(withDate.textX);
+      expect(withDate.textX).toBeGreaterThanOrEqual(
+        withDate.logoX + withDate.logoSize
+      );
+      const lineSpacing = withDate.date!.textBaselineY - withDate.textBaselineY;
+      expect(lineSpacing).toBeGreaterThan(0);
+      // One line's worth of leading, not a logo's height of dead space.
+      expect(lineSpacing).toBeLessThanOrEqual(
+        withDate.date!.fontSize + withDate.fontSize * 0.5
+      );
+
+      // The logo out-measures the two-line stack at every real export size, so
+      // the row — and therefore the scrim — is exactly as tall either way.
+      expect(withDate.scrim.height).toBe(linkOnly.scrim.height);
+      expect(withDate.scrim.y).toBe(linkOnly.scrim.y);
+
+      // Bottom margin above the canvas edge is untouched.
+      expect(size - (withDate.logoY + withDate.logoSize)).toBeCloseTo(
+        size - (linkOnly.logoY + linkOnly.logoSize),
+        0
+      );
+    }
+  });
+
+  it("keeps the grown scrim inside the canvas at every export size", () => {
+    for (const size of CHRONICLE_GIF_SIZES) {
+      const w = chronicleWatermarkLayout(size, size * 0.3, size * 0.22);
+      expect(w.scrim.x).toBeGreaterThanOrEqual(0);
+      expect(w.scrim.y).toBeGreaterThanOrEqual(0);
+      expect(w.scrim.x + w.scrim.width).toBeLessThanOrEqual(size);
+      expect(w.scrim.y + w.scrim.height).toBeLessThanOrEqual(size);
+    }
+  });
+
+  it("widens the scrim to fit whichever line is longer", () => {
+    const narrowerDate = chronicleWatermarkLayout(720, 200, 40);
+    const widerDate = chronicleWatermarkLayout(720, 40, 200);
+    // Both boxes must be wide enough for their own widest line.
+    expect(narrowerDate.scrim.width).toBeGreaterThanOrEqual(
+      narrowerDate.textX + 200 - narrowerDate.scrim.x - 1
+    );
+    expect(widerDate.scrim.width).toBeGreaterThanOrEqual(
+      widerDate.textX + 200 - widerDate.scrim.x - 1
+    );
+  });
+
+  it("survives a junk size and a junk date width", () => {
+    const w = chronicleWatermarkLayout(Number.NaN, Number.NaN, Number.NaN);
+    expect(w.date).not.toBeNull();
+    for (const value of [
+      w.date!.fontSize,
+      w.date!.textX,
+      w.date!.textBaselineY,
+      w.date!.haloWidth,
+    ]) {
+      expect(Number.isFinite(value)).toBe(true);
+    }
+  });
 });
 
 describe("chronicleGifDelayMs", () => {

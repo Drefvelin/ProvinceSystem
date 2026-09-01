@@ -59,12 +59,13 @@ Regen types include `textonly`, queued partial regen, and `fullregen`. Title-tie
 Common `mode` values on `POST /{map}/data/upload/{mode}`:
 
 - `nation` - political nation JSON
-- `provinces` - province metadata
+- `province_data` - province metadata
 - `guilds` - guild layer data
 - `queue` - pending region RGB jobs
 - `map_markers` - settlements, capitals, forts
 - `infestation_data` - province infestation overlay (Infestations plugin)
 - `county` / `duchy` / `kingdom` / `empire` - de jure title JSON (same IP gate; validated payload)
+- `chronicle` - economy snapshot (faction wealth/prestige, guilds), posted every 300s; does **not** overwrite a single file like the modes above - partitioned and indexed as the **ledger**, see [map/ledger.md](../map/ledger.md)
 
 War and chronicle extensions follow the export schema in [`docs/assets/map-export-schema.json`](../assets/map-export-schema.json). SF-side export details: [`simplefactions/docs/map-export.md`](../../../simplefactions/docs/map-export.md).
 

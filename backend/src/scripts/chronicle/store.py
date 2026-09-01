@@ -15,6 +15,9 @@ from src.skins.db import connect
 from ..util.dirs import OUTPUT_DIR, defines_file, validate_map
 
 # The set of source files a snapshot captures. Order is the manifest order.
+# New names are appended, never inserted: days captured before a name existed
+# simply have no entry for it, and the read route answers those with its normal
+# missing-file 404.
 CHRONICLE_FILES: tuple[str, ...] = (
     "nation",
     "province_data",
@@ -22,6 +25,25 @@ CHRONICLE_FILES: tuple[str, ...] = (
     "trade",
     "guilds",
     "zoc_overlays",
+    "empire",
+    "infestation_data",
+)
+
+# Sources a map may legitimately never have. `empire.json` only exists once
+# someone draws empires, and `infestation_data.json` only once the plugin uploads
+# one — map `main` has none at all today. An absent file here is recorded in the
+# manifest's `absent` list rather than `missing`, so it does not mark the day
+# incomplete, does not make capture_if_due force a re-capture on every upload,
+# and does not show up as a problem in verify. A file in this set that is
+# *present but torn* is still `invalid`: that is a real fault, not an absence.
+#
+# The other de jure tiers (county/duchy/kingdom) are fixed geography, not day-to-
+# day state, so they are deliberately NOT captured — the viewer reads them live.
+OPTIONAL_CHRONICLE_FILES: frozenset[str] = frozenset(
+    {
+        "empire",
+        "infestation_data",
+    }
 )
 
 _DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

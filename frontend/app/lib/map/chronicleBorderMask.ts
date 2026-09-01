@@ -71,7 +71,12 @@ export function chronicleBorderThickness(gridWidth: number): number {
   return Math.max(1, Math.round((5 * gridWidth) / 6400));
 }
 
-function assertGridShape(grid: ProvinceIdGrid): number {
+/**
+ * Exported because the occupation and fort-control passes walk the very same
+ * grid and must reject the very same corrupt headers; a second copy of this
+ * check is a second place for the ceiling to drift.
+ */
+export function assertChronicleGridShape(grid: ProvinceIdGrid): number {
   const { width, height, ids } = grid;
   if (
     !Number.isInteger(width) ||
@@ -141,7 +146,7 @@ export function computeChronicleBorderMask(
   grid: ProvinceIdGrid,
   ownership: NationOwnership
 ): ChronicleBorderMask {
-  const pixelCount = assertGridShape(grid);
+  const pixelCount = assertChronicleGridShape(grid);
   const { width, height, ids } = grid;
 
   const ownerLut = buildNationOwnerLut(ownership);
@@ -198,6 +203,15 @@ export type ExpandBorderMaskOptions = {
    * exercised somewhere, not just carried.
    */
   forceByteLoop?: boolean;
+  /**
+   * Ink to expand the set bits into, defaulting to the border stroke.
+   *
+   * The packed mask turned out to be the right carrier for every single-ink
+   * chronicle overlay, not just borders — the occupation seam and the fort-ZoC
+   * hatch are the same 1-bit-per-pixel fact in a different colour — and one
+   * expander with a colour beats three copies of this loop.
+   */
+  ink?: readonly [number, number, number, number];
 };
 
 /**
@@ -222,7 +236,7 @@ export function expandChronicleBorderMask(
     );
   }
 
-  const [r, g, b, a] = CHRONICLE_BORDER_INK_RGBA;
+  const [r, g, b, a] = options.ink ?? CHRONICLE_BORDER_INK_RGBA;
   const { bits } = mask;
   const u32 = options.forceByteLoop ? null : createRgbaU32View(output);
 

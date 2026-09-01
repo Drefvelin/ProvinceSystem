@@ -2,9 +2,12 @@
 
 import { encodeGif, type GifSourceFrame } from "@/app/lib/map/gif/encodeGif";
 import {
+  CHRONICLE_BORDER_INK_RGBA,
   expandChronicleBorderMask,
   type ChronicleBorderMask,
 } from "../../lib/map/chronicleBorderMask";
+import { CHRONICLE_ZOC_HATCH_RGBA } from "../../lib/map/chronicleFortControl";
+import { CHRONICLE_OCCUPATION_SEAM_RGBA } from "../../lib/map/chronicleOccupation";
 import {
   CHRONICLE_WATERMARK_TEXT,
   chronicleGifLabelLayout,
@@ -24,7 +27,7 @@ import type { ChronicleFrameLayers } from "./chronicleLayers";
 
 /**
  * The canvas half of the GIF export: it flattens the studio's layer *stack* —
- * an `<img>`, a fill canvas, a border canvas, three SVG/DOM overlays, each
+ * an `<img>`, a fill canvas, three mask canvases, three SVG/DOM overlays, each
  * positioned by CSS and the viewport transform — into one square raster per
  * day, then hands the pile to the encoder.
  *
@@ -54,7 +57,17 @@ type AnyCanvasContext =
 
 export type ChronicleGifExportFrame = {
   day: string;
-  /** The day's painted ownership, or null when the fill layer is off. */
+  /**
+   * The day's painted fill, or null when no fill layer is on.
+   *
+   * One bitmap, not one per layer: ownership, occupation, league territory and
+   * the prosperity heat are composited into a single province -> colour table
+   * before the paint pass (`composeFillLut` in `ChronicleStudio`), so the stack
+   * order the preview shows is baked into these pixels. That is deliberate —
+   * this module would otherwise have to restate that order, and a fill layer
+   * that shows on screen and vanishes from the export is exactly the bug a
+   * second copy of the ordering invites.
+   */
   image: ImageBitmap | null;
   layers: ChronicleFrameLayers;
 };
@@ -80,6 +93,16 @@ export type ChronicleGifExportOptions = {
   delayMs: number;
   loop: boolean;
   centroids: ProvinceCentroids | null;
+  /**
+   * Burns each frame's own day into the bottom-right corner.
+   *
+   * A GIF that leaves the studio carries no other trace of when it is: the day
+   * lives in the Play panel, which does not travel with the file, so without
+   * this a reader cannot tell which stretch of history they are watching. The
+   * preview deliberately does not draw it — on screen the panel already says
+   * the day, and painting it twice would be noise.
+   */
+  stampDay: boolean;
   onProgress?: (progress: ChronicleGifProgress) => void;
   signal?: AbortSignal;
 };
@@ -172,13 +195,17 @@ function loadImages(sources: string[]): Promise<Map<string, HTMLImageElement>> {
  * then posterises into blotches.
  *
  * Consecutive days with an unchanged nation file share one mask object, so
- * caching on identity means a quiet stretch expands nothing at all.
+ * caching on identity means a quiet stretch expands nothing at all. Each
+ * overlay therefore needs its own instance: one shared scratch would re-expand
+ * on every alternation and defeat that cache entirely.
  */
-class BorderScratch {
+class MaskScratch {
   private canvas: AnyCanvas | null = null;
   private ctx: AnyCanvasContext | null = null;
   private imageData: ImageData | null = null;
   private drawn: ChronicleBorderMask | null = null;
+
+  constructor(private readonly ink: readonly [number, number, number, number]) {}
 
   draw(
     target: AnyCanvasContext,
@@ -201,7 +228,7 @@ class BorderScratch {
       this.drawn = null;
     }
     if (this.drawn !== mask) {
-      expandChronicleBorderMask(mask, this.imageData.data);
+      expandChronicleBorderMask(mask, this.imageData.data, { ink: this.ink });
       ctx.putImageData(this.imageData, 0, 0);
       this.drawn = mask;
     }
@@ -379,19 +406,44 @@ function drawNationLabels(
   ctx.restore();
 }
 
+/**
+ * The mark, bottom-left, and — when `day` is a usable string — the frame's
+ * date directly beneath the link in the same scrim box.
+ *
+ * The date is drawn exactly as the chronicle stores it — `YYYY-MM-DD`, the
+ * key the day file is filed under. It is sortable, unambiguous and the same
+ * for every reader; running it through `toLocaleDateString` would render the
+ * exporter's locale into a file that then travels to people who read it the
+ * other way round.
+ *
+ * `day` is null when the "stamp the date" option is off, or when the frame's
+ * day is not a usable string — either way the box comes out exactly as the
+ * link-only layout, with no reserved space for a line that is not drawn.
+ */
 function drawWatermark(
   ctx: AnyCanvasContext,
   size: number,
   logo: HTMLImageElement | null,
-  sansStack: string
+  sansStack: string,
+  day: string | null
 ): void {
-  // Measured before the layout is computed: the scrim has to know how wide the
-  // text turned out, and only the context can say.
-  const probe = chronicleWatermarkLayout(size, 0);
+  const dateText = typeof day === "string" ? day.trim() : "";
+  const hasDate = dateText.length > 0;
+
+  // Measured before the layout is computed: the scrim has to know how wide
+  // each line turned out, and only the context can say.
+  const probe = chronicleWatermarkLayout(size, 0, hasDate ? 0 : null);
   ctx.save();
   ctx.font = `600 ${probe.fontSize}px ${sansStack}`;
   const textWidth = ctx.measureText(CHRONICLE_WATERMARK_TEXT).width;
-  const layout = chronicleWatermarkLayout(size, textWidth);
+
+  let dateWidth: number | null = null;
+  if (hasDate) {
+    ctx.font = `600 ${probe.date!.fontSize}px ${sansStack}`;
+    dateWidth = ctx.measureText(dateText).width;
+  }
+
+  const layout = chronicleWatermarkLayout(size, textWidth, dateWidth);
 
   const { scrim } = layout;
   if (scrim.width > 0 && scrim.height > 0) {
@@ -418,16 +470,27 @@ function drawWatermark(
     );
   }
 
-  ctx.font = `600 ${layout.fontSize}px ${sansStack}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.lineJoin = "round";
   ctx.miterLimit = 2;
+
+  ctx.font = `600 ${layout.fontSize}px ${sansStack}`;
   ctx.strokeStyle = MARKER_HALO;
   ctx.lineWidth = layout.haloWidth;
   ctx.strokeText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
   ctx.fillStyle = CREAM;
   ctx.fillText(CHRONICLE_WATERMARK_TEXT, layout.textX, layout.textBaselineY);
+
+  if (layout.date && hasDate) {
+    ctx.font = `600 ${layout.date.fontSize}px ${sansStack}`;
+    ctx.strokeStyle = MARKER_HALO;
+    ctx.lineWidth = layout.date.haloWidth;
+    ctx.strokeText(dateText, layout.date.textX, layout.date.textBaselineY);
+    ctx.fillStyle = CREAM;
+    ctx.fillText(dateText, layout.date.textX, layout.date.textBaselineY);
+  }
+
   ctx.restore();
 }
 
@@ -492,6 +555,7 @@ export async function exportChronicleGif(
     delayMs,
     loop,
     centroids,
+    stampDay,
     onProgress,
     signal,
   } = options;
@@ -526,7 +590,11 @@ export async function exportChronicleGif(
     // No font manager (or it rejected) — the generic stacks are already usable.
   }
 
-  const borders = new BorderScratch();
+  const borders = new MaskScratch(CHRONICLE_BORDER_INK_RGBA);
+  // Drawn in the same order the studio stacks them, so the exported frame and
+  // the preview agree about what covers what.
+  const fortControl = new MaskScratch(CHRONICLE_ZOC_HATCH_RGBA);
+  const occupationSeam = new MaskScratch(CHRONICLE_OCCUPATION_SEAM_RGBA);
   const sourceFrames: GifSourceFrame[] = [];
 
   for (let i = 0; i < frames.length; i++) {
@@ -568,13 +636,19 @@ export async function exportChronicleGif(
       ctx.restore();
     }
 
+    if (frame.layers.fortControl) {
+      fortControl.draw(ctx, frame.layers.fortControl, transform);
+    }
     if (frame.layers.borders) {
       borders.draw(ctx, frame.layers.borders, transform);
+    }
+    if (frame.layers.occupationSeam) {
+      occupationSeam.draw(ctx, frame.layers.occupationSeam, transform);
     }
     drawWarLines(ctx, frame.layers.wars, centroids, transform);
     drawMarkers(ctx, frame.layers.markers, images, transform, sans);
     drawNationLabels(ctx, frame.layers, transform, serif);
-    drawWatermark(ctx, edge, logo, sans);
+    drawWatermark(ctx, edge, logo, sans, stampDay ? frame.day : null);
 
     let pixels: ImageData;
     try {

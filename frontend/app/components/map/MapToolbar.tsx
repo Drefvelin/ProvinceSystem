@@ -27,16 +27,6 @@ type MapToolbarProps = {
   mapType: MapMode;
   onMapTypeChange: (mode: MapMode) => void;
   variant?: "sidebar" | "mobile" | "bar";
-  /**
-   * When present, only these modes are offered. Used by chronicle mode, which
-   * passes the keys of `CHRONICLE_MODE_SOURCE`: eight of the ten modes have no
-   * per-day capture, and an unreachable option is better than an option that
-   * would render today's data under a past date.
-   *
-   * Omitted on the live map, which is the only other caller, and the omission
-   * is what keeps the live toolbar byte-for-byte what it was.
-   */
-  availableModes?: Set<MapMode>;
 };
 
 export default function MapToolbar({
@@ -44,21 +34,23 @@ export default function MapToolbar({
   mapType,
   onMapTypeChange,
   variant = "sidebar",
-  availableModes,
 }: MapToolbarProps) {
   const isMobile = variant === "mobile";
   const isBar = variant === "bar";
   const isSidebar = variant === "sidebar";
 
-  const allOptions = [
+  /*
+   * One list, offered identically on the live map and on a stored day. The
+   * chronicle used to filter this down to the two modes it could answer for;
+   * it no longer needs to, because every mode now has an honest day answer —
+   * either that day's capture or a source that genuinely does not vary. A mode
+   * with nothing stored for a given day falls through to `MapViewer`'s
+   * missing-capture panel rather than vanishing from the menu.
+   */
+  const options = [
     ...BASE_MODE_OPTIONS,
     ...(mapId === "main" || mapId === "dev" ? EXTRA_MODE_OPTIONS : []),
   ];
-  // `undefined` means "no restriction" and must not narrow anything: the live
-  // map passes nothing and gets the identical list it has always got.
-  const options = availableModes
-    ? allOptions.filter((opt) => availableModes.has(opt.value))
-    : allOptions;
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);

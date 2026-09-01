@@ -223,6 +223,14 @@ export function chronicleGifLabelLayout(
   };
 }
 
+export type ChronicleWatermarkDateLayout = {
+  fontSize: number;
+  /** Left edge of the date text — shares the link's `textX`. */
+  textX: number;
+  textBaselineY: number;
+  haloWidth: number;
+};
+
 export type ChronicleWatermarkLayout = {
   logoX: number;
   logoY: number;
@@ -232,6 +240,12 @@ export type ChronicleWatermarkLayout = {
   textBaselineY: number;
   haloWidth: number;
   scrim: { x: number; y: number; width: number; height: number; radius: number };
+  /**
+   * Second line inside the same box, directly below the link. Null when the
+   * caller passed no `dateWidth` — the box then matches the link-only layout
+   * exactly, with no reserved space for a line that is not being drawn.
+   */
+  date: ChronicleWatermarkDateLayout | null;
 };
 
 export const CHRONICLE_WATERMARK_TEXT = "discord.gg/tfmc";
@@ -247,10 +261,18 @@ export const CHRONICLE_WATERMARK_TEXT = "discord.gg/tfmc";
  * `textWidth` is measured by the caller — only a canvas context can measure a
  * font — and feeds the scrim only. Passing 0 (nothing measured yet) still
  * yields a valid box around the logo alone.
+ *
+ * `dateWidth` is optional: pass `null` or omit it (the "stamp the date"
+ * checkbox off) and the box is exactly the link-only layout, unchanged from
+ * before the date line existed. Pass a measured width to grow the box
+ * downward-in-content-but-anchored-in-place — the whole block shifts up so its
+ * bottom still sits `margin` above the edge, the same anchor the link-only box
+ * uses — and add a second, smaller line below the link sharing its left edge.
  */
 export function chronicleWatermarkLayout(
   size: number,
-  textWidth: number
+  textWidth: number,
+  dateWidth?: number | null
 ): ChronicleWatermarkLayout {
   const edge = Math.max(1, Math.round(finite(size, DEFAULT_CHRONICLE_GIF_SIZE)));
   const measured = Math.max(0, finite(textWidth, 0));
@@ -260,18 +282,53 @@ export function chronicleWatermarkLayout(
   const gap = Math.round(clamp(edge * 0.018, 6, 18));
   const fontSize = Math.round(clamp(edge * 0.034, 13, 32));
 
+  // `dateWidth` being present (even 0, even junk) is the "on" signal — the
+  // same probe-then-measure pattern the link text uses, where a caller passes
+  // 0 before anything has been measured. Only `null`/`undefined` means off.
+  const hasDate = dateWidth != null;
+  // Smaller than the link so it reads as subordinate, but never so small the
+  // quantiser eats it — the same floor the watermark's own font uses.
+  const dateFontSize = hasDate ? Math.max(11, Math.round(fontSize * 0.68)) : 0;
+  const lineGap = hasDate ? Math.round(clamp(fontSize * 0.28, 3, 10)) : 0;
+
   const logoX = margin;
-  const logoY = edge - margin - logoSize;
+  // Two columns, not three rows: the logo sits to the LEFT of a text column
+  // that holds the link and, when stamping is on, the date directly beneath
+  // it. The date's baseline therefore hangs off the link's, never off the
+  // logo's bottom edge — that mistake is what pushed the date away from the
+  // link and stretched the box. The row's bottom is anchored `margin` above
+  // the canvas edge whatever it contains, and the row is as tall as its
+  // tallest column; at every real export size the logo out-measures the
+  // two-line stack, so turning the date on fills space beside the logo that
+  // already existed rather than growing the scrim.
+  const blockBottom = edge - margin;
+  const textStackHeight = hasDate ? fontSize + lineGap + dateFontSize : fontSize;
+  const rowHeight = Math.max(logoSize, textStackHeight);
+  const rowTop = blockBottom - rowHeight;
+  const logoY = rowTop + (rowHeight - logoSize) / 2;
   const textX = logoX + logoSize + gap;
+  const dateMeasured = hasDate ? Math.max(0, finite(dateWidth, 0)) : 0;
+
   // Optical centring on the logo box: half a font size is the cap height's
   // midpoint closely enough, and 0.36 nudges for the descender-free text.
-  const textBaselineY = logoY + logoSize / 2 + fontSize * 0.36;
+  // With a date the whole two-line stack is centred against the row instead,
+  // so the pair reads as one block beside the logo.
+  const stackTop = rowTop + (rowHeight - textStackHeight) / 2;
+  const textBaselineY = hasDate
+    ? stackTop + fontSize
+    : logoY + logoSize / 2 + fontSize * 0.36;
+  const dateTextBaselineY = hasDate ? textBaselineY + lineGap + dateFontSize : 0;
 
   const pad = Math.round(fontSize * 0.5);
   const scrimX = Math.max(0, logoX - pad);
-  const scrimY = Math.max(0, logoY - pad);
-  const scrimRight = Math.min(edge, textX + measured + pad);
-  const scrimBottom = Math.min(edge, logoY + logoSize + pad);
+  const scrimY = Math.max(0, Math.min(logoY, hasDate ? stackTop : logoY) - pad);
+  const widestLine = Math.max(measured, hasDate ? dateMeasured : 0);
+  const scrimRight = Math.min(edge, textX + widestLine + pad);
+  const contentBottom = Math.max(
+    logoY + logoSize,
+    hasDate ? dateTextBaselineY + dateFontSize * 0.3 : 0
+  );
+  const scrimBottom = Math.min(edge, contentBottom + pad);
 
   return {
     logoX,
@@ -288,6 +345,14 @@ export function chronicleWatermarkLayout(
       height: Math.max(0, scrimBottom - scrimY),
       radius: Math.round(logoSize * 0.16),
     },
+    date: hasDate
+      ? {
+          fontSize: dateFontSize,
+          textX,
+          textBaselineY: dateTextBaselineY,
+          haloWidth: Math.max(1.5, dateFontSize * 0.3),
+        }
+      : null,
   };
 }
 

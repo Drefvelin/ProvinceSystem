@@ -30,10 +30,26 @@ const ALL_MODES: MapMode[] = [
   "infestation",
 ];
 
-/** Modes with no per-day capture — eight of the ten. */
-const UNCAPTURED_MODES = ALL_MODES.filter(
-  (mode) => mode !== "nation" && mode !== "trade"
-);
+/** Region modes read out of a stored day's capture. */
+const DAY_REGION_MODES: MapMode[] = ["nation", "trade", "empire"];
+
+/**
+ * Modes whose live source is also their historical answer: geography and de
+ * jure structure, which the user confirms do not change day to day.
+ */
+const STATIC_MODES: MapMode[] = [
+  "terrain",
+  "fertility",
+  "county",
+  "duchy",
+  "kingdom",
+];
+
+/**
+ * The two that vary per day but are *not* region records: they are per-province
+ * measurement lists, painted through `CHRONICLE_PROVINCE_PAINT_SOURCE` instead.
+ */
+const RASTER_DAY_MODES: MapMode[] = ["prosperity", "infestation"];
 
 function gzipResponse(body: string): Response {
   const gz = gzipSync(Buffer.from(body, "utf-8"));
@@ -57,8 +73,12 @@ describe("map data source routing", () => {
     vi.restoreAllMocks();
   });
 
-  it("maps only nation and trade to a captured file", () => {
-    expect(CHRONICLE_MODE_SOURCE).toEqual({ nation: "nation", trade: "trade" });
+  it("maps exactly the day-varying region modes to a captured file", () => {
+    expect(CHRONICLE_MODE_SOURCE).toEqual({
+      nation: "nation",
+      trade: "trade",
+      empire: "empire",
+    });
   });
 
   it("keeps the live path byte-for-byte what useMapModeData built", () => {
@@ -76,29 +96,45 @@ describe("map data source routing", () => {
     }
   });
 
-  it("routes nation and trade to their day files", () => {
-    expect(mapModeDataSource("dev", "nation", "2026-08-31")).toEqual({
-      kind: "day",
-      day: "2026-08-31",
-      file: "nation",
-    });
-    expect(mapModeDataSource("dev", "trade", "2026-08-31")).toEqual({
-      kind: "day",
-      day: "2026-08-31",
-      file: "trade",
-    });
+  it("routes every day-varying region mode to its day file", () => {
+    for (const mode of DAY_REGION_MODES) {
+      expect(mapModeDataSource("dev", mode, "2026-08-31")).toEqual({
+        kind: "day",
+        day: "2026-08-31",
+        file: mode,
+      });
+    }
   });
 
-  it("reports every other mode as unavailable, never as live", () => {
-    for (const mode of UNCAPTURED_MODES) {
-      const source = mapModeDataSource("dev", mode, "2026-08-31");
-      expect(source).toEqual({
+  it("serves the static modes live under a stored day, on the live path", () => {
+    // Not a leak: county/duchy/kingdom are de jure structure and
+    // terrain/fertility are province geometry, none of which vary by day, so
+    // the live source *is* the historical answer.
+    for (const mode of STATIC_MODES) {
+      expect(mapModeDataSource("dev", mode, "2026-08-31")).toEqual({
+        kind: "live",
+        path: `/dev/data/${mode}`,
+      });
+    }
+  });
+
+  it("reports the raster day modes as unavailable here, never as live", () => {
+    // They are answered per day, just not as region records — the day page
+    // paints them from `CHRONICLE_PROVINCE_PAINT_SOURCE`. What matters for this
+    // module is that neither ever falls through to the live endpoint.
+    for (const mode of RASTER_DAY_MODES) {
+      expect(mapModeDataSource("dev", mode, "2026-08-31")).toEqual({
         kind: "unavailable",
         day: "2026-08-31",
         mapType: mode,
       });
     }
-    expect(UNCAPTURED_MODES).toHaveLength(8);
+  });
+
+  it("accounts for every map mode exactly once", () => {
+    expect(
+      [...DAY_REGION_MODES, ...STATIC_MODES, ...RASTER_DAY_MODES].sort()
+    ).toEqual([...ALL_MODES].sort());
   });
 });
 
@@ -168,7 +204,7 @@ describe("fetchMapModeRegionData", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    for (const mode of UNCAPTURED_MODES) {
+    for (const mode of RASTER_DAY_MODES) {
       const err = await fetchMapModeRegionData({
         mapId: "dev",
         mapType: mode,

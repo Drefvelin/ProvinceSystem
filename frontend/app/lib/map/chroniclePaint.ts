@@ -18,10 +18,14 @@ export type ProvinceIdGrid = {
 /**
  * Nation ownership straight out of a chronicle `nation.json` snapshot. `rgb` is
  * the backend's comma-separated triple, not a tuple.
+ *
+ * `occupied_held` is land this nation holds but does not own; the compiler
+ * keeps it disjoint from `provinces`, so the fill pass below ignores it and
+ * `chronicleOccupation` is what reads it.
  */
 export type NationOwnership = Record<
   string,
-  { rgb?: string; provinces?: number[] }
+  { rgb?: string; provinces?: number[]; occupied_held?: number[] }
 >;
 
 /**

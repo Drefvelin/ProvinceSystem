@@ -51,6 +51,8 @@ describe("chronicle data", () => {
       "trade",
       "guilds",
       "zoc_overlays",
+      "empire",
+      "infestation_data",
     ]);
   });
 

@@ -294,3 +294,123 @@ CREATE TABLE IF NOT EXISTS map_chronicle_snapshots_archive (
     archived_at INTEGER NOT NULL,
     PRIMARY KEY (map_id, day, archived_at)
 );
+
+-- Audit trail for staff-triggered chronicle wipes (and their restores).
+-- `wiped_at` is the archive stamp the wipe used: it is both the audit clock and
+-- the key that ties this row to its `map_chronicle_snapshots_archive` rows and
+-- to the `chronicle.bak.<wiped_at>` directory, so a restore can find both.
+CREATE TABLE IF NOT EXISTS map_chronicle_wipes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    map_id      TEXT NOT NULL,
+    wiped_at    INTEGER NOT NULL,
+    wiped_by    TEXT NOT NULL,
+    day_count   INTEGER NOT NULL DEFAULT 0,
+    -- NULL when the wipe found index rows but no directory to set aside.
+    backup_path TEXT,
+    reason      TEXT NOT NULL,
+    restored_at INTEGER,
+    restored_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_map_chronicle_wipes_map
+    ON map_chronicle_wipes(map_id, wiped_at);
+
+-- Economy ledger (SimpleFactions `chronicle` upload mode). Partitioned on the
+-- captured_at UTC date; `server_day` is the in-game clock and drifts, so it is
+-- carried alongside but never used as a key.
+CREATE TABLE IF NOT EXISTS map_ledger_days (
+    map_id      TEXT NOT NULL,
+    day         TEXT NOT NULL,
+    captured_at TEXT NOT NULL,
+    captured_at_ts INTEGER NOT NULL,
+    server_day  INTEGER,
+    day_progress_seconds INTEGER,
+    -- 0 when this day's canonical row is only the latest partial snapshot.
+    complete    INTEGER NOT NULL DEFAULT 0,
+    schema_version INTEGER NOT NULL DEFAULT 0,
+    faction_count INTEGER NOT NULL DEFAULT 0,
+    guild_count INTEGER NOT NULL DEFAULT 0,
+    globals     TEXT NOT NULL,
+    PRIMARY KEY (map_id, day)
+);
+
+-- Faction identity is (id, founded_at) hashed into faction_key: ids derive from
+-- the faction name and are reused after deletion.
+CREATE TABLE IF NOT EXISTS map_ledger_factions (
+    map_id      TEXT NOT NULL,
+    faction_key TEXT NOT NULL,
+    faction_id  TEXT NOT NULL,
+    founded_at  TEXT NOT NULL,
+    first_seen_day TEXT NOT NULL,
+    first_seen_at  TEXT NOT NULL,
+    last_seen_day  TEXT NOT NULL,
+    last_seen_at   TEXT NOT NULL,
+    last_name   TEXT,
+    last_rgb    TEXT,
+    deleted_day TEXT,
+    deleted_at  TEXT,
+    PRIMARY KEY (map_id, faction_key)
+);
+
+CREATE TABLE IF NOT EXISTS map_ledger_faction_days (
+    map_id      TEXT NOT NULL,
+    day         TEXT NOT NULL,
+    faction_key TEXT NOT NULL,
+    faction_id  TEXT NOT NULL,
+    founded_at  TEXT NOT NULL,
+    name        TEXT,
+    rgb         TEXT,
+    overlord    TEXT,
+    wealth      REAL,
+    bank        REAL,
+    vassal_wealth REAL,
+    net_income  REAL,
+    inflation_delta REAL,
+    trade_power REAL,
+    prestige    REAL,
+    "rank"      TEXT,
+    rank_level  INTEGER,
+    rank_up_at   REAL,
+    rank_down_at REAL,
+    prestige_position INTEGER,
+    wealth_position   INTEGER,
+    provinces   INTEGER,
+    realm_size  INTEGER,
+    tier        TEXT,
+    tier_index  INTEGER,
+    highest_title TEXT,
+    members     INTEGER,
+    members_with_vassals INTEGER,
+    settlements INTEGER,
+    population  INTEGER,
+    installations INTEGER,
+    forts       INTEGER,
+    wealth_breakdown   TEXT NOT NULL DEFAULT '{}',
+    prestige_breakdown TEXT NOT NULL DEFAULT '{}',
+    subjects    TEXT NOT NULL DEFAULT '[]',
+    wars        TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (map_id, day, faction_key)
+);
+
+-- No founded_at in the guild payload, so guild identity is weak: a deleted and
+-- recreated guild reads as continuous. Documented limitation, no guild registry.
+CREATE TABLE IF NOT EXISTS map_ledger_guild_days (
+    map_id      TEXT NOT NULL,
+    day         TEXT NOT NULL,
+    guild_id    TEXT NOT NULL,
+    faction_id  TEXT,
+    name        TEXT,
+    type        TEXT,
+    wealth      REAL,
+    bank        REAL,
+    expansions  INTEGER,
+    trade_power REAL,
+    credit_score REAL,
+    size        INTEGER,
+    PRIMARY KEY (map_id, day, guild_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_map_ledger_factions_id
+    ON map_ledger_factions(map_id, faction_id);
+CREATE INDEX IF NOT EXISTS idx_map_ledger_faction_days_key
+    ON map_ledger_faction_days(map_id, faction_key, day);

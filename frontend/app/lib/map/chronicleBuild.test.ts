@@ -31,7 +31,7 @@ function index(days: string[], incomplete: string[] = []) {
   };
 }
 
-/** Effects whose day files are described by one fingerprint per day. */
+/** Effects whose painted frame is described by one fingerprint per day. */
 function testEffects(fingerprints: Record<string, string | null>) {
   const rendered: string[] = [];
   const disposed: TestImage[] = [];
@@ -47,7 +47,7 @@ function testEffects(fingerprints: Record<string, string | null>) {
         if (!(day in fingerprints)) return null;
         return {
           day,
-          nationFingerprint: fingerprints[day] ?? null,
+          imageFingerprint: fingerprints[day] ?? null,
           byteLength: 100,
           incomplete: false,
         };
@@ -387,7 +387,7 @@ describe("runChronicleBuild cancellation", () => {
     const effects = {
       loadDay: async (day: string): Promise<TestLoad | null> => ({
         day,
-        nationFingerprint: day,
+        imageFingerprint: day,
         byteLength: 10,
         incomplete: false,
       }),

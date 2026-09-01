@@ -37,6 +37,10 @@ import { useMapAssetUrl } from "../../hooks/useMapAssetUrl";
 import type { MapPickViewport } from "../../hooks/useMapCoords";
 import type { NationLabelSpec, ProvinceCentroids } from "../../lib/mapLabels";
 import { mapApiPathFromUrl } from "@/lib/map/api";
+import {
+  PROVINCE_RASTER_MODES,
+  showsLiveProvinceRaster,
+} from "@/app/lib/map/chronicleDayModes";
 
 const panelClass =
   "rounded-lg border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-moss)_35%,var(--tfmc-forest-deep))] shadow-lg";
@@ -181,6 +185,18 @@ type MapCanvasProps = {
    * they always have.
    */
   regionOverlay?: React.ReactNode;
+  /**
+   * A chronicle day, or `null` for the live map. Read only by
+   * `showsLiveProvinceRaster` below, which is what stops a stored day from
+   * showing today's prosperity or infestation raster.
+   */
+  day?: string | null;
+  /**
+   * Chronicle mode only. Replaces the `/{mapId}/mapdata/{mode}` image for the
+   * raster modes that vary per day. Undefined on the live map and for the
+   * static rasters (`terrain`, `fertility`), which keep the server image.
+   */
+  provinceOverlay?: React.ReactNode;
 };
 
 export default function MapCanvas({
@@ -207,6 +223,8 @@ export default function MapCanvas({
   fitMode = "cover",
   paint,
   regionOverlay,
+  day = null,
+  provinceOverlay,
 }: MapCanvasProps) {
   const [mapSize, setMapSize] = useState({
     w: MAP_BOUNDS[mapId],
@@ -247,11 +265,19 @@ export default function MapCanvas({
     viewport.resetViewport({ animated: true });
   }, [mapId, mapType, viewport.resetViewport]);
 
-  const showProvinceOverlay =
-    mapType === "terrain" ||
-    mapType === "fertility" ||
-    mapType === "prosperity" ||
-    mapType === "infestation";
+  /**
+   * The four modes drawn as a full-map raster over the base map rather than as
+   * region shapes. `showsLiveProvinceRaster` then decides *which* raster: the
+   * server's, or — for `prosperity` and `infestation` under a stored day —
+   * `provinceOverlay`, painted from that day's capture.
+   *
+   * This `<img>` had no notion of a day, so widening the day page's mode list
+   * without this split would have shown today's prosperity under a past date.
+   * `terrain` and `fertility` keep the live image on purpose: they are province
+   * geometry, identical on every day.
+   */
+  const showProvinceOverlay = PROVINCE_RASTER_MODES.has(mapType);
+  const liveProvinceRaster = showsLiveProvinceRaster(mapType, day);
 
   const handleBaseMapLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     syncNaturalMapSize(e.currentTarget);
@@ -315,16 +341,19 @@ export default function MapCanvas({
           }}
           onLoad={handleBaseMapLoad}
         />
-        {showProvinceOverlay && (
-          <MapAuthImage
-            mapId={mapId}
-            path={`/${mapId}/mapdata/${mapType}`}
-            sessionToken={sessionToken}
-            alt={`${mapType} overlay`}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
-          />
-        )}
+        {showProvinceOverlay &&
+          (liveProvinceRaster ? (
+            <MapAuthImage
+              mapId={mapId}
+              path={`/${mapId}/mapdata/${mapType}`}
+              sessionToken={sessionToken}
+              alt={`${mapType} overlay`}
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              style={{ opacity: PROVINCE_MODE_OVERLAY_OPACITY }}
+            />
+          ) : (
+            provinceOverlay ?? null
+          ))}
         {regionOverlay === undefined
           ? mapObjects
               .filter((obj) => obj.visible)

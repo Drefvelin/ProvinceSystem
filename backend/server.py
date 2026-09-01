@@ -106,6 +106,8 @@ from src.api.map_routes import map_router
 from src.api.data_routes import data_router
 from src.api.banner_routes import banner_router
 from src.api.chronicle_routes import chronicle_router
+from src.api.chronicle_staff_routes import chronicle_staff_router
+from src.api.ledger_routes import ledger_router
 from src.api.claim_routes import claim_router
 from src.api.regen_routes import regen_router
 from src.api.file_routes import file_router
@@ -123,6 +125,12 @@ app.include_router(maps_router)
 app.include_router(banner_router)
 app.include_router(claim_router)
 app.include_router(chronicle_router)
+# Staff-only chronicle wipe/restore. Separate router from the read routes: it
+# is the only chronicle surface behind ensure_map_staff_write.
+app.include_router(chronicle_staff_router)
+# Economy series read API. `chronicle` here is the map timelapse; `ledger` is
+# the SimpleFactions economy snapshot series - two different things.
+app.include_router(ledger_router)
 app.include_router(regen_router)
 app.include_router(file_router)
 app.include_router(skins_router)

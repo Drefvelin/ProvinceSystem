@@ -38,6 +38,23 @@ def _request_with_host(host: str, forwarded_for: str | None = None) -> MagicMock
     return request
 
 
+def _stub_json_body(request: MagicMock, payload: object) -> None:
+    """Feed a mocked Request through `data_routes._read_json_body`.
+
+    That reader streams the body under a byte ceiling rather than calling
+    `request.json()`, so stubbing `.json` no longer reaches the handler — the
+    body has to arrive as chunks, with a Content-Length for the early check.
+    """
+    body = json.dumps(payload).encode("utf-8")
+    request.headers["Content-Length"] = str(len(body))
+
+    async def _stream():
+        yield body
+
+    request.stream = _stream
+
+
+
 class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
     async def test_upload_queue_rejects_remote(self) -> None:
         from src.api.claim_routes import upload_queue
@@ -149,10 +166,9 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             county_path = os.path.join(tmp, "county.json")
             request = _request_with_host("172.18.0.1")
-            request.json = AsyncMock(
-                return_value={
-                    "COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"},
-                }
+            _stub_json_body(
+                request,
+                {"COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"}},
             )
             with patch("src.api.data_routes.validate_map"), patch(
                 "src.api.data_routes.validate_title_tier",
@@ -179,7 +195,7 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
             with open(duchy_path, "w", encoding="utf-8") as handle:
                 handle.write('{"keep": true}')
             request = _request_with_host("172.18.0.1")
-            request.json = AsyncMock(return_value={})
+            _stub_json_body(request, {})
             with patch("src.api.data_routes.validate_map"), patch(
                 "src.api.data_routes.defines_file",
                 return_value=duchy_path,
