@@ -9,13 +9,12 @@ const staticLinks = [
   { href: "/map/main", label: "Map" },
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
-  { href: "/wiki", label: "Guide" },
   { href: "/profile", label: "Profile" },
 ] as const;
 
 export default function SiteHeader() {
   const { state } = useSiteStaffAccess({ enabled: true });
-  const showInspect = state === "staff";
+  const isStaff = state === "staff";
 
   return (
     <header
@@ -38,8 +37,14 @@ export default function SiteHeader() {
             {label}
           </Link>
         ))}
-        {showInspect ? (
+        {isStaff ? (
           <>
+            <Link
+              href="/wiki"
+              className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+            >
+              Guide
+            </Link>
             <Link
               href="/precedent"
               className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"

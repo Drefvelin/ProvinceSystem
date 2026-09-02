@@ -1,8 +1,12 @@
 import Link from "next/link";
+
+import WikiStaffGate from "@/app/components/wiki/WikiStaffGate";
+
 import { navItems } from "./data";
 
 export default function WikiLayout({ children }: { children: React.ReactNode }) {
   return (
+    <WikiStaffGate>
     <div className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-6xl flex-col gap-6 px-6 py-10 lg:flex-row">
       <aside className="shrink-0 lg:w-56">
         <p className="font-[family-name:var(--font-fraunces)] text-sm uppercase tracking-widest text-[var(--tfmc-mist)]">
@@ -23,5 +27,6 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
 
       <main className="min-w-0 flex-1">{children}</main>
     </div>
+    </WikiStaffGate>
   );
 }

@@ -16,7 +16,6 @@ class LinkError(ValueError):
 
 
 _MC_NAME_MAX = 16
-_DISCORD_USERNAME_MAX = 32
 
 
 def _utcnow() -> datetime:
@@ -153,6 +152,8 @@ def complete_link(
     discord_user_id: str,
     discord_username: str | None = None,
 ) -> dict:
+    """Bind Discord snowflake to Minecraft UUID. Nicks / display names are ignored."""
+    del discord_username  # identity is discord_user_id only
     plaintext = (code or "").strip()
     discord_id = (discord_user_id or "").strip()
     if not plaintext:
@@ -160,14 +161,7 @@ def complete_link(
     if not discord_id:
         raise LinkError("discord_user_id is required")
 
-    try:
-        username = assert_optional_display_name(
-            discord_username,
-            max_len=_DISCORD_USERNAME_MAX,
-            field="discord username",
-        )
-    except TextValidationError as e:
-        raise LinkError(str(e)) from e
+    username = None
     code_hash = hash_secret(plaintext)
     now = _utcnow()
     linked_at = _iso(now)
@@ -482,11 +476,11 @@ if __name__ == "__main__":
 
     started = start_link(u1, "TestPlayer")
     assert "code" in started and "expires_at" in started
-    done = complete_link(started["code"], d1, discord_username="DiscordOne")
+    done = complete_link(started["code"], d1, discord_username="DiscordOne🔥")
     assert done["player_uuid"] == u1
     assert done["discord_user_id"] == d1
     assert done["minecraft_name"] == "TestPlayer"
-    assert done["discord_username"] == "DiscordOne"
+    assert done["discord_username"] is None
     assert get_discord_id_for_uuid(u1) == d1
 
     notices = list_undelivered_plugin_notices()
@@ -496,12 +490,12 @@ if __name__ == "__main__":
         if n["player_uuid"] == u1 and n["type"] == "link_success"
     ]
     assert len(link_notices) >= 1
-    assert link_notices[-1]["payload"].get("discord_username") == "DiscordOne"
+    assert link_notices[-1]["payload"].get("discord_username") is None
     ack_plugin_notices([link_notices[-1]["id"]])
 
     again = start_link(u1, "TestPlayer")
     assert again.get("already_linked") is True
-    assert again.get("discord_username") == "DiscordOne"
+    assert again.get("discord_username") is None
 
     # Guild leave grace
     left = record_guild_left(d1)

@@ -145,6 +145,7 @@ class LinkStartBody(BaseModel):
 class LinkCompleteBody(BaseModel):
     code: str = Field(..., min_length=1)
     discord_user_id: str = Field(..., min_length=1)
+    # Accepted for old bot payloads; ignored. Link is discord_user_id only.
     discord_username: str | None = None
 
 
@@ -332,11 +333,7 @@ def post_discord_link_complete(
 ):
     _require_staff(x_staff_key)
     try:
-        return complete_link(
-            body.code,
-            body.discord_user_id,
-            discord_username=body.discord_username,
-        )
+        return complete_link(body.code, body.discord_user_id)
     except LinkError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
