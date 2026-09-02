@@ -60,7 +60,8 @@ export function useMapModeData({
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
-      mapType === "infestation"
+      mapType === "infestation" ||
+      mapType === "province"
     ) {
       setRegionData(null);
       setLoading(false);

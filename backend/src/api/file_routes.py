@@ -11,6 +11,7 @@ from ..scripts.util.dirs import (
     banner_image,
     zoc_image,
     validate_map,
+    input_file,
 )
 from ..scripts.util.zoc_paths import safe_fort_filename
 
@@ -58,12 +59,22 @@ async def get_map_file(
     if_modified_since: str | None = Header(default=None),
 ):
     ensure_map_access(map_name, authorization)
-    file_path = (
-        OUTPUT_BASE
-        / map_name
-        / "maps"
-        / f"{map_type}_map.png"
-    )
+
+    # The province mode paints the source pick map itself, so there is
+    # nothing to generate and nothing for a regen to keep in sync.
+    if map_type == "province":
+        try:
+            validate_map(map_name)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        file_path = Path(input_file(map_name, "provinces.png"))
+    else:
+        file_path = (
+            OUTPUT_BASE
+            / map_name
+            / "maps"
+            / f"{map_type}_map.png"
+        )
 
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Map not found")

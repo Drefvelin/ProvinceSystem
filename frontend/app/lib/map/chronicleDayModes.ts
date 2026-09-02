@@ -15,10 +15,11 @@ import { buildProsperityColorLut } from "./chronicleProsperity";
  *    capture, and rendering the live version of any of them under a past date
  *    would be fabricated history.
  *
- *  - **Static** — `terrain`, `fertility`, `county`, `duchy`, `kingdom`. These
- *    are geography and de jure structure, not state: they are the same on every
- *    day, so the live source *is* the historical answer. Serving them live is
- *    correct, not a leak, and it is why they are not captured.
+ *  - **Static** - `terrain`, `fertility`, `province`, `county`, `duchy`,
+ *    `kingdom`. These are geography and de jure structure, not state: they are
+ *    the same on every day, so the live source *is* the historical answer.
+ *    Serving them live is correct, not a leak, and it is why they are not
+ *    captured.
  *
  *  - Region-record vs province-quantity, which cuts across the first split and
  *    is what `CHRONICLE_PROVINCE_PAINT_SOURCE` below is about.
@@ -29,6 +30,7 @@ import { buildProsperityColorLut } from "./chronicleProsperity";
 export const CHRONICLE_STATIC_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
   "terrain",
   "fertility",
+  "province",
   "county",
   "duchy",
   "kingdom",
@@ -54,6 +56,7 @@ export function isChronicleStaticMode(mapType: MapMode | string): boolean {
 export const PROVINCE_RASTER_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
   "terrain",
   "fertility",
+  "province",
   "prosperity",
   "infestation",
 ]);
@@ -96,8 +99,8 @@ export function chronicleProvincePaintSource(
   if (!PROVINCE_RASTER_MODES.has(mapType as MapMode)) return null;
   // The live map is unchanged, byte for byte: every raster mode is live.
   if (day === null) return { kind: "live" };
-  // Terrain and fertility are province geometry. Their raster is identical on
-  // every day, so the live PNG is the historical picture.
+  // Terrain, fertility and the province pick map are province geometry. Their
+  // raster is identical on every day, so the live PNG is the historical picture.
   if (isChronicleStaticMode(mapType)) return { kind: "live" };
   const file = CHRONICLE_PROVINCE_PAINT_SOURCE[mapType as MapMode];
   if (!file) return { kind: "live" };

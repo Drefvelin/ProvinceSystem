@@ -27,6 +27,7 @@ const ALL_MODES: MapMode[] = [
   "prosperity",
   "terrain",
   "fertility",
+  "province",
   "infestation",
 ];
 
@@ -40,6 +41,7 @@ const DAY_REGION_MODES: MapMode[] = ["nation", "trade", "empire"];
 const STATIC_MODES: MapMode[] = [
   "terrain",
   "fertility",
+  "province",
   "county",
   "duchy",
   "kingdom",
@@ -108,8 +110,8 @@ describe("map data source routing", () => {
 
   it("serves the static modes live under a stored day, on the live path", () => {
     // Not a leak: county/duchy/kingdom are de jure structure and
-    // terrain/fertility are province geometry, none of which vary by day, so
-    // the live source *is* the historical answer.
+    // terrain/fertility/province are province geometry, none of which vary
+    // by day, so the live source *is* the historical answer.
     for (const mode of STATIC_MODES) {
       expect(mapModeDataSource("dev", mode, "2026-08-31")).toEqual({
         kind: "live",

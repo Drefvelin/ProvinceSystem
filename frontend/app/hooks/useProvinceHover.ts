@@ -4,6 +4,10 @@ import { useRef } from "react";
 import type { MapId } from "../components/map/types";
 import { fetchMapJson } from "@/lib/map/api";
 import { fetchChronicleDayFile } from "../lib/map/chronicleData";
+import {
+  buildProvinceCountyNames,
+  type CountyNameEntry,
+} from "../lib/map/provinceCounty";
 
 /**
  * The subset of a province the tooltip actually renders. The live
@@ -96,10 +100,12 @@ export function useProvinceHover({
   guildNameCacheRef: React.MutableRefObject<Record<string, string>> | null;
   sessionToken?: string | null;
   /**
-   * A chronicle day, or `null` for the live map. Non-null switches this hook
-   * off the two live endpoints entirely — `/compiled_data/provinces` and
-   * `/province/{x},{y}/meta` are both recomputed from *today's* state, and
-   * neither has a per-day variant.
+   * A chronicle day, or `null` for the live map. Non-null switches the
+   * prosperity/trade/infestation path off `/compiled_data/provinces` and
+   * `/province/{x},{y}/meta`, which are recomputed from today's state.
+   * `province` mode is the exception: `/meta` reads provinces.png and
+   * provinces.txt (static input), and `/data/county` is de jure structure,
+   * so both stay live under a stored day.
    */
   day?: string | null;
   /**
@@ -116,6 +122,12 @@ export function useProvinceHover({
     byId: Record<number, TooltipProvince>;
   } | null>(null);
   const dayPendingRef = useRef<string | null>(null);
+  /** Live `county.json` names, keyed by `mapId`. */
+  const countyCacheRef = useRef<{
+    key: string;
+    names: Map<number, string>;
+  } | null>(null);
+  const countyPendingRef = useRef<string | null>(null);
 
   const capitalize = (v: string) => v[0].toUpperCase() + v.slice(1);
 
@@ -130,13 +142,15 @@ export function useProvinceHover({
       mapType === "fertility" ||
       mapType === "prosperity" ||
       mapType === "infestation" ||
-      mapType === "trade";
+      mapType === "trade" ||
+      mapType === "province";
 
     const consumesHover =
       mapType === "terrain" ||
       mapType === "fertility" ||
       mapType === "prosperity" ||
-      mapType === "infestation";
+      mapType === "infestation" ||
+      mapType === "province";
 
     if (!active) return false;
 
@@ -202,6 +216,58 @@ export function useProvinceHover({
         text: lines.join("\n"),
       });
     };
+
+    if (mapType === "province") {
+      const renderProvince = (
+        pid: number,
+        terrain: unknown,
+        names: Map<number, string> | null
+      ) => {
+        const lines = [`x: ${x}  z: ${y}`, `Province: ${pid}`];
+        if (typeof terrain === "string" && terrain.length > 0) {
+          lines.push(`Terrain: ${capitalize(terrain)}`);
+        }
+        const county = names?.get(pid);
+        if (county) lines.push(`County: ${county}`);
+        setCursorTooltip({
+          x: screenX,
+          y: screenY,
+          text: lines.join("\n"),
+        });
+      };
+
+      void fetchMapJson<{ province_id?: number; terrain?: unknown }>(
+        `/${mapId}/province/${x},${y}/meta`,
+        { sessionToken, cache: "no-store" }
+      )
+        .then((meta) => {
+          if (!meta?.province_id) return;
+          const pid = meta.province_id;
+          const cached = countyCacheRef.current;
+          if (cached?.key === mapId) {
+            renderProvince(pid, meta.terrain, cached.names);
+            return;
+          }
+          renderProvince(pid, meta.terrain, null);
+          if (countyPendingRef.current === mapId) return;
+          countyPendingRef.current = mapId;
+          void fetchMapJson<Record<string, CountyNameEntry>>(
+            `/${mapId}/data/county`,
+            { sessionToken }
+          )
+            .then((counties) => {
+              const names = buildProvinceCountyNames(counties);
+              countyCacheRef.current = { key: mapId, names };
+              renderProvince(pid, meta.terrain, names);
+            })
+            .catch(() => {
+              countyCacheRef.current = { key: mapId, names: new Map() };
+            });
+        })
+        .catch(() => {});
+
+      return consumesHover;
+    }
 
     if (day !== null) {
       // Stored day: province id comes from the grid already in memory, and the

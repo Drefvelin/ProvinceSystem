@@ -15,6 +15,7 @@ const BASE_MODE_OPTIONS: { value: MapMode; label: string }[] = [
 ];
 
 const EXTRA_MODE_OPTIONS: { value: MapMode; label: string }[] = [
+  { value: "province", label: "Provinces" },
   { value: "terrain", label: "Terrain" },
   { value: "fertility", label: "Fertility" },
   { value: "trade", label: "Trade" },
@@ -70,7 +71,7 @@ export default function MapToolbar({
       <div ref={rootRef} className={`${panelClass} relative p-2`}>
         <div className="flex w-full items-center justify-between gap-2 px-1 py-0.5">
           <span className="truncate text-xs font-semibold uppercase tracking-wide text-[var(--tfmc-stone)]">
-            Map mode <span className="text-[var(--tfmc-cream)]">— {selected?.label ?? mapType}</span>
+            Map mode <span className="text-[var(--tfmc-cream)]">- {selected?.label ?? mapType}</span>
           </span>
           <button
             type="button"

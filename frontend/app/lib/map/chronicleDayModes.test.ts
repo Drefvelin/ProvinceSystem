@@ -22,6 +22,7 @@ const ALL_MODES: MapMode[] = [
   "empire",
   "terrain",
   "fertility",
+  "province",
   "trade",
   "prosperity",
   "infestation",
@@ -42,12 +43,13 @@ describe("mode classification", () => {
     }
   });
 
-  it("classifies the five modes the user says never change as static", () => {
+  it("classifies the six modes the user says never change as static", () => {
     expect([...CHRONICLE_STATIC_MODES].sort()).toEqual([
       "county",
       "duchy",
       "fertility",
       "kingdom",
+      "province",
       "terrain",
     ]);
   });
@@ -75,13 +77,19 @@ describe("chronicleProvincePaintSource", () => {
   });
 
   it("keeps every raster mode live on the live map", () => {
-    for (const mode of ["terrain", "fertility", "prosperity", "infestation"] as MapMode[]) {
+    for (const mode of [
+      "terrain",
+      "fertility",
+      "province",
+      "prosperity",
+      "infestation",
+    ] as MapMode[]) {
       expect(chronicleProvincePaintSource(mode, null)).toEqual({ kind: "live" });
     }
   });
 
-  it("keeps terrain and fertility live under a stored day", () => {
-    for (const mode of ["terrain", "fertility"] as MapMode[]) {
+  it("keeps terrain, fertility and province live under a stored day", () => {
+    for (const mode of ["terrain", "fertility", "province"] as MapMode[]) {
       expect(showsLiveProvinceRaster(mode, DAY)).toBe(true);
       expect(usesChronicleProvincePaint(mode, DAY)).toBe(false);
     }
