@@ -38,6 +38,7 @@ from src.characters.lore_items import (
     resolve_pickable_texture,
     store_plugin_kit_skin,
 )
+from src.characters.realm_wipe import wipe_realm_character_data
 from src.characters.roster import RosterError, replace_roster
 from src.characters.wardrobe import (
     WardrobeError,
@@ -56,7 +57,7 @@ from src.characters.wardrobe import (
     upload_slot,
 )
 from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
-from src.skins.codes import get_session, revoke_session
+from src.skins.codes import CodeError, get_session, revoke_session
 
 characters_router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -848,6 +849,19 @@ def plugin_put_roster(
             body.realm_id,
         )
     except RosterError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@characters_router.delete("/plugin/realm-data")
+def plugin_wipe_realm_data(
+    realm_id: str | None = None,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Staff wipe of one realm's site character data. Player meta stays."""
+    _require_plugin(x_plugin_key)
+    try:
+        return wipe_realm_character_data(realm_id)
+    except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 

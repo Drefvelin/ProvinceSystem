@@ -71,6 +71,24 @@ CREATE TABLE IF NOT EXISTS discord_link_codes (
     used_at TEXT
 );
 
+-- One-time war declare codes. Staff mint one in Discord bound to an attacker,
+-- a defender and a war goal; the plugin validates it, then redeems it only once
+-- the war actually exists. No plaintext is stored: staff see the code once.
+CREATE TABLE IF NOT EXISTS war_declare_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_hash TEXT NOT NULL UNIQUE,
+    realm_id TEXT NOT NULL DEFAULT 'main',
+    attacker_faction_id TEXT NOT NULL,
+    defender_faction_id TEXT NOT NULL,
+    goal TEXT NOT NULL,
+    created_by_discord_id TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    redeemed_at TEXT,
+    redeemed_war_id TEXT,
+    revoked INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS skin_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL,
@@ -96,6 +114,9 @@ CREATE INDEX IF NOT EXISTS idx_codes_hash ON codes(code_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_discord_links_discord ON discord_links(discord_user_id);
 CREATE INDEX IF NOT EXISTS idx_discord_link_codes_hash ON discord_link_codes(code_hash);
+CREATE INDEX IF NOT EXISTS idx_war_declare_codes_hash ON war_declare_codes(code_hash);
+CREATE INDEX IF NOT EXISTS idx_war_declare_codes_outstanding
+    ON war_declare_codes(realm_id, redeemed_at, revoked);
 CREATE INDEX IF NOT EXISTS idx_skin_notifications_undelivered
     ON skin_notifications(delivered_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_plugin_notices_undelivered

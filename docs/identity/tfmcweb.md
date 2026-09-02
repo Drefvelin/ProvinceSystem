@@ -82,6 +82,27 @@ Link tables live under skins SQLite (`discord_links`, `discord_link_codes`) and 
 | `POST /skins/discord/link/unlink` | Plugin | Explicit unlink |
 | Guild leave/join | Staff (bot) | 1h grace on leave; clear on rejoin |
 
+## War declare codes
+
+One-time codes that gate an in-game war declaration. Staff mint one in Discord (`tfmc_bot` `factions` cog, `/warcode`), the attacking leader types it in SimpleFactions, and it pins the war goal. Rows live in `war_declare_codes`, realm-scoped, hashed with **no plaintext column**: staff see the code once and a lost code is revoked and reminted.
+
+| Route | Auth | Role |
+|-------|------|------|
+| `POST /wars/declare-codes` | Staff (bot) | Mint; returns `{id, code, expires_at}` once |
+| `POST /wars/declare-codes/validate` | Plugin | Non-consuming; returns the pinned goal |
+| `POST /wars/declare-codes/redeem` | Plugin | Consuming; sets `redeemed_at` and `redeemed_war_id` |
+| `GET /wars/declare-codes` | Staff (bot) | Outstanding codes; ids and metadata, never a code |
+| `POST /wars/declare-codes/revoke` | Staff (bot) | Revoke by id |
+| `GET /wars/declare-codes/goals` | Staff (bot) | The nine declarable goals |
+
+Rules:
+
+- Validate and redeem are separate calls because `WarManager.declareWar` can still refuse after the code was accepted. Redemption happens only once a war exists, so a rejection does not burn a staff-approved ticket.
+- Both re-check attacker, defender and realm against the row, so a code minted for one pairing cannot be spent on another.
+- **Goal allowlist:** nine of the thirteen `WarGoalType` values. `overthrow`, `change_law`, `change_tax` and `force_peace` are raised by a political movement, never declared, and are refused at mint.
+- `realm_id` on the two plugin routes is injected by **TFMCWeb**, not sent by SimpleFactions, which does not know its own realm.
+- TTL from `WAR_CODE_TTL_HOURS` (default 48, mint may override up to 720).
+
 ## Tokens
 
 | Command | Scope | Redeems on |

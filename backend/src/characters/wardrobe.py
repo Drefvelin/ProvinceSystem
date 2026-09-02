@@ -523,6 +523,15 @@ def _delete_png(relpath: str | None) -> None:
         path.unlink(missing_ok=True)
 
 
+def delete_png_relpath(relpath: str | None) -> bool:
+    """Realm wipe entry point: safe unlink under WARDROBE_DIR. True when a file went."""
+    path = _png_abspath(relpath)
+    if path is None:
+        return False
+    path.unlink(missing_ok=True)
+    return True
+
+
 def _normalize_display_name(raw: str | None) -> str | None:
     try:
         return assert_optional_display_name(

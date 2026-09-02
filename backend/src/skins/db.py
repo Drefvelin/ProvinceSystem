@@ -858,6 +858,32 @@ def migrate() -> None:
             "CREATE INDEX IF NOT EXISTS idx_cosmetic_mint_resets_player "
             "ON cosmetic_mint_resets(player_uuid)"
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS war_declare_codes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code_hash TEXT NOT NULL UNIQUE,
+                realm_id TEXT NOT NULL DEFAULT 'main',
+                attacker_faction_id TEXT NOT NULL,
+                defender_faction_id TEXT NOT NULL,
+                goal TEXT NOT NULL,
+                created_by_discord_id TEXT,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                redeemed_at TEXT,
+                redeemed_war_id TEXT,
+                revoked INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_war_declare_codes_hash "
+            "ON war_declare_codes(code_hash)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_war_declare_codes_outstanding "
+            "ON war_declare_codes(realm_id, redeemed_at, revoked)"
+        )
         denied_ids = [
             str(r["id"])
             for r in conn.execute(
