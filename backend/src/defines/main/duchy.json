@@ -1,1 +1,174 @@
-{}
+{
+  "DUCHY_1": {
+    "name": "Atrarcha",
+    "rgb": "236,214,150",
+    "titles": [
+      "COUNTY_1",
+      "COUNTY_2",
+      "COUNTY_3"
+    ]
+  },
+  "DUCHY_2": {
+    "name": "Heliovera",
+    "rgb": "220,190,110",
+    "titles": [
+      "COUNTY_4",
+      "COUNTY_5",
+      "COUNTY_6"
+    ]
+  },
+  "DUCHY_3": {
+    "name": "Rotha",
+    "rgb": "200,168,80",
+    "titles": [
+      "COUNTY_7",
+      "COUNTY_8",
+      "COUNTY_9"
+    ]
+  },
+  "DUCHY_4": {
+    "name": "Elda",
+    "rgb": "244,228,186",
+    "titles": [
+      "COUNTY_10",
+      "COUNTY_11",
+      "COUNTY_12",
+      "COUNTY_13"
+    ]
+  },
+  "DUCHY_5": {
+    "name": "Mera",
+    "rgb": "188,154,72",
+    "titles": [
+      "COUNTY_14",
+      "COUNTY_15"
+    ]
+  },
+  "DUCHY_6": {
+    "name": "Kyrenic Isles",
+    "rgb": "176,92,44",
+    "titles": [
+      "COUNTY_16",
+      "COUNTY_17"
+    ]
+  },
+  "DUCHY_7": {
+    "name": "Armetium",
+    "rgb": "160,74,36",
+    "titles": [
+      "COUNTY_18",
+      "COUNTY_22",
+      "COUNTY_23"
+    ]
+  },
+  "DUCHY_8": {
+    "name": "Maritima",
+    "rgb": "192,114,56",
+    "titles": [
+      "COUNTY_27",
+      "COUNTY_30",
+      "COUNTY_33"
+    ]
+  },
+  "DUCHY_9": {
+    "name": "Derium",
+    "rgb": "148,68,32",
+    "titles": [
+      "COUNTY_34",
+      "COUNTY_35",
+      "COUNTY_36"
+    ]
+  },
+  "DUCHY_10": {
+    "name": "Argentic Isles",
+    "rgb": "184,100,60",
+    "titles": [
+      "COUNTY_28",
+      "COUNTY_29",
+      "COUNTY_37"
+    ]
+  },
+  "DUCHY_11": {
+    "name": "Forn Isle",
+    "rgb": "48,170,70",
+    "titles": [
+      "COUNTY_39",
+      "COUNTY_40",
+      "COUNTY_41"
+    ]
+  },
+  "DUCHY_12": {
+    "name": "Runic Isles",
+    "rgb": "56,180,50",
+    "titles": [
+      "COUNTY_38",
+      "COUNTY_42"
+    ]
+  },
+  "DUCHY_13": {
+    "name": "Jotundal",
+    "rgb": "50,90,160",
+    "titles": [
+      "COUNTY_43",
+      "COUNTY_47",
+      "COUNTY_48"
+    ]
+  },
+  "DUCHY_14": {
+    "name": "Skeldvar",
+    "rgb": "70,120,180",
+    "titles": [
+      "COUNTY_44",
+      "COUNTY_45",
+      "COUNTY_49"
+    ]
+  },
+  "DUCHY_15": {
+    "name": "Hrothgar",
+    "rgb": "40,72,140",
+    "titles": [
+      "COUNTY_46",
+      "COUNTY_50",
+      "COUNTY_51"
+    ]
+  },
+  "DUCHY_16": {
+    "name": "Bogmouth",
+    "rgb": "28,64,50",
+    "titles": [
+      "COUNTY_61",
+      "COUNTY_65",
+      "COUNTY_63",
+      "COUNTY_64"
+    ]
+  },
+  "DUCHY_17": {
+    "name": "Sodden Reach",
+    "rgb": "36,70,54",
+    "titles": [
+      "COUNTY_67",
+      "COUNTY_68",
+      "COUNTY_70",
+      "COUNTY_69"
+    ]
+  },
+  "DUCHY_18": {
+    "name": "Croakmarsh",
+    "rgb": "22,56,46",
+    "titles": [
+      "COUNTY_62",
+      "COUNTY_66",
+      "COUNTY_72",
+      "COUNTY_71"
+    ]
+  },
+  "DUCHY_19": {
+    "name": "Stinking Hill",
+    "rgb": "42,66,52",
+    "titles": [
+      "COUNTY_74",
+      "COUNTY_73",
+      "COUNTY_75"
+    ]
+  }
+}

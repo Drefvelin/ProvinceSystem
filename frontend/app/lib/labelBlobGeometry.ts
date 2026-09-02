@@ -204,22 +204,27 @@ export function buildComponentMask(
 }
 
 /**
- * Multi-source BFS clearance from blob border, in map pixels (conservative).
+ * Multi-source BFS clearance from forbidden territory, in map pixels (conservative).
+ *
+ * Seeds distance 0 at sea/foreign cells and owned land on TRUE grid edges.
+ * Inland water and black gaps (cell 0) are walkable but do not seed, so
+ * riverbanks keep clearance from forbidden borders only.
  *
  * When `rect` is given the work is confined to that sub-rect; cells outside it
- * are left at 0, which is exactly what the full-grid version produces for
- * unmasked cells. Clearance-0 border seeding uses TRUE grid edges only - a
- * sub-rect border that is interior to the grid must never seed, or labels move.
+ * are left at 0. Sub-rect borders interior to the grid must never seed.
  */
 export function distanceTransform(
   mask: Uint8Array,
   grid: ProvinceLabelGrid,
   rect?: GridSubRect
 ): Float32Array {
-  const { gridWidth, gridHeight, scaleX, scaleY } = grid;
+  const { cells, gridWidth, gridHeight, scaleX, scaleY } = grid;
   const cellScale = Math.min(scaleX, scaleY);
   const dist = new Float32Array(gridWidth * gridHeight);
   const r = rect ?? fullGridRect(grid);
+
+  const isCrossableGap = (idx: number) => cells[idx] === 0;
+  const isWalkable = (idx: number) => mask[idx] === 1 || isCrossableGap(idx);
 
   for (let gy = r.y0; gy <= r.y1; gy += 1) {
     const row = gy * gridWidth;
@@ -232,16 +237,17 @@ export function distanceTransform(
 
   for (let gy = r.y0; gy <= r.y1; gy += 1) {
     const row = gy * gridWidth;
-    // TRUE grid edge rows, not sub-rect rows.
     const onEdgeRow = gy === 0 || gy === gridHeight - 1;
     for (let gx = r.x0; gx <= r.x1; gx += 1) {
       const idx = row + gx;
       if (mask[idx] === 0) {
+        if (isCrossableGap(idx)) {
+          continue;
+        }
         dist[idx] = 0;
         queue[tail++] = idx;
         continue;
       }
-      // TRUE grid edge columns, not sub-rect columns.
       if (onEdgeRow || gx === 0 || gx === gridWidth - 1) {
         dist[idx] = 0;
         queue[tail++] = idx;
@@ -263,7 +269,7 @@ export function distanceTransform(
   }
 
   function pushNeighbor(neighbor: number, nextDist: number) {
-    if (mask[neighbor] === 0 || dist[neighbor] >= 0) return;
+    if (!isWalkable(neighbor) || dist[neighbor] >= 0) return;
     dist[neighbor] = nextDist;
     queue[tail++] = neighbor;
   }
@@ -272,8 +278,12 @@ export function distanceTransform(
     const row = gy * gridWidth;
     for (let gx = r.x0; gx <= r.x1; gx += 1) {
       const idx = row + gx;
-      if (mask[idx] === 1 && dist[idx] >= 0) {
-        dist[idx] *= cellScale;
+      if (mask[idx] === 1) {
+        if (dist[idx] >= 0) {
+          dist[idx] *= cellScale;
+        } else {
+          dist[idx] = Number.POSITIVE_INFINITY;
+        }
       } else {
         dist[idx] = 0;
       }
@@ -283,7 +293,7 @@ export function distanceTransform(
   return dist;
 }
 
-/** Sea / black gaps in province_label_grid (0 = no land). Labels may cross these. */
+/** Cell 0 = crossable inland water or black gaps. Sea provinces are non-zero and block corridors. */
 export function isLabelCorridorWaterCell(
   grid: ProvinceLabelGrid,
   gridIndex: number

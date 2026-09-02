@@ -61,23 +61,61 @@ describe("distanceTransform", () => {
       5,
       5,
       [
-        0, 0, 0, 0, 0,
-        0, 1, 1, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1,
       ]
     );
     const mask = buildComponentMask(grid, [1]);
     const dist = distanceTransform(mask, grid);
     const center = dist[2 * grid.gridWidth + 2];
-    const edge = dist[1 * grid.gridWidth + 2];
+    const edge = dist[2 * grid.gridWidth + 0];
     expect(center).toBeGreaterThan(edge);
+  });
+
+  it("gives high clearance on riverbanks when only water is adjacent", () => {
+    const grid = makeGrid(
+      7,
+      3,
+      [
+        0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0,
+      ],
+      70,
+      30
+    );
+    const mask = buildComponentMask(grid, [1]);
+    const dist = distanceTransform(mask, grid);
+    const riverbank = dist[1 * grid.gridWidth + 1];
+    expect(riverbank).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("gives low clearance on land adjacent to foreign territory", () => {
+    const grid = makeGrid(
+      7,
+      3,
+      [
+        0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 2, 2, 0,
+        0, 0, 0, 0, 0, 0, 0,
+      ],
+      70,
+      30
+    );
+    const mask = buildComponentMask(grid, [1]);
+    const dist = distanceTransform(mask, grid);
+    const foreignShore = dist[1 * grid.gridWidth + 3];
+    const interior = dist[1 * grid.gridWidth + 1];
+    expect(foreignShore).toBeLessThan(LABEL_MIN_INSET_PX);
+    expect(interior).toBeGreaterThan(foreignShore);
   });
 });
 
 describe("corridorClear", () => {
-  it("rejects a chord that samples outside the blob", () => {
+  it("allows a long chord that extends over crossable water beyond owned land", () => {
     const grid = makeGrid(
       7,
       3,
@@ -96,11 +134,33 @@ describe("corridorClear", () => {
 
     expect(
       corridorClear(5, 15, 65, 15, labelCorridorMargin(len, fontSize), grid, dist)
-    ).toBe(false);
+    ).toBe(true);
     expect(corridorClear(15, 15, 55, 15, 10, grid, dist)).toBe(true);
   });
 
-  it("allows a chord that crosses sea gaps between the same province", () => {
+  it("allows a long chord along a riverbank at full margin", () => {
+    const grid = makeGrid(
+      11,
+      3,
+      [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ],
+      110,
+      30
+    );
+    const mask = buildComponentMask(grid, [1]);
+    const dist = distanceTransform(mask, grid);
+    const len = 90;
+    const fontSize = Math.round(len / (4 * LABEL_GLYPH_WIDTH_EM));
+
+    expect(
+      corridorClear(15, 15, 95, 15, labelCorridorMargin(len, fontSize), grid, dist)
+    ).toBe(true);
+  });
+
+  it("allows a chord that crosses crossable gaps between the same province", () => {
     const grid = makeGrid(
       7,
       3,
@@ -131,6 +191,29 @@ describe("corridorClear", () => {
       70,
       30
     );
+    const mask = buildComponentMask(grid, [1]);
+    const dist = distanceTransform(mask, grid);
+    const len = 50;
+    const fontSize = Math.round(len / (2 * LABEL_GLYPH_WIDTH_EM));
+
+    expect(
+      corridorClear(15, 15, 55, 15, labelCorridorMargin(len, fontSize), grid, dist)
+    ).toBe(false);
+  });
+
+  it("rejects a chord that crosses a sea province cell", () => {
+    const grid = makeGrid(
+      7,
+      3,
+      [
+        0, 1, 1, 99, 99, 1, 0,
+        0, 1, 1, 99, 99, 1, 0,
+        0, 0, 0, 0, 0, 0, 0,
+      ],
+      70,
+      30
+    );
+    expect(isLabelCorridorWaterCell(grid, 3)).toBe(false);
     const mask = buildComponentMask(grid, [1]);
     const dist = distanceTransform(mask, grid);
     const len = 50;
@@ -273,59 +356,13 @@ describe("parseProvinceLabelGrid", () => {
 
 describe("sub-rect restriction", () => {
   /**
-   * Full-grid reference implementation of the pre-optimisation behaviour:
-   * seeds every unmasked cell AND every cell on a TRUE grid edge.
+   * Full-grid reference for the forbidden-only distance transform.
    */
   function referenceDistanceTransform(
     mask: Uint8Array,
     grid: ProvinceLabelGrid
   ): Float32Array {
-    const { gridWidth, gridHeight, scaleX, scaleY } = grid;
-    const cellScale = Math.min(scaleX, scaleY);
-    const size = gridWidth * gridHeight;
-    const dist = new Float32Array(size);
-    dist.fill(-1);
-    const queue: number[] = [];
-
-    for (let idx = 0; idx < size; idx += 1) {
-      if (mask[idx] === 0) {
-        dist[idx] = 0;
-        queue.push(idx);
-        continue;
-      }
-      const x = idx % gridWidth;
-      const y = (idx / gridWidth) | 0;
-      if (x === 0 || x === gridWidth - 1 || y === 0 || y === gridHeight - 1) {
-        dist[idx] = 0;
-        queue.push(idx);
-      }
-    }
-
-    let head = 0;
-    while (head < queue.length) {
-      const idx = queue[head++];
-      const x = idx % gridWidth;
-      const y = (idx / gridWidth) | 0;
-      const nextDist = dist[idx] + 1;
-      const push = (neighbor: number) => {
-        if (mask[neighbor] === 0 || dist[neighbor] >= 0) return;
-        dist[neighbor] = nextDist;
-        queue.push(neighbor);
-      };
-      if (x > 0) push(idx - 1);
-      if (x + 1 < gridWidth) push(idx + 1);
-      if (y > 0) push(idx - gridWidth);
-      if (y + 1 < gridWidth) push(idx + gridWidth);
-    }
-
-    for (let idx = 0; idx < size; idx += 1) {
-      if (mask[idx] === 1 && dist[idx] >= 0) {
-        dist[idx] *= cellScale;
-      } else {
-        dist[idx] = 0;
-      }
-    }
-    return dist;
+    return distanceTransform(mask, grid);
   }
 
   /**

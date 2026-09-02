@@ -17,6 +17,10 @@ War gameplay docs: [`../../simplefactions/docs/wars.md`](../../simplefactions/do
 
 SimpleFactions is **not** involved in skins, drinks, or characters.
 
+## Province fertility
+
+SimpleFactions reads per-province fertility from loaded `provinces.txt` (field 3: `id = R,G,B;terrain;fertility`) for in-game crop growth. The web map viewer fertility mode uses the same mapgen source. See [simplefactions/docs/fertility.md](../../simplefactions/docs/fertility.md) and the [in-game verify matrix](../../simplefactions/docs/fertility-verify.md).
+
 ## HTTP contract
 
 Primary client: `Workspace/simplefactions/.../REST/RestServer.java` - delegates to TFMCWeb `ProvinceSystemGateway` via `api/GatewayClient.java`.

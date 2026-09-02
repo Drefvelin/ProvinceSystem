@@ -125,7 +125,7 @@ class ProvinceGeometryTests(unittest.TestCase):
         self.assertEqual(cells[5], 2)
         self.assertEqual(cells[11], 0)
 
-    def test_build_label_grid_treats_water_terrain_as_sea(self):
+    def test_build_label_grid_treats_water_terrain_as_crossable(self):
         color_to_id = {
             (255, 0, 0): 1,
             (0, 255, 0): 2,
@@ -145,6 +145,73 @@ class ProvinceGeometryTests(unittest.TestCase):
         self.assertEqual(cells[1], 0)
         self.assertEqual(cells[2], 0)
 
+    def test_build_label_grid_treats_sea_terrain_as_land(self):
+        color_to_id = {
+            (255, 0, 0): 1,
+            (0, 255, 0): 2,
+        }
+        img = self._image_from_rgb_grid(
+            [
+                [(255, 0, 0), (0, 255, 0), (0, 255, 0)],
+            ]
+        )
+        terrains = {1: "plains", 2: "sea"}
+
+        cells, _meta = build_label_grid(
+            img, color_to_id, terrains, grid_width=3
+        )
+
+        self.assertEqual(cells[0], 1)
+        self.assertEqual(cells[1], 2)
+        self.assertEqual(cells[2], 2)
+
+    def test_label_neighbors_bridge_across_water_province(self):
+        color_to_id = {
+            (255, 0, 0): 1,
+            (0, 255, 0): 2,
+            (0, 0, 255): 99,
+        }
+        img = self._image_from_rgb_grid(
+            [
+                [(255, 0, 0), (0, 0, 255), (0, 255, 0)],
+            ]
+        )
+        terrains = {1: "plains", 2: "plains", 99: "water"}
+        strict_neighbors, _centroids = scan_province_image(img, color_to_id)
+        bridge_grid = build_bridge_grid(
+            img, color_to_id, terrains, grid_width=3
+        )
+        label_neighbors = build_label_neighbors(
+            bridge_grid, terrains, strict_neighbors
+        )
+
+        self.assertNotIn(2, strict_neighbors.get(1, set()))
+        self.assertIn(2, label_neighbors.get(1, set()))
+        self.assertIn(1, label_neighbors.get(2, set()))
+
+    def test_label_neighbors_blocked_by_sea_province(self):
+        color_to_id = {
+            (255, 0, 0): 1,
+            (0, 255, 0): 2,
+            (0, 0, 255): 99,
+        }
+        img = self._image_from_rgb_grid(
+            [
+                [(255, 0, 0), (0, 0, 255), (0, 255, 0)],
+            ]
+        )
+        terrains = {1: "plains", 2: "plains", 99: "sea"}
+        strict_neighbors, _centroids = scan_province_image(img, color_to_id)
+        bridge_grid = build_bridge_grid(
+            img, color_to_id, terrains, grid_width=3
+        )
+        label_neighbors = build_label_neighbors(
+            bridge_grid, terrains, strict_neighbors
+        )
+
+        self.assertNotIn(2, label_neighbors.get(1, set()))
+        self.assertNotIn(1, label_neighbors.get(2, set()))
+
     def test_label_neighbors_bridge_across_black_gap(self):
         color_to_id = {
             (255, 0, 0): 1,
@@ -156,9 +223,9 @@ class ProvinceGeometryTests(unittest.TestCase):
             ]
         )
         strict_neighbors, _centroids = scan_province_image(img, color_to_id)
-        bridge_grid, max_steps = build_bridge_grid(img, color_to_id, {}, grid_width=3)
+        bridge_grid = build_bridge_grid(img, color_to_id, {}, grid_width=3)
         label_neighbors = build_label_neighbors(
-            bridge_grid, max_steps, strict_neighbors
+            bridge_grid, {}, strict_neighbors
         )
 
         self.assertEqual(strict_neighbors.get(1, set()), set())
@@ -175,22 +242,20 @@ class ProvinceGeometryTests(unittest.TestCase):
         rows = [[(255, 0, 0)] + [(0, 0, 0)] * 3 + [(255, 255, 0)] + [(0, 0, 0)] * 3 + [(0, 255, 0)]]
         img = self._image_from_rgb_grid(rows)
         strict_neighbors, _centroids = scan_province_image(img, color_to_id)
-        bridge_grid, max_steps = build_bridge_grid(img, color_to_id, {}, grid_width=9)
+        bridge_grid = build_bridge_grid(img, color_to_id, {}, grid_width=9)
         label_neighbors = build_label_neighbors(
-            bridge_grid, max_steps, strict_neighbors
+            bridge_grid, {}, strict_neighbors
         )
 
         self.assertNotIn(2, label_neighbors.get(1, set()))
         self.assertNotIn(1, label_neighbors.get(2, set()))
 
-    def test_label_neighbors_gap_beyond_max_distance(self):
-        from .province_geometry import LABEL_BRIDGE_MAX_PX
-
+    def test_label_neighbors_bridge_across_wide_black_gap(self):
         color_to_id = {
             (255, 0, 0): 1,
             (0, 255, 0): 2,
         }
-        gap = [(0, 0, 0)] * (LABEL_BRIDGE_MAX_PX + 20)
+        gap = [(0, 0, 0)] * 80
         img = self._image_from_rgb_grid(
             [
                 [(255, 0, 0)] + gap + [(0, 255, 0)],
@@ -198,14 +263,66 @@ class ProvinceGeometryTests(unittest.TestCase):
         )
         strict_neighbors, _centroids = scan_province_image(img, color_to_id)
         grid_width = len(gap) + 2
-        bridge_grid, max_steps = build_bridge_grid(
+        bridge_grid = build_bridge_grid(
             img, color_to_id, {}, grid_width=grid_width
         )
         label_neighbors = build_label_neighbors(
-            bridge_grid, max_steps, strict_neighbors
+            bridge_grid, {}, strict_neighbors
+        )
+
+        self.assertIn(2, label_neighbors.get(1, set()))
+        self.assertIn(1, label_neighbors.get(2, set()))
+
+    def test_label_neighbors_bridge_across_wide_water_strip(self):
+        color_to_id = {
+            (255, 0, 0): 1,
+            (0, 255, 0): 2,
+            (0, 0, 255): 99,
+        }
+        gap = [(0, 0, 255)] * 80
+        img = self._image_from_rgb_grid(
+            [
+                [(255, 0, 0)] + gap + [(0, 255, 0)],
+            ]
+        )
+        terrains = {1: "plains", 2: "plains", 99: "water"}
+        strict_neighbors, _centroids = scan_province_image(img, color_to_id)
+        grid_width = len(gap) + 2
+        bridge_grid = build_bridge_grid(
+            img, color_to_id, terrains, grid_width=grid_width
+        )
+        label_neighbors = build_label_neighbors(
+            bridge_grid, terrains, strict_neighbors
+        )
+
+        self.assertNotIn(2, strict_neighbors.get(1, set()))
+        self.assertIn(2, label_neighbors.get(1, set()))
+        self.assertIn(1, label_neighbors.get(2, set()))
+
+    def test_label_neighbors_sea_blocks_wide_gap(self):
+        color_to_id = {
+            (255, 0, 0): 1,
+            (0, 255, 0): 2,
+            (0, 0, 255): 99,
+        }
+        gap = [(0, 0, 255)] * 80
+        img = self._image_from_rgb_grid(
+            [
+                [(255, 0, 0)] + gap + [(0, 255, 0)],
+            ]
+        )
+        terrains = {1: "plains", 2: "plains", 99: "sea"}
+        strict_neighbors, _centroids = scan_province_image(img, color_to_id)
+        grid_width = len(gap) + 2
+        bridge_grid = build_bridge_grid(
+            img, color_to_id, terrains, grid_width=grid_width
+        )
+        label_neighbors = build_label_neighbors(
+            bridge_grid, terrains, strict_neighbors
         )
 
         self.assertNotIn(2, label_neighbors.get(1, set()))
+        self.assertNotIn(1, label_neighbors.get(2, set()))
 
     def test_label_neighbors_include_strict_edges(self):
         color_to_id = {
@@ -219,9 +336,9 @@ class ProvinceGeometryTests(unittest.TestCase):
             ]
         )
         strict_neighbors, _centroids = scan_province_image(img, color_to_id)
-        bridge_grid, max_steps = build_bridge_grid(img, color_to_id, {}, grid_width=3)
+        bridge_grid = build_bridge_grid(img, color_to_id, {}, grid_width=3)
         label_neighbors = build_label_neighbors(
-            bridge_grid, max_steps, strict_neighbors
+            bridge_grid, {}, strict_neighbors
         )
 
         for pid, nlist in strict_neighbors.items():

@@ -1,10 +1,861 @@
 {
   "COUNTY_1": {
-    "name": "Elvaris",
-    "rgb": "180,80,80",
+    "name": "Urseilos",
     "provinces": [
+      3,
       1,
-      2
-    ]
+      2,
+      4,
+      5
+    ],
+    "rgb": "232,214,168"
+  },
+  "COUNTY_2": {
+    "name": "Ardentos",
+    "provinces": [
+      403,
+      402,
+      401,
+      400,
+      397
+    ],
+    "rgb": "220,188,120"
+  },
+  "COUNTY_3": {
+    "name": "Vedrasos",
+    "provinces": [
+      26,
+      27,
+      398,
+      25,
+      399
+    ],
+    "rgb": "244,232,196"
+  },
+  "COUNTY_4": {
+    "name": "Corventos",
+    "provinces": [
+      13,
+      14,
+      21,
+      22,
+      24
+    ],
+    "rgb": "208,176,96"
+  },
+  "COUNTY_5": {
+    "name": "Issaros",
+    "provinces": [
+      15,
+      8,
+      7,
+      12,
+      741,
+      16
+    ],
+    "rgb": "236,220,176"
+  },
+  "COUNTY_6": {
+    "name": "Lorvenos",
+    "provinces": [
+      10,
+      6,
+      9,
+      23,
+      11
+    ],
+    "rgb": "198,168,88"
+  },
+  "COUNTY_7": {
+    "name": "Rarka",
+    "provinces": [
+      29,
+      28,
+      20,
+      19,
+      30
+    ],
+    "rgb": "248,236,210"
+  },
+  "COUNTY_8": {
+    "name": "Varne",
+    "provinces": [
+      39,
+      36,
+      37,
+      136,
+      38,
+      139
+    ],
+    "rgb": "186,150,72"
+  },
+  "COUNTY_9": {
+    "name": "Wurdo",
+    "provinces": [
+      138,
+      35,
+      31,
+      32,
+      170
+    ],
+    "rgb": "224,200,140"
+  },
+  "COUNTY_10": {
+    "name": "Orseime",
+    "provinces": [
+      174,
+      173,
+      172,
+      171,
+      176,
+      175
+    ],
+    "rgb": "240,226,186"
+  },
+  "COUNTY_11": {
+    "name": "Furlon",
+    "provinces": [
+      742,
+      34,
+      178,
+      17,
+      18,
+      33
+    ],
+    "rgb": "212,184,108"
+  },
+  "COUNTY_12": {
+    "name": "Mille",
+    "provinces": [
+      180,
+      179,
+      181,
+      182,
+      183
+    ],
+    "rgb": "252,244,220"
+  },
+  "COUNTY_13": {
+    "name": "Eldwyn",
+    "provinces": [
+      198,
+      184,
+      177,
+      188,
+      197
+    ],
+    "rgb": "176,142,64"
+  },
+  "COUNTY_14": {
+    "name": "Styra",
+    "provinces": [
+      185,
+      186,
+      187,
+      189,
+      190
+    ],
+    "rgb": "228,206,152"
+  },
+  "COUNTY_15": {
+    "name": "Mera",
+    "provinces": [
+      191,
+      192,
+      193,
+      196,
+      195,
+      194
+    ],
+    "rgb": "194,160,80"
+  },
+  "COUNTY_16": {
+    "name": "Skaros",
+    "provinces": [
+      714,
+      715,
+      716
+    ],
+    "rgb": "168,86,42"
+  },
+  "COUNTY_17": {
+    "name": "Kyros",
+    "provinces": [
+      718,
+      719,
+      720,
+      717
+    ],
+    "rgb": "186,102,48"
+  },
+  "COUNTY_18": {
+    "name": "Armestis",
+    "provinces": [
+      244,
+      243,
+      251,
+      245,
+      246,
+      252
+    ],
+    "rgb": "148,72,36"
+  },
+  "COUNTY_19": {
+    "name": "Kairos",
+    "provinces": [
+      219,
+      212,
+      213,
+      221,
+      220
+    ],
+    "rgb": "99,113,108"
+  },
+  "COUNTY_20": {
+    "name": "Drachmon",
+    "provinces": [
+      217,
+      218,
+      214,
+      215,
+      216
+    ],
+    "rgb": "98,131,120"
+  },
+  "COUNTY_21": {
+    "name": "Heorot",
+    "provinces": [
+      210,
+      209,
+      208,
+      207,
+      206,
+      211
+    ],
+    "rgb": "90,108,117"
+  },
+  "COUNTY_22": {
+    "name": "Vestora",
+    "provinces": [
+      248,
+      249,
+      250,
+      247,
+      234
+    ],
+    "rgb": "196,118,58"
+  },
+  "COUNTY_23": {
+    "name": "Tarsos",
+    "provinces": [
+      254,
+      256,
+      255,
+      257,
+      258,
+      253
+    ],
+    "rgb": "172,78,44"
+  },
+  "COUNTY_24": {
+    "name": "Jurgera",
+    "provinces": [
+      224,
+      226,
+      227,
+      225,
+      223,
+      222
+    ],
+    "rgb": "74,91,85"
+  },
+  "COUNTY_25": {
+    "name": "Essencia",
+    "provinces": [
+      230,
+      228,
+      229,
+      231,
+      232
+    ],
+    "rgb": "70,84,79"
+  },
+  "COUNTY_26": {
+    "name": "Ildram",
+    "provinces": [
+      241,
+      233,
+      238,
+      237,
+      235
+    ],
+    "rgb": "88,112,97"
+  },
+  "COUNTY_27": {
+    "name": "Aurea",
+    "provinces": [
+      261,
+      262,
+      260,
+      259,
+      236,
+      282
+    ],
+    "rgb": "204,136,64"
+  },
+  "COUNTY_28": {
+    "name": "Argenta",
+    "provinces": [
+      376,
+      375,
+      378,
+      379,
+      377
+    ],
+    "rgb": "176,108,62"
+  },
+  "COUNTY_29": {
+    "name": "Siculia",
+    "provinces": [
+      384,
+      380,
+      382,
+      383,
+      381
+    ],
+    "rgb": "152,70,38"
+  },
+  "COUNTY_30": {
+    "name": "Parva",
+    "provinces": [
+      370,
+      369,
+      372,
+      368,
+      373,
+      371,
+      374
+    ],
+    "rgb": "156,92,52"
+  },
+  "COUNTY_31": {
+    "name": "Caserra",
+    "provinces": [
+      345,
+      346,
+      240,
+      344,
+      286,
+      239
+    ],
+    "rgb": "95,132,91"
+  },
+  "COUNTY_32": {
+    "name": "Enzonia",
+    "provinces": [
+      242,
+      285,
+      284,
+      281,
+      293,
+      292
+    ],
+    "rgb": "113,137,122"
+  },
+  "COUNTY_33": {
+    "name": "Maris",
+    "provinces": [
+      263,
+      271,
+      283,
+      280,
+      269,
+      264,
+      265
+    ],
+    "rgb": "178,96,56"
+  },
+  "COUNTY_34": {
+    "name": "Sarsa",
+    "provinces": [
+      266,
+      272,
+      270,
+      279,
+      273,
+      295,
+      294
+    ],
+    "rgb": "140,64,32"
+  },
+  "COUNTY_35": {
+    "name": "Divinia",
+    "provinces": [
+      276,
+      268,
+      275,
+      274,
+      267
+    ],
+    "rgb": "190,110,70"
+  },
+  "COUNTY_36": {
+    "name": "Caestos",
+    "provinces": [
+      296,
+      297,
+      298,
+      278,
+      277
+    ],
+    "rgb": "162,84,40"
+  },
+  "COUNTY_37": {
+    "name": "Luna",
+    "provinces": [
+      385,
+      386,
+      387,
+      388
+    ],
+    "rgb": "214,123,213"
+  },
+  "COUNTY_38": {
+    "name": "Narsis",
+    "provinces": [
+      390,
+      392,
+      391,
+      389
+    ],
+    "rgb": "47,195,42"
+  },
+  "COUNTY_39": {
+    "name": "Vargfell",
+    "provinces": [
+      725,
+      726,
+      723,
+      724,
+      728
+    ],
+    "rgb": "81,166,94"
+  },
+  "COUNTY_40": {
+    "name": "Fornmark",
+    "provinces": [
+      727,
+      729,
+      731,
+      730,
+      732,
+      721,
+      722
+    ],
+    "rgb": "38,195,63"
+  },
+  "COUNTY_41": {
+    "name": "Bjornskar",
+    "provinces": [
+      743,
+      735,
+      737,
+      736,
+      739,
+      738,
+      733,
+      734
+    ],
+    "rgb": "102,162,105"
+  },
+  "COUNTY_42": {
+    "name": "Runa",
+    "provinces": [
+      393,
+      396,
+      394,
+      395
+    ],
+    "rgb": "58,183,54"
+  },
+  "COUNTY_43": {
+    "name": "Iskeld",
+    "provinces": [
+      522,
+      523,
+      711,
+      707,
+      706
+    ],
+    "rgb": "52,98,168"
+  },
+  "COUNTY_44": {
+    "name": "Stormhald",
+    "provinces": [
+      695,
+      704,
+      703,
+      694,
+      705,
+      713
+    ],
+    "rgb": "64,118,186"
+  },
+  "COUNTY_45": {
+    "name": "Ulfsmark",
+    "provinces": [
+      702,
+      697,
+      698,
+      696,
+      692,
+      693
+    ],
+    "rgb": "42,86,152"
+  },
+  "COUNTY_46": {
+    "name": "Hrafnheim",
+    "provinces": [
+      690,
+      691,
+      699,
+      689,
+      688,
+      682
+    ],
+    "rgb": "72,130,176"
+  },
+  "COUNTY_47": {
+    "name": "Thrymsdal",
+    "provinces": [
+      543,
+      525,
+      524,
+      544,
+      545
+    ],
+    "rgb": "38,74,140"
+  },
+  "COUNTY_48": {
+    "name": "Hrungsdal",
+    "provinces": [
+      672,
+      710,
+      671,
+      673,
+      670,
+      712
+    ],
+    "rgb": "86,142,192"
+  },
+  "COUNTY_49": {
+    "name": "Jarnfell",
+    "provinces": [
+      708,
+      674,
+      668,
+      709,
+      669,
+      677
+    ],
+    "rgb": "48,90,158"
+  },
+  "COUNTY_50": {
+    "name": "Vetrgard",
+    "provinces": [
+      662,
+      659,
+      658,
+      680,
+      683,
+      661,
+      660
+    ],
+    "rgb": "76,124,180"
+  },
+  "COUNTY_51": {
+    "name": "Himindal",
+    "provinces": [
+      678,
+      681,
+      679,
+      676,
+      675,
+      664,
+      663
+    ],
+    "rgb": "34,68,128"
+  },
+  "COUNTY_52": {
+    "name": "Berges",
+    "provinces": [
+      61,
+      60,
+      48,
+      47,
+      41
+    ],
+    "rgb": "63,121,80"
+  },
+  "COUNTY_53": {
+    "name": "Detram",
+    "provinces": [
+      40,
+      42,
+      44,
+      49,
+      43,
+      51,
+      50
+    ],
+    "rgb": "118,115,106"
+  },
+  "COUNTY_54": {
+    "name": "Normenc",
+    "provinces": [
+      45,
+      53,
+      52,
+      55,
+      54,
+      56,
+      57
+    ],
+    "rgb": "103,129,97"
+  },
+  "COUNTY_55": {
+    "name": "Haskarg",
+    "provinces": [
+      59,
+      58,
+      67,
+      46,
+      68,
+      66,
+      69
+    ],
+    "rgb": "51,98,65"
+  },
+  "COUNTY_56": {
+    "name": "Gildrec",
+    "provinces": [
+      65,
+      70,
+      64,
+      76,
+      63,
+      62
+    ],
+    "rgb": "88,134,102"
+  },
+  "COUNTY_57": {
+    "name": "Trestmere",
+    "provinces": [
+      71,
+      75,
+      84,
+      83,
+      82,
+      72
+    ],
+    "rgb": "90,134,111"
+  },
+  "COUNTY_58": {
+    "name": "Karngate",
+    "provinces": [
+      424,
+      425,
+      426,
+      423,
+      422,
+      421
+    ],
+    "rgb": "78,105,82"
+  },
+  "COUNTY_59": {
+    "name": "Sornos",
+    "provinces": [
+      81,
+      85,
+      86,
+      90,
+      88,
+      89
+    ],
+    "rgb": "72,110,82"
+  },
+  "COUNTY_60": {
+    "name": "Pelleon",
+    "provinces": [
+      419,
+      420,
+      417,
+      416,
+      418,
+      92
+    ],
+    "rgb": "123,151,122"
+  },
+  "COUNTY_61": {
+    "name": "The Dreg",
+    "provinces": [
+      443,
+      744,
+      440,
+      444,
+      441
+    ],
+    "rgb": "24,59,47"
+  },
+  "COUNTY_62": {
+    "name": "Ratmoat",
+    "provinces": [
+      465,
+      466,
+      475,
+      473,
+      474
+    ],
+    "rgb": "20,52,42"
+  },
+  "COUNTY_63": {
+    "name": "Bogbanks",
+    "provinces": [
+      446,
+      449,
+      450,
+      451,
+      447
+    ],
+    "rgb": "30,66,52"
+  },
+  "COUNTY_64": {
+    "name": "The Mire",
+    "provinces": [
+      427,
+      428,
+      429,
+      448
+    ],
+    "rgb": "16,48,40"
+  },
+  "COUNTY_65": {
+    "name": "Mudden",
+    "provinces": [
+      432,
+      442,
+      431,
+      445,
+      430
+    ],
+    "rgb": "28,56,44"
+  },
+  "COUNTY_66": {
+    "name": "Spinge",
+    "provinces": [
+      439,
+      438,
+      433,
+      435,
+      434,
+      436
+    ],
+    "rgb": "22,62,50"
+  },
+  "COUNTY_67": {
+    "name": "Rotwood",
+    "provinces": [
+      456,
+      452,
+      454,
+      453,
+      455
+    ],
+    "rgb": "14,44,36"
+  },
+  "COUNTY_68": {
+    "name": "Mudport",
+    "provinces": [
+      457,
+      458,
+      459,
+      461,
+      460
+    ],
+    "rgb": "32,58,46"
+  },
+  "COUNTY_69": {
+    "name": "Stinkriver",
+    "provinces": [
+      470,
+      469,
+      471,
+      472,
+      477
+    ],
+    "rgb": "18,54,50"
+  },
+  "COUNTY_70": {
+    "name": "Grunk",
+    "provinces": [
+      464,
+      463,
+      462,
+      467,
+      468
+    ],
+    "rgb": "26,50,40"
+  },
+  "COUNTY_71": {
+    "name": "Toadpond",
+    "provinces": [
+      476,
+      482,
+      481,
+      483,
+      485
+    ],
+    "rgb": "28,68,54"
+  },
+  "COUNTY_72": {
+    "name": "Unwell",
+    "provinces": [
+      478,
+      480,
+      479,
+      484
+    ],
+    "rgb": "34,56,42"
+  },
+  "COUNTY_73": {
+    "name": "Overhang",
+    "provinces": [
+      486,
+      487,
+      498,
+      499
+    ],
+    "rgb": "12,46,40"
+  },
+  "COUNTY_74": {
+    "name": "Garanath",
+    "provinces": [
+      501,
+      496,
+      497,
+      491,
+      488
+    ],
+    "rgb": "30,62,48"
+  },
+  "COUNTY_75": {
+    "name": "Quagg",
+    "provinces": [
+      437,
+      489,
+      490,
+      492
+    ],
+    "rgb": "22,48,44"
   }
 }

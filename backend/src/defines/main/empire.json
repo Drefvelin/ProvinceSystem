@@ -1,1 +1,12 @@
-{}
+{
+  "EMPIRE_1": {
+    "name": "Wyvern Empire",
+    "rgb": "180,140,90",
+    "titles": [
+      "KINGDOM_1",
+      "KINGDOM_2",
+      "KINGDOM_3",
+      "KINGDOM_4"
+    ]
+  }
+}

@@ -18,8 +18,7 @@ from ..util.dirs import defines_file, input_file, validate_map
 BLACK = (0, 0, 0)
 DIRECTIONS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 LABEL_GRID_WIDTH = 512
-LABEL_BRIDGE_MAX_PX = 50
-WATER_TERRAINS = frozenset({"water", "sea"})
+CROSSABLE_WATER_TERRAINS = frozenset({"water"})
 
 
 def scan_province_image(
@@ -103,85 +102,18 @@ def validate_geometry(
     return warnings
 
 
-def _is_water_terrain(pid: int, id_to_terrain: dict[int, str]) -> bool:
-    return id_to_terrain.get(pid, "") in WATER_TERRAINS
+def _is_crossable_water_terrain(pid: int, id_to_terrain: dict[int, str]) -> bool:
+    return id_to_terrain.get(pid, "") in CROSSABLE_WATER_TERRAINS
 
 
-def _province_bboxes(
-    grid: list[list[int]],
-) -> dict[int, tuple[int, int, int, int]]:
-    height = len(grid)
-    width = len(grid[0]) if height else 0
-    bboxes: dict[int, list[int]] = {}
-
-    for y in range(height):
-        for x in range(width):
-            pid = grid[y][x]
-            if pid <= 0:
-                continue
-            if pid not in bboxes:
-                bboxes[pid] = [x, y, x, y]
-            else:
-                box = bboxes[pid]
-                box[0] = min(box[0], x)
-                box[1] = min(box[1], y)
-                box[2] = max(box[2], x)
-                box[3] = max(box[3], y)
-
-    return {pid: (box[0], box[1], box[2], box[3]) for pid, box in bboxes.items()}
+def _bridge_cell_traversable(pid: int, id_to_terrain: dict[int, str]) -> bool:
+    if pid == 0:
+        return True
+    return _is_crossable_water_terrain(pid, id_to_terrain)
 
 
-def _bbox_overlap(
-    a: tuple[int, int, int, int],
-    b: tuple[int, int, int, int],
-) -> bool:
-    return not (a[2] < b[0] or b[2] < a[0] or a[3] < b[1] or b[3] < a[1])
-
-
-def _expand_bbox(
-    box: tuple[int, int, int, int],
-    margin: int,
-    width: int,
-    height: int,
-) -> tuple[int, int, int, int]:
-    x0, y0, x1, y1 = box
-    return (
-        max(0, x0 - margin),
-        max(0, y0 - margin),
-        min(width - 1, x1 + margin),
-        min(height - 1, y1 + margin),
-    )
-
-
-def _all_boundary_pixels(
-    grid: list[list[int]],
-) -> dict[int, list[tuple[int, int]]]:
-    height = len(grid)
-    width = len(grid[0]) if height else 0
-    boundaries: dict[int, list[tuple[int, int]]] = defaultdict(list)
-
-    for y in range(height):
-        for x in range(width):
-            pid = grid[y][x]
-            if pid <= 0:
-                continue
-            for dx, dy in DIRECTIONS:
-                nx, ny = x + dx, y + dy
-                if nx < 0 or ny < 0 or nx >= width or ny >= height:
-                    boundaries[pid].append((x, y))
-                    break
-                if grid[ny][nx] != pid:
-                    boundaries[pid].append((x, y))
-                    break
-
-    return dict(boundaries)
-
-
-def _boundary_pixels_for_province(
-    boundaries: dict[int, list[tuple[int, int]]],
-    province_id: int,
-) -> list[tuple[int, int]]:
-    return boundaries.get(province_id, [])
+def _is_land_bridge_cell(pid: int, id_to_terrain: dict[int, str]) -> bool:
+    return pid > 0 and not _is_crossable_water_terrain(pid, id_to_terrain)
 
 
 def build_bridge_grid(
@@ -189,8 +121,13 @@ def build_bridge_grid(
     color_to_id: dict[tuple[int, int, int], int],
     id_to_terrain: dict[int, str],
     grid_width: int = LABEL_GRID_WIDTH,
-) -> tuple[list[list[int]], int]:
-    """Downsample provinces.png for label-bridge search (0 = crossable sea/water)."""
+) -> list[list[int]]:
+    """Downsample provinces.png for label-bridge search.
+
+    Land (incl. sea) keeps its province id; pure-water cells store the dominant
+    water province id; black-only cells stay 0. Traversable regions for label
+    bridging are 0 and inland water provinces.
+    """
     rgb_img = img.convert("RGB")
     map_width, map_height = rgb_img.size
     grid_height = max(1, round(map_height * grid_width / map_width))
@@ -208,7 +145,8 @@ def build_bridge_grid(
             if x1 <= x0:
                 x1 = min(x0 + 1, map_width)
 
-            counts: dict[int, int] = defaultdict(int)
+            land_counts: dict[int, int] = defaultdict(int)
+            water_counts: dict[int, int] = defaultdict(int)
             for y in range(y0, y1):
                 for x in range(x0, x1):
                     rgb = src[x, y]
@@ -217,121 +155,111 @@ def build_bridge_grid(
                     pid = color_to_id.get(rgb)
                     if pid is None:
                         continue
-                    if _is_water_terrain(pid, id_to_terrain):
-                        continue
-                    counts[pid] += 1
+                    if _is_crossable_water_terrain(pid, id_to_terrain):
+                        water_counts[pid] += 1
+                    else:
+                        land_counts[pid] += 1
 
-            if counts:
-                grid[gy][gx] = max(counts, key=counts.get)
+            if land_counts:
+                grid[gy][gx] = max(land_counts, key=land_counts.get)
+            elif water_counts:
+                grid[gy][gx] = max(water_counts, key=water_counts.get)
 
-    max_steps = max(1, math.ceil(LABEL_BRIDGE_MAX_PX * grid_width / map_width))
-    return grid, max_steps
+    return grid
 
 
-def _find_water_bridges_for_province(
+def _flood_traversable_regions(
     grid: list[list[int]],
-    source_id: int,
-    boundary: list[tuple[int, int]],
-    search_box: tuple[int, int, int, int],
-    candidate_ids: set[int],
-    max_steps: int,
-) -> set[int]:
-    x0, y0, x1, y1 = search_box
-    if not boundary:
-        return set()
+    id_to_terrain: dict[int, str],
+) -> list[list[int]]:
+    height = len(grid)
+    width = len(grid[0]) if height else 0
+    regions = [[-1] * width for _ in range(height)]
+    next_region = 0
 
-    best: dict[tuple[int, int], int] = {}
-    queue: deque[tuple[int, int]] = deque()
-
-    for bx, by in boundary:
-        if bx < x0 or bx > x1 or by < y0 or by > y1:
-            continue
-        key = (bx, by)
-        best[key] = 0
-        queue.append(key)
-
-    if not queue:
-        return set()
-
-    found: set[int] = set()
-
-    while queue:
-        x, y = queue.popleft()
-        steps = best[(x, y)]
-        if steps >= max_steps:
-            continue
-
-        for dx, dy in DIRECTIONS:
-            nx, ny = x + dx, y + dy
-            if nx < x0 or nx > x1 or ny < y0 or ny > y1:
+    for y in range(height):
+        for x in range(width):
+            if regions[y][x] != -1:
+                continue
+            pid = grid[y][x]
+            if not _bridge_cell_traversable(pid, id_to_terrain):
                 continue
 
-            neighbor_pid = grid[ny][nx]
-            if neighbor_pid > 0 and neighbor_pid != source_id:
-                if neighbor_pid in candidate_ids:
-                    found.add(neighbor_pid)
-                continue
+            region_id = next_region
+            next_region += 1
+            queue: deque[tuple[int, int]] = deque([(x, y)])
+            regions[y][x] = region_id
 
-            if neighbor_pid != 0:
-                continue
+            while queue:
+                cx, cy = queue.popleft()
+                for dx, dy in DIRECTIONS:
+                    nx, ny = cx + dx, cy + dy
+                    if nx < 0 or ny < 0 or nx >= width or ny >= height:
+                        continue
+                    if regions[ny][nx] != -1:
+                        continue
+                    npid = grid[ny][nx]
+                    if not _bridge_cell_traversable(npid, id_to_terrain):
+                        continue
+                    regions[ny][nx] = region_id
+                    queue.append((nx, ny))
 
-            key = (nx, ny)
-            next_steps = steps + 1
-            if next_steps > max_steps:
-                continue
-            if next_steps >= best.get(key, max_steps + 1):
-                continue
+    return regions
 
-            best[key] = next_steps
-            queue.append(key)
 
-    return found
+def _add_traversable_region_bridges(
+    bridge_grid: list[list[int]],
+    id_to_terrain: dict[int, str],
+    label_neighbors: dict[int, set[int]],
+) -> None:
+    height = len(bridge_grid)
+    width = len(bridge_grid[0]) if height else 0
+    if width == 0 or height == 0:
+        return
+
+    regions = _flood_traversable_regions(bridge_grid, id_to_terrain)
+    province_regions: dict[int, set[int]] = defaultdict(set)
+
+    for y in range(height):
+        for x in range(width):
+            pid = bridge_grid[y][x]
+            if not _is_land_bridge_cell(pid, id_to_terrain):
+                continue
+            for dx, dy in DIRECTIONS:
+                nx, ny = x + dx, y + dy
+                if nx < 0 or ny < 0 or nx >= width or ny >= height:
+                    continue
+                region_id = regions[ny][nx]
+                if region_id < 0:
+                    continue
+                province_regions[pid].add(region_id)
+
+    region_provinces: dict[int, set[int]] = defaultdict(set)
+    for pid, region_ids in province_regions.items():
+        for region_id in region_ids:
+            region_provinces[region_id].add(pid)
+
+    for pids in region_provinces.values():
+        sorted_pids = sorted(pids)
+        for i, source_id in enumerate(sorted_pids):
+            for other_id in sorted_pids[i + 1 :]:
+                label_neighbors.setdefault(source_id, set()).add(other_id)
+                label_neighbors.setdefault(other_id, set()).add(source_id)
 
 
 def build_label_neighbors(
     bridge_grid: list[list[int]],
-    max_steps: int,
+    id_to_terrain: dict[int, str],
     strict_neighbors: dict[int, set[int]],
 ) -> dict[int, set[int]]:
-    """Label-neighbor graph: strict adjacency plus water bridges on coarse grid."""
+    """Label-neighbor graph: strict adjacency plus bridges across inland water and black gaps."""
     label_neighbors: dict[int, set[int]] = {
         pid: set(nlist) for pid, nlist in strict_neighbors.items()
     }
 
-    height = len(bridge_grid)
-    width = len(bridge_grid[0]) if height else 0
-    if width == 0 or height == 0:
-        return label_neighbors
+    _add_traversable_region_bridges(bridge_grid, id_to_terrain, label_neighbors)
 
-    bboxes = _province_bboxes(bridge_grid)
-    boundaries = _all_boundary_pixels(bridge_grid)
-    province_ids = sorted(bboxes)
-
-    for source_id in province_ids:
-        expanded = _expand_bbox(bboxes[source_id], max_steps, width, height)
-        candidates = {
-            other_id
-            for other_id in province_ids
-            if other_id != source_id
-            and _bbox_overlap(expanded, bboxes[other_id])
-            and other_id not in label_neighbors.get(source_id, set())
-        }
-        if not candidates:
-            continue
-
-        bridges = _find_water_bridges_for_province(
-            bridge_grid,
-            source_id,
-            _boundary_pixels_for_province(boundaries, source_id),
-            expanded,
-            candidates,
-            max_steps,
-        )
-        for other_id in bridges:
-            label_neighbors.setdefault(source_id, set()).add(other_id)
-            label_neighbors.setdefault(other_id, set()).add(source_id)
-
-    for pid in province_ids:
+    for pid in strict_neighbors:
         label_neighbors.setdefault(pid, set())
 
     return label_neighbors
@@ -371,7 +299,7 @@ def validate_label_neighbors(
     bridge_edges = label_edge_count - strict_edge_count
     if bridge_edges > 0:
         warnings.append(
-            f"Added {bridge_edges} water-bridge label edges "
+            f"Added {bridge_edges} traversable-bridge label edges "
             f"({strict_edge_count} strict -> {label_edge_count} label)"
         )
 
@@ -394,7 +322,7 @@ def build_label_grid(
     id_to_terrain: dict[int, str] | None = None,
     grid_width: int = LABEL_GRID_WIDTH,
 ) -> tuple[list[int], dict[str, int]]:
-    """Downsample provinces.png to dominant province id per cell (0 = sea/water)."""
+    """Downsample provinces.png to dominant province id per cell (0 = inland water / black gaps)."""
     rgb_img = img.convert("RGB")
     map_width, map_height = rgb_img.size
     grid_height = max(1, round(map_height * grid_width / map_width))
@@ -421,7 +349,7 @@ def build_label_grid(
                     pid = color_to_id.get(rgb)
                     if pid is None:
                         continue
-                    if id_to_terrain and _is_water_terrain(pid, id_to_terrain):
+                    if id_to_terrain and _is_crossable_water_terrain(pid, id_to_terrain):
                         continue
                     counts[pid] += 1
 
@@ -478,8 +406,8 @@ def build_province_geometry(
 
     with Image.open(png_path) as img:
         neighbors, centroids = scan_province_image(img, color_to_id)
-        bridge_grid, max_steps = build_bridge_grid(img, color_to_id, id_to_terrain)
-        label_neighbors = build_label_neighbors(bridge_grid, max_steps, neighbors)
+        bridge_grid = build_bridge_grid(img, color_to_id, id_to_terrain)
+        label_neighbors = build_label_neighbors(bridge_grid, id_to_terrain, neighbors)
         grid_cells, grid_meta = build_label_grid(img, color_to_id, id_to_terrain)
 
     warnings = validate_geometry(expected_ids, neighbors, centroids)
