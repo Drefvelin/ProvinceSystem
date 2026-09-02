@@ -20,6 +20,7 @@ from src.characters.creation_catalog import (
 from src.characters.creates import (
     CreateError,
     create_character,
+    delete_pending_create,
     list_for_player,
     list_pending,
     mark_applied_results,
@@ -172,6 +173,10 @@ def _lore_http(exc: LoreItemError) -> HTTPException:
 
 
 def _wardrobe_http(exc: WardrobeError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail=str(exc))
+
+
+def _create_http(exc: CreateError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))
 
 
@@ -596,6 +601,10 @@ async def post_character_wardrobe_slot(
         "yes",
         "on",
     )
+    model_raw = form.get("model")
+    model_override = (
+        str(model_raw).strip() if model_raw is not None else None
+    ) or None
     try:
         return upload_slot(
             session["player_uuid"],
@@ -604,6 +613,7 @@ async def post_character_wardrobe_slot(
             png_bytes,
             display_name=display_name,
             create_masked=create_masked,
+            model_override=model_override,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
@@ -712,6 +722,10 @@ async def post_pending_create_wardrobe(
         "yes",
         "on",
     )
+    model_raw = form.get("model")
+    model_override = (
+        str(model_raw).strip() if model_raw is not None else None
+    ) or None
     try:
         return upload_pending_create_wardrobe(
             session["player_uuid"],
@@ -720,6 +734,7 @@ async def post_pending_create_wardrobe(
             png_bytes,
             display_name=display_name,
             create_masked=create_masked,
+            model_override=model_override,
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
@@ -739,6 +754,19 @@ def delete_pending_create_wardrobe(
         )
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
+
+
+@characters_router.delete("/creates/{create_id}")
+def delete_pending_create_route(
+    create_id: str,
+    authorization: str | None = Header(default=None),
+):
+    """Cancel a pending web character create (wardrobe, kit drafts, create row)."""
+    session = _profile_session_from_auth(authorization)
+    try:
+        return delete_pending_create(session["player_uuid"], create_id)
+    except CreateError as e:
+        raise _create_http(e) from e
 
 
 @characters_router.get("")

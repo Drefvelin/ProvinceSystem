@@ -29,6 +29,14 @@ export function displayRace(
   return capitalizeId(item.race);
 }
 
+/** Trait selection group heading (personality, evil, backstory stages). */
+export function traitSelectionGroupLabel(key: string): string {
+  const k = key.trim().toLowerCase();
+  if (k === "permanent_injury") return "Backstory Injuries";
+  if (k === "prosthetic") return "Backstory Prosthetic";
+  return k ? k.charAt(0).toUpperCase() + k.slice(1) : "Other";
+}
+
 /** Prefer synced display name, then catalog name by id, then capitalized id. */
 export function displayClass(
   item: Pick<CharacterListItem, "class" | "class_name">,

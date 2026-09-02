@@ -7,6 +7,7 @@ import {
 } from "../../../lib/characters/api";
 import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
+import { inferArmModel } from "../../../lib/skins/steveMannequin";
 import FancyCheckbox from "../skins/FancyCheckbox";
 import SkinMannequinPreview from "./SkinMannequinPreview";
 
@@ -21,6 +22,8 @@ type Props = {
   canCreateMasked?: boolean;
   /** Default for create-masked (true when masked empty). */
   defaultCreateMasked?: boolean;
+  /** Stored arm model when slot already filled (wide = default). */
+  defaultArmModel?: ArmModel;
   /** Needed to load masked template for live preview. */
   sessionToken?: string | null;
   existingTextureSrc: string | null;
@@ -36,6 +39,7 @@ type Props = {
     equip: boolean;
     displayName: string | null;
     createMasked: boolean;
+    armModel: ArmModel;
   }) => void;
   onClear?: () => void;
 };
@@ -76,6 +80,7 @@ export default function WardrobeSlotModal({
   defaultEquipOnSave,
   canCreateMasked = false,
   defaultCreateMasked = false,
+  defaultArmModel = "default",
   sessionToken = null,
   existingTextureSrc,
   initialDisplayName,
@@ -88,10 +93,11 @@ export default function WardrobeSlotModal({
 }: Props) {
   const titleId = useId();
   const switchId = useId();
+  const armSwitchId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [localErr, setLocalErr] = useState<string | null>(null);
-  const [model, setModel] = useState<ArmModel | null>(null);
+  const [armModel, setArmModel] = useState<ArmModel>("default");
   const [equipOnSave, setEquipOnSave] = useState(defaultEquipOnSave);
   const [createMasked, setCreateMasked] = useState(defaultCreateMasked);
   const [previewMode, setPreviewMode] = useState<"base" | "masked">("base");
@@ -104,7 +110,7 @@ export default function WardrobeSlotModal({
     if (!open) return;
     setFile(null);
     setLocalErr(null);
-    setModel(null);
+    setArmModel(defaultArmModel);
     setEquipOnSave(defaultEquipOnSave);
     setCreateMasked(defaultCreateMasked);
     setPreviewMode("base");
@@ -118,6 +124,7 @@ export default function WardrobeSlotModal({
     open,
     defaultEquipOnSave,
     defaultCreateMasked,
+    defaultArmModel,
     slotId,
     initialDisplayName,
   ]);
@@ -206,7 +213,6 @@ export default function WardrobeSlotModal({
   async function onPick(f: File | null) {
     setLocalErr(null);
     setFile(null);
-    setModel(null);
     setPreviewMode("base");
     if (!f) return;
     const err = await validatePng64(f);
@@ -215,6 +221,16 @@ export default function WardrobeSlotModal({
       return;
     }
     setFile(f);
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      setArmModel(inferArmModel(img));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   }
 
   return (
@@ -253,8 +269,11 @@ export default function WardrobeSlotModal({
           <div className="relative h-56 w-36 overflow-hidden rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]">
             <SkinMannequinPreview
               source={previewSource}
+              armModel={armModel}
               className="h-full w-full"
-              onModelDetected={setModel}
+              onModelDetected={(detected) => {
+                if (file) setArmModel(detected);
+              }}
               downloadFilename={
                 previewSource
                   ? showMaskedToggle && previewMode === "masked"
@@ -316,10 +335,51 @@ export default function WardrobeSlotModal({
             </span>
           </div>
         ) : null}
-        {model ? (
-          <p className="mt-2 text-center text-xs text-[var(--tfmc-stone)]">
-            Model: {model === "slim" ? "slim" : "classic"}
-          </p>
+        {previewSource ? (
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm">
+            <span
+              className={
+                armModel === "default"
+                  ? "text-[var(--tfmc-cream)]"
+                  : "text-[var(--tfmc-stone)]"
+              }
+            >
+              Wide
+            </span>
+            <button
+              type="button"
+              id={armSwitchId}
+              role="switch"
+              aria-checked={armModel === "slim"}
+              aria-label="Slim arms"
+              disabled={saving}
+              onClick={() =>
+                setArmModel((m) => (m === "slim" ? "default" : "slim"))
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
+                armModel === "slim"
+                  ? "border-[var(--tfmc-accent)] bg-[var(--tfmc-accent)]"
+                  : "border-[color-mix(in_srgb,var(--tfmc-cream)_35%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_80%,black)]"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`absolute top-0.5 left-0.5 rounded-full bg-[var(--tfmc-cream)] shadow transition-transform ${
+                  armModel === "slim" ? "translate-x-5" : "translate-x-0"
+                }`}
+                style={{ height: "1.125rem", width: "1.125rem" }}
+              />
+            </button>
+            <span
+              className={
+                armModel === "slim"
+                  ? "text-[var(--tfmc-cream)]"
+                  : "text-[var(--tfmc-stone)]"
+              }
+            >
+              Slim
+            </span>
+          </div>
         ) : null}
 
         <label className="mt-4 flex flex-col gap-1.5 text-sm text-[var(--tfmc-cream)]">
@@ -425,6 +485,7 @@ export default function WardrobeSlotModal({
                 equip: Boolean(file) && canEquip && equipOnSave,
                 displayName: name,
                 createMasked: Boolean(file) && canCreateMasked && createMasked,
+                armModel,
               });
             }}
             className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-sm bg-[var(--tfmc-accent)] px-3 py-2 text-sm font-medium text-[var(--tfmc-ink)] transition-opacity disabled:opacity-50"

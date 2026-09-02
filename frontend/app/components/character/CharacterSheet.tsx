@@ -7,13 +7,19 @@ import type {
   CreationCatalog,
   ExperienceModifierDto,
 } from "../../../lib/characters/api";
-import { displayClass, displayRace } from "../../../lib/characters/displayNames";
+import {
+  displayClass,
+  displayRace,
+  traitSelectionGroupLabel,
+} from "../../../lib/characters/displayNames";
 import { formatFantasyBirthday } from "../../../lib/characters/fantasyCalendar";
 import { displayAttrName } from "../../../lib/characters/pointBuy";
 
 type Props = {
   character: CharacterListItem;
   catalog?: CreationCatalog | null;
+  onCancelPending?: () => void | Promise<void>;
+  cancelling?: boolean;
 };
 
 function capitalizeKey(raw: string): string {
@@ -56,7 +62,7 @@ function groupTraits(
   }
   return order.map((key) => ({
     key,
-    label: capitalizeKey(key),
+    label: traitSelectionGroupLabel(key),
     items: map.get(key) || [],
   }));
 }
@@ -83,7 +89,12 @@ function SheetSection({
   );
 }
 
-export default function CharacterSheet({ character, catalog }: Props) {
+export default function CharacterSheet({
+  character,
+  catalog,
+  onCancelPending,
+  cancelling = false,
+}: Props) {
   const status = String(character.status || "").toUpperCase();
   const isAlive = status === "ALIVE";
   const isPending = status === "PENDING";
@@ -265,6 +276,25 @@ export default function CharacterSheet({ character, catalog }: Props) {
             >
               Wardrobe
             </Link>
+            {isPending && onCancelPending ? (
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Cancel this submission? The pending character, wardrobe drafts, and kit customisations will be removed. This cannot be undone."
+                    )
+                  ) {
+                    return;
+                  }
+                  void onCancelPending();
+                }}
+                className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_55%,transparent)] px-4 py-3 text-sm text-[#e8a0a0] transition-colors hover:bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] disabled:opacity-50"
+              >
+                {cancelling ? "Cancelling…" : "Cancel submission"}
+              </button>
+            ) : null}
           </>
         ) : (
           <p className="text-sm text-[var(--tfmc-mist)]">

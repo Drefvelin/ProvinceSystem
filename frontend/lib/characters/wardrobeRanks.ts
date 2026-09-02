@@ -2,6 +2,7 @@
 
 import type { SlotLimits } from "./api";
 import { parseNameRuns, type LoreRun } from "./lorePreview";
+import type { ArmModel } from "../skins/steveMannequin";
 
 export type RankLockLabel = {
   /** Plain fallback text */
@@ -74,4 +75,14 @@ export function lockLabelForSlot(
     plain: "a higher rank+",
     runs: [{ text: "a higher rank+", color: "#e8a0a0" }],
   };
+}
+
+/** Map stored wardrobe slot model to preview arm model. */
+export function wardrobeSlotToArmModel(model?: string | null): ArmModel {
+  return String(model || "").trim().toLowerCase() === "slim" ? "slim" : "default";
+}
+
+/** Map preview arm model to wardrobe API / storage value. */
+export function armModelToWardrobeModel(model: ArmModel): "classic" | "slim" {
+  return model === "slim" ? "slim" : "classic";
 }

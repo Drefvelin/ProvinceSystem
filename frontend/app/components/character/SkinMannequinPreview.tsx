@@ -16,6 +16,8 @@ type Props = {
   /** Local File or remote blob/object URL for a 64×64 skin PNG. */
   source: File | string | null;
   className?: string;
+  /** When set, use this arm model instead of inferring from the texture. */
+  armModel?: ArmModel | null;
   onModelDetected?: (model: ArmModel) => void;
   /**
    * When set and a source is available, show a bottom-right download control
@@ -56,6 +58,7 @@ async function downloadSkinSource(
 export default function SkinMannequinPreview({
   source,
   className = "",
+  armModel = null,
   onModelDetected,
   downloadFilename = null,
 }: Props) {
@@ -106,7 +109,8 @@ export default function SkinMannequinPreview({
 
         const detected = inferArmModelFromTexture(steveTexture);
         onModelRef.current?.(detected);
-        steveRoot = createSteveMannequin(steveTexture, detected);
+        const previewModel = armModel ?? detected;
+        steveRoot = createSteveMannequin(steveTexture, previewModel);
         applySteveArmPose(steveRoot, "idle");
         setSteveOuterLayerVisible(steveRoot, true);
 
@@ -174,7 +178,7 @@ export default function SkinMannequinPreview({
       steveTexture?.dispose();
       mount.replaceChildren();
     };
-  }, [source]);
+  }, [source, armModel]);
 
   const canDownload = Boolean(source && downloadFilename);
 

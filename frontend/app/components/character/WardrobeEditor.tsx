@@ -17,7 +17,12 @@ import {
   type WardrobeSlot,
 } from "../../../lib/characters/api";
 import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
-import { lockLabelForSlot } from "../../../lib/characters/wardrobeRanks";
+import {
+  armModelToWardrobeModel,
+  lockLabelForSlot,
+  wardrobeSlotToArmModel,
+} from "../../../lib/characters/wardrobeRanks";
+import type { ArmModel } from "../../../lib/skins/steveMannequin";
 import WardrobeSlotFrame from "./WardrobeSlotFrame";
 import WardrobeSlotModal from "./WardrobeSlotModal";
 
@@ -29,6 +34,10 @@ export type WardrobeDraftFiles = Partial<
 
 export type WardrobeDraftNames = Partial<
   Record<(typeof SLOT_ORDER)[number], string>
+>;
+
+export type WardrobeDraftModels = Partial<
+  Record<(typeof SLOT_ORDER)[number], ArmModel>
 >;
 
 type LiveProps = {
@@ -51,8 +60,10 @@ type DraftProps = {
   sessionToken?: string;
   draftFiles: WardrobeDraftFiles;
   draftNames: WardrobeDraftNames;
+  draftModels: WardrobeDraftModels;
   onDraftFilesChange: (next: WardrobeDraftFiles) => void;
   onDraftNamesChange: (next: WardrobeDraftNames) => void;
+  onDraftModelsChange: (next: WardrobeDraftModels) => void;
   /** True when last base save used create-masked (for pending upload flag). */
   onAutoMaskedChange?: (value: boolean) => void;
 };
@@ -85,15 +96,23 @@ const SWAPPABLE_ORDER = ["base", "extra_1", "extra_2"] as const;
 function compactDraftSwappable(
   files: WardrobeDraftFiles,
   names: WardrobeDraftNames,
+  models: WardrobeDraftModels,
   cleared: string
-): { files: WardrobeDraftFiles; names: WardrobeDraftNames } {
+): {
+  files: WardrobeDraftFiles;
+  names: WardrobeDraftNames;
+  models: WardrobeDraftModels;
+} {
   if (cleared === "masked") {
     const nextFiles = { ...files, masked: null };
     const nextNames = { ...names };
+    const nextModels = { ...models };
     delete nextNames.masked;
-    return { files: nextFiles, names: nextNames };
+    delete nextModels.masked;
+    return { files: nextFiles, names: nextNames, models: nextModels };
   }
-  const packed: { id: string; file: File; name?: string }[] = [];
+  const packed: { id: string; file: File; name?: string; model?: ArmModel }[] =
+    [];
   for (const id of SWAPPABLE_ORDER) {
     if (id === cleared) continue;
     const f = files[id];
@@ -102,6 +121,7 @@ function compactDraftSwappable(
         id,
         file: f,
         name: names[id],
+        model: models[id],
       });
     }
   }
@@ -112,15 +132,20 @@ function compactDraftSwappable(
     extra_2: null,
   };
   const nextNames: WardrobeDraftNames = { ...names };
+  const nextModels: WardrobeDraftModels = { ...models };
   delete nextNames.base;
   delete nextNames.extra_1;
   delete nextNames.extra_2;
+  delete nextModels.base;
+  delete nextModels.extra_1;
+  delete nextModels.extra_2;
   packed.forEach((entry, i) => {
     const dest = SWAPPABLE_ORDER[i];
     nextFiles[dest] = entry.file;
     if (entry.name) nextNames[dest] = entry.name;
+    if (entry.model) nextModels[dest] = entry.model;
   });
-  return { files: nextFiles, names: nextNames };
+  return { files: nextFiles, names: nextNames, models: nextModels };
 }
 
 function emptySlots(swappable: number): WardrobeSlot[] {
@@ -350,6 +375,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     equip: boolean;
     displayName: string | null;
     createMasked: boolean;
+    armModel: ArmModel;
   }) {
     if (!modalSlot) return;
     if (isDraft) {
@@ -405,6 +431,11 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         delete nextNames[modalSlot as keyof WardrobeDraftNames];
       }
       props.onDraftNamesChange(nextNames);
+      if (input.file) {
+        const nextModels = { ...props.draftModels };
+        nextModels[modalSlot as keyof WardrobeDraftModels] = input.armModel;
+        props.onDraftModelsChange(nextModels);
+      }
       setModalSlot(null);
       setModalError(null);
       return;
@@ -432,7 +463,10 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           modalSlot,
           input.file,
           input.displayName,
-          { createMasked: input.createMasked }
+          {
+            createMasked: input.createMasked,
+            model: armModelToWardrobeModel(input.armModel),
+          }
         );
         if (input.equip && modalSlot !== "masked") {
           w = await setWardrobeActive(sessionToken, characterId, modalSlot);
@@ -469,10 +503,12 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
       const compacted = compactDraftSwappable(
         props.draftFiles,
         props.draftNames,
+        props.draftModels,
         modalSlot
       );
       props.onDraftFilesChange(compacted.files);
       props.onDraftNamesChange(compacted.names);
+      props.onDraftModelsChange(compacted.models);
       if (modalSlot === "base" || modalSlot === "masked") {
         props.onAutoMaskedChange?.(false);
       }
@@ -639,6 +675,12 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         canCreateMasked={modalSlot === "base"}
         defaultCreateMasked={
           modalSlot === "base" && !Boolean(slotsById.get("masked")?.filled)
+        }
+        defaultArmModel={
+          isDraft && modalSlot
+            ? props.draftModels[modalSlot as keyof WardrobeDraftModels] ??
+              "default"
+            : wardrobeSlotToArmModel(modalData?.model)
         }
         sessionToken={
           isDraft

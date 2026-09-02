@@ -15,8 +15,10 @@ import {
 } from "../../../lib/characters/api";
 import WardrobeEditor, {
   type WardrobeDraftFiles,
+  type WardrobeDraftModels,
   type WardrobeDraftNames,
 } from "./WardrobeEditor";
+import { armModelToWardrobeModel } from "../../../lib/characters/wardrobeRanks";
 import {
   ageFromBirthday,
   fictionalBirthdayLabel,
@@ -94,6 +96,8 @@ function StageBody({
   onWardrobeDraftChange,
   wardrobeDraftNames,
   onWardrobeDraftNamesChange,
+  wardrobeDraftModels,
+  onWardrobeDraftModelsChange,
   wardrobeSkinSlots = 1,
   sessionToken,
   onWardrobeAutoMaskedChange,
@@ -110,6 +114,8 @@ function StageBody({
   onWardrobeDraftChange: (next: WardrobeDraftFiles) => void;
   wardrobeDraftNames: WardrobeDraftNames;
   onWardrobeDraftNamesChange: (next: WardrobeDraftNames) => void;
+  wardrobeDraftModels: WardrobeDraftModels;
+  onWardrobeDraftModelsChange: (next: WardrobeDraftModels) => void;
   wardrobeSkinSlots?: number;
   sessionToken: string;
   onWardrobeAutoMaskedChange: (value: boolean) => void;
@@ -137,8 +143,10 @@ function StageBody({
           sessionToken={sessionToken}
           draftFiles={wardrobeDraft}
           draftNames={wardrobeDraftNames}
+          draftModels={wardrobeDraftModels}
           onDraftFilesChange={onWardrobeDraftChange}
           onDraftNamesChange={onWardrobeDraftNamesChange}
+          onDraftModelsChange={onWardrobeDraftModelsChange}
           onAutoMaskedChange={onWardrobeAutoMaskedChange}
         />
       </div>
@@ -683,6 +691,8 @@ export default function CreationWizard({
   const [wardrobeDraft, setWardrobeDraft] = useState<WardrobeDraftFiles>({});
   const [wardrobeDraftNames, setWardrobeDraftNames] =
     useState<WardrobeDraftNames>({});
+  const [wardrobeDraftModels, setWardrobeDraftModels] =
+    useState<WardrobeDraftModels>({});
   const [wardrobeAutoMasked, setWardrobeAutoMasked] = useState(false);
   const [pendingCreateId, setPendingCreateId] = useState<string | null>(null);
   const stages = useMemo(
@@ -808,6 +818,9 @@ export default function CreationWizard({
           {
             createMasked:
               slot === "base" && wardrobeAutoMasked,
+            model: armModelToWardrobeModel(
+              wardrobeDraftModels[slot as keyof WardrobeDraftModels] ?? "default"
+            ),
           }
         );
       }
@@ -886,6 +899,8 @@ export default function CreationWizard({
               onWardrobeDraftChange={setWardrobeDraft}
               wardrobeDraftNames={wardrobeDraftNames}
               onWardrobeDraftNamesChange={setWardrobeDraftNames}
+              wardrobeDraftModels={wardrobeDraftModels}
+              onWardrobeDraftModelsChange={setWardrobeDraftModels}
               wardrobeSkinSlots={wardrobeSkinSlots}
               sessionToken={sessionToken}
               onWardrobeAutoMaskedChange={setWardrobeAutoMasked}

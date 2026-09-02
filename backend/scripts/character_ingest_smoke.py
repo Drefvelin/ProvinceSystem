@@ -65,6 +65,15 @@ CATALOG = {
             "max_rank": 2,
             "key": "attributes",
         },
+        {
+            "id": "personality_selection_stage",
+            "type": "selection",
+            "order": 4,
+            "target": "trait",
+            "key": "personality",
+            "min_select": 0,
+            "max_select": 1,
+        },
     ],
     "attribute_point_buy": {
         "pool": 12,
@@ -81,11 +90,25 @@ CATALOG = {
         },
         "trait_id_pattern": "{abbr}{rank}",
     },
-    "races": [{"id": "human", "name": "Human"}],
+    "races": [
+        {
+            "id": "human",
+            "name": "Human",
+            "attribute_modifiers": [{"type": "charisma", "amount": 1}],
+        }
+    ],
     "classes": [{"id": "warrior", "name": "Warrior"}],
     "traits": [
-        {"id": "str1", "key": "attributes"},
-        {"id": "str2", "key": "attributes"},
+        {
+            "id": "str1",
+            "key": "attributes",
+            "attribute_modifiers": [{"type": "strength", "amount": 1}],
+        },
+        {
+            "id": "str2",
+            "key": "attributes",
+            "attribute_modifiers": [{"type": "strength", "amount": 1}],
+        },
         {"id": "dex1", "key": "attributes"},
         {"id": "dex2", "key": "attributes"},
         {"id": "con1", "key": "attributes"},
@@ -96,6 +119,12 @@ CATALOG = {
         {"id": "wis2", "key": "attributes"},
         {"id": "cha1", "key": "attributes"},
         {"id": "cha2", "key": "attributes"},
+        {
+            "id": "kind",
+            "name": "Kind",
+            "key": "personality",
+            "attribute_modifiers": [{"type": "wisdom", "amount": 1}],
+        },
     ],
     "validation": {
         "name": {"min_length": 2, "max_length": 24},
@@ -213,7 +242,7 @@ def main() -> None:
     req_id = str(uuid.uuid4())
     r = client.post(
         "/characters",
-        json=valid_body(client_request_id=req_id),
+        json=valid_body(client_request_id=req_id, traits=["kind"]),
         headers=auth,
     )
     if r.status_code != 200:
@@ -223,6 +252,62 @@ def main() -> None:
     if create.get("status") != "pending" or not create_id:
         fail(f"expected pending create: {create}")
     print(f"OK valid create -> pending id={create_id}")
+
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200:
+        fail(f"list after create: {r.status_code} {r.text}")
+    pending_row = next(
+        (
+            c
+            for c in (r.json().get("characters") or [])
+            if c.get("id") == create_id and str(c.get("status")).lower() == "pending"
+        ),
+        None,
+    )
+    if pending_row is None:
+        fail(f"pending row missing from list: {r.json()}")
+    attrs = pending_row.get("attributes") or {}
+    if attrs.get("strength") != 2:
+        fail(f"pending attributes.strength expected 2 (str1+str2), got {attrs}")
+    if attrs.get("charisma") != 1:
+        fail(f"pending attributes.charisma expected 1 (human), got {attrs}")
+    traits = pending_row.get("traits") or []
+    if not traits or traits[0].get("key") != "personality":
+        fail(f"pending traits not enriched: {traits}")
+    if pending_row.get("race_name") != "Human":
+        fail(f"pending race_name: {pending_row.get('race_name')}")
+    print("OK pending list row has enriched sheet fields")
+
+    r = client.delete(f"/characters/creates/{create_id}", headers=auth)
+    if r.status_code != 200 or r.json().get("deleted") != create_id:
+        fail(f"delete pending create: {r.status_code} {r.text}")
+    print("OK delete pending create -> 200")
+
+    r = client.get("/characters", headers=auth)
+    if r.status_code != 200:
+        fail(f"list after delete: {r.status_code} {r.text}")
+    if any(c.get("id") == create_id for c in (r.json().get("characters") or [])):
+        fail(f"pending row still in list after delete: {r.json()}")
+    print("OK pending row gone from list")
+
+    r = client.delete(f"/characters/creates/{create_id}", headers=auth)
+    if r.status_code != 404:
+        fail(f"second delete expected 404, got {r.status_code} {r.text}")
+    print("OK second delete -> 404")
+
+    req_id = str(uuid.uuid4())
+    r = client.post(
+        "/characters",
+        json=valid_body(client_request_id=req_id, traits=["kind"]),
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"recreate after delete: {r.status_code} {r.text}")
+    create = r.json()
+    create_id = create.get("id")
+    if create.get("status") != "pending" or not create_id:
+        fail(f"expected pending create after delete: {create}")
+    print(f"OK recreated pending id={create_id}")
 
     r = client.post(
         "/characters",

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import type { CharacterListItem } from "../../../lib/characters/api";
+import type { CharacterListItem, CreationCatalog } from "../../../lib/characters/api";
 import { displayClass, displayRace } from "../../../lib/characters/displayNames";
 
 type Props = {
   characters: CharacterListItem[];
   aliveCount: number;
   maxSlots: number;
+  catalog?: CreationCatalog | null;
   webCreatorAllowed?: boolean;
   webCreatorLockLabel?: string;
   onLogout: () => void;
@@ -16,9 +17,17 @@ type Props = {
   refreshing?: boolean;
 };
 
-function Row({ item, linkable }: { item: CharacterListItem; linkable?: boolean }) {
+function Row({
+  item,
+  linkable,
+  catalog,
+}: {
+  item: CharacterListItem;
+  linkable?: boolean;
+  catalog?: CreationCatalog | null;
+}) {
   const status = String(item.status || "").toUpperCase();
-  const meta = [displayRace(item), displayClass(item)]
+  const meta = [displayRace(item, catalog), displayClass(item, catalog)]
     .filter(Boolean)
     .join(" · ");
   const err = String(item.error || "").trim();
@@ -71,12 +80,14 @@ function Section({
   empty,
   hint,
   linkAlive,
+  catalog,
 }: {
   title: string;
   items: CharacterListItem[];
   empty?: string;
   hint?: string;
   linkAlive?: boolean;
+  catalog?: CreationCatalog | null;
 }) {
   if (items.length === 0 && !empty) return null;
   return (
@@ -95,6 +106,7 @@ function Section({
             <Row
               key={c.id}
               item={c}
+              catalog={catalog}
               linkable={
                 linkAlive &&
                 (String(c.status || "").toUpperCase() === "ALIVE" ||
@@ -112,6 +124,7 @@ export default function CharacterList({
   characters,
   aliveCount,
   maxSlots,
+  catalog = null,
   webCreatorAllowed = true,
   webCreatorLockLabel = "",
   onLogout,
@@ -203,6 +216,7 @@ export default function CharacterList({
             items={alive}
             empty="No alive characters."
             linkAlive
+            catalog={catalog}
           />
           <Section
             title="Pending"
@@ -213,9 +227,10 @@ export default function CharacterList({
                 : undefined
             }
             linkAlive
+            catalog={catalog}
           />
-          <Section title="Rejected" items={rejected} />
-          <Section title="Dead" items={dead} />
+          <Section title="Rejected" items={rejected} catalog={catalog} />
+          <Section title="Dead" items={dead} catalog={catalog} />
         </>
       )}
     </div>

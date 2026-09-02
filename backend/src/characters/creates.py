@@ -34,6 +34,10 @@ from src.text_validation import (
 class CreateError(ValueError):
     """Invalid create payload or business rule failure."""
 
+    def __init__(self, message: str, *, status_code: int = 400) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -556,24 +560,11 @@ def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
     return [_row_to_dict(r) for r in rows]
 
 
-def _traits_from_create_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    raw = payload.get("all_traits") or payload.get("traits") or []
-    if not isinstance(raw, list):
-        return []
-    out: list[dict[str, Any]] = []
-    for entry in raw:
-        if isinstance(entry, str) and entry.strip():
-            out.append({"id": entry.strip()})
-        elif isinstance(entry, dict):
-            tid = str(entry.get("id") or "").strip()
-            if tid:
-                out.append(dict(entry))
-    return out
-
-
 def _pending_character_list_item(
-    data: dict[str, Any], realm: str
+    data: dict[str, Any], realm: str, catalog: dict[str, Any]
 ) -> dict[str, Any]:
+    from src.characters.pending_sheet import enrich_pending_list_item
+
     payload = data.get("payload") or {}
     if not isinstance(payload, dict):
         payload = {}
@@ -588,12 +579,10 @@ def _pending_character_list_item(
         "create_id": data["id"],
         "realm_id": realm,
     }
-    for key in ("age", "birthday", "gender", "description", "attributes", "clues"):
+    for key in ("age", "birthday", "gender", "description", "clues"):
         if key in payload and payload[key] is not None:
             item[key] = payload[key]
-    traits = _traits_from_create_payload(payload)
-    if traits:
-        item["traits"] = traits
+    item.update(enrich_pending_list_item(payload, catalog))
     return item
 
 
@@ -640,10 +629,11 @@ def list_for_player(
             (uuid, realm),
         ).fetchall()
 
+    catalog = get_catalog()
     characters: list[dict[str, Any]] = list(roster)
     for row in pending_rows:
         data = _row_to_dict(row)
-        characters.append(_pending_character_list_item(data, realm))
+        characters.append(_pending_character_list_item(data, realm, catalog))
     for row in rejected_rows:
         data = _row_to_dict(row)
         payload = data.get("payload") or {}
@@ -663,7 +653,6 @@ def list_for_player(
             }
         )
 
-    catalog = get_catalog()
     raw_limits = catalog.get("slot_limits")
     slot_limits = raw_limits if isinstance(raw_limits, dict) else {}
 
@@ -806,3 +795,53 @@ def mark_applied_results(results: list) -> dict[str, Any]:
         flush_pending_wardrobe(player_uuid, create_id, character_id)
 
     return {"ok": True, "applied": applied, "rejected": rejected}
+
+
+def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
+    """Cancel a pending web create: wardrobe, kit drafts, and create row."""
+    from src.characters.pending_create import fetch_owned_pending_create
+    from src.characters.wardrobe import delete_all_pending_create_wardrobe
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    cid = (create_id or "").strip()
+    if not uuid or not cid:
+        raise CreateError("Create not found", status_code=404)
+
+    if fetch_owned_pending_create(uuid, cid) is None:
+        with connect() as conn:
+            row = conn.execute(
+                """
+                SELECT player_uuid, status FROM character_creates WHERE id = ?
+                """,
+                (cid,),
+            ).fetchone()
+        if row is None or str(row["player_uuid"]) != uuid:
+            raise CreateError("Create not found", status_code=404)
+        raise CreateError(
+            "Only pending creates can be cancelled",
+            status_code=409,
+        )
+
+    delete_all_pending_create_wardrobe(cid)
+
+    with connect() as conn:
+        conn.execute(
+            """
+            DELETE FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ?
+            """,
+            (uuid, cid),
+        )
+        cur = conn.execute(
+            """
+            DELETE FROM character_creates
+            WHERE id = ? AND player_uuid = ? AND status = 'pending'
+            """,
+            (cid, uuid),
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            raise CreateError("Create not found", status_code=404)
+
+    return {"ok": True, "deleted": cid}

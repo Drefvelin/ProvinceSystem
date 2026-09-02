@@ -14,7 +14,6 @@ from src.characters.pending_create import (
     PendingCreateError,
     resolve_player_character,
 )
-from src.characters.roster import get_wardrobe_skin_slots
 from src.skins.db import DATA_DIR, WARDROBE_DIR, connect
 from src.skins.storage import StorageError, validate_png
 from src.text_validation import TextValidationError, assert_optional_display_name
@@ -46,9 +45,36 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def swappable_slot_count(player_uuid: str) -> int:
-    """Number of swappable skins (base + extras). From roster meta perk."""
-    return get_wardrobe_skin_slots(player_uuid)
+def swappable_slot_count(
+    player_uuid: str,
+    *,
+    realm_id: str | None = None,
+) -> int:
+    """Number of swappable skins (base + extras). From TFMCWeb rpc_player_meta."""
+    from src.characters.rpc_player_meta import resolve_web_entitlements
+
+    uuid = (player_uuid or "").strip()
+    ent = resolve_web_entitlements(uuid, realm_id=realm_id)
+    try:
+        return max(1, min(3, int(ent.get("wardrobe_skin_slots") or 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _swappable_for_roster(player_uuid: str, character_id: str) -> int:
+    row = _require_owned_character(player_uuid, character_id)
+    return swappable_slot_count(
+        str(row["player_uuid"]),
+        realm_id=row.get("realm_id"),
+    )
+
+
+def _swappable_for_pending(player_uuid: str, create_id: str) -> int:
+    row = _require_pending_create(player_uuid, create_id)
+    return swappable_slot_count(
+        str(row["player_uuid"]),
+        realm_id=row.get("realm_id"),
+    )
 
 
 def _slot_unlocked(slot: str, swappable: int) -> bool:
@@ -86,7 +112,7 @@ def _require_owned_character(player_uuid: str, character_id: str) -> dict[str, A
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT player_uuid, character_id, wardrobe_active_slot
+            SELECT player_uuid, character_id, wardrobe_active_slot, realm_id
             FROM character_roster
             WHERE player_uuid = ? AND character_id = ?
             """,
@@ -112,6 +138,16 @@ def detect_skin_model(png_bytes: bytes) -> str:
     # Sample (54, 20) on the right-arm region of the base layer.
     alpha = img.getpixel((54, 20))[3]
     return "slim" if alpha == 0 else "classic"
+
+
+def resolve_skin_model(png_bytes: bytes, override: str | None) -> str:
+    """Use client override when valid, else auto-detect from PNG."""
+    m = (override or "").strip().lower()
+    if m == "slim":
+        return "slim"
+    if m in ("classic", "wide", "default"):
+        return "classic"
+    return detect_skin_model(png_bytes)
 
 
 def _backend_root() -> Path:
@@ -403,7 +439,7 @@ def _compact_swappable_slots(
     actual = [e["_old_slot"] for e in packed]
     if actual == expected:
         # Still may need active normalize after a clear
-        swappable = swappable_slot_count(uuid)
+        swappable = _swappable_for_roster(uuid, cid)
         _normalize_active(uuid, cid, previous_active, slots, swappable)
         return
 
@@ -444,7 +480,7 @@ def _compact_swappable_slots(
         _set_active(uuid, cid, active_new)
     else:
         slots_after = _load_slots(uuid, cid)
-        swappable = swappable_slot_count(uuid)
+        swappable = _swappable_for_roster(uuid, cid)
         _normalize_active(uuid, cid, previous_active, slots_after, swappable)
 
 
@@ -619,7 +655,7 @@ def enforce_wardrobe_slot_limits(player_uuid: str, character_id: str) -> int:
     """Delete locked extra slots (and PNGs); fix active. Returns swappable count."""
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
-    swappable = swappable_slot_count(uuid)
+    swappable = _swappable_for_roster(uuid, cid)
     slots = _load_slots(uuid, cid)
     wiped = False
     for slot in ("extra_1", "extra_2"):
@@ -770,7 +806,7 @@ def enforce_pending_wardrobe_slot_limits(
     """Delete locked extra pending slots; fix active. Returns swappable count."""
     uuid = (player_uuid or "").strip()
     cid = (create_id or "").strip()
-    swappable = swappable_slot_count(uuid)
+    swappable = _swappable_for_pending(uuid, cid)
     slots = _load_pending_slots(cid)
     wiped = False
     for slot in ("extra_1", "extra_2"):
@@ -892,13 +928,14 @@ def upload_slot(
     *,
     display_name: str | None = None,
     create_masked: bool = False,
+    model_override: str | None = None,
 ) -> dict[str, Any]:
     access = _resolve_player_wardrobe_access(player_uuid, character_id)
     if access["kind"] == "pending":
         uuid = access["player_uuid"]
         cid = access["character_id"]
         slot_key = _normalize_slot(slot)
-        swappable = swappable_slot_count(uuid)
+        swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
         if not _slot_unlocked(slot_key, swappable):
             raise WardrobeError(
                 "Slot locked for your rank",
@@ -910,7 +947,7 @@ def upload_slot(
             validate_png(png_bytes, WARDROBE_PNG_SIZE)
         except StorageError as e:
             raise WardrobeError(str(e), status_code=400) from e
-        model = detect_skin_model(png_bytes)
+        model = resolve_skin_model(png_bytes, model_override)
         texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
         name = _normalize_display_name(display_name)
         existing = slots_before.get(slot_key)
@@ -967,7 +1004,7 @@ def upload_slot(
         validate_png(png_bytes, WARDROBE_PNG_SIZE)
     except StorageError as e:
         raise WardrobeError(str(e), status_code=400) from e
-    model = detect_skin_model(png_bytes)
+    model = resolve_skin_model(png_bytes, model_override)
 
     # Sign before mutating disk/DB so failed MineSkin leaves the prior slot intact.
     texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
@@ -1026,7 +1063,7 @@ def set_slot_display_name(
     uuid = access["player_uuid"]
     cid = access["character_id"]
     slot_key = _normalize_slot(slot)
-    swappable = swappable_slot_count(uuid)
+    swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
     if not _slot_unlocked(slot_key, swappable):
         raise WardrobeError(
             "Slot locked for your rank",
@@ -1134,7 +1171,7 @@ def clear_slot(
             _compact_pending_swappable(cid)
         elif previous_active and previous_active == slot_key:
             remaining = _load_pending_slots(cid)
-            swappable = swappable_slot_count(uuid)
+            swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
             _normalize_pending_active(
                 cid, slot_key, remaining, swappable
             )
@@ -1166,7 +1203,7 @@ def clear_slot(
         )
     elif previous_active and previous_active == slot_key:
         remaining = _load_slots(uuid, cid)
-        swappable = swappable_slot_count(uuid)
+        swappable = _swappable_for_roster(uuid, cid)
         _normalize_active(uuid, cid, slot_key, remaining, swappable)
     return get_wardrobe(uuid, cid)
 
@@ -1213,7 +1250,7 @@ def _set_active_slot(
 
     uuid = str(access["player_uuid"])
     cid = str(access["character_id"])
-    swappable = swappable_slot_count(uuid)
+    swappable = swappable_slot_count(uuid, realm_id=access.get("realm_id"))
 
     if access["kind"] == "pending":
         slots = _load_pending_slots(cid)
@@ -1304,7 +1341,7 @@ def _require_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT id, player_uuid, status, character_id
+            SELECT id, player_uuid, status, character_id, realm_id
             FROM character_creates
             WHERE id = ? AND player_uuid = ?
             """,
@@ -1328,13 +1365,14 @@ def upload_pending_create_wardrobe(
     *,
     display_name: str | None = None,
     create_masked: bool = False,
+    model_override: str | None = None,
 ) -> dict[str, Any]:
     """Sign + store a wardrobe slot against a pending create (pre-roster)."""
     create = _require_pending_create(player_uuid, create_id)
     uuid = str(create["player_uuid"])
     cid = str(create["id"])
     slot_key = _normalize_slot(slot)
-    swappable = swappable_slot_count(uuid)
+    swappable = swappable_slot_count(uuid, realm_id=create.get("realm_id"))
     if not _slot_unlocked(slot_key, swappable):
         raise WardrobeError("Slot locked for your rank", status_code=403)
     slots_before = _load_pending_slots(cid)
@@ -1343,7 +1381,7 @@ def upload_pending_create_wardrobe(
         validate_png(png_bytes, WARDROBE_PNG_SIZE)
     except StorageError as e:
         raise WardrobeError(str(e), status_code=400) from e
-    model = detect_skin_model(png_bytes)
+    model = resolve_skin_model(png_bytes, model_override)
     texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
     name = _normalize_display_name(display_name)
 
@@ -1412,6 +1450,31 @@ def clear_pending_create_wardrobe(
     if slot_key in SWAPPABLE_SLOTS:
         _compact_pending_swappable(cid)
     return {"ok": True, "create_id": cid, "slot": slot_key, "cleared": True}
+
+
+def delete_all_pending_create_wardrobe(create_id: str) -> int:
+    """Delete all wardrobe slots and PNGs for a pending create. Returns count."""
+    cid = (create_id or "").strip()
+    if not cid:
+        return 0
+    deleted = 0
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT png_relpath FROM character_create_wardrobe
+            WHERE create_id = ?
+            """,
+            (cid,),
+        ).fetchall()
+        for row in rows:
+            _delete_png(row["png_relpath"])
+            deleted += 1
+        conn.execute(
+            "DELETE FROM character_create_wardrobe WHERE create_id = ?",
+            (cid,),
+        )
+        conn.commit()
+    return deleted
 
 
 def flush_pending_wardrobe(

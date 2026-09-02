@@ -67,7 +67,8 @@ def resolve_player_character(
     """Owned roster character or pending create for player session routes.
 
     Returns dict with ``kind`` in (``roster``, ``pending``), ``player_uuid``,
-    ``character_id`` (roster id or create id), and ``wardrobe_active_slot``.
+    ``character_id`` (roster id or create id), ``realm_id``, and
+    ``wardrobe_active_slot``.
   """
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
@@ -77,7 +78,7 @@ def resolve_player_character(
     with connect() as conn:
         row = conn.execute(
             """
-            SELECT player_uuid, character_id, wardrobe_active_slot
+            SELECT player_uuid, character_id, wardrobe_active_slot, realm_id
             FROM character_roster
             WHERE player_uuid = ? AND character_id = ?
             """,
@@ -88,6 +89,7 @@ def resolve_player_character(
             "kind": "roster",
             "player_uuid": str(row["player_uuid"]),
             "character_id": str(row["character_id"]),
+            "realm_id": row["realm_id"],
             "wardrobe_active_slot": row["wardrobe_active_slot"],
         }
 
@@ -99,6 +101,7 @@ def resolve_player_character(
             "player_uuid": str(pending["player_uuid"]),
             "character_id": str(pending["id"]),
             "create_id": str(pending["id"]),
+            "realm_id": pending.get("realm_id"),
             "wardrobe_active_slot": active,
         }
 

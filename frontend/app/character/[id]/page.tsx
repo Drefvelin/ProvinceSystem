@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import CharacterSheet from "../../components/character/CharacterSheet";
 import {
   CharactersApiError,
+  deletePendingCreate,
   getCreationCatalog,
   listCharacters,
   logoutCharacter,
@@ -46,6 +47,7 @@ export default function CharacterDetailPage() {
   const [catalog, setCatalog] = useState<CreationCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(
     async (token: string) => {
@@ -115,6 +117,24 @@ export default function CharacterDetailPage() {
     }
   }
 
+  async function onCancelPending() {
+    if (!session || cancelling || uiDev) return;
+    setCancelling(true);
+    setError(null);
+    try {
+      await deletePendingCreate(session.session_token, characterId);
+      router.replace("/character");
+    } catch (e) {
+      const msg =
+        e instanceof CharactersApiError
+          ? e.message
+          : "Could not cancel submission.";
+      setError(msg);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   if (!ready) {
     return (
       <p className="mt-8 text-sm text-[var(--tfmc-mist)]">Loading…</p>
@@ -143,7 +163,12 @@ export default function CharacterDetailPage() {
       {error ? (
         <p className="text-sm text-[#e8a0a0]">{error}</p>
       ) : character ? (
-        <CharacterSheet character={character} catalog={catalog} />
+        <CharacterSheet
+          character={character}
+          catalog={catalog}
+          onCancelPending={uiDev ? undefined : onCancelPending}
+          cancelling={cancelling}
+        />
       ) : null}
     </div>
   );

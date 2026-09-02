@@ -860,7 +860,7 @@ export async function uploadWardrobeSlot(
   slot: string,
   file: File,
   displayName?: string | null,
-  opts?: { createMasked?: boolean }
+  opts?: { createMasked?: boolean; model?: "classic" | "slim" }
 ): Promise<WardrobeResponse> {
   const id = encodeURIComponent(characterId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -871,6 +871,9 @@ export async function uploadWardrobeSlot(
   }
   if (opts?.createMasked) {
     form.append("create_masked", "true");
+  }
+  if (opts?.model) {
+    form.append("model", opts.model);
   }
   const res = await apiFetch(
     `${getApiBase()}/characters/${id}/wardrobe/${s}`,
@@ -976,7 +979,7 @@ export async function uploadPendingCreateWardrobe(
   slot: string,
   file: File,
   displayName?: string | null,
-  opts?: { createMasked?: boolean }
+  opts?: { createMasked?: boolean; model?: "classic" | "slim" }
 ): Promise<{ ok: boolean; create_id: string; slot: string; signed?: boolean }> {
   const cid = encodeURIComponent(createId.trim());
   const s = encodeURIComponent(slot.trim());
@@ -987,6 +990,9 @@ export async function uploadPendingCreateWardrobe(
   }
   if (opts?.createMasked) {
     form.append("create_masked", "true");
+  }
+  if (opts?.model) {
+    form.append("model", opts.model);
   }
   const res = await apiFetch(
     `${getApiBase()}/characters/creates/${cid}/wardrobe/${s}`,
@@ -1050,6 +1056,25 @@ export async function clearPendingCreateWardrobe(
       res.status
     );
   }
+}
+
+export async function deletePendingCreate(
+  sessionToken: string,
+  createId: string
+): Promise<{ ok: boolean; deleted: string }> {
+  const cid = encodeURIComponent(createId.trim());
+  const res = await apiFetch(`${getApiBase()}/characters/creates/${cid}`, {
+    method: "DELETE",
+    headers: authHeaders(sessionToken),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) {
+    throw new CharactersApiError(
+      detailMessage(data, `Cancel submission failed (${res.status})`),
+      res.status
+    );
+  }
+  return data as { ok: boolean; deleted: string };
 }
 
 export async function fetchWardrobeTextureBlob(

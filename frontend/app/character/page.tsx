@@ -11,7 +11,9 @@ import {
   logoutCharacter,
   maxAliveSlots,
   type CharacterListItem,
+  type CreationCatalog,
 } from "../../lib/characters/api";
+import creationCatalogDev from "../../lib/characters/fixtures/creationCatalog.dev.json";
 import {
   clearSession,
   getSession,
@@ -47,6 +49,7 @@ export default function CharacterPage() {
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<CharacterSession | null>(null);
   const [characters, setCharacters] = useState<CharacterListItem[]>([]);
+  const [catalog, setCatalog] = useState<CreationCatalog | null>(null);
   const [maxSlots, setMaxSlots] = useState(3);
   const [webCreatorAllowed, setWebCreatorAllowed] = useState(true);
   const [webCreatorLockLabel, setWebCreatorLockLabel] = useState("");
@@ -58,6 +61,7 @@ export default function CharacterPage() {
     async (token: string, opts?: { quiet?: boolean }) => {
       if (uiDev) {
         setCharacters([uiDevSheetCharacter(UI_DEV_LORE_CHARACTER_ID)]);
+        setCatalog(creationCatalogDev as CreationCatalog);
         setMaxSlots(5);
         setListError(null);
         setLoadingList(false);
@@ -68,17 +72,18 @@ export default function CharacterPage() {
       }
       setListError(null);
       try {
-        const list = await listCharacters(token);
+        const [list, cat] = await Promise.all([
+          listCharacters(token),
+          getCreationCatalog(token).catch(() => null),
+        ]);
         setCharacters(list.characters);
+        setCatalog(cat);
         if (typeof list.max_alive_characters === "number") {
           setMaxSlots(list.max_alive_characters);
+        } else if (cat) {
+          setMaxSlots(maxAliveSlots(cat.slot_limits));
         } else {
-          try {
-            const catalog = await getCreationCatalog(token);
-            setMaxSlots(maxAliveSlots(catalog.slot_limits));
-          } catch {
-            setMaxSlots(3);
-          }
+          setMaxSlots(3);
         }
         setWebCreatorAllowed(list.web_creator_allowed !== false);
         const minGroup = (list.web_creator_min_group_id || "").trim();
@@ -243,6 +248,7 @@ export default function CharacterPage() {
               characters={characters}
               aliveCount={aliveCount}
               maxSlots={maxSlots}
+              catalog={catalog}
               webCreatorAllowed={webCreatorAllowed}
               webCreatorLockLabel={webCreatorLockLabel}
               onLogout={onLogout}
