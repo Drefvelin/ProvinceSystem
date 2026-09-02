@@ -24,7 +24,7 @@ services:
         # Public URL browsers use (nginx /api/ → backend :8000). Override at build time if needed.
         NEXT_PUBLIC_API_URL: https://www.tfminecraft.net/api
         # Season 5 maintenance landing; staff redeem character code + tfmc.map.staff
-        NEXT_PUBLIC_SITE_DEV_GATE: "1"
+        NEXT_PUBLIC_SITE_DEV_GATE: "0"
         # Arms the prebuild guard: refuses the build if NEXT_PUBLIC_CHARACTER_UI_DEV=1
         PS_PRODUCTION: "1"
     ports:
