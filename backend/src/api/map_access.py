@@ -134,21 +134,39 @@ def ensure_map_access(map_id: str, authorization: str | None) -> MapEntry:
 
 
 def ensure_map_staff_write(map_id: str, authorization: str | None) -> MapEntry:
+    """Gate for destructive per-map staff writes (title editor, chronicle wipe).
+
+    Two things this deliberately does *not* do, unlike the read gate:
+
+    * it honours the map's own `staff_permission` and `realm_id` rather than
+      only the global `EDITOR_STAFF_PERMISSION` against the session's realm, so
+      a map that is guarded by a narrower node for reads cannot be wiped by
+      someone who only holds the broad one; and
+    * it does not accept the `CHARACTER_UI_DEV` bearer bypass. That bypass
+      exists so the UI can be developed against staff-only *reads* without a
+      real session. The token it looks for (`ui-dev-session`) is a literal
+      constant in this repo, not a secret, so honouring it here would put
+      chronicle wipe/restore behind an env var and stamp the audit row with a
+      literal "ui-dev" actor rather than a person. To exercise the staff UI
+      locally, temporarily drop the rejection below rather than widening it in
+      a way that could ship.
+    """
     entry = get_map_entry(map_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Map not found")
 
-    if _ui_dev_staff_bypass(authorization):
-        return entry
+    if _is_ui_dev_session_token(parse_bearer(authorization)):
+        raise HTTPException(status_code=403, detail=STAFF_MAP_FORBIDDEN_DETAIL)
 
     session = get_character_session(authorization)
     if session is None:
         raise HTTPException(status_code=403, detail=STAFF_MAP_FORBIDDEN_DETAIL)
 
+    permission = (entry.staff_permission or "").strip() or EDITOR_STAFF_PERMISSION
     if not has_map_staff_access(
         str(session.get("player_uuid") or ""),
-        _session_realm_id(session),
-        EDITOR_STAFF_PERMISSION,
+        entry.realm_id,
+        permission,
     ):
         raise HTTPException(status_code=403, detail=STAFF_MAP_PERMISSION_DETAIL)
 

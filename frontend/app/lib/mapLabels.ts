@@ -71,7 +71,44 @@ export type NationRegionInput = {
 export type LabelMapObject = {
   id: string;
   visible: boolean;
+  /**
+   * Set by `buildMapObjectsFromRegionData`. Optional here because the chronicle
+   * studio synthesises its own label objects, which have no synthetic `_nested`
+   * entries at all; `labelEntryIsNested` falls back to the old string test for
+   * those, which is exact when only real region ids are present.
+   */
+  nested?: boolean;
+  baseId?: string;
 };
+
+const NESTED_SUFFIX = "_nested";
+
+/**
+ * Structure comes from the flag when the builder set one. Region ids are
+ * day-file object keys — player-set names — so a real nation named `Foo_nested`
+ * is indistinguishable by string from the synthetic entry for `Foo`, and the
+ * suffix test silently swapped the two.
+ */
+function labelEntryIsNested(obj: LabelMapObject): boolean {
+  return obj.nested ?? obj.id.endsWith(NESTED_SUFFIX);
+}
+
+function labelEntryBaseId(obj: LabelMapObject): string {
+  if (typeof obj.baseId === "string") return obj.baseId;
+  return obj.id.endsWith(NESTED_SUFFIX)
+    ? obj.id.slice(0, -NESTED_SUFFIX.length)
+    : obj.id;
+}
+
+function findLabelEntry(
+  mapObjects: LabelMapObject[],
+  nationId: string,
+  nested: boolean
+): LabelMapObject | undefined {
+  return mapObjects.find(
+    (obj) => labelEntryIsNested(obj) === nested && labelEntryBaseId(obj) === nationId
+  );
+}
 
 export type NationLabelScope = "full" | "direct";
 
@@ -368,8 +405,8 @@ export function isNationLabelVisible(
   nationId: string,
   mapObjects: LabelMapObject[]
 ): boolean {
-  const main = mapObjects.find((obj) => obj.id === nationId);
-  const nested = mapObjects.find((obj) => obj.id === `${nationId}_nested`);
+  const main = findLabelEntry(mapObjects, nationId, false);
+  const nested = findLabelEntry(mapObjects, nationId, true);
   return !!(main?.visible || nested?.visible);
 }
 
@@ -377,8 +414,8 @@ export function isDrilledSuzerainView(
   nationId: string,
   mapObjects: LabelMapObject[]
 ): boolean {
-  const main = mapObjects.find((obj) => obj.id === nationId);
-  const nested = mapObjects.find((obj) => obj.id === `${nationId}_nested`);
+  const main = findLabelEntry(mapObjects, nationId, false);
+  const nested = findLabelEntry(mapObjects, nationId, true);
   return !!main && !main.visible && nested?.visible === true;
 }
 

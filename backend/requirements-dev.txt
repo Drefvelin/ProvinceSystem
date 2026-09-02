@@ -1,0 +1,5 @@
+# Test-only dependencies. The suite is stdlib `unittest` classes plus
+# pytest-only constructs (conftest fixtures, `monkeypatch`), so it cannot run
+# under `python -m unittest` — pytest is required, not optional.
+#   pip install -r requirements.txt -r requirements-dev.txt
+pytest==9.1.1

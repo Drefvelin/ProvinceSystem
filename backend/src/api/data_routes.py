@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
-import json, os, time
+import json, logging, os, time
 
 from .http_headers import (
     add_no_cache,
@@ -10,17 +11,50 @@ from .http_headers import (
 )
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
+from .map_registry import get_map_entry
+from .request_body import read_json_body
 from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
 from ..scripts.util.dirs import input_file, defines_file, validate_map
+# Imported at module scope on purpose, unlike capture_if_due below. A lazy
+# `from ... import` inside the handler re-runs the import machinery per request,
+# and src/skins/test_drinks.py permanently aliases sys.modules["src.skins.db"];
+# a lazy bind after those tests have run would hand the ledger a *different*
+# module object with an unpatched DB_PATH, silently reading and writing the
+# wrong database while reporting success. These modules import nothing that
+# imports this one, so there is no cycle to dodge.
+from ..scripts.ledger import ingest as ledger_ingest
+from ..scripts.ledger.schema import (
+    LEDGER_UPLOAD_MODE,
+    MAX_BODY_BYTES as LEDGER_MAX_BODY_BYTES,
+    LedgerPayloadError,
+    normalize_snapshot,
+)
 from ..scripts.loader.markers import build_markers_response
+from ..scripts.util.maplock import MapLockBusy
 from ..scripts.mapgen.infestationgen import create_infestation_map, load_infestation_by_id
 from ..scripts.loader.province_metadata import load_province_metadata
 from ..scripts.mapgen.zocgen import generate_zoc_overlays
+
+logger = logging.getLogger(__name__)
 
 data_router = APIRouter()
 
 CACHE_TTL = 300
 _province_cache = {}
+
+# Ceiling for a non-ledger upload body. Every existing mode is a hand-sized JSON
+# document (the largest on disk is province_data.json at ~70 KB), so this bounds
+# the memory one localhost POST can claim without coming near a real payload —
+# the read is behaviour-identical below the limit. 8 MiB is ~100x the largest
+# real payload and matches the ledger's own schema.MAX_BODY_BYTES; the previous
+# 64 MiB let one LAN POST claim two orders of magnitude more than any mode can
+# legitimately send.
+UPLOAD_MAX_BODY_BYTES = 8 * 1024 * 1024
+
+# What a 503 from a locked ledger tells the caller to wait. Matches
+# `maplock.DEFAULT_TIMEOUT`, which is how long `store_raw` already waited before
+# giving up, so the retry lands after roughly one more lock window.
+LEDGER_LOCK_RETRY_AFTER_SECONDS = 30
 
 def clear_province_cache(map_name: str) -> None:
     _province_cache.pop(map_name, None)
@@ -93,7 +127,11 @@ async def get_compiled_provinces(
     authorization: str | None = Header(default=None),
     if_none_match: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    # ensure_map_access normalises (strip + lower) before its registry lookup,
+    # so "/%20MaIn/..." is granted as "main". Every downstream filesystem, cache
+    # and database key below must use that normalised id, or an attacker-chosen
+    # path segment reaches validate_map/open() and 500s instead of 404ing.
+    map_name = ensure_map_access(map_name, authorization).id
     now = time.time()
     cached = _province_cache.get(map_name)
 
@@ -122,16 +160,19 @@ async def get_province_label_grid_bin(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     path = defines_file(map_name, "province_label_grid.bin.gz")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
-    return conditional_file_response(
-        path,
-        media_type="application/gzip",
-        if_none_match=if_none_match,
-        if_modified_since=if_modified_since,
-    )
+    try:
+        return conditional_file_response(
+            path,
+            media_type="application/gzip",
+            if_none_match=if_none_match,
+            if_modified_since=if_modified_since,
+        )
+    except OSError:
+        return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
 
 @data_router.get("/{map_name}/data/markers")
 async def get_map_markers(
@@ -139,7 +180,7 @@ async def get_map_markers(
     authorization: str | None = Header(default=None),
     if_none_match: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     # Markers are assembled from several files (map_markers.json, centroids, zoc
     # overlays), so there is no single file to stat and no cache entry to key
     # on. Hash the built payload instead: still cheap next to the JSON encode,
@@ -151,6 +192,85 @@ async def get_map_markers(
         if_none_match=if_none_match,
     )
 
+# Same body for both 404 paths below, and deliberately free of the caller's
+# input: this route is public.
+_ARTIFACT_NOT_FOUND = "Artifact not found"
+
+
+def _gzip_artifact_response(
+    map_name: str,
+    filename: str,
+    *,
+    if_none_match: str | None,
+    if_modified_since: str | None,
+):
+    """Serve a defines artifact as its on-disk gzip bytes, or a plain 404.
+
+    Body only — every caller still applies its own auth gate first, and the
+    gates deliberately differ between the public and the editor routes.
+    """
+    path = defines_file(map_name, filename)
+    if not os.path.isfile(path):
+        # Public route: the body echoes neither the requested map nor the
+        # build command that would create the artifact. Handing an
+        # unauthenticated caller back its own input, plus a module path to run,
+        # is free reconnaissance; the operator fix belongs in docs, not here.
+        raise HTTPException(status_code=404, detail=_ARTIFACT_NOT_FOUND)
+    try:
+        return conditional_file_response(
+            path,
+            media_type="application/gzip",
+            if_none_match=if_none_match,
+            if_modified_since=if_modified_since,
+        )
+    except OSError as exc:
+        # isfile() above and the stat inside the response are two separate
+        # syscalls; a regen replacing the artifact in between must 404 like any
+        # other absent artifact rather than raising into a 500.
+        raise HTTPException(status_code=404, detail=_ARTIFACT_NOT_FOUND) from exc
+
+@data_router.get("/{map_name}/data/province_id_runs")
+async def get_province_id_runs(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
+):
+    """Public sibling of /{map}/editor/province-runs.
+
+    Same bytes, lower gate: this is static geometry with no ownership in it, and
+    the chronicle viewer needs it on public maps. The editor route keeps its
+    staff gate because it is reached from the write-side tooling — the two are
+    intentionally separate, not a duplication to fold together.
+    """
+    map_name = ensure_map_access(map_name, authorization).id
+    return _gzip_artifact_response(
+        map_name,
+        "province_id_runs.bin.gz",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
+    )
+
+@data_router.get("/{map_name}/data/province_id_grid_q4")
+async def get_province_id_grid_q4(
+    map_name: str,
+    authorization: str | None = Header(default=None),
+    if_none_match: str | None = Header(default=None),
+    if_modified_since: str | None = Header(default=None),
+):
+    """Quarter-scale province id grid for timelapse playback.
+
+    Optional artifact: a map whose grid has not been rebuilt with --scale simply
+    404s, and the client falls back to the full-resolution runs.
+    """
+    map_name = ensure_map_access(map_name, authorization).id
+    return _gzip_artifact_response(
+        map_name,
+        "province_id_grid_q4.bin.gz",
+        if_none_match=if_none_match,
+        if_modified_since=if_modified_since,
+    )
+
 @data_router.get("/{map_name}/data/{file}")
 async def get_map_name_data(
     map_name: str,
@@ -159,19 +279,46 @@ async def get_map_name_data(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     path = defines_file(map_name, f"{file}.json")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
     # The response body was always the file verbatim; parsing and re-encoding it
     # only cost CPU. Streaming the file lets the shared ETag/Last-Modified
     # helper turn an unchanged geometry blob into a 304.
-    return conditional_file_response(
-        path,
-        media_type="application/json",
-        if_none_match=if_none_match,
-        if_modified_since=if_modified_since,
-    )
+    try:
+        return conditional_file_response(
+            path,
+            media_type="application/json",
+            if_none_match=if_none_match,
+            if_modified_since=if_modified_since,
+        )
+    except OSError:
+        # exists() and the stat inside the response are separate syscalls: a
+        # rewrite in between is a 404, not a 500.
+        return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
+
+# The bounded reader lives in `request_body` so the staff routes can share it;
+# the module-local name is kept because tests and call sites reference it.
+_read_json_body = read_json_body
+
+
+def _run_promote_ledger_day(map_id: str, day: str) -> None:
+    """Background wrapper: promote_day raises, a BackgroundTask must not.
+
+    Same shape as `chronicle_routes._run_capture` — the 200 has already gone out
+    by the time this runs, so a failure can only be reported in the log. The raw
+    snapshot is already on disk at this point and `promote_day` is idempotent, so
+    a lost promotion is repaired by the next upload (or `reindex`), never by
+    re-POSTing.
+    """
+    try:
+        ledger_ingest.promote_day(map_id, day)
+    except Exception:
+        logger.warning(
+            "Ledger promote failed for map '%s' day '%s'", map_id, day, exc_info=True
+        )
+
 
 @data_router.post("/{map_name}/data/upload/{mode}")
 async def upload_region_data(
@@ -182,9 +329,106 @@ async def upload_region_data(
 ):
     require_localhost(request)
     validate_map(map_name)
-    payload = await request.json()
 
     mode_norm = (mode or "").strip().lower()
+    is_ledger = mode_norm == LEDGER_UPLOAD_MODE
+    payload = await _read_json_body(
+        request, LEDGER_MAX_BODY_BYTES if is_ledger else UPLOAD_MAX_BODY_BYTES
+    )
+
+    if is_ledger:
+        # SF POSTs one economy snapshot here every 300s per map. Without this
+        # branch the mode falls through to the defines/ writer below and the
+        # whole season collapses into a single overwritten file. The mode string
+        # stays `chronicle` because the plugin owns the URL; everything on this
+        # side is `ledger` (see scripts/ledger/__init__.py).
+        entry = get_map_entry(map_name)
+        if entry is None:
+            raise HTTPException(status_code=404, detail=f"Unknown map '{map_name}'")
+        map_id = entry.id
+
+        if isinstance(payload, dict):
+            claimed = str(payload.get("map_id") or "").strip().lower()
+            if claimed and claimed != map_id:
+                if get_map_entry(claimed) is not None:
+                    # The payload names a *different* registered map: this is a
+                    # misrouted upload, and storing it would corrupt two series.
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            f"Snapshot map_id '{claimed}' does not match URL map "
+                            f"'{map_id}'"
+                        ),
+                    )
+                # Anything else is a naming difference between the plugin and
+                # our registry. Rejecting would silently drop every snapshot for
+                # this map forever; the URL's registry id is authoritative.
+                logger.warning(
+                    "Ledger snapshot for map '%s' claims map_id '%s'; storing "
+                    "under the URL's registry id",
+                    map_id,
+                    claimed,
+                )
+
+        try:
+            snapshot = normalize_snapshot(payload, map_id)
+        except LedgerPayloadError as exc:
+            raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
+
+        # Raw write is synchronous: it is the only durable copy of this
+        # 5-minute sample, and a BackgroundTask failure after a 200 would lose
+        # it silently. Promotion is derived from raw and can be retried.
+        try:
+            # Off the event loop: `store_raw` is blocking (gzip + fsync) and now
+            # waits on the per-map ledger lock for up to 30s, which a promote or
+            # a reindex can hold for a long raw scan. Awaited, not queued as a
+            # BackgroundTask - this is the only durable copy of the sample, so
+            # the caller has to learn whether it landed.
+            await run_in_threadpool(ledger_ingest.store_raw, map_id, snapshot)
+        except MapLockBusy as exc:
+            # `store_raw` takes the per-map ledger lock and gives up after 30s.
+            # A staff wipe or restore holding it longer is a *temporary* state,
+            # not a bad request: answer 503 + Retry-After so the plugin retries
+            # this 5-minute sample instead of seeing a 500 and dropping it.
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Map '{map_id}' ledger is locked by a maintenance "
+                    "operation; retry shortly."
+                ),
+                headers={"Retry-After": str(LEDGER_LOCK_RETRY_AFTER_SECONDS)},
+            ) from exc
+        background_tasks.add_task(_run_promote_ledger_day, map_id, snapshot["day"])
+
+        # ORDER MATTERS - keep capture_if_due last, for the same reason as the
+        # legacy path below. See the comment there.
+        from ..scripts.chronicle.capture import capture_if_due
+
+        # `map_id`, not the raw `map_name` segment. `validate_map` only checks
+        # `isalnum()`, so "/MAIN/data/upload/chronicle" reaches here with the
+        # ledger rows keyed on "main" and the segment still "MAIN"; handing the
+        # segment to the chronicle forked an orphan day series under "MAIN"
+        # whose sources never exist, retried on every upload forever. The
+        # registry id is the same key the ledger write above uses, and the same
+        # one every chronicle read route resolves through `ensure_map_access`.
+        background_tasks.add_task(capture_if_due, map_id)
+
+        # Return before the defines/ write: nothing about this mode belongs in
+        # defines/{map}/chronicle.json, and `_province_cache` holds compiled
+        # province geometry that an economy snapshot cannot invalidate.
+        return JSONResponse(
+            {
+                "message": f"ledger snapshot stored for '{map_id}'",
+                "map": map_id,
+                "day": snapshot["day"],
+                "captured_at": snapshot["captured_at"],
+                "server_day": snapshot["server_day"],
+                "complete": snapshot["complete"],
+                "factions": len(snapshot["factions"]),
+                "guilds": len(snapshot["guilds"]),
+            }
+        )
+
     if mode_norm in TITLE_TIERS:
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Title data must be a JSON object")
@@ -207,9 +451,23 @@ async def upload_region_data(
 
     _province_cache.pop(map_name, None)
 
+    # No scheduler exists in this app, so the daily chronicle rides the SF
+    # upload: capture_if_due returns immediately unless today has no snapshot
+    # yet. Imported here rather than at module scope because chronicle.capture
+    # reads through the loader/mapgen stack that already imports this module.
+    from ..scripts.chronicle.capture import capture_if_due
+
     if mode_norm == "map_markers":
         background_tasks.add_task(generate_zoc_overlays, map_name)
     if mode_norm == "infestation_data":
         background_tasks.add_task(create_infestation_map, map_name)
+
+    # ORDER MATTERS - keep capture_if_due last. BackgroundTasks run in the order
+    # they were added, and the chronicle snapshots defines/{map}/zoc_overlays.json
+    # off disk. Queued first, a map_markers upload would capture the *previous*
+    # overlays alongside the new markers, so every stored day held a zoc overlay
+    # that disagreed with the markers in the same snapshot - permanently, since
+    # the chronicle is the only copy of that day.
+    background_tasks.add_task(capture_if_due, map_name)
 
     return JSONResponse({"message": f"{mode} data saved for '{map_name}'"})

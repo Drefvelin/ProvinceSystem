@@ -39,6 +39,14 @@ export default function MapToolbar({
   const isBar = variant === "bar";
   const isSidebar = variant === "sidebar";
 
+  /*
+   * One list, offered identically on the live map and on a stored day. The
+   * chronicle used to filter this down to the two modes it could answer for;
+   * it no longer needs to, because every mode now has an honest day answer —
+   * either that day's capture or a source that genuinely does not vary. A mode
+   * with nothing stored for a given day falls through to `MapViewer`'s
+   * missing-capture panel rather than vanishing from the menu.
+   */
   const options = [
     ...BASE_MODE_OPTIONS,
     ...(mapId === "main" || mapId === "dev" ? EXTRA_MODE_OPTIONS : []),

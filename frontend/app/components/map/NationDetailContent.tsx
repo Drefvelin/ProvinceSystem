@@ -70,7 +70,13 @@ export default function NationDetailContent({
         <div className="flex shrink-0 flex-col items-center">
           <MapAuthImage
             mapId={mapId}
-            path={`/${mapId}/banners/${mapType}/${regionInfo.banner}.png`}
+            // `banner` is a raw field out of region data, which on a stored
+            // day is an immutable file this app did not produce. Unencoded,
+            // `"../../.."` walks to a different backend path and `"x?next=/e"`
+            // smuggles a query and drops the `.png`.
+            path={`/${mapId}/banners/${mapType}/${encodeURIComponent(
+              regionInfo.banner
+            )}.png`}
             sessionToken={sessionToken}
             alt={`${regionInfo.title} banner`}
             className="image-render-pixel w-24 rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_15%,transparent)] shadow-md"

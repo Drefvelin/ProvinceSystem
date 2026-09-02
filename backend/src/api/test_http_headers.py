@@ -13,7 +13,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
+
+# The routes take the *normalised* map id from ensure_map_access's MapEntry
+# (a raw path segment like "/%20MaIn/..." passes the gate as "main"), so a stub
+# gate has to hand back something with an .id or the routes key their caches
+# and paths on a mock object.
+_GATE = {"return_value": SimpleNamespace(id="main")}
 
 from fastapi import Response
 
@@ -164,7 +171,7 @@ class MapDataJsonRevalidateTest(unittest.IsolatedAsyncioTestCase):
             with open(nation_path, "w", encoding="utf-8") as handle:
                 handle.write('{"Lantan": {"id": "Lantan", "rgb": "51,200,210"}}')
 
-            with patch("src.api.data_routes.ensure_map_access"):
+            with patch("src.api.data_routes.ensure_map_access", **_GATE):
                 with patch("src.api.data_routes.defines_file", return_value=nation_path):
                     response = await data_routes.get_map_name_data(
                         "main", "nation", None
@@ -185,7 +192,7 @@ class MapDataJsonRevalidateTest(unittest.IsolatedAsyncioTestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             missing = os.path.join(tmp, "nope.json")
-            with patch("src.api.data_routes.ensure_map_access"):
+            with patch("src.api.data_routes.ensure_map_access", **_GATE):
                 with patch("src.api.data_routes.defines_file", return_value=missing):
                     response = await data_routes.get_map_name_data("main", "nope", None)
 
@@ -200,7 +207,7 @@ class CompiledProvincesEtagTest(unittest.IsolatedAsyncioTestCase):
         data_routes.clear_province_cache("main")
         self.addCleanup(data_routes.clear_province_cache, "main")
 
-        with patch("src.api.data_routes.ensure_map_access"):
+        with patch("src.api.data_routes.ensure_map_access", **_GATE):
             with patch(
                 "src.api.data_routes.build_compiled_provinces",
                 return_value={"1": {"province_id": "1"}},
@@ -226,7 +233,7 @@ class CompiledProvincesEtagTest(unittest.IsolatedAsyncioTestCase):
         data_routes.clear_province_cache("main")
         self.addCleanup(data_routes.clear_province_cache, "main")
 
-        with patch("src.api.data_routes.ensure_map_access"):
+        with patch("src.api.data_routes.ensure_map_access", **_GATE):
             with patch(
                 "src.api.data_routes.build_compiled_provinces",
                 return_value={"1": {"province_id": "1"}},
@@ -244,7 +251,7 @@ class CompiledProvincesEtagTest(unittest.IsolatedAsyncioTestCase):
         data_routes.clear_province_cache("main")
         self.addCleanup(data_routes.clear_province_cache, "main")
 
-        with patch("src.api.data_routes.ensure_map_access"):
+        with patch("src.api.data_routes.ensure_map_access", **_GATE):
             with patch(
                 "src.api.data_routes.build_compiled_provinces",
                 return_value={"1": {"province_id": "1"}},
@@ -268,7 +275,7 @@ class MarkersEtagTest(unittest.IsolatedAsyncioTestCase):
         from src.api import data_routes
 
         payload = {"map_id": "main", "settlements": [], "forts": []}
-        with patch("src.api.data_routes.ensure_map_access"):
+        with patch("src.api.data_routes.ensure_map_access", **_GATE):
             with patch(
                 "src.api.data_routes.build_markers_response", return_value=payload
             ):
@@ -283,7 +290,7 @@ class MarkersEtagTest(unittest.IsolatedAsyncioTestCase):
     async def test_changed_markers_send_a_new_body(self) -> None:
         from src.api import data_routes
 
-        with patch("src.api.data_routes.ensure_map_access"):
+        with patch("src.api.data_routes.ensure_map_access", **_GATE):
             with patch(
                 "src.api.data_routes.build_markers_response",
                 return_value={"map_id": "main", "settlements": []},

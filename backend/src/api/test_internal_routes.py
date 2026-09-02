@@ -38,6 +38,23 @@ def _request_with_host(host: str, forwarded_for: str | None = None) -> MagicMock
     return request
 
 
+def _stub_json_body(request: MagicMock, payload: object) -> None:
+    """Feed a mocked Request through `data_routes._read_json_body`.
+
+    That reader streams the body under a byte ceiling rather than calling
+    `request.json()`, so stubbing `.json` no longer reaches the handler — the
+    body has to arrive as chunks, with a Content-Length for the early check.
+    """
+    body = json.dumps(payload).encode("utf-8")
+    request.headers["Content-Length"] = str(len(body))
+
+    async def _stream():
+        yield body
+
+    request.stream = _stream
+
+
+
 class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
     async def test_upload_queue_rejects_remote(self) -> None:
         from src.api.claim_routes import upload_queue
@@ -149,10 +166,9 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             county_path = os.path.join(tmp, "county.json")
             request = _request_with_host("172.18.0.1")
-            request.json = AsyncMock(
-                return_value={
-                    "COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"},
-                }
+            _stub_json_body(
+                request,
+                {"COUNTY_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"}},
             )
             with patch("src.api.data_routes.validate_map"), patch(
                 "src.api.data_routes.validate_title_tier",
@@ -179,7 +195,7 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
             with open(duchy_path, "w", encoding="utf-8") as handle:
                 handle.write('{"keep": true}')
             request = _request_with_host("172.18.0.1")
-            request.json = AsyncMock(return_value={})
+            _stub_json_body(request, {})
             with patch("src.api.data_routes.validate_map"), patch(
                 "src.api.data_routes.defines_file",
                 return_value=duchy_path,
@@ -195,6 +211,111 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
             defines.assert_not_called()
             with open(duchy_path, encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), '{"keep": true}')
+
+
+class ChronicleSnapshotTriggerTest(unittest.IsolatedAsyncioTestCase):
+    """The LAN-reachable capture trigger: no `force`, one capture per map."""
+
+    def setUp(self) -> None:
+        from src.api import chronicle_routes
+
+        self.routes = chronicle_routes
+        chronicle_routes._in_flight_maps.clear()
+        self.addCleanup(chronicle_routes._in_flight_maps.clear)
+
+    def test_force_is_not_part_of_the_route_surface(self) -> None:
+        """`force=true` re-writes stored history; this gate is the whole LAN."""
+        import inspect
+
+        params = inspect.signature(self.routes.create_chronicle_snapshot).parameters
+        self.assertNotIn("force", params)
+
+    async def test_localhost_trigger_queues_one_capture(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        tasks = BackgroundTasks()
+
+        response = await self.routes.create_chronicle_snapshot("main", request, tasks)
+
+        self.assertEqual(200, response.status_code)
+        body = json.loads(response.body)
+        self.assertTrue(body["success"])
+        self.assertNotIn("force", body)
+        self.assertEqual(1, len(tasks.tasks))
+        self.assertEqual(("main", None), tasks.tasks[0].args)
+
+    async def test_second_trigger_while_one_is_in_flight_is_409(self) -> None:
+        """A LAN peer looping this must not fill the 40-slot threadpool."""
+        request = _request_with_host("127.0.0.1")
+
+        first = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        second = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+
+        self.assertEqual(200, first.status_code)
+        self.assertEqual(409, second.status_code)
+        self.assertFalse(json.loads(second.body)["success"])
+
+    async def test_a_busy_map_does_not_block_another_map(self) -> None:
+        request = _request_with_host("127.0.0.1")
+
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+        other = await self.routes.create_chronicle_snapshot(
+            "dev", request, BackgroundTasks()
+        )
+
+        self.assertEqual(200, other.status_code)
+
+    async def test_an_abandoned_slot_is_reclaimed_after_the_ttl(self) -> None:
+        """The claim is in the handler, the release in the BackgroundTask.
+
+        A response that never sends means the task never runs, and without an
+        expiry that map would answer 409 for the life of the process.
+        """
+        request = _request_with_host("127.0.0.1")
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+
+        # As if the claim had happened one second past the TTL.
+        stale = self.routes._in_flight_maps["main"]
+        self.routes._in_flight_maps["main"] = (
+            stale - self.routes._CAPTURE_SLOT_TTL_SECONDS - 1
+        )
+
+        again = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(200, again.status_code)
+
+    async def test_a_slot_inside_the_ttl_is_still_held(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        await self.routes.create_chronicle_snapshot("main", request, BackgroundTasks())
+
+        self.routes._in_flight_maps["main"] -= (
+            self.routes._CAPTURE_SLOT_TTL_SECONDS - 5
+        )
+
+        blocked = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(409, blocked.status_code)
+
+    async def test_the_slot_is_released_even_when_the_capture_raises(self) -> None:
+        request = _request_with_host("127.0.0.1")
+        tasks = BackgroundTasks()
+        await self.routes.create_chronicle_snapshot("main", request, tasks)
+
+        def _boom(*args, **kwargs):
+            raise RuntimeError("capture exploded")
+
+        with patch("src.scripts.chronicle.capture.capture_snapshot", _boom):
+            self.routes._run_capture("main", None)
+
+        again = await self.routes.create_chronicle_snapshot(
+            "main", request, BackgroundTasks()
+        )
+        self.assertEqual(200, again.status_code)
 
 
 if __name__ == "__main__":

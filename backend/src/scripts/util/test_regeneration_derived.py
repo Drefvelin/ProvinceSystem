@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import numpy as np
+
 from . import regeneration
 from .regeneration import (
     _RegenTimings,
@@ -153,11 +155,14 @@ class TestRunDerivedArtifacts(_DerivedTestCase):
         self.write(self.input_file(self.map_name, "map.png"), "base")
 
     def _patched_run(self, twice: bool = False) -> dict[str, int]:
-        recorded = {"grid": 0, "runs": 0, "geometry": 0, "preview": 0}
+        recorded = {"grid": 0, "q4": 0, "runs": 0, "geometry": 0, "preview": 0}
 
-        def grid(map_name: str, source=None) -> None:
-            recorded["grid"] += 1
-            self.write(self.defines_file(map_name, regeneration.GRID_FILENAME), "g")
+        def grid(map_name: str, dest=None, source=None, scale: int = 1) -> None:
+            # The q4 variant goes through the same writer with an explicit
+            # dest, so tell the two apart by the target filename.
+            path = dest or self.defines_file(map_name, regeneration.GRID_FILENAME)
+            recorded["q4" if regeneration.Q4_GRID_FILENAME in path else "grid"] += 1
+            self.write(path, "g")
 
         # The grid entry writes both artifacts, so both outputs must exist or the
         # entry is never considered up to date.
@@ -182,8 +187,12 @@ class TestRunDerivedArtifacts(_DerivedTestCase):
 
         # run_derived_artifacts decodes provinces.png once and hands the array
         # to both writers, so the decode needs stubbing too.
+        # A real (tiny) array: _build_q4_grid decimates it for the q4 variant,
+        # so a None stand-in would not survive the arithmetic.
         with patch.object(
-            regeneration, "build_province_id_map", lambda name: (2, 2, None)
+            regeneration,
+            "build_province_id_map",
+            lambda name: (4, 4, np.ones((4, 4), dtype=np.uint16)),
         ), \
                 patch.object(regeneration, "write_province_id_grid_file", grid), \
                 patch.object(regeneration, "write_province_id_runs_file", runs), \
@@ -200,28 +209,56 @@ class TestRunDerivedArtifacts(_DerivedTestCase):
         return recorded
 
     def test_first_run_builds_all_three(self) -> None:
-        self.assertEqual(self._patched_run(), {"grid": 1, "runs": 1, "geometry": 1, "preview": 1})
+        self.assertEqual(
+            self._patched_run(),
+            {"grid": 1, "q4": 1, "runs": 1, "geometry": 1, "preview": 1},
+        )
 
     def test_second_run_rebuilds_nothing(self) -> None:
         self.assertEqual(
-            self._patched_run(twice=True), {"grid": 1, "runs": 1, "geometry": 1, "preview": 1}
+            self._patched_run(twice=True),
+            {"grid": 1, "q4": 1, "runs": 1, "geometry": 1, "preview": 1},
         )
 
     def test_province_change_rebuilds_province_artifacts_only(self) -> None:
         self._patched_run()
         self.write(self.input_file(self.map_name, "provinces.png"), "new-pixels")
-        self.assertEqual(self._patched_run(), {"grid": 1, "runs": 1, "geometry": 1, "preview": 0})
+        self.assertEqual(
+            self._patched_run(),
+            {"grid": 1, "q4": 1, "runs": 1, "geometry": 1, "preview": 0},
+        )
 
     def test_map_change_rebuilds_preview_only(self) -> None:
         self._patched_run()
         self.write(self.input_file(self.map_name, "map.png"), "new-base")
-        self.assertEqual(self._patched_run(), {"grid": 0, "runs": 0, "geometry": 0, "preview": 1})
+        self.assertEqual(
+            self._patched_run(),
+            {"grid": 0, "q4": 0, "runs": 0, "geometry": 0, "preview": 1},
+        )
 
     def test_env_kill_switch_skips_geometry(self) -> None:
         with patch.dict(os.environ, {"REGEN_SKIP_PROVINCE_GEOMETRY": "1"}):
             self.assertEqual(
-                self._patched_run(), {"grid": 1, "runs": 1, "geometry": 0, "preview": 1}
+                self._patched_run(),
+                {"grid": 1, "q4": 1, "runs": 1, "geometry": 0, "preview": 1},
             )
+
+    def test_q4_grid_is_rebuilt_with_the_grid_and_runs(self) -> None:
+        """geometry_version hashes the runs, so a q4 grid left behind by a regen
+        is served as fresh geometry while holding the previous map's pixels."""
+        self._patched_run()
+        q4 = self.defines_file(self.map_name, regeneration.Q4_GRID_FILENAME)
+        self.assertTrue(os.path.isfile(q4))
+
+    def test_missing_q4_grid_alone_triggers_a_rebuild(self) -> None:
+        """A map that has never had a q4 grid must acquire one on the next regen
+        even though provinces.png has not changed since the last stamp."""
+        self._patched_run()
+        os.remove(self.defines_file(self.map_name, regeneration.Q4_GRID_FILENAME))
+        self.assertEqual(
+            self._patched_run(),
+            {"grid": 1, "q4": 1, "runs": 1, "geometry": 0, "preview": 0},
+        )
 
 
 class TestWarmWebpCache(_DerivedTestCase):
@@ -287,3 +324,47 @@ class TestWarmWebpCache(_DerivedTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestQ4GridApplicability(_DerivedTestCase):
+    """A map whose provinces.png is not a multiple of 4 has no q4 artifact.
+
+    It must not be listed as a required output in that case, or the grid entry
+    would look permanently stale and re-decode provinces.png on every regen.
+    """
+
+    def _write_grid(self, width: int, height: int) -> None:
+        import gzip
+        import struct
+
+        from ..province_id_grid import serialize_province_id_grid
+
+        ids = np.zeros((height, width), dtype=np.uint16)
+        path = self.defines_file(self.map_name, regeneration.GRID_FILENAME)
+        with gzip.open(path, "wb") as handle:
+            handle.write(serialize_province_id_grid(width, height, ids))
+
+    def test_divisible_dimensions_expect_a_q4_grid(self) -> None:
+        self._write_grid(8, 8)
+        self.assertTrue(regeneration._q4_grid_applicable(self.map_name))
+
+    def test_indivisible_dimensions_expect_no_q4_grid(self) -> None:
+        self._write_grid(6, 6)
+        self.assertFalse(regeneration._q4_grid_applicable(self.map_name))
+
+    def test_absent_or_unreadable_grid_assumes_q4_is_wanted(self) -> None:
+        # Nothing to read the dimensions from, and we are about to rebuild
+        # anyway, so err toward requiring the artifact.
+        self.assertTrue(regeneration._q4_grid_applicable(self.map_name))
+        self.write(self.defines_file(self.map_name, regeneration.GRID_FILENAME), "junk")
+        self.assertTrue(regeneration._q4_grid_applicable(self.map_name))
+
+    def test_indivisible_build_removes_a_stale_q4_grid(self) -> None:
+        # A wrong q4 grid is worse than a missing one: the route's documented
+        # "404 and fall back to the runs" path only fires when the file is gone.
+        stale = self.defines_file(self.map_name, regeneration.Q4_GRID_FILENAME)
+        self.write(stale, "old-pixels")
+        regeneration._build_q4_grid(
+            self.map_name, (6, 6, np.ones((6, 6), dtype=np.uint16))
+        )
+        self.assertFalse(os.path.exists(stale))

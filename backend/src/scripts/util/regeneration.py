@@ -1,7 +1,9 @@
 import asyncio
+import gzip
 import hashlib
 import os
 import json
+import struct
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -23,8 +25,12 @@ from ..mapgen.zocgen import generate_zoc_overlays
 from ..map_tools.province_geometry import write_province_geometry
 from ..province_id_grid import (
     GRID_FILENAME,
+    HEADER_SIZE as GRID_HEADER_SIZE,
     RUNS_FILENAME,
     build_province_id_map,
+    decimate_province_id_map,
+    lost_province_ids,
+    province_id_grid_filename,
     write_province_id_grid_file,
     write_province_id_runs_file,
 )
@@ -296,6 +302,36 @@ def _rebuild_derived(
     _save_stamp(map_name, key, fingerprint)
 
 
+# The timelapse paints through the quarter-scale grid, and geometry_version
+# hashes the *runs*. Rebuilding grid+runs without q4 therefore advertises fresh
+# geometry while /data/province_id_grid_q4 still serves a grid decimated from the
+# previous provinces.png - the colours land on the wrong pixels, and the route's
+# documented "404 and fall back" path never fires because the file exists and is
+# merely wrong. So q4 is built here, from the same decoded array, not by hand.
+Q4_SCALE = 4
+Q4_GRID_FILENAME = province_id_grid_filename(Q4_SCALE)
+
+
+def _q4_grid_applicable(map_name: str) -> bool:
+    """Whether a scale-4 grid can exist for this map at all.
+
+    Decimation requires the factor to divide both dimensions exactly, so a map
+    whose provinces.png is not a multiple of 4 legitimately has no q4 artifact
+    and must not be treated as permanently stale (which would re-decode
+    provinces.png on every regen). Dimensions come from the 8-byte header of the
+    full-resolution grid, which is far cheaper than decoding the PNG again; when
+    that grid is absent we are rebuilding regardless, so assume it is wanted.
+    """
+    path = defines_file(map_name, GRID_FILENAME)
+    try:
+        with gzip.open(path, "rb") as fh:
+            header = fh.read(GRID_HEADER_SIZE)
+        width, height = struct.unpack("<ii", header)
+    except (OSError, ValueError, struct.error):
+        return True
+    return width % Q4_SCALE == 0 and height % Q4_SCALE == 0
+
+
 def _province_sources(map_name: str) -> list[str]:
     return [
         input_file(map_name, "provinces.png"),
@@ -316,6 +352,37 @@ def _geometry_outputs(map_name: str) -> list[str]:
     ]
 
 
+def _build_q4_grid(map_name: str, source) -> None:
+    """Write the quarter-scale grid from an already-decoded province id map.
+
+    Never fatal: the q4 grid is optional (the viewer falls back to the runs), so
+    a map whose dimensions are not divisible by 4 just loses the artifact - but
+    any *stale* copy is removed, because a wrong grid is worse than a missing one.
+    """
+    width, height, ids = source
+    dest = defines_file(map_name, Q4_GRID_FILENAME)
+    try:
+        q4 = decimate_province_id_map(width, height, ids, Q4_SCALE)
+    except ValueError as exc:
+        print(f"⚠️ Skipping q4 province id grid: {exc}")
+        try:
+            os.remove(dest)
+        except OSError:
+            pass
+        return
+
+    write_province_id_grid_file(map_name, dest=dest, source=q4)
+
+    lost = lost_province_ids(ids, q4[2])
+    if lost:
+        # Not fatal - the timelapse still renders - but a province that exists
+        # in the geometry and nowhere in the grid must not disappear quietly.
+        shown = ", ".join(str(pid) for pid in lost[:20])
+        if len(lost) > 20:
+            shown += f", ... (+{len(lost) - 20} more)"
+        print(f"⚠️ q4 grid dropped {len(lost)} province(s): {shown}")
+
+
 def run_derived_artifacts(map_name: str, timings: _RegenTimings) -> None:
     """Rebuild province/preview derivatives whose sources changed."""
     province_sources = _province_sources(map_name)
@@ -325,20 +392,25 @@ def run_derived_artifacts(map_name: str, timings: _RegenTimings) -> None:
     # independently and leave the editor decoding runs that disagree with the
     # grid — a mismatch nothing downstream can detect.
     def _build_province_id_artifacts() -> None:
-        # Both artifacts encode the same array, so decode provinces.png once.
+        # All three artifacts encode the same array, so decode provinces.png once.
         source = build_province_id_map(map_name)
         write_province_id_grid_file(map_name, source=source)
         write_province_id_runs_file(map_name, source=source)
+        _build_q4_grid(map_name, source)
+
+    outputs = [
+        defines_file(map_name, GRID_FILENAME),
+        defines_file(map_name, RUNS_FILENAME),
+    ]
+    if _q4_grid_applicable(map_name):
+        outputs.append(defines_file(map_name, Q4_GRID_FILENAME))
 
     _rebuild_derived(
         map_name,
         "province_id_grid",
-        "province id grid + runs",
+        "province id grid + runs + q4",
         province_sources,
-        [
-            defines_file(map_name, GRID_FILENAME),
-            defines_file(map_name, RUNS_FILENAME),
-        ],
+        outputs,
         _build_province_id_artifacts,
         timings,
     )

@@ -2,40 +2,46 @@
 import { useEffect, useRef } from "react";
 
 import type { MapId } from "../components/map/types";
-import { fetchMapJson } from "@/lib/map/api";
+import { fetchGuildNameCache } from "@/app/lib/map/dataSource";
 
 export function useGuildCache(
   mapId: MapId,
-  sessionToken?: string | null
+  sessionToken?: string | null,
+  /**
+   * A chronicle day, or `null` for the live map. `trade` is one of the six
+   * captured sources, so a stored day has real guild names rather than today's.
+   * Taken as a parameter, not read from context, so the call site shows it.
+   */
+  day: string | null = null
 ) {
-  const guildNameCacheRef = useRef<Record<string, string>>({});
+  // Null-prototype for the same reason `fetchGuildNameCache` builds one: this
+  // ref is probed as `current[guildId]` with ids straight off the wire, and a
+  // plain `{}` answers `constructor` or `toString` with an inherited function.
+  const guildNameCacheRef = useRef<Record<string, string>>(Object.create(null));
 
   useEffect(() => {
     let cancelled = false;
 
-    void fetchMapJson<Record<string, { name?: string }>>(
-      `/${mapId}/data/trade`,
-      { sessionToken }
-    )
-      .then((guilds) => {
+    void fetchGuildNameCache({ mapId, day, sessionToken })
+      .then((names) => {
         if (cancelled) return;
-
-        const map: Record<string, string> = {};
-        for (const [id, g] of Object.entries(guilds)) {
-          map[id] = g.name ?? id;
-        }
-        guildNameCacheRef.current = map;
+        guildNameCacheRef.current = names;
       })
       .catch(() => {
+        // Unchanged from before: any failure — including a day that never
+        // captured `trade`, which arrives as `ChronicleDayFileMissingError` —
+        // leaves the cache empty and hover falls back to raw guild ids. A
+        // missing name is cosmetic, so this stays silent rather than logging
+        // once per day scrubbed past.
         if (!cancelled) {
-          guildNameCacheRef.current = {};
+          guildNameCacheRef.current = Object.create(null);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [mapId, sessionToken]);
+  }, [mapId, sessionToken, day]);
 
   return guildNameCacheRef;
 }
