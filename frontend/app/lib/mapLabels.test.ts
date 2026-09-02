@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   LABEL_GLYPH_WIDTH_EM,
+  LABEL_PATH_OVERSHOOT_RATIO,
   MIN_PIXEL_AREA,
   MIN_PROVINCES,
   cleanRegionName,
@@ -14,6 +15,7 @@ import {
   connectedComponents,
   directHoldingProvinces,
   estimatedLabelWidthPx,
+  extendLabelEndpoints,
   fontSizeForLabel,
   fullRealmProvinces,
   graphDiameterEndpoints,
@@ -27,6 +29,7 @@ import {
   orientLabelEndpoints,
   pixelDiameterEndpoints,
   provincesForNationLabel,
+  segmentPixelLength,
   LABEL_MAX_SCREEN_PX,
   LABEL_MIN_SCREEN_PX,
   labelScreenFontSize,
@@ -150,6 +153,42 @@ describe("labelArcPathD", () => {
   });
 });
 
+describe("extendLabelEndpoints", () => {
+  it("grows the chord about its midpoint without turning it", () => {
+    const extended = extendLabelEndpoints(0, 100, 200, 100, 0.3);
+
+    expect(extended).toEqual({ x1: -30, y1: 100, x2: 230, y2: 100 });
+    // Midpoint and direction are what `cx`/`cy`/`angleDeg` are read from.
+    expect((extended.x1 + extended.x2) / 2).toBe(100);
+    expect((extended.y1 + extended.y2) / 2).toBe(100);
+  });
+
+  it("grows a diagonal chord along its own axis", () => {
+    const extended = extendLabelEndpoints(0, 0, 60, 80, 0.5);
+
+    expect(labelAngleDeg(extended.x1, extended.y1, extended.x2, extended.y2))
+      .toBeCloseTo(labelAngleDeg(0, 0, 60, 80), 5);
+    expect(
+      segmentPixelLength(extended.x1, extended.y1, extended.x2, extended.y2)
+    ).toBeCloseTo(100 * 1.5, 5);
+  });
+
+  it("leaves a degenerate chord and a zero ratio alone", () => {
+    expect(extendLabelEndpoints(5, 5, 5, 5, 0.3)).toEqual({
+      x1: 5,
+      y1: 5,
+      x2: 5,
+      y2: 5,
+    });
+    expect(extendLabelEndpoints(0, 0, 10, 0, 0)).toEqual({
+      x1: 0,
+      y1: 0,
+      x2: 10,
+      y2: 0,
+    });
+  });
+});
+
 describe("orientLabelEndpoints", () => {
   it("swaps when the raw angle points left", () => {
     expect(orientLabelEndpoints(100, 0, 0, 0)).toEqual({
@@ -257,6 +296,44 @@ describe("computeNationLabels", () => {
     });
     expect(labels[0].angleDeg).toBeCloseTo(0, 5);
     expect(labels[0].pathD).toContain("Q");
+  });
+
+  it("sets the name along a baseline longer than the chord it measured", () => {
+    // Regression: text sized to exactly the chord overran it, and SVG drops
+    // glyphs falling off a textPath rather than shrinking them, so short
+    // all-caps names lost their first letter (`COUNTY_45` as `OUNTY_45`).
+    const labels = computeNationLabels(
+      { TestNation: { name: "COUNTY_45", provinces: [1, 2, 3] } },
+      chainNeighbors,
+      chainCentroids,
+      { minPixelArea: 10000 }
+    );
+
+    expect(labels).toHaveLength(1);
+    const label = labels[0];
+
+    const [startX, startY, endX, endY] = [
+      Number(label.pathD.split(" ")[1]),
+      Number(label.pathD.split(" ")[2]),
+      Number(label.pathD.split(" ")[6]),
+      Number(label.pathD.split(" ")[7]),
+    ];
+    expect(segmentPixelLength(startX, startY, endX, endY)).toBeCloseTo(
+      200 * (1 + LABEL_PATH_OVERSHOOT_RATIO),
+      5
+    );
+    expect(
+      segmentPixelLength(startX, startY, endX, endY)
+    ).toBeGreaterThan(estimatedLabelWidthPx(label.fontSize, label.text));
+
+    // Sizing and placement still describe the real chord: hover scaling and the
+    // GIF export's flat re-layout read these, not `pathD`.
+    expect(label.segmentPx).toBe(200);
+    expect(label.fontSize).toBe(fontSizeForLabel(200, "COUNTY_45"));
+    expect(label.cx).toBe(100);
+    expect(label.cy).toBe(0);
+    expect(label.x1).toBe(0);
+    expect(label.x2).toBe(200);
   });
 
   it("emits two labels for two large disconnected components", () => {

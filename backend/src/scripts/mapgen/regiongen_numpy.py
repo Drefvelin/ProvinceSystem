@@ -21,8 +21,8 @@ from ..util.colour_mapping import build_color_mapping, get_color_overrides
 from ..util.display_colour import display_rgb, hover_rgb, occupation_display_rgb
 from ..util.overlay_metadata import (
     crop_to_content,
-    merge_overlay_metadata,
     rgb_tuple_to_str,
+    write_overlay_metadata,
 )
 from ..util.queue import load_queue, compile_queue, clear_mode
 from ..util.dirs import input_file, validate_map
@@ -480,7 +480,7 @@ def generate_regions_numpy(
 
     print()
 
-    merge_overlay_metadata(map_name, mode, metadata_by_rgb)
+    write_overlay_metadata(map_name, mode, metadata_by_rgb, merge=queued_regen)
 
     if queued_regen:
         clear_mode(map_name, mode)

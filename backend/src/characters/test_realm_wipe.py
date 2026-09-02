@@ -22,7 +22,9 @@ NOW = "2026-01-01T00:00:00Z"
 PNG = b"\x89PNG\r\n\x1a\n-not-a-real-png"
 
 
-class RealmWipeTest(unittest.TestCase):
+class _CharacterDbFixture:
+    """Temp-dir sqlite plus wardrobe files, shared by the wipe test cases."""
+
     def setUp(self) -> None:
         # connect() leaves connections for the GC, which keeps the db file open on
         # Windows until it runs.
@@ -77,26 +79,15 @@ class RealmWipeTest(unittest.TestCase):
         path.write_bytes(PNG)
         return path
 
-    def _seed_realm(self, conn, realm: str) -> None:
-        """One character with wardrobe + lore, plus one pending create."""
-        uuid = f"player-{realm}"
-        cid = f"char-{realm}"
-        create_id = f"create-{realm}"
+    def _seed_character(self, conn, realm: str, uuid: str, cid: str) -> None:
+        """Roster row plus one lore customisation and a wardrobe slot with a png."""
         conn.execute(
             """
             INSERT INTO character_roster (
                 player_uuid, realm_id, character_id, name, status, updated_at
             ) VALUES (?, ?, ?, ?, 'ALIVE', ?)
             """,
-            (uuid, realm, cid, f"Char {realm}", NOW),
-        )
-        conn.execute(
-            """
-            INSERT INTO character_creates (
-                id, player_uuid, payload, status, created_at, realm_id
-            ) VALUES (?, ?, '{}', 'pending', ?, ?)
-            """,
-            (create_id, uuid, NOW, realm),
+            (uuid, realm, cid, f"Char {cid}", NOW),
         )
         conn.execute(
             """
@@ -115,6 +106,21 @@ class RealmWipeTest(unittest.TestCase):
             """,
             (uuid, cid, slot_rel, NOW),
         )
+        self._write_png(slot_rel)
+
+    def _seed_realm(self, conn, realm: str) -> None:
+        """One character with wardrobe + lore, plus one pending create."""
+        uuid = f"player-{realm}"
+        create_id = f"create-{realm}"
+        self._seed_character(conn, realm, uuid, f"char-{realm}")
+        conn.execute(
+            """
+            INSERT INTO character_creates (
+                id, player_uuid, payload, status, created_at, realm_id
+            ) VALUES (?, ?, '{}', 'pending', ?, ?)
+            """,
+            (create_id, uuid, NOW, realm),
+        )
         pending_rel = f"wardrobe/pending/{create_id}/base.png"
         conn.execute(
             """
@@ -124,7 +130,6 @@ class RealmWipeTest(unittest.TestCase):
             """,
             (create_id, pending_rel, NOW),
         )
-        self._write_png(slot_rel)
         self._write_png(pending_rel)
         conn.execute(
             """
@@ -184,8 +189,18 @@ class RealmWipeTest(unittest.TestCase):
             ).fetchone()
         return int(row["n"])
 
-    # -- tests ------------------------------------------------------------
+    def _rows_for_character(self, table: str, character_id: str) -> int:
+        from src.skins.db import connect
 
+        with connect() as conn:
+            row = conn.execute(
+                f"SELECT COUNT(*) AS n FROM {table} WHERE character_id = ?",
+                (character_id,),
+            ).fetchone()
+        return int(row["n"])
+
+
+class RealmWipeTest(_CharacterDbFixture, unittest.TestCase):
     def test_wipe_scopes_to_realm(self) -> None:
         from src.characters.realm_wipe import wipe_realm_character_data
 
@@ -305,6 +320,124 @@ class RealmWipeTest(unittest.TestCase):
                 )
         self.assertEqual(400, ctx.exception.status_code)
         self.assertEqual(1, self._count("character_roster", "main"))
+
+
+class DeleteCharactersTest(_CharacterDbFixture, unittest.TestCase):
+    def _seed(self) -> None:
+        from src.skins.db import connect
+
+        super()._seed()
+        # Second character on the same player: the keeper in a tagged wipe.
+        with connect() as conn:
+            self._seed_character(conn, "main", "player-main", "char-main-2")
+            conn.commit()
+
+    def _body(self, ids: list[str], realm: str | None = "main"):
+        routes = importlib.import_module("src.api.characters_routes")
+        return routes.PluginCharacterDeleteBody(character_ids=ids, realm_id=realm)
+
+    def test_deletes_only_requested_ids(self) -> None:
+        from src.characters.realm_wipe import delete_characters_for_realm
+
+        gone_png = self.root / "wardrobe/player-main/char-main/base.png"
+        keeper_png = self.root / "wardrobe/player-main/char-main-2/base.png"
+
+        out = delete_characters_for_realm("main", ["char-main"])
+
+        self.assertEqual("main", out["realm_id"])
+        self.assertEqual(1, out["requested"])
+        self.assertEqual(
+            {
+                "character_wardrobe_slots": 1,
+                "lore_item_customisations": 1,
+                "character_roster": 1,
+            },
+            out["deleted"],
+        )
+        self.assertEqual(3, out["total"])
+        self.assertEqual(1, out["pngs_deleted"])
+
+        for table in ("character_roster", "lore_item_customisations",
+                      "character_wardrobe_slots"):
+            self.assertEqual(0, self._rows_for_character(table, "char-main"), table)
+            self.assertEqual(1, self._rows_for_character(table, "char-main-2"), table)
+        self.assertFalse(gone_png.exists())
+        self.assertTrue(keeper_png.is_file())
+
+    def test_keeps_character_creates(self) -> None:
+        from src.characters.realm_wipe import delete_characters_for_realm
+
+        delete_characters_for_realm("main", ["char-main", "char-main-2"])
+
+        self.assertEqual(1, self._count("character_creates", "main"))
+        self.assertEqual(1, self._create_wardrobe_rows("main"))
+        self.assertTrue(
+            (self.root / "wardrobe/pending/create-main/base.png").is_file()
+        )
+
+    def test_scoped_to_realm(self) -> None:
+        from src.characters.realm_wipe import delete_characters_for_realm
+
+        out = delete_characters_for_realm("main", ["char-dev"])
+
+        self.assertEqual(0, out["total"])
+        for table in ("character_roster", "lore_item_customisations",
+                      "character_wardrobe_slots"):
+            self.assertEqual(1, self._rows_for_character(table, "char-dev"), table)
+        self.assertTrue(
+            (self.root / "wardrobe/player-dev/char-dev/base.png").is_file()
+        )
+
+    def test_unknown_and_blank_ids_are_noops(self) -> None:
+        from src.characters.realm_wipe import delete_characters_for_realm
+
+        out = delete_characters_for_realm("main", ["", "  ", "does-not-exist"])
+
+        self.assertEqual(1, out["requested"])
+        self.assertEqual(0, out["total"])
+        self.assertEqual(0, out["pngs_deleted"])
+        self.assertEqual(2, self._count("character_roster", "main"))
+
+        empty = delete_characters_for_realm("main", [])
+        self.assertEqual(0, empty["requested"])
+        self.assertEqual(
+            {
+                "character_wardrobe_slots": 0,
+                "lore_item_customisations": 0,
+                "character_roster": 0,
+            },
+            empty["deleted"],
+        )
+
+    def test_route_requires_plugin_key(self) -> None:
+        from fastapi import HTTPException
+
+        routes = importlib.import_module("src.api.characters_routes")
+        body = self._body(["char-main"])
+
+        with mock.patch.dict(os.environ, {"PLUGIN_KEY": "test-key"}):
+            with self.assertRaises(HTTPException) as ctx:
+                routes.plugin_delete_characters(body=body, x_plugin_key=None)
+            self.assertEqual(401, ctx.exception.status_code)
+            self.assertEqual(2, self._count("character_roster", "main"))
+
+            out = routes.plugin_delete_characters(
+                body=body, x_plugin_key="test-key"
+            )
+        self.assertEqual(3, out["total"])
+        self.assertEqual(1, self._count("character_roster", "main"))
+
+    def test_route_rejects_invalid_realm(self) -> None:
+        from fastapi import HTTPException
+
+        routes = importlib.import_module("src.api.characters_routes")
+        body = self._body(["char-main"], realm="not a realm!")
+
+        with mock.patch.dict(os.environ, {"PLUGIN_KEY": "test-key"}):
+            with self.assertRaises(HTTPException) as ctx:
+                routes.plugin_delete_characters(body=body, x_plugin_key="test-key")
+        self.assertEqual(400, ctx.exception.status_code)
+        self.assertEqual(2, self._count("character_roster", "main"))
 
 
 if __name__ == "__main__":

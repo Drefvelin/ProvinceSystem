@@ -27,6 +27,22 @@ export const MIN_PIXEL_AREA = 15000;
 export const LABEL_GLYPH_WIDTH_EM = 0.58;
 /** Quadratic arc bulge as a fraction of chord length (screen-up). */
 export const LABEL_ARC_BULGE_RATIO = 0.08;
+/**
+ * Extra baseline length, as a fraction of the chord, for the `<textPath>` a
+ * name is set along.
+ *
+ * `fontSizeForLabel` sizes text so its *estimated* width equals the chord
+ * exactly, and `LABEL_GLYPH_WIDTH_EM` under-estimates all-caps Fraunces. Any
+ * such under-estimate makes the real text longer than the path, and SVG does
+ * not scale or ellipsize that: it drops whole glyphs whose position falls off
+ * the path end, which with `textAnchor="middle"` takes the leading character
+ * first (`COUNTY_45` rendered as `OUNTY_45`).
+ *
+ * Lengthening the baseline is free headroom: the path is `fill="none"` and is
+ * never stroked, so nothing new is drawn, and extending it symmetrically leaves
+ * the midpoint the text is centred on exactly where it was.
+ */
+export const LABEL_PATH_OVERSHOOT_RATIO = 0.3;
 /** Cap-center offset from baseline as a fraction of font size. */
 export const LABEL_TEXT_CENTER_OFFSET_EM = 0.38;
 export const LABEL_INK = "#2a1f14";
@@ -341,6 +357,36 @@ export function orientLabelEndpoints(
   return { x1, y1, x2, y2 };
 }
 
+/**
+ * The chord grown symmetrically about its own midpoint, for use as a text
+ * baseline rather than as geometry. Direction and midpoint are preserved, so
+ * `angleDeg`, `cx` and `cy` computed on the original chord stay correct.
+ */
+export function extendLabelEndpoints(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  ratio: number = LABEL_PATH_OVERSHOOT_RATIO
+): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len === 0 || ratio <= 0) {
+    return { x1, y1, x2, y2 };
+  }
+
+  const grow = (len * ratio) / 2;
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    x1: x1 - ux * grow,
+    y1: y1 - uy * grow,
+    x2: x2 + ux * grow,
+    y2: y2 + uy * grow,
+  };
+}
+
 export function labelArcPathD(
   x1: number,
   y1: number,
@@ -629,7 +675,17 @@ export function labelsForProvinces(
     const cx = (x1 + x2) / 2;
     const cy = (y1 + y2) / 2;
     const fontSize = fontSizeForLabel(segmentPx, name);
-    const pathOffset = labelPathCenterOffset(x1, y1, x2, y2, fontSize);
+    // Only the drawn baseline is lengthened. `fontSize` stays sized to the real
+    // chord, and `cx`/`cy`/`angleDeg`/`segmentPx` below stay on it too, so
+    // hover scaling and the GIF export's flat re-layout are unchanged.
+    const textPath = extendLabelEndpoints(x1, y1, x2, y2);
+    const pathOffset = labelPathCenterOffset(
+      textPath.x1,
+      textPath.y1,
+      textPath.x2,
+      textPath.y2,
+      fontSize
+    );
 
     labels.push({
       nationId,
@@ -645,7 +701,12 @@ export function labelsForProvinces(
       angleDeg: labelAngleDeg(x1, y1, x2, y2),
       segmentPx,
       fontSize,
-      pathD: labelArcPathD(x1, y1, x2, y2),
+      pathD: labelArcPathD(
+        textPath.x1,
+        textPath.y1,
+        textPath.x2,
+        textPath.y2
+      ),
       pathOffsetX: pathOffset.dx,
       pathOffsetY: pathOffset.dy,
     });

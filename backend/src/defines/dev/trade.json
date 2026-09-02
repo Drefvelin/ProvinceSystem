@@ -156,13 +156,7 @@
         ],
         "subjects": [],
         "overlord": null,
-        "banner": "51_200_210",
-        "overlay": {
-            "x": 0,
-            "y": 1147,
-            "w": 4215,
-            "h": 4425
-        }
+        "banner": "51_200_210"
     },
     "Lantel_Shipping": {
         "name": "Lantel Shipping",
@@ -174,12 +168,6 @@
         ],
         "subjects": [],
         "overlord": null,
-        "banner": "107_90_230",
-        "overlay": {
-            "x": 1316,
-            "y": 2763,
-            "w": 212,
-            "h": 308
-        }
+        "banner": "107_90_230"
     }
 }

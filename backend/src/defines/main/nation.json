@@ -275,13 +275,7 @@
         "subjects": [],
         "size": 1,
         "subject_size": 0,
-        "occupied_held": [],
-        "overlay": {
-            "x": 2903,
-            "y": 2314,
-            "w": 225,
-            "h": 222
-        }
+        "occupied_held": []
     },
     "Lantan": {
         "id": "Lantan",
@@ -519,12 +513,6 @@
             706,
             795,
             801
-        ],
-        "overlay": {
-            "x": 993,
-            "y": 2286,
-            "w": 2251,
-            "h": 1688
-        }
+        ]
     }
 }

@@ -4,7 +4,8 @@ from typing import Any
 
 from PIL import Image
 
-from .dirs import defines_file
+from .atomic import _write_atomic
+from .dirs import region_overlay_file
 
 
 def rgb_tuple_to_str(color: tuple[int, ...]) -> str:
@@ -43,33 +44,56 @@ def save_cropped(img: Image.Image, path: str, pad: int = 2) -> dict[str, int] | 
     return meta
 
 
-def merge_overlay_metadata(
+def load_overlay_metadata(map_name: str, mode: str) -> dict[str, dict[str, Any]]:
+    """This mode's crop boxes, keyed by `"r,g,b"`.
+
+    Empty when the sidecar is absent or unreadable, which is the honest answer
+    for a mode whose regions have never been generated: the map then draws no
+    overlay rather than positioning a PNG that does not exist.
+    """
+    path = region_overlay_file(map_name, mode)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    return {
+        rgb: entry
+        for rgb, entry in data.items()
+        if isinstance(rgb, str) and isinstance(entry, dict)
+    }
+
+
+def write_overlay_metadata(
     map_name: str,
     mode: str,
     metadata_by_rgb: dict[str, dict[str, Any]],
+    merge: bool,
 ) -> None:
-    if not metadata_by_rgb:
+    """Record where this mode's cropped region PNGs sit on the full map.
+
+    `merge` follows the regen that produced the boxes. A queued regen only
+    repaints the regions in the queue, so replacing the file would drop every
+    box it did not touch and blank those overlays on the map. A full regen
+    repaints everything, so replacing is what prunes the boxes of regions that
+    no longer exist.
+    """
+    path = region_overlay_file(map_name, mode)
+
+    data = load_overlay_metadata(map_name, mode) if merge else {}
+    if not data and not metadata_by_rgb and not os.path.exists(path):
+        # Nothing to record and nothing recorded before: leave the tree alone
+        # rather than planting an empty sidecar. An existing file is still
+        # rewritten, so a full regen that paints nothing prunes it.
         return
+    data.update(metadata_by_rgb)
 
-    path = defines_file(map_name, f"{mode}.json")
-    if not os.path.exists(path):
-        print(f"⚠️ No defines file for mode '{mode}', skipping overlay metadata merge.")
-        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    body = json.dumps(data, indent=4, ensure_ascii=False, sort_keys=True)
+    _write_atomic(path, body.encode("utf-8"), prefix=".overlays-")
 
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    updated = 0
-    for region in data.values():
-        if not isinstance(region, dict):
-            continue
-        rgb = region.get("rgb")
-        if not rgb or rgb not in metadata_by_rgb:
-            continue
-        region.update(metadata_by_rgb[rgb])
-        updated += 1
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-    print(f"✅ Merged overlay metadata for {updated} regions in '{mode}'")
+    print(f"✅ Wrote overlay metadata for {len(metadata_by_rgb)} regions in '{mode}'")

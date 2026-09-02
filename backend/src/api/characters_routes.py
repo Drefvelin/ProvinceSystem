@@ -38,7 +38,10 @@ from src.characters.lore_items import (
     resolve_pickable_texture,
     store_plugin_kit_skin,
 )
-from src.characters.realm_wipe import wipe_realm_character_data
+from src.characters.realm_wipe import (
+    delete_characters_for_realm,
+    wipe_realm_character_data,
+)
 from src.characters.roster import RosterError, replace_roster
 from src.characters.wardrobe import (
     WardrobeError,
@@ -861,6 +864,24 @@ def plugin_wipe_realm_data(
     _require_plugin(x_plugin_key)
     try:
         return wipe_realm_character_data(realm_id)
+    except CodeError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class PluginCharacterDeleteBody(BaseModel):
+    character_ids: list[str] = Field(default_factory=list)
+    realm_id: str | None = None
+
+
+@characters_router.post("/plugin/characters/delete")
+def plugin_delete_characters(
+    body: PluginCharacterDeleteBody,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Tagged wipe cleanup: drop site rows for ids deleted in-game. Creates stay."""
+    _require_plugin(x_plugin_key)
+    try:
+        return delete_characters_for_realm(body.realm_id, body.character_ids)
     except CodeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

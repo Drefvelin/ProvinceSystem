@@ -31,6 +31,8 @@ from ..scripts.ledger.schema import (
 )
 from ..scripts.loader.markers import build_markers_response
 from ..scripts.util.maplock import MapLockBusy
+from ..scripts.util.overlay_metadata import load_overlay_metadata
+from ..scripts.util.regen_types import MODES as REGION_MODES
 from ..scripts.mapgen.infestationgen import create_infestation_map, load_infestation_by_id
 from ..scripts.loader.province_metadata import load_province_metadata
 from ..scripts.mapgen.zocgen import generate_zoc_overlays
@@ -271,6 +273,46 @@ async def get_province_id_grid_q4(
         if_modified_since=if_modified_since,
     )
 
+
+def _join_overlay_metadata(map_name: str, mode: str, path: str) -> str | None:
+    """One mode's region data with each entry's generated crop box attached.
+
+    The map needs `overlay` to position a cropped region PNG, but that box is an
+    output artifact describing an image under output/, not something an author
+    (or the title editor) writes. Regen records it beside the PNGs and it is
+    joined back on by `rgb` here, so defines/ holds title data only and a
+    fullregen is the whole story for making overlays appear.
+
+    None means "nothing to join": no sidecar (this mode's regions have never
+    been generated) or a defines file this cannot parse. The caller then streams
+    the file verbatim, exactly as it did before the join existed.
+    """
+    overlays = load_overlay_metadata(map_name, mode)
+    if not overlays:
+        return None
+
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    for region in data.values():
+        if not isinstance(region, dict):
+            continue
+        rgb = region.get("rgb")
+        if not isinstance(rgb, str):
+            continue
+        entry = overlays.get(rgb)
+        if entry:
+            region.update(entry)
+
+    return json.dumps(data, ensure_ascii=False)
+
+
 @data_router.get("/{map_name}/data/{file}")
 async def get_map_name_data(
     map_name: str,
@@ -283,6 +325,19 @@ async def get_map_name_data(
     path = defines_file(map_name, f"{file}.json")
     if not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
+
+    # Only the region modes carry overlays, and only they pay the parse. The
+    # streaming path below stays for everything else, which is where it earns
+    # its keep: province_centroids/province_neighbors are 60-80 KB of static
+    # geometry that must keep 304ing on an mtime.
+    if file in REGION_MODES:
+        joined = _join_overlay_metadata(map_name, file, path)
+        if joined is not None:
+            return conditional_json_response(
+                body=joined,
+                if_none_match=if_none_match,
+            )
+
     # The response body was always the file verbatim; parsing and re-encoding it
     # only cost CPU. Streaming the file lets the shared ETag/Last-Modified
     # helper turn an unchanged geometry blob into a 304.
