@@ -96,7 +96,9 @@ function Section({
               key={c.id}
               item={c}
               linkable={
-                linkAlive && String(c.status || "").toUpperCase() === "ALIVE"
+                linkAlive &&
+                (String(c.status || "").toUpperCase() === "ALIVE" ||
+                  String(c.status || "").toLowerCase() === "pending")
               }
             />
           ))}
@@ -207,9 +209,10 @@ export default function CharacterList({
             items={pending}
             hint={
               pending.length > 0
-                ? "Applying on the game server can take up to a minute. Use Refresh if it stays pending."
+                ? "Applying on the game server can take up to a minute. Use Refresh if it stays pending. You can still open the character to edit kits and wardrobe."
                 : undefined
             }
+            linkAlive
           />
           <Section title="Rejected" items={rejected} />
           <Section title="Dead" items={dead} />

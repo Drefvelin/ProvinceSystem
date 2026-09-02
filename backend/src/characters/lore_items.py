@@ -54,12 +54,15 @@ def _kit_statuses_for_character(
     player_uuid: str, character_id: str
 ) -> dict[str, str] | None:
     """Return kit_id → status for a roster character, or None if not on roster."""
+    from src.characters.pending_create import fetch_owned_pending_create
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
     if not uuid or not cid:
         return None
+    if fetch_owned_pending_create(uuid, cid) is not None:
+        return {}
     with connect() as conn:
         row = conn.execute(
             """
@@ -126,10 +129,21 @@ def _require_customise_allowed(
     character_id: str,
     kit_id: str | None = None,
 ) -> None:
-    """Allow customise only for roster characters while that kit is claimable."""
+    """Allow customise for roster (claimable kit) or pending web create."""
+    from src.characters.pending_create import (
+        PendingCreateError,
+        resolve_player_character,
+    )
+
     uuid = (player_uuid or "").strip()
     cid = (character_id or "").strip()
     kit = (kit_id or "starter").strip().lower() or "starter"
+    try:
+        access = resolve_player_character(uuid, cid)
+    except PendingCreateError as e:
+        raise LoreItemError(str(e), status_code=e.status_code) from e
+    if access["kind"] == "pending":
+        return
     statuses = _kit_statuses_for_character(uuid, cid)
     if statuses is None:
         raise LoreItemError(
@@ -1001,14 +1015,23 @@ def list_lore_items(
 
 
 def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str, Any]:
-    """Full kits list for a roster character (all items + claimability)."""
+    """Full kits list for a roster or pending-create character."""
     from src.characters.creation_catalog import get_catalog
+    from src.characters.pending_create import (
+        PendingCreateError,
+        resolve_player_character,
+    )
     from src.characters.roster import get_player_meta
 
     uuid = (player_uuid or "").strip()
     if not uuid:
         raise LoreItemError("player_uuid is required", status_code=401)
     cid = _require_character_id(character_id)
+    try:
+        access = resolve_player_character(uuid, cid)
+    except PendingCreateError as e:
+        raise LoreItemError(str(e), status_code=e.status_code) from e
+    is_pending = access["kind"] == "pending"
     statuses = _kit_statuses_for_character(uuid, cid)
     if statuses is None:
         raise LoreItemError(
@@ -1039,6 +1062,8 @@ def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str,
         if not kid:
             continue
         status = statuses.get(kid) or "eligible"
+        if is_pending:
+            status = "eligible"
         claimable = _is_kit_claimable(kit_row, status)
         cd_raw = cooldowns.get(kid) if isinstance(cooldowns, dict) else None
         cooldown = None
@@ -1725,6 +1750,10 @@ def list_pending_for_plugin(realm_id: str | None = None) -> list[dict[str, Any]]
             FROM lore_item_customisations
             WHERE LOWER(COALESCE(state, '')) = ?
               AND realm_id = ?
+              AND character_id NOT IN (
+                  SELECT id FROM character_creates
+                  WHERE LOWER(COALESCE(status, '')) = 'pending'
+              )
             ORDER BY ready_at ASC, updated_at ASC
             """,
             (STATE_READY, realm),

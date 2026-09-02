@@ -10,6 +10,10 @@ from typing import Any
 from PIL import Image
 
 from src.characters.wardrobe_sign import sign_wardrobe_skin
+from src.characters.pending_create import (
+    PendingCreateError,
+    resolve_player_character,
+)
 from src.characters.roster import get_wardrobe_skin_slots
 from src.skins.db import DATA_DIR, WARDROBE_DIR, connect
 from src.skins.storage import StorageError, validate_png
@@ -706,8 +710,166 @@ def _build_wardrobe_payload(
     }
 
 
+def _get_pending_active(create_id: str) -> str | None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT wardrobe_active_slot FROM character_creates WHERE id = ?
+            """,
+            (create_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    try:
+        raw = row["wardrobe_active_slot"]
+    except (KeyError, IndexError):
+        raw = None
+    if raw is None or not str(raw).strip():
+        return None
+    return str(raw).strip().lower()
+
+
+def _set_pending_active(create_id: str, active: str | None) -> None:
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE character_creates
+            SET wardrobe_active_slot = ?
+            WHERE id = ?
+            """,
+            (active, create_id),
+        )
+        conn.commit()
+
+
+def _normalize_pending_active(
+    create_id: str,
+    active: str | None,
+    slots: dict[str, dict[str, Any]],
+    swappable: int,
+) -> str | None:
+    if active:
+        active = active.strip().lower()
+    if active in SWAPPABLE_SLOTS and _slot_unlocked(active, swappable):
+        row = slots.get(active)
+        if row and row.get("png_relpath"):
+            return active
+    base = slots.get("base")
+    if base and base.get("png_relpath") and _slot_unlocked("base", swappable):
+        if active != "base":
+            _set_pending_active(create_id, "base")
+        return "base"
+    if active is not None:
+        _set_pending_active(create_id, None)
+    return None
+
+
+def enforce_pending_wardrobe_slot_limits(
+    player_uuid: str, create_id: str
+) -> int:
+    """Delete locked extra pending slots; fix active. Returns swappable count."""
+    uuid = (player_uuid or "").strip()
+    cid = (create_id or "").strip()
+    swappable = swappable_slot_count(uuid)
+    slots = _load_pending_slots(cid)
+    wiped = False
+    for slot in ("extra_1", "extra_2"):
+        if _slot_unlocked(slot, swappable):
+            continue
+        row = slots.get(slot)
+        if not row:
+            continue
+        _delete_png(row.get("png_relpath"))
+        with connect() as conn:
+            conn.execute(
+                """
+                DELETE FROM character_create_wardrobe
+                WHERE create_id = ? AND slot = ?
+                """,
+                (cid, slot),
+            )
+            conn.commit()
+        wiped = True
+    if wiped:
+        slots = _load_pending_slots(cid)
+    active = _get_pending_active(cid)
+    _normalize_pending_active(cid, active, slots, swappable)
+    return swappable
+
+
+def _build_pending_wardrobe_payload(
+    player_uuid: str,
+    create_id: str,
+    *,
+    include_textures: bool,
+) -> dict[str, Any]:
+    uuid = (player_uuid or "").strip()
+    cid = (create_id or "").strip()
+    swappable = enforce_pending_wardrobe_slot_limits(uuid, cid)
+    slots_db = _load_pending_slots(cid)
+    active = _normalize_pending_active(
+        cid,
+        _get_pending_active(cid),
+        slots_db,
+        swappable,
+    )
+    slot_list: list[dict[str, Any]] = []
+    for slot in SLOTS:
+        unlocked = _slot_unlocked(slot, swappable)
+        row = slots_db.get(slot)
+        filled = bool(row and row.get("png_relpath"))
+        value = (row.get("texture_value") if row else None) or None
+        signature = (row.get("texture_signature") if row else None) or None
+        has_sig = bool(value and signature)
+        entry: dict[str, Any] = {
+            "slot": slot,
+            "unlocked": unlocked,
+            "filled": filled,
+            "model": (row.get("model") if row else None),
+            "display_name": _effective_display_name(slot, row),
+            "custom_name": bool(
+                row and str(row.get("display_name") or "").strip()
+            ),
+            "apply_pending": False,
+            "has_signature": has_sig,
+            "signed": has_sig,
+            "updated_at": (row.get("updated_at") if row else None),
+            "texture_url": (
+                f"/characters/{cid}/wardrobe/{slot}/texture" if filled else None
+            ),
+        }
+        if include_textures:
+            entry["texture_value"] = value if has_sig else None
+            entry["texture_signature"] = signature if has_sig else None
+        slot_list.append(entry)
+    return {
+        "character_id": cid,
+        "player_uuid": uuid,
+        "active_slot": active,
+        "swappable_slots": swappable,
+        "slots": slot_list,
+        "pending_create": True,
+    }
+
+
+def _resolve_player_wardrobe_access(
+    player_uuid: str, character_id: str
+) -> dict[str, Any]:
+    try:
+        return resolve_player_character(player_uuid, character_id)
+    except PendingCreateError as e:
+        raise WardrobeError(str(e), status_code=e.status_code) from e
+
+
 def get_wardrobe(player_uuid: str, character_id: str) -> dict[str, Any]:
     """Session-safe wardrobe list (no Mojang texture value/signature)."""
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    if access["kind"] == "pending":
+        return _build_pending_wardrobe_payload(
+            access["player_uuid"],
+            access["character_id"],
+            include_textures=False,
+        )
     return _build_wardrobe_payload(
         player_uuid, character_id, include_textures=False
     )
@@ -731,6 +893,64 @@ def upload_slot(
     display_name: str | None = None,
     create_masked: bool = False,
 ) -> dict[str, Any]:
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    if access["kind"] == "pending":
+        uuid = access["player_uuid"]
+        cid = access["character_id"]
+        slot_key = _normalize_slot(slot)
+        swappable = swappable_slot_count(uuid)
+        if not _slot_unlocked(slot_key, swappable):
+            raise WardrobeError(
+                "Slot locked for your rank",
+                status_code=403,
+            )
+        slots_before = _load_pending_slots(cid)
+        _require_sequential_fill(slot_key, slots_before)
+        try:
+            validate_png(png_bytes, WARDROBE_PNG_SIZE)
+        except StorageError as e:
+            raise WardrobeError(str(e), status_code=400) from e
+        model = detect_skin_model(png_bytes)
+        texture_value, texture_signature = sign_wardrobe_skin(png_bytes, model)
+        name = _normalize_display_name(display_name)
+        existing = slots_before.get(slot_key)
+        keep_name = (
+            name
+            if display_name is not None
+            else (
+                str(existing.get("display_name") or "").strip() or None
+                if existing
+                else None
+            )
+        )
+        _upsert_pending_slot(
+            cid,
+            slot_key,
+            png_bytes,
+            texture_value=texture_value,
+            texture_signature=texture_signature,
+            model=model,
+            display_name=keep_name,
+        )
+        if slot_key == "base" and create_masked:
+            _maybe_create_masked_from_base(
+                uuid, cid, png_bytes, pending_create_id=cid
+            )
+        if slot_key in SWAPPABLE_SLOTS:
+            slots_after = _load_pending_slots(cid)
+            current = _get_pending_active(cid)
+            normalized = _normalize_pending_active(
+                cid, current, slots_after, swappable
+            )
+            if normalized is None and slot_key == "base":
+                _set_pending_active(cid, "base")
+        wardrobe = get_wardrobe(uuid, cid)
+        wardrobe["uploaded_slot"] = slot_key
+        wardrobe["signed"] = True
+        if slot_key == "base" and create_masked:
+            wardrobe["masked_created"] = True
+        return wardrobe
+
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
@@ -802,6 +1022,34 @@ def set_slot_display_name(
     display_name: str | None,
 ) -> dict[str, Any]:
     """Rename a filled slot. Does not re-sign or set apply_pending."""
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    uuid = access["player_uuid"]
+    cid = access["character_id"]
+    slot_key = _normalize_slot(slot)
+    swappable = swappable_slot_count(uuid)
+    if not _slot_unlocked(slot_key, swappable):
+        raise WardrobeError(
+            "Slot locked for your rank",
+            status_code=403,
+        )
+    if access["kind"] == "pending":
+        slots = _load_pending_slots(cid)
+        row = slots.get(slot_key)
+        if not row or not row.get("png_relpath"):
+            raise WardrobeError("Wardrobe slot is empty", status_code=404)
+        name = _normalize_display_name(display_name)
+        with connect() as conn:
+            conn.execute(
+                """
+                UPDATE character_create_wardrobe
+                SET display_name = ?, updated_at = ?
+                WHERE create_id = ? AND slot = ?
+                """,
+                (name, _iso_now(), cid, slot_key),
+            )
+            conn.commit()
+        return get_wardrobe(uuid, cid)
+
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
@@ -863,6 +1111,35 @@ def ack_wardrobe_slots(
 def clear_slot(
     player_uuid: str, character_id: str, slot: str
 ) -> dict[str, Any]:
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    if access["kind"] == "pending":
+        uuid = access["player_uuid"]
+        cid = access["character_id"]
+        slot_key = _normalize_slot(slot)
+        previous_active = _get_pending_active(cid)
+        slots = _load_pending_slots(cid)
+        row = slots.get(slot_key)
+        if row:
+            _delete_png(row.get("png_relpath"))
+            with connect() as conn:
+                conn.execute(
+                    """
+                    DELETE FROM character_create_wardrobe
+                    WHERE create_id = ? AND slot = ?
+                    """,
+                    (cid, slot_key),
+                )
+                conn.commit()
+        if slot_key in SWAPPABLE_SLOTS:
+            _compact_pending_swappable(cid)
+        elif previous_active and previous_active == slot_key:
+            remaining = _load_pending_slots(cid)
+            swappable = swappable_slot_count(uuid)
+            _normalize_pending_active(
+                cid, slot_key, remaining, swappable
+            )
+        return get_wardrobe(uuid, cid)
+
     roster = _require_owned_character(player_uuid, character_id)
     uuid = str(roster["player_uuid"])
     cid = str(roster["character_id"])
@@ -898,7 +1175,11 @@ def set_active_slot(
     player_uuid: str, character_id: str, slot: str | None
 ) -> dict[str, Any]:
     return _set_active_slot(
-        player_uuid, character_id, slot, include_textures=False
+        player_uuid,
+        character_id,
+        slot,
+        include_textures=False,
+        roster_only=False,
     )
 
 
@@ -906,7 +1187,11 @@ def set_active_slot_for_plugin(
     player_uuid: str, character_id: str, slot: str | None
 ) -> dict[str, Any]:
     return _set_active_slot(
-        player_uuid, character_id, slot, include_textures=True
+        player_uuid,
+        character_id,
+        slot,
+        include_textures=True,
+        roster_only=True,
     )
 
 
@@ -916,11 +1201,48 @@ def _set_active_slot(
     slot: str | None,
     *,
     include_textures: bool,
+    roster_only: bool = False,
 ) -> dict[str, Any]:
-    roster = _require_owned_character(player_uuid, character_id)
-    uuid = str(roster["player_uuid"])
-    cid = str(roster["character_id"])
+    if roster_only:
+        access = {
+            "kind": "roster",
+            **_require_owned_character(player_uuid, character_id),
+        }
+    else:
+        access = _resolve_player_wardrobe_access(player_uuid, character_id)
+
+    uuid = str(access["player_uuid"])
+    cid = str(access["character_id"])
     swappable = swappable_slot_count(uuid)
+
+    if access["kind"] == "pending":
+        slots = _load_pending_slots(cid)
+        if slot is None or (isinstance(slot, str) and not slot.strip()):
+            _set_pending_active(cid, None)
+            return _build_pending_wardrobe_payload(
+                uuid, cid, include_textures=include_textures
+            )
+        slot_key = (slot or "").strip().lower()
+        if slot_key == "masked":
+            raise WardrobeError(
+                "Masked slot cannot be set as active",
+                status_code=400,
+            )
+        if slot_key not in SWAPPABLE_SLOTS:
+            raise WardrobeError(
+                f"Invalid active slot (expected one of: {', '.join(sorted(SWAPPABLE_SLOTS))})",
+                status_code=400,
+            )
+        if not _slot_unlocked(slot_key, swappable):
+            raise WardrobeError("Slot locked for your rank", status_code=403)
+        row = slots.get(slot_key)
+        if not row or not row.get("png_relpath"):
+            raise WardrobeError("Slot is empty", status_code=400)
+        _set_pending_active(cid, slot_key)
+        return _build_pending_wardrobe_payload(
+            uuid, cid, include_textures=include_textures
+        )
+
     slots = _load_slots(uuid, cid)
 
     if slot is None or (isinstance(slot, str) and not slot.strip()):
@@ -954,11 +1276,14 @@ def _set_active_slot(
 def resolve_slot_texture_path(
     player_uuid: str, character_id: str, slot: str
 ) -> Path:
-    roster = _require_owned_character(player_uuid, character_id)
-    uuid = str(roster["player_uuid"])
-    cid = str(roster["character_id"])
+    access = _resolve_player_wardrobe_access(player_uuid, character_id)
+    uuid = access["player_uuid"]
+    cid = access["character_id"]
     slot_key = _normalize_slot(slot)
-    row = _load_slots(uuid, cid).get(slot_key)
+    if access["kind"] == "pending":
+        row = _load_pending_slots(cid).get(slot_key)
+    else:
+        row = _load_slots(uuid, cid).get(slot_key)
     if not row:
         raise WardrobeError("Slot is empty", status_code=404)
     path = _png_abspath(row.get("png_relpath"))
@@ -1098,6 +1423,21 @@ def flush_pending_wardrobe(
     char_id = (character_id or "").strip()
     if not uuid or not create_key or not char_id:
         return 0
+    pending_active: str | None = None
+    with connect() as conn:
+        create_row = conn.execute(
+            """
+            SELECT wardrobe_active_slot FROM character_creates WHERE id = ?
+            """,
+            (create_key,),
+        ).fetchone()
+        if create_row is not None:
+            try:
+                raw_active = create_row["wardrobe_active_slot"]
+            except (KeyError, IndexError):
+                raw_active = None
+            if raw_active is not None and str(raw_active).strip():
+                pending_active = str(raw_active).strip().lower()
     with connect() as conn:
         rows = conn.execute(
             """
@@ -1162,16 +1502,30 @@ def flush_pending_wardrobe(
             "DELETE FROM character_create_wardrobe WHERE create_id = ?",
             (create_key,),
         )
-        # Prefer base as active when present and roster row exists
-        base = conn.execute(
-            """
-            SELECT 1 FROM character_wardrobe_slots
-            WHERE player_uuid = ? AND character_id = ? AND slot = 'base'
-              AND png_relpath IS NOT NULL
-            """,
-            (uuid, char_id),
-        ).fetchone()
-        if base is not None:
+        active_to_set: str | None = None
+        if pending_active in SWAPPABLE_SLOTS:
+            has_active = conn.execute(
+                """
+                SELECT 1 FROM character_wardrobe_slots
+                WHERE player_uuid = ? AND character_id = ? AND slot = ?
+                  AND png_relpath IS NOT NULL
+                """,
+                (uuid, char_id, pending_active),
+            ).fetchone()
+            if has_active is not None:
+                active_to_set = pending_active
+        if active_to_set is None:
+            base = conn.execute(
+                """
+                SELECT 1 FROM character_wardrobe_slots
+                WHERE player_uuid = ? AND character_id = ? AND slot = 'base'
+                  AND png_relpath IS NOT NULL
+                """,
+                (uuid, char_id),
+            ).fetchone()
+            if base is not None:
+                active_to_set = "base"
+        if active_to_set is not None:
             roster = conn.execute(
                 """
                 SELECT 1 FROM character_roster
@@ -1183,11 +1537,14 @@ def flush_pending_wardrobe(
                 conn.execute(
                     """
                     UPDATE character_roster
-                    SET wardrobe_active_slot = 'base'
+                    SET wardrobe_active_slot = ?
                     WHERE player_uuid = ? AND character_id = ?
-                      AND (wardrobe_active_slot IS NULL OR wardrobe_active_slot = '')
+                      AND (
+                        wardrobe_active_slot IS NULL
+                        OR TRIM(wardrobe_active_slot) = ''
+                      )
                     """,
-                    (uuid, char_id),
+                    (active_to_set, uuid, char_id),
                 )
         conn.commit()
     return flushed

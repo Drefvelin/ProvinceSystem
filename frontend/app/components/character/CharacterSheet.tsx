@@ -86,6 +86,8 @@ function SheetSection({
 export default function CharacterSheet({ character, catalog }: Props) {
   const status = String(character.status || "").toUpperCase();
   const isAlive = status === "ALIVE";
+  const isPending = status === "PENDING";
+  const canEditGear = isAlive || isPending;
 
   const race = displayRace(character, catalog);
   const klass = displayClass(character, catalog);
@@ -249,7 +251,7 @@ export default function CharacterSheet({ character, catalog }: Props) {
       ) : null}
 
       <nav className="mt-10 flex flex-col gap-3">
-        {isAlive ? (
+        {canEditGear ? (
           <>
             <Link
               href={`/character/${encodeURIComponent(character.id)}/kits`}
@@ -266,7 +268,7 @@ export default function CharacterSheet({ character, catalog }: Props) {
           </>
         ) : (
           <p className="text-sm text-[var(--tfmc-mist)]">
-            Kits and wardrobe are available for alive characters.
+            Kits and wardrobe are available for alive and pending characters.
           </p>
         )}
       </nav>

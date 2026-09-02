@@ -300,6 +300,12 @@ def migrate() -> None:
             "UPDATE character_creates SET realm_id = 'main' "
             "WHERE realm_id IS NULL OR TRIM(realm_id) = ''"
         )
+        create_cols = _column_names(conn, "character_creates")
+        if "wardrobe_active_slot" not in create_cols:
+            conn.execute(
+                "ALTER TABLE character_creates "
+                "ADD COLUMN wardrobe_active_slot TEXT"
+            )
         conn.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_character_creates_realm_status

@@ -1,7 +1,7 @@
 """Lore-item API smoke — run from backend/: python scripts/lore_items_smoke.py
 
 Catalog + roster kit claimable → character session → list/customise + PNG bridge.
-Granted → 403; pending-create UUID no longer a customise target.
+Granted → 403; pending-create UUID is a valid customise target before server ack.
 """
 
 from __future__ import annotations
@@ -347,7 +347,7 @@ def main() -> None:
     if r.status_code != 200:
         fail(f"PUT roster re-eligible: {r.status_code} {r.text}")
 
-    # Pending create UUID is no longer a valid customise target
+    # Pending create UUID is a valid customise target before server ack
     create_id = f"create_{suffix}"
     with connect() as conn:
         conn.execute(
@@ -370,16 +370,29 @@ def main() -> None:
         f"/characters/lore-items?character_id={create_id}",
         headers=auth,
     )
-    if r.status_code != 403:
-        fail(f"GET lore-items for pending create expected 403, got {r.status_code} {r.text}")
+    if r.status_code != 200:
+        fail(f"GET lore-items for pending create expected 200, got {r.status_code} {r.text}")
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={create_id}&kit_id=starter",
         json={"display_name": "Create Blade", "lore": ["From create."]},
         headers=auth,
     )
-    if r.status_code != 403:
-        fail(f"POST customise on pending create expected 403, got {r.status_code} {r.text}")
-    print("OK pending-create customise rejected")
+    if r.status_code != 200:
+        fail(f"POST customise on pending create expected 200, got {r.status_code} {r.text}")
+    r = client.get(
+        f"/characters/kits?character_id={create_id}",
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"GET kits for pending create expected 200, got {r.status_code} {r.text}")
+    kits_body = r.json()
+    starter = next(
+        (k for k in (kits_body.get("kits") or []) if k.get("id") == "starter"),
+        None,
+    )
+    if not starter or starter.get("status") != "eligible":
+        fail(f"pending create starter kit not eligible: {starter}")
+    print("OK pending-create customise and kits")
 
     r = client.get(
         f"/characters/kits?character_id={char_id}",

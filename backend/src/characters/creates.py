@@ -556,6 +556,47 @@ def list_pending(realm_id: str | None = None) -> list[dict[str, Any]]:
     return [_row_to_dict(r) for r in rows]
 
 
+def _traits_from_create_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = payload.get("all_traits") or payload.get("traits") or []
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for entry in raw:
+        if isinstance(entry, str) and entry.strip():
+            out.append({"id": entry.strip()})
+        elif isinstance(entry, dict):
+            tid = str(entry.get("id") or "").strip()
+            if tid:
+                out.append(dict(entry))
+    return out
+
+
+def _pending_character_list_item(
+    data: dict[str, Any], realm: str
+) -> dict[str, Any]:
+    payload = data.get("payload") or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    item: dict[str, Any] = {
+        "id": data["id"],
+        "name": payload.get("name") or "(pending)",
+        "status": "pending",
+        "race": payload.get("race_id"),
+        "class": payload.get("class_id"),
+        "created_at": data["created_at"],
+        "source": "create",
+        "create_id": data["id"],
+        "realm_id": realm,
+    }
+    for key in ("age", "birthday", "gender", "description", "attributes", "clues"):
+        if key in payload and payload[key] is not None:
+            item[key] = payload[key]
+    traits = _traits_from_create_payload(payload)
+    if traits:
+        item["traits"] = traits
+    return item
+
+
 def list_for_player(
     player_uuid: str,
     realm_id: str | None = None,
@@ -602,20 +643,7 @@ def list_for_player(
     characters: list[dict[str, Any]] = list(roster)
     for row in pending_rows:
         data = _row_to_dict(row)
-        payload = data.get("payload") or {}
-        characters.append(
-            {
-                "id": data["id"],
-                "name": payload.get("name") or "(pending)",
-                "status": "pending",
-                "race": payload.get("race_id"),
-                "class": payload.get("class_id"),
-                "created_at": data["created_at"],
-                "source": "create",
-                "create_id": data["id"],
-                "realm_id": realm,
-            }
-        )
+        characters.append(_pending_character_list_item(data, realm))
     for row in rejected_rows:
         data = _row_to_dict(row)
         payload = data.get("payload") or {}
