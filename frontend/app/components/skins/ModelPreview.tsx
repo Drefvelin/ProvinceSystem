@@ -193,10 +193,39 @@ function setDefaultOrbit(
   controls.update();
 }
 
-function disposeContent(content: ContentRefs): void {
-  if (content.steveRoot) {
-    disposeObject3D(content.steveRoot);
+function isPreviewSceneRoot(obj: THREE.Object3D): boolean {
+  return obj.name === "floatingItem" || obj.name === "steveMannequin";
+}
+
+/** Drop mannequin / floating groups from the scene. Item mesh is unparented first so it can be reused. */
+function stripPreviewFromScene(
+  scene: THREE.Scene,
+  content: ContentRefs
+): void {
+  content.itemRoot?.removeFromParent();
+
+  const toDispose = new Set<THREE.Object3D>();
+  if (content.floatingRoot) toDispose.add(content.floatingRoot);
+  if (content.steveRoot) toDispose.add(content.steveRoot);
+  for (const child of [...scene.children]) {
+    if (isPreviewSceneRoot(child)) toDispose.add(child);
+  }
+  for (const obj of toDispose) {
+    disposeObject3D(obj);
+  }
+  content.floatingRoot = null;
+  content.steveRoot = null;
+}
+
+function disposeContent(content: ContentRefs, scene?: THREE.Scene): void {
+  if (scene) {
+    stripPreviewFromScene(scene, content);
+  } else {
+    content.itemRoot?.removeFromParent();
+    if (content.steveRoot) disposeObject3D(content.steveRoot);
+    if (content.floatingRoot) disposeObject3D(content.floatingRoot);
     content.steveRoot = null;
+    content.floatingRoot = null;
   }
   content.steveTexture?.dispose();
   content.steveTexture = null;
@@ -208,7 +237,6 @@ function disposeContent(content: ContentRefs): void {
   content.itemTexture = null;
   content.javaJson = null;
   content.potionCanvas = null;
-  content.floatingRoot = null;
 }
 
 function itemSlotsForKind(
@@ -602,23 +630,8 @@ export default function ModelPreview({
       const leftHand = isLeftHandSlot(slot);
       const isStale = () => gen !== layoutGenRef.current;
 
-      if (content.floatingRoot) {
-        if (content.itemRoot?.parent) {
-          content.itemRoot.parent.remove(content.itemRoot);
-        }
-        scene.remove(content.floatingRoot);
-        disposeObject3D(content.floatingRoot);
-        content.floatingRoot = null;
-      }
-      if (content.steveRoot) {
-        if (content.itemRoot?.parent) {
-          content.itemRoot.parent.remove(content.itemRoot);
-        }
-        scene.remove(content.steveRoot);
-        disposeObject3D(content.steveRoot);
-        content.steveRoot = null;
-        steveLiveRef.current = null;
-      }
+      stripPreviewFromScene(scene, content);
+      steveLiveRef.current = null;
       heldItemRef.current = null;
 
       if (!content.itemRoot) return;
@@ -629,7 +642,7 @@ export default function ModelPreview({
       if (onMannequin) {
         if (playerSkinFile) {
           const skin = await loadTextureFromFile(playerSkinFile);
-          if (isStale()) {
+          if (isStale() || !content.itemRoot) {
             skin.texture.dispose();
             return;
           }
@@ -637,7 +650,7 @@ export default function ModelPreview({
           content.steveTexture = skin.texture;
         } else {
           const steveTex = await loadSteveTexture();
-          if (isStale()) {
+          if (isStale() || !content.itemRoot) {
             steveTex?.dispose();
             return;
           }
@@ -723,9 +736,7 @@ export default function ModelPreview({
         socket.add(held);
         scene.add(steveRoot);
         if (isStale()) {
-          scene.remove(steveRoot);
-          disposeObject3D(steveRoot);
-          content.steveRoot = null;
+          stripPreviewFromScene(scene, content);
           steveLiveRef.current = null;
           heldItemRef.current = null;
           return;
@@ -740,9 +751,7 @@ export default function ModelPreview({
         content.floatingRoot = floating;
         scene.add(floating);
         if (isStale()) {
-          scene.remove(floating);
-          disposeObject3D(floating);
-          content.floatingRoot = null;
+          stripPreviewFromScene(scene, content);
           return;
         }
 
@@ -835,7 +844,7 @@ export default function ModelPreview({
       runtime.controls.dispose();
       runtime.renderer.dispose();
       runtimeRef.current = null;
-      disposeContent(contentRef.current);
+      disposeContent(contentRef.current, runtime.scene);
       contentRef.current = {
         itemRoot: null,
         itemTexture: null,
@@ -861,6 +870,7 @@ export default function ModelPreview({
     if (!runtime) return;
 
     const gen = ++syncGenRef.current;
+    layoutGenRef.current += 1;
 
     setStatus("loading");
     reportError(null);
@@ -877,7 +887,8 @@ export default function ModelPreview({
           return;
         }
 
-        disposeContent(contentRef.current);
+        layoutGenRef.current += 1;
+        disposeContent(contentRef.current, runtime.scene);
         contentRef.current = {
           itemRoot: built.root,
           itemTexture: built.texture,
@@ -899,7 +910,7 @@ export default function ModelPreview({
     })();
   }, [hasPreview, contentSignature, buildItemMesh, reportError, potionTintColor, meshOnMannequin]);
 
-  // Layout updates: slot / frame pose / shield / skin — preserve orbit.
+  // Layout updates: slot / frame pose / shield / skin - preserve orbit.
   useEffect(() => {
     if (!hasPreview) return;
     const runtime = runtimeRef.current;
@@ -927,6 +938,10 @@ export default function ModelPreview({
         setStatus("error");
       }
     })();
+
+    return () => {
+      layoutGenRef.current += 1;
+    };
   }, [hasPreview, layoutSignature, contentVersion, applyLayout, reportError]);
 
   // Potion tint: update texture in place without rebuilding geometry.
@@ -952,7 +967,7 @@ export default function ModelPreview({
     })();
   }, [potionTintColor, potionTintMode, contentVersion, reportError]);
 
-  // Grip Y for large_handheld — transform only, no orbit reset.
+  // Grip Y for large_handheld: transform only, no orbit reset.
   useEffect(() => {
     const held = heldItemRef.current;
     if (!held || !flat || kind !== "large_handheld") return;

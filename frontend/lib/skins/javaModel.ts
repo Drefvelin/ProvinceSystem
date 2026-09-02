@@ -332,6 +332,8 @@ export async function loadTextureFromFile(
 }
 
 export function disposeObject3D(obj: THREE.Object3D): void {
+  obj.removeFromParent();
+
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
   const textures = new Set<THREE.Texture>();
