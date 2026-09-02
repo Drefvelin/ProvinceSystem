@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
 
 import type { MapMode } from "../components/map/types";
-import { LABEL_MAP_MODES } from "./mapLabels";
 
 export const MARKER_HOVER_EXPAND = 0.05;
 export const MARKER_HOVER_SCALE = 1 + MARKER_HOVER_EXPAND;
@@ -74,7 +73,7 @@ export function isInstallationMarkerKind(kind: string | undefined): boolean {
 }
 
 export function isMarkerMapMode(mapType: MapMode): boolean {
-  return LABEL_MAP_MODES.has(mapType);
+  return mapType === "nation";
 }
 
 export function markerVisibilityScreenPx(

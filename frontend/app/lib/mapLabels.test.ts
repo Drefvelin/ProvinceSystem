@@ -30,7 +30,6 @@ import {
   pixelDiameterEndpoints,
   provincesForNationLabel,
   segmentPixelLength,
-  LABEL_MAX_SCREEN_PX,
   LABEL_MIN_SCREEN_PX,
   labelScreenFontSize,
   shouldShowLabelAtScreenSize,
@@ -236,23 +235,19 @@ describe("shouldShowLabelAtScreenSize", () => {
     expect(labelScreenFontSize(40, 0.5)).toBe(20);
   });
 
-  it("shows labels within the screen-size band", () => {
+  it("shows labels at or above the minimum screen size", () => {
     const displayScale = 0.5;
     const minFont = LABEL_MIN_SCREEN_PX / displayScale;
-    const maxFont = LABEL_MAX_SCREEN_PX / displayScale;
     expect(shouldShowLabelAtScreenSize(minFont, displayScale)).toBe(true);
-    expect(shouldShowLabelAtScreenSize(maxFont, displayScale)).toBe(true);
+    expect(shouldShowLabelAtScreenSize(minFont + 1, displayScale)).toBe(true);
     expect(
       shouldShowLabelAtScreenSize(minFont - 1, displayScale)
     ).toBe(false);
-    expect(
-      shouldShowLabelAtScreenSize(maxFont + 1, displayScale)
-    ).toBe(false);
   });
 
-  it("hides large-nation labels when zoomed in but keeps small ones", () => {
+  it("keeps large labels visible when zoomed in", () => {
     const displayScale = 1;
-    expect(shouldShowLabelAtScreenSize(80, displayScale)).toBe(false);
+    expect(shouldShowLabelAtScreenSize(80, displayScale)).toBe(true);
     expect(shouldShowLabelAtScreenSize(24, displayScale)).toBe(true);
   });
 

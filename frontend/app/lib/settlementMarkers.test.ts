@@ -45,9 +45,13 @@ describe("settlementMarkers", () => {
     expect(shouldShowSettlementMarker(fontSize, above)).toBe(true);
   });
 
-  it("isSettlementMapMode matches political label modes", () => {
+  it("isSettlementMapMode is only true for nation", () => {
     expect(isSettlementMapMode("nation")).toBe(true);
-    expect(isSettlementMapMode("trade")).toBe(true);
+    expect(isSettlementMapMode("county")).toBe(false);
+    expect(isSettlementMapMode("duchy")).toBe(false);
+    expect(isSettlementMapMode("kingdom")).toBe(false);
+    expect(isSettlementMapMode("empire")).toBe(false);
+    expect(isSettlementMapMode("trade")).toBe(false);
     expect(isSettlementMapMode("terrain")).toBe(false);
     expect(isSettlementMapMode("fertility")).toBe(false);
     expect(isSettlementMapMode("infestation")).toBe(false);

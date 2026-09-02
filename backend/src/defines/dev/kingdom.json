@@ -1,1 +1,45 @@
-{}
+{
+  "KINGDOM_1": {
+    "name": "Syrindell",
+    "rgb": "228,200,128",
+    "titles": [
+      "DUCHY_1",
+      "DUCHY_2",
+      "DUCHY_3",
+      "DUCHY_4",
+      "DUCHY_5"
+    ]
+  },
+  "KINGDOM_2": {
+    "name": "Dera",
+    "rgb": "168,80,38",
+    "titles": [
+      "DUCHY_6",
+      "DUCHY_7",
+      "DUCHY_8",
+      "DUCHY_9",
+      "DUCHY_10"
+    ]
+  },
+  "KINGDOM_3": {
+    "name": "Vard",
+    "rgb": "46,88,148",
+    "titles": [
+      "DUCHY_11",
+      "DUCHY_12",
+      "DUCHY_13",
+      "DUCHY_14",
+      "DUCHY_15"
+    ]
+  },
+  "KINGDOM_4": {
+    "name": "The Bog",
+    "rgb": "26,58,46",
+    "titles": [
+      "DUCHY_16",
+      "DUCHY_17",
+      "DUCHY_18",
+      "DUCHY_19"
+    ]
+  }
+}
