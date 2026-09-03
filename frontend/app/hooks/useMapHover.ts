@@ -6,6 +6,10 @@ import {
 } from "./useMapCoords";
 import { useProvinceHover } from "./useProvinceHover";
 import { useRegionHover } from "./useRegionHover";
+import {
+  provinceHoverBlocksRegionPick,
+  resolveRegionAtPickPixel,
+} from "./regionPick";
 import type { MapId, MapMode, MapObject, RegionInfo, RegionRecord, FortMarker } from "../components/map/types";
 import type { HoverOverlay } from "../components/map/types";
 import type { MapMarker } from "../lib/mapMarkers";
@@ -177,6 +181,7 @@ export function useMapHover(props: UseMapHoverProps) {
       current.setCursorTooltip(null);
       current.setHoveredMarkerId?.(null);
       current.setHoveredFortZoc?.(null);
+      current.setSelectedRegionId(null);
       setIsHoveringClickable(false);
       return;
     }
@@ -192,6 +197,7 @@ export function useMapHover(props: UseMapHoverProps) {
     if (markerHit) {
       current.setCursorTooltip(null);
       current.setHoveredOverlay(null);
+      current.setSelectedRegionId(null);
       resetHoverCacheRef.current();
       if (isMarkerMapMode(current.mapType)) {
         current.setHoveredFortZoc?.(
@@ -214,6 +220,9 @@ export function useMapHover(props: UseMapHoverProps) {
         coords.screenY
       )
     ) {
+      if (provinceHoverBlocksRegionPick(current.mapType)) {
+        current.setSelectedRegionId(null);
+      }
       setIsHoveringClickable(false);
       return;
     }
@@ -227,6 +236,7 @@ export function useMapHover(props: UseMapHoverProps) {
     if (!pickPixel) {
       current.setCursorTooltip(null);
       current.setHoveredOverlay(null);
+      current.setSelectedRegionId(null);
       setIsHoveringClickable(false);
       return;
     }
@@ -287,8 +297,66 @@ export function useMapHover(props: UseMapHoverProps) {
   const onMouseLeave = () => {
     propsRef.current.setHoveredMarkerId?.(null);
     propsRef.current.setHoveredFortZoc?.(null);
+    propsRef.current.setSelectedRegionId(null);
     setIsHoveringClickable(false);
   };
 
-  return { onMouseMove, onMouseLeave, isHoveringClickable };
+  const pickRegionAtEvent = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>): string | null => {
+      const current = propsRef.current;
+      if (current.loading || !current.regionData) return null;
+
+      const canvas = current.canvasRef.current;
+      if (!canvas) return null;
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return null;
+
+      const coords = getMapCoords(
+        event,
+        canvas,
+        current.mapId,
+        current.viewportCoordsRef.current
+      );
+      if (!coords) return null;
+
+      const displayScale = current.viewportCoordsRef.current?.displayScale ?? 0;
+      const visibleMarkers = current.markers?.length
+        ? filterVisibleMapMarkers(current.markers, displayScale)
+        : [];
+      if (
+        visibleMarkers.length &&
+        pickMapMarkerAt(visibleMarkers, coords.x, coords.y)
+      ) {
+        return null;
+      }
+
+      if (provinceHoverBlocksRegionPick(current.mapType)) {
+        return null;
+      }
+
+      const pickPixel = mapPixelToPickCanvas(
+        coords.x,
+        coords.y,
+        current.viewportCoordsRef.current?.mapSize,
+        canvas
+      );
+      if (!pickPixel) return null;
+
+      const picked = resolveRegionAtPickPixel(
+        ctx,
+        pickPixel.x,
+        pickPixel.y,
+        rgbToId,
+        current.getHoverRegion,
+        current.mapType,
+        current.mapId,
+        current.regionData
+      );
+      return picked?.regionId ?? null;
+    },
+    [rgbToId]
+  );
+
+  return { onMouseMove, onMouseLeave, isHoveringClickable, pickRegionAtEvent };
 }

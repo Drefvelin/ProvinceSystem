@@ -521,7 +521,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     regionData,
   ]);
 
-  const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable } = useMapHover({
+  const { onMouseMove, onMouseLeave: onHoverLeave, isHoveringClickable, pickRegionAtEvent } = useMapHover({
     mapId,
     mapType,
     loading,
@@ -589,11 +589,11 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setDrillStack(nextStack);
   }
 
-  const handleDrill = () => {
-    if (!selectedRegionId || !regionData) return;
+  const handleDrill = (regionId: string) => {
+    if (!regionData) return;
 
     const nextTargetId = getNextDrillTarget(
-      selectedRegionId,
+      regionId,
       regionData,
       drillStack
     );
@@ -602,7 +602,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     const region = regionData[nextTargetId];
     if (!region?.subjects?.length) return;
 
-    const ancestry = getAncestryChain(selectedRegionId, regionData);
+    const ancestry = getAncestryChain(regionId, regionData);
     const stackNames = drillStackNames(drillStack);
     const isInsideStack = ancestry.some((id) =>
       stackNames.includes(regionData[id]?.name ?? "")
@@ -632,19 +632,22 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const handleMapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (paint.enabled) return;
     if (event.button !== 0) return;
-    if (!selectedRegionId || !regionData) return;
+    if (!regionData) return;
+
+    const regionId = pickRegionAtEvent(event);
+    if (!regionId) return;
 
     if (event.ctrlKey || event.metaKey) {
-      handleDrill();
+      handleDrill(regionId);
       return;
     }
 
-    const region = regionData[selectedRegionId];
+    const region = regionData[regionId];
     if (!region) return;
 
     setModalRegionInfo(
       buildRegionInfo(
-        selectedRegionId,
+        regionId,
         region,
         mapType,
         mapDisplayName,
@@ -661,6 +664,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setHoveredOverlay(null);
     setHoveredFortZoc(null);
     setRegionInfo(null);
+    setSelectedRegionId(null);
     lastProvinceIdRef.current = null;
   };
 

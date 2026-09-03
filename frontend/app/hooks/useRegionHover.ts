@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { buildRegionInfo } from "../components/map/regionInfo";
 import { canDrillIntoRegion } from "../components/map/drillUtils";
+import { resolveRegionAtPickPixel } from "./regionPick";
 import type { HoverOverlay, MapMode, MapObject, RegionInfo, RegionRecord } from "../components/map/types";
 
 export function useRegionHover({
@@ -42,6 +43,16 @@ export function useRegionHover({
     lastHoverKeyRef.current = null;
   }, []);
 
+  const clearHover = (
+    setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
+  ) => {
+    lastHoverKeyRef.current = null;
+    setHoveredOverlay(null);
+    setRegionInfo(null);
+    setSelectedRegionId(null);
+    setCursorTooltip(null);
+  };
+
   const handleRegionHover = (
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -50,51 +61,32 @@ export function useRegionHover({
     screenY: number,
     setCursorTooltip: (tooltip: { x: number; y: number; text: string; hint?: string } | null) => void
   ): boolean => {
-    if (!regionData) return false;
-
-    let pixel: Uint8ClampedArray;
-    try {
-      if (x < 0 || y < 0 || x >= ctx.canvas.width || y >= ctx.canvas.height) {
-        return false;
-      }
-      pixel = ctx.getImageData(x, y, 1, 1).data;
-    } catch {
-      return false;
-    }
-    const rgb = `${pixel[0]},${pixel[1]},${pixel[2]}`;
-    const pickId = rgbToId[rgb];
-
-    if (!pickId) {
-      lastHoverKeyRef.current = null;
-      setHoveredOverlay(null);
-      setRegionInfo(null);
-      setCursorTooltip(null);
-      return false;
-    }
-
-    const { regionId, imagePath, overlay, region } = getHoverRegion(
+    const picked = resolveRegionAtPickPixel(
+      ctx,
+      x,
+      y,
+      rgbToId,
+      getHoverRegion,
       mapType,
       mapId,
-      pickId,
       regionData
     );
 
-    if (!regionId || !region) {
-      lastHoverKeyRef.current = null;
-      setHoveredOverlay(null);
-      setRegionInfo(null);
-      setCursorTooltip(null);
+    if (!picked) {
+      clearHover(setCursorTooltip);
       return false;
     }
+
+    const { pickId, regionId, imagePath, overlay } = picked;
 
     setSelectedRegionId(regionId);
 
     const info = buildRegionInfo(
       regionId,
-      regionData[regionId],
+      regionData![regionId],
       mapType,
       mapDisplayName,
-      regionData
+      regionData!
     );
 
     const tooltipText =
@@ -103,7 +95,7 @@ export function useRegionHover({
         : `${info.title} · ${info.tier}`;
 
     const hintLines = ["Click to view"];
-    if (canDrillIntoRegion(regionId, regionData, mapObjects)) {
+    if (canDrillIntoRegion(regionId, regionData!, mapObjects)) {
       hintLines.push("CTRL+Click to see subjects");
     }
 
