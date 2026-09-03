@@ -315,22 +315,29 @@ def get_lore_items(
 def get_lore_item_skin_texture(
     submission_id: str,
     base_set: str | None = None,
+    variant: str | None = None,
     authorization: str | None = Header(default=None),
 ):
     """PNG preview for a pickable skin (own applied or staff i_tools)."""
     from fastapi.responses import FileResponse
 
     session = _profile_session_from_auth(authorization)
+    want_signed = (variant or "").strip().lower() == "signed"
     try:
         path = resolve_pickable_texture(
-            session["player_uuid"], submission_id, base_set
+            session["player_uuid"], submission_id, base_set, variant
         )
     except LoreItemError as e:
         raise _lore_http(e) from e
+    filename = (
+        f"{submission_id}_signed.png"
+        if want_signed
+        else f"{submission_id}.png"
+    )
     return FileResponse(
         path,
         media_type="image/png",
-        filename=f"{submission_id}.png",
+        filename=filename,
     )
 
 

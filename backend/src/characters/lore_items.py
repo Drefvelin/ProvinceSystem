@@ -649,12 +649,18 @@ def _load_draft(
     return row
 
 
-def _submission_texture_path(submission_id: str):
-    """Return Path to primary texture PNG if present on website disk."""
+def _submission_texture_path(submission_id: str, variant: str | None = None):
+    """Return Path to texture PNG if present on website disk."""
     from src.skins.db import SKINS_DIR
 
     sid = (submission_id or "").strip()
     if not sid or "/" in sid or "\\" in sid or ".." in sid:
+        return None
+    want_signed = (variant or "").strip().lower() == "signed"
+    if want_signed:
+        signed = SKINS_DIR / sid / f"{sid}_signed.png"
+        if signed.is_file():
+            return signed
         return None
     path = SKINS_DIR / sid / f"{sid}.png"
     if path.is_file():
@@ -911,7 +917,10 @@ def resolve_default_kit_texture(kit_key: str, variant: str | None = None):
 
 
 def resolve_pickable_texture(
-    player_uuid: str, submission_id: str, base_set: str | None = None
+    player_uuid: str,
+    submission_id: str,
+    base_set: str | None = None,
+    variant: str | None = None,
 ):
     """ACL + path for character-session texture preview. Raises LoreItemError."""
     from src.skins.db import connect
@@ -945,7 +954,7 @@ def resolve_pickable_texture(
         row_base = str(row["base_set"] or "").strip().lower()
         if row_base != base_set.strip().lower():
             raise LoreItemError("not found", status_code=404)
-    path = _submission_texture_path(sid)
+    path = _submission_texture_path(sid, variant)
     if path is None:
         raise LoreItemError("not found", status_code=404)
     return path

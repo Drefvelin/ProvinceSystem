@@ -81,7 +81,7 @@ export function resolveFlatDisplayTab(
   if (kind === "large_handheld") {
     return { ...gripTp(gripY ?? GRIP_Y_DEFAULT)[tabName] };
   }
-  if (kind === "generated") {
+  if (kind === "generated" || kind === "book") {
     const tab = GENERATED_TP[tabName];
     if (tab) return { ...tab };
     return { ...GENERATED_TP_FALLBACK[tabName] };

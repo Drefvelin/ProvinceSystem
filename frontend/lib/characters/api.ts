@@ -622,13 +622,19 @@ export type CustomiseLoreItemResult = LoreItemRow & { ok: boolean };
 
 export function loreItemSkinTextureUrl(
   submissionId: string,
-  baseSet?: string
+  baseSet?: string,
+  variant?: "unsigned" | "signed"
 ): string {
   const id = encodeURIComponent(submissionId.trim());
-  const qs = baseSet
-    ? `?base_set=${encodeURIComponent(baseSet.trim())}`
-    : "";
-  return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs}`;
+  const params = new URLSearchParams();
+  if (baseSet?.trim()) {
+    params.set("base_set", baseSet.trim());
+  }
+  if (variant === "signed") {
+    params.set("variant", "signed");
+  }
+  const qs = params.toString();
+  return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs ? `?${qs}` : ""}`;
 }
 
 export function loreItemDefaultTextureUrl(

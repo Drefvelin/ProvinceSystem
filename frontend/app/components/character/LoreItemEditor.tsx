@@ -393,6 +393,26 @@ export default function LoreItemEditor({
         let url: string | null = null;
         let filename = "preview.png";
         if (skinMode === "pick" && pickedSkinId.trim()) {
+          if (isBook) {
+            const unsignedUrl = loreItemSkinTextureUrl(
+              pickedSkinId,
+              item.base_set
+            );
+            const signedUrl = loreItemSkinTextureUrl(
+              pickedSkinId,
+              item.base_set,
+              "signed"
+            );
+            const [unsignedFile, signedFile] = await Promise.all([
+              fetchAsFile(unsignedUrl, `${pickedSkinId.trim()}_unsigned.png`),
+              fetchAsFile(signedUrl, `${pickedSkinId.trim()}_signed.png`),
+            ]);
+            if (!dead) {
+              setPreviewTexture(unsignedFile);
+              setPreviewTextureSigned(signedFile);
+            }
+            return;
+          }
           url = loreItemSkinTextureUrl(pickedSkinId, item.base_set);
           filename = `${pickedSkinId.trim()}.png`;
         } else if (item.skin_png || item.kit_key) {
