@@ -14,7 +14,7 @@ On Linux you may also need `npx playwright install-deps chromium` (system librar
 
 ## Production
 
-The backend Docker image runs `npm ci`, installs Playwright Chromium, and `install-deps` during build ([`backend/Dockerfile`](../Dockerfile)). Rebuild the backend image after any change under `backend/render/`.
+The backend Docker image runs `npm ci`, installs Playwright Chromium, and `install-deps` during build ([`backend/Dockerfile`](../Dockerfile)). The image also copies [`frontend/lib/skins`](../../frontend/lib/skins) to `/frontend/lib/skins` because `scene.ts` shares Three.js helpers with the web app. Rebuild the backend image after any change under `backend/render/` or those shared skin modules.
 
 Non-Docker hosts: run the local setup commands above on the API machine; ensure `node` is on `PATH` for the uvicorn process.
 
