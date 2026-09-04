@@ -1175,7 +1175,6 @@ def customise_lore_item(
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
     kit_id: str | None = None,
-    skin_session_row: dict | None = None,
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
     from src.skins.codes import normalize_realm_id
@@ -1216,12 +1215,13 @@ def customise_lore_item(
         or unsigned_bytes is not None
         or signed_bytes is not None
     )
-    if has_upload and skin_session_row is None:
-        raise LoreItemError(
-            "Skin session required for texture upload",
-            status_code=403,
-        )
-    submission_session = skin_session_row if has_upload else session_row
+    if has_upload:
+        from src.skins.codes import ensure_lore_upload_code
+
+        lore_code_id = ensure_lore_upload_code(player_uuid, lore_realm)
+        submission_session = {**session_row, "code_id": lore_code_id, "staff": False}
+    else:
+        submission_session = session_row
 
     if has_upload and existing_skin_id is not _UNSET and existing_skin_id:
         raise LoreItemError(
@@ -1292,6 +1292,7 @@ def customise_lore_item(
                 add_name=True,
                 name_colours=colours or None,
                 name_styles=styles or None,
+                source="lore",
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e
@@ -1327,6 +1328,7 @@ def customise_lore_item(
                 add_name=True,
                 name_colours=colours or None,
                 name_styles=styles or None,
+                source="lore",
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e

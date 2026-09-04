@@ -215,6 +215,85 @@ class SkinSubmissionAccessTest(unittest.TestCase):
             ).fetchone()
         self.assertIsNone(row["redeemed_at"])
 
+    def test_lore_source_skips_mark_code_consumed(self) -> None:
+        from skins.codes import ensure_lore_upload_code, issue_code, redeem_profile_code
+        from skins.db import connect
+        from skins.submissions import create_submission
+
+        self._link_player()
+        self._seed_entitlements()
+        profile_issued = issue_code("player-1", "profile")
+        profile_redeemed = redeem_profile_code(profile_issued["code"])
+        profile_code_id = int(profile_redeemed["code_id"])
+        lore_code_id = ensure_lore_upload_code("player-1", "main")
+
+        with connect() as conn:
+            before = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (profile_code_id,),
+            ).fetchone()
+
+        session = {
+            "player_uuid": "player-1",
+            "code_id": lore_code_id,
+            "realm_id": "main",
+            "staff": False,
+        }
+        with mock.patch("skins.submissions.write_submission_files"):
+            create_submission(
+                session,
+                "handheld",
+                "Lore Slot Sword",
+                {"texture": TINY_PNG},
+                base_set="swords",
+                source="lore",
+            )
+
+        with connect() as conn:
+            lore_row = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (lore_code_id,),
+            ).fetchone()
+            after = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (profile_code_id,),
+            ).fetchone()
+        self.assertIsNone(lore_row["redeemed_at"])
+        self.assertEqual(before["redeemed_at"], after["redeemed_at"])
+
+    def test_lore_source_allows_multiple_pending_on_same_slot(self) -> None:
+        from skins.codes import ensure_lore_upload_code
+        from skins.submissions import create_submission, deny_submission
+
+        self._link_player()
+        self._seed_entitlements()
+        lore_code_id = ensure_lore_upload_code("player-1", "main")
+        session = {
+            "player_uuid": "player-1",
+            "code_id": lore_code_id,
+            "realm_id": "main",
+            "staff": False,
+        }
+        with mock.patch("skins.submissions.write_submission_files"):
+            first = create_submission(
+                session,
+                "handheld",
+                "First Lore Sword",
+                {"texture": TINY_PNG},
+                base_set="swords",
+                source="lore",
+            )
+            deny_submission(first["id"], "Try again")
+            second = create_submission(
+                session,
+                "handheld",
+                "Second Lore Sword",
+                {"texture": TINY_PNG},
+                base_set="swords",
+                source="lore",
+            )
+        self.assertEqual("pending", second["status"])
+
     def test_profile_session_can_still_create_via_lore_path(self) -> None:
         """Scope is enforced on HTTP routes only, not create_submission()."""
         from skins.codes import get_session, issue_code, redeem_profile_code

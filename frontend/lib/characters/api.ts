@@ -58,14 +58,6 @@ export function authHeaders(token: string): HeadersInit {
   };
 }
 
-export const HEADER_SKIN_SESSION = "X-Skin-Session";
-
-export function skinSessionHeader(token: string): HeadersInit {
-  return {
-    [HEADER_SKIN_SESSION]: `Bearer ${token}`,
-  };
-}
-
 export type RedeemResult = {
   session_token: string;
   player_uuid: string;
@@ -685,8 +677,7 @@ export async function customiseLoreItem(
   characterId: string,
   kitKey: string,
   input: CustomiseLoreItemInput,
-  kitId = "starter",
-  skinSessionToken?: string | null
+  kitId = "starter"
 ): Promise<CustomiseLoreItemResult> {
   const cid = encodeURIComponent(characterId.trim());
   const key = encodeURIComponent(kitKey.trim());
@@ -730,7 +721,6 @@ export async function customiseLoreItem(
     }
     const uploadHeaders: HeadersInit = {
       ...authHeaders(sessionToken),
-      ...(skinSessionToken ? skinSessionHeader(skinSessionToken) : {}),
     };
     res = await apiFetch(url, {
       method: "POST",

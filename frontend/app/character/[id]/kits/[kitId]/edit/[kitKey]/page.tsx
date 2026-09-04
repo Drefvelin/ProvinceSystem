@@ -25,10 +25,6 @@ import {
   type CharacterSession,
 } from "../../../../../../../lib/characters/session";
 import {
-  getSession as getSkinsSession,
-  isSessionValid as isSkinsSessionValid,
-} from "../../../../../../../lib/skins/session";
-import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
 } from "../../../../../../../lib/characters/uiDev";
@@ -153,41 +149,12 @@ export default function CharacterKitEditPage() {
         router.push(statusHref);
         return;
       }
-      const hasUpload = Boolean(
-        input.textureFile ||
-          input.unsignedFile ||
-          input.signedFile ||
-          input.modelFile
-      );
-      let skinSessionToken: string | null = null;
-      if (hasUpload) {
-        const skinsSession = getSkinsSession();
-        if (!skinsSession || !isSkinsSessionValid(skinsSession)) {
-          setFormError(
-            "Redeem a skin token on the Skins page before uploading a texture."
-          );
-          setSubmitting(false);
-          return;
-        }
-        if (
-          skinsSession.player_uuid.trim().toLowerCase() !==
-          session.player_uuid.trim().toLowerCase()
-        ) {
-          setFormError(
-            "Your skin token belongs to a different player. Redeem the correct token on the Skins page."
-          );
-          setSubmitting(false);
-          return;
-        }
-        skinSessionToken = skinsSession.session_token;
-      }
       await customiseLoreItem(
         session.session_token,
         characterId,
         item.kit_key,
         input,
-        kitId,
-        skinSessionToken
+        kitId
       );
       router.push(statusHref);
     } catch (err) {

@@ -544,9 +544,9 @@ def main() -> None:
         files={"texture": ("bad.png", b"not-a-png", "image/png")},
         headers=auth,
     )
-    if r.status_code != 403:
-        fail(f"upload without skin session expected 403, got {r.status_code} {r.text}")
-    print("OK POST texture without skin session -> 403")
+    if r.status_code != 400:
+        fail(f"invalid PNG with profile auth expected 400, got {r.status_code} {r.text}")
+    print("OK POST invalid PNG with profile auth -> 400")
 
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
@@ -559,7 +559,7 @@ def main() -> None:
     )
     if r.status_code != 400:
         fail(f"invalid PNG expected 400, got {r.status_code} {r.text}")
-    print("OK POST invalid PNG -> 400")
+    print("OK POST invalid PNG (optional skin header ignored) -> 400")
 
     r = client.post(
         f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
@@ -568,7 +568,7 @@ def main() -> None:
             "lore": json.dumps(["A custom line."]),
         },
         files={"texture": ("knife.png", make_png(32, 32), "image/png")},
-        headers=skin_auth,
+        headers=auth,
     )
     if r.status_code != 400:
         fail(f"oversized PNG expected 400, got {r.status_code} {r.text}")
@@ -581,7 +581,7 @@ def main() -> None:
             "lore": json.dumps(["Forged on the road."]),
         },
         files={"texture": ("knife.png", make_png(16, 16, fill=90), "image/png")},
-        headers=skin_auth,
+        headers=auth,
     )
     if r.status_code != 200:
         fail(f"POST valid PNG expected 200, got {r.status_code} {r.text}")
@@ -610,12 +610,13 @@ def main() -> None:
         fail(f"submission status expected pending: {dict(row)}")
     if str(row["kind"]) != "handheld":
         fail(f"submission kind expected handheld: {dict(row)}")
-    from src.skins.codes import get_session
+    from src.skins.codes import ensure_lore_upload_code, get_session
 
     profile_sess = get_session(token)
     skin_sess = get_session(skin_token)
     if profile_sess is None or skin_sess is None:
         fail("expected profile and skin sessions")
+    lore_code_id = ensure_lore_upload_code(player, "main")
     with connect() as conn:
         sub_row = conn.execute(
             "SELECT code_id FROM submissions WHERE id = ?",
@@ -623,13 +624,15 @@ def main() -> None:
         ).fetchone()
     if sub_row is None:
         fail(f"submission code_id missing for {sub_id}")
-    if int(sub_row["code_id"]) != int(skin_sess["code_id"]):
+    if int(sub_row["code_id"]) != int(lore_code_id):
         fail(
-            f"submission code_id must be skin session code "
-            f"(got {sub_row['code_id']}, skin {skin_sess['code_id']})"
+            f"submission code_id must be lore upload slot "
+            f"(got {sub_row['code_id']}, lore {lore_code_id})"
         )
     if int(sub_row["code_id"]) == int(profile_sess["code_id"]):
         fail("submission must not use profile session code_id")
+    if int(sub_row["code_id"]) == int(skin_sess["code_id"]):
+        fail("submission must not use skin mint code_id")
     with connect() as conn:
         lore_row = conn.execute(
             """
@@ -733,8 +736,25 @@ def main() -> None:
         headers=auth,
     )
     if r.status_code != 400:
-        fail(f"denied resubmit without skin expected 400, got {r.status_code} {r.text}")
-    print("OK deny skin -> purged; customise denied; name/lore kept; resubmit needs skin")
+        fail(f"denied resubmit without new skin expected 400, got {r.status_code} {r.text}")
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        data={
+            "display_name": "Ready Blade",
+            "lore": json.dumps(["Line one."]),
+        },
+        files={"texture": ("knife.png", make_png(16, 16, fill=120), "image/png")},
+        headers=auth,
+    )
+    if r.status_code != 200:
+        fail(f"denied resubmit with profile upload expected 200, got {r.status_code} {r.text}")
+    retry_sub = (r.json().get("draft") or {}).get("submission_id")
+    if not retry_sub:
+        fail(f"expected submission_id after denied resubmit: {r.json()}")
+    print(
+        "OK deny skin -> purged; customise denied; name/lore kept; "
+        "profile-only resubmit works"
+    )
 
     # Clear denied row to exercise ready-without-skin path
     with connect() as conn:

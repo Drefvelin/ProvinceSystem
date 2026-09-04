@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .db import SKINS_DIR, connect
+from .codes import SCOPE_LORE_UPLOAD
 from .discord_link import get_link_for_uuid
 from .naming import (
     ARMOR_TIER_LABELS,
@@ -213,6 +214,22 @@ def _validate_name_styles(raw: list[str] | None) -> list[str]:
     return out
 
 
+def _upload_source_for_code_id(code_id: int | None) -> str:
+    if code_id is None:
+        return "skins"
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT scope FROM codes WHERE id = ?",
+            (int(code_id),),
+        ).fetchone()
+    if row is None:
+        return "skins"
+    scope = str(row["scope"] or "").strip().lower()
+    if scope == SCOPE_LORE_UPLOAD:
+        return "kit"
+    return "skins"
+
+
 def _public_row(row: sqlite3.Row) -> dict:
     is_staff = bool(row["staff"]) if "staff" in row.keys() else False
     out = {
@@ -243,6 +260,8 @@ def _public_row(row: sqlite3.Row) -> dict:
         out["scroll"] = row["scroll"] if "scroll" in row.keys() else None
         tiers_map = _row_json_object(row, "tier_scrolls")
         out["tier_scrolls"] = tiers_map or None
+    if "code_id" in row.keys():
+        out["upload_source"] = _upload_source_for_code_id(row["code_id"])
     return out
 
 
@@ -571,6 +590,7 @@ def create_submission(
     category: str | None = None,
     scroll: str | None = None,
     tier_scrolls: dict[str, str] | None = None,
+    source: str = "skins",
 ) -> dict:
     _ = filenames  # upload names ignored for identity
 
@@ -593,7 +613,11 @@ def create_submission(
     except TextValidationError as e:
         raise SubmissionError(str(e)) from e
 
-    _assert_no_active_submission_for_code(int(session_row["code_id"]))
+    source_norm = (source or "skins").strip().lower()
+    if source_norm not in ("skins", "lore"):
+        raise SubmissionError("invalid submission source")
+    if source_norm != "lore":
+        _assert_no_active_submission_for_code(int(session_row["code_id"]))
 
     grip_y = parse_grip_y(grip_preset)
     if kind == "large_handheld":
@@ -986,7 +1010,8 @@ def create_submission(
 
     from src.skins.codes import mark_code_consumed
 
-    mark_code_consumed(code_id)
+    if source_norm != "lore":
+        mark_code_consumed(code_id)
 
     return _public_row(row)
 
@@ -1246,6 +1271,9 @@ def list_pending() -> list[dict]:
                 ),
                 "minecraft_name": names.get("minecraft_name"),
                 "discord_username": names.get("discord_username"),
+                "upload_source": _upload_source_for_code_id(
+                    row["code_id"] if "code_id" in row.keys() else None
+                ),
                 "files": _list_asset_files(row["id"]),
             }
         )

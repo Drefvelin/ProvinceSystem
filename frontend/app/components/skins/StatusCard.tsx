@@ -105,6 +105,11 @@ export default function StatusCard({ row }: Props) {
   return (
     <div className="mt-8 space-y-6">
       <p className="text-lg text-[var(--tfmc-cream)]">{statusMessage(row)}</p>
+      {row.upload_source === "kit" ? (
+        <p className="text-sm text-[var(--tfmc-mist)]">
+          Submitted via kit item customise
+        </p>
+      ) : null}
 
       <div className="space-y-2">
         <h2 className="text-sm font-medium text-[var(--tfmc-stone)]">

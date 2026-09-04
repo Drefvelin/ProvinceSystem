@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import FancyCheckbox from "../skins/FancyCheckbox";
 import ModelPreview from "../skins/ModelPreview";
@@ -649,8 +648,9 @@ export default function LoreItemEditor({
         <p className="rounded-sm border border-[color-mix(in_srgb,#e8a0a0_35%,transparent)] bg-[color-mix(in_srgb,#e8a0a0_10%,transparent)] px-3 py-2 text-sm text-[#e8a0a0]">
           Your custom skin was denied
           {denyReason ? `: ${denyReason}` : "."} Name and lore are kept.
-          Choose a different skin and submit again. The kit is not ready to
-          claim until a new skin is accepted.
+          Choose a different skin (upload a new texture or pick an applied one)
+          and submit again. The kit is not ready to claim until a new skin is
+          accepted.
         </p>
       ) : null}
 
@@ -745,8 +745,8 @@ export default function LoreItemEditor({
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           {isBook
-            ? "Pick an applied book skin from your account (works on any character), or upload a new one with a skin token."
-            : "Pick an applied skin from your account (works on any character), or upload a new one with a skin token."}
+            ? "Pick an applied book skin from your account (works on any character), or upload new unsigned and signed covers for this kit item."
+            : "Pick an applied skin from your account (works on any character), or upload a new texture for this kit item."}
         </p>
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <button
@@ -785,18 +785,6 @@ export default function LoreItemEditor({
           </button>
         </div>
 
-        {skinMode === "upload" ? (
-          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            Uploading a new texture uses a skin token — redeem one on the{" "}
-            <Link
-              href="/skins"
-              className="text-[var(--tfmc-cream)] underline underline-offset-2 hover:text-[var(--tfmc-mist)]"
-            >
-              Skins
-            </Link>{" "}
-            page first (same as standalone skin uploads).
-          </p>
-        ) : null}
         {skinMode === "upload" ? (
           <div className="mt-4 flex flex-col gap-4">
             {isBook ? (
@@ -931,8 +919,8 @@ export default function LoreItemEditor({
           </div>
         ) : item.pickable_skins.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            No applied skins for this base set yet. Upload one with a skin token;
-            after staff approval you can reuse it on other characters.
+            No applied skins for this base set yet. Upload one here; after staff
+            approval you can reuse it on other characters.
           </p>
         ) : (
           <>

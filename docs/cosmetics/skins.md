@@ -10,6 +10,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 - No website logins; codes from TFMCWeb (`/token create skin` or **`/token create skin staff`**) bound to player UUID.
 - **Player:** staff approve/deny in Discord; ArmourShop writes **`tfmc_submissions`** + `ps_*` + LP.
 - **Staff curated:** auto-approve (no bot); category + scroll on upload; writes **`tfmc_armorshop`** into real ArmourShop categories.
+- **Kit item customise** (character creator) also creates `submissions` rows via an internal `lore_upload` code per player — not a donator mint token. Staff review and ArmourShop apply use the same pipeline as `/skins` uploads.
 
 ## Upload kinds
 

@@ -88,7 +88,7 @@ Starter kit `starter` replaces legacy ConditionalEvents `/tfmc starter`.
 
 Customise **editable** kit lines on the website (character detail → Kits → Edit). Texture via player skins pipeline → `ps_items`; lore via RPCharacters. Block claim while skin pending approval or slug missing on ArmourShop.
 
-**Skin tokens:** uploading a new kit texture (or book covers / 3D model) requires a **skin mint token** redeemed on `/skins`, sent as `X-Skin-Session` alongside the character login token. Picking an already-**applied** skin from your account does not consume a new token. The character web code is login only.
+**Kit uploads:** new textures (or book covers / 3D model) on editable kit items use **character login only** — no skin mint token. Picking an already-**applied** skin from your account pick list also does not consume a mint token. Standalone cosmetics on [`/skins`](../cosmetics/skins.md) still require a **skin mint token** from TFMCWeb.
 
 Applied skins appear in the kit editor pick list and can be attached to any character with the same `base_set`.
 

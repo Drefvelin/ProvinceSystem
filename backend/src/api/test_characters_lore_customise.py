@@ -1,4 +1,4 @@
-"""Tests for kit customise skin-session header (layered, no full server import)."""
+"""Tests for kit customise and skin-session parser (layered, no full server import)."""
 
 from __future__ import annotations
 
@@ -18,10 +18,7 @@ if str(_BACKEND_SRC) not in sys.path:
 
 os.environ.setdefault("SKINS_DEV", "1")
 
-from fastapi import HTTPException
-
 from src.api.map_access import get_skin_session
-from src.skins.auth import HEADER_SKIN_SESSION
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10"
@@ -218,27 +215,6 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         row = get_skin_session(f"Bearer {self.profile_session['session_token']}")
         self.assertIsNone(row)
 
-    def test_require_skin_session_for_upload(self) -> None:
-        from src.api.characters_routes import _require_skin_session_for_upload
-
-        with self.assertRaises(HTTPException) as ctx:
-            _require_skin_session_for_upload(self.profile_session, None)
-        self.assertEqual(403, ctx.exception.status_code)
-
-        out = _require_skin_session_for_upload(
-            self.profile_session,
-            f"Bearer {self.skin_session['session_token']}",
-        )
-        self.assertEqual(int(self.skin_session["code_id"]), int(out["code_id"]))
-
-        with self.assertRaises(HTTPException) as ctx:
-            _require_skin_session_for_upload(
-                self.profile_session,
-                f"Bearer {self.other_skin_session['session_token']}",
-            )
-        self.assertEqual(403, ctx.exception.status_code)
-        self.assertIn("same player", ctx.exception.detail.lower())
-
     def test_customise_name_lore_profile_only(self) -> None:
         from src.characters.lore_items import customise_lore_item
 
@@ -251,24 +227,12 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         self.assertTrue(out.get("ok"))
 
-    def test_customise_upload_without_skin_session_forbidden(self) -> None:
-        from src.characters.lore_items import LoreItemError, customise_lore_item
-
-        with self.assertRaises(LoreItemError) as ctx:
-            customise_lore_item(
-                self.profile_session,
-                self.CHAR_ID,
-                "iron_hunting_knife",
-                display_name="Trail Knife",
-                lore=["Forged."],
-                texture_bytes=TINY_PNG,
-            )
-        self.assertEqual(403, ctx.exception.status_code)
-
-    def test_customise_upload_with_skin_session_uses_skin_code(self) -> None:
+    def test_customise_upload_profile_only_uses_lore_slot(self) -> None:
+        from skins.codes import ensure_lore_upload_code
         from skins.db import connect
         from src.characters.lore_items import customise_lore_item
 
+        lore_code_id = ensure_lore_upload_code(self.PLAYER, "main")
         out = customise_lore_item(
             self.profile_session,
             self.CHAR_ID,
@@ -276,7 +240,6 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
             display_name="Trail Knife",
             lore=["Forged."],
             texture_bytes=TINY_PNG,
-            skin_session_row=self.skin_session,
         )
         sub_id = (out.get("draft") or {}).get("submission_id")
         self.assertTrue(sub_id)
@@ -285,9 +248,81 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
                 "SELECT code_id FROM submissions WHERE id = ?",
                 (sub_id,),
             ).fetchone()
+            profile_code = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (int(self.profile_session["code_id"]),),
+            ).fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual(int(row["code_id"]), int(self.skin_session["code_id"]))
+        self.assertEqual(lore_code_id, int(row["code_id"]))
         self.assertNotEqual(int(row["code_id"]), int(self.profile_session["code_id"]))
+        self.assertNotEqual(int(row["code_id"]), int(self.skin_session["code_id"]))
+        self.assertIsNotNone(profile_code["redeemed_at"])
+
+    def test_customise_upload_ignores_optional_skin_header(self) -> None:
+        from skins.codes import ensure_lore_upload_code
+        from skins.db import connect
+        from src.characters.lore_items import customise_lore_item
+
+        lore_code_id = ensure_lore_upload_code(self.PLAYER, "main")
+        with connect() as conn:
+            conn.execute(
+                "DELETE FROM lore_item_customisations WHERE character_id = ?",
+                (self.CHAR_ID,),
+            )
+            conn.execute("DELETE FROM submissions WHERE player_uuid = ?", (self.PLAYER,))
+            conn.commit()
+
+        out = customise_lore_item(
+            self.profile_session,
+            self.CHAR_ID,
+            "iron_hunting_knife",
+            display_name="Trail Knife Two",
+            lore=["Forged again."],
+            texture_bytes=TINY_PNG,
+        )
+        sub_id = (out.get("draft") or {}).get("submission_id")
+        self.assertTrue(sub_id)
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT code_id FROM submissions WHERE id = ?",
+                (sub_id,),
+            ).fetchone()
+        self.assertEqual(lore_code_id, int(row["code_id"]))
+
+    def test_denied_resubmit_profile_only(self) -> None:
+        from skins.db import connect
+        from skins.submissions import deny_submission
+        from src.characters.lore_items import customise_lore_item
+
+        first = customise_lore_item(
+            self.profile_session,
+            self.CHAR_ID,
+            "iron_hunting_knife",
+            display_name="Trail Knife",
+            lore=["Forged."],
+            texture_bytes=TINY_PNG,
+        )
+        sub_id = (first.get("draft") or {}).get("submission_id")
+        self.assertTrue(sub_id)
+        deny_submission(str(sub_id), "Needs changes")
+
+        second = customise_lore_item(
+            self.profile_session,
+            self.CHAR_ID,
+            "iron_hunting_knife",
+            display_name="Fixed Trail Knife",
+            lore=["Forged again."],
+            texture_bytes=TINY_PNG,
+        )
+        new_sub = (second.get("draft") or {}).get("submission_id")
+        self.assertTrue(new_sub)
+        self.assertNotEqual(sub_id, new_sub)
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT status FROM submissions WHERE id = ?",
+                (new_sub,),
+            ).fetchone()
+        self.assertEqual("pending", row["status"])
 
     def test_pick_applied_skin_profile_only(self) -> None:
         from skins.db import SKINS_DIR, connect
@@ -341,9 +376,6 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         )
         draft = out.get("draft") or {}
         self.assertEqual(applied_id, draft.get("existing_skin_id"))
-
-    def test_header_constant(self) -> None:
-        self.assertEqual("X-Skin-Session", HEADER_SKIN_SESSION)
 
 
 if __name__ == "__main__":

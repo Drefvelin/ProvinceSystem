@@ -14,6 +14,7 @@ SESSION_TTL_HOURS = 8
 CHARACTER_REMEMBER_TTL_DAYS = 30
 ALLOWED_SCOPES = frozenset({"skin", "drink", "profile", "skin_staff"})
 REDEEMABLE_SKIN_SCOPES = frozenset({"skin", "skin_staff"})
+SCOPE_LORE_UPLOAD = "lore_upload"
 DEFAULT_REALM_ID = "main"
 _REALM_ID_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
 
@@ -130,6 +131,48 @@ def mark_code_consumed(code_id: int, consumed_at: str | None = None) -> None:
             (when, int(code_id)),
         )
         conn.commit()
+
+
+def ensure_lore_upload_code(player_uuid: str, realm_id: str | None) -> int:
+    """Internal per-player code for kit-origin submissions (not player-redeemable)."""
+    uuid = (player_uuid or "").strip()
+    if not uuid:
+        raise CodeError("player_uuid is required")
+    realm = normalize_realm_id(realm_id)
+    identity_hash = hash_secret(f"lore-upload:{uuid.lower()}")
+    now = _utcnow()
+    created_at = _iso(now)
+    expires_at = _iso(now + timedelta(days=365 * 50))
+
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id FROM codes
+            WHERE LOWER(player_uuid) = LOWER(?)
+              AND LOWER(scope) = ?
+            LIMIT 1
+            """,
+            (uuid, SCOPE_LORE_UPLOAD),
+        ).fetchone()
+        if row is not None:
+            return int(row["id"])
+        conn.execute(
+            """
+            INSERT INTO codes (
+                code_hash, player_uuid, scope, realm_id,
+                created_at, expires_at, redeemed_at, revoked
+            ) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
+            """,
+            (identity_hash, uuid, SCOPE_LORE_UPLOAD, realm, created_at, expires_at),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id FROM codes WHERE code_hash = ?",
+            (identity_hash,),
+        ).fetchone()
+    if row is None:
+        raise CodeError("failed to create lore upload code")
+    return int(row["id"])
 
 
 def _prepare_skin_drink_redeem(conn, code_id: int) -> None:

@@ -7,9 +7,6 @@ import json
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from src.api.map_access import get_skin_session
-from src.skins.auth import HEADER_SKIN_SESSION
-
 from src.characters.rpc_player_meta import (
     RpcPlayerMetaError,
     resolve_web_entitlements,
@@ -173,33 +170,6 @@ class RpcPlayerMetaBody(BaseModel):
 
 def _lore_http(exc: LoreItemError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))
-
-
-def _require_skin_session_for_upload(
-    profile_session: dict,
-    skin_header: str | None,
-) -> dict:
-    skin_session = get_skin_session(skin_header)
-    if skin_session is None:
-        raise HTTPException(
-            status_code=403,
-            detail="Skin session required for texture upload",
-        )
-    profile_uuid = str(profile_session.get("player_uuid") or "").strip().lower()
-    skin_uuid = str(skin_session.get("player_uuid") or "").strip().lower()
-    if not profile_uuid or profile_uuid != skin_uuid:
-        raise HTTPException(
-            status_code=403,
-            detail="Skin session must belong to the same player",
-        )
-    profile_realm = str(profile_session.get("realm_id") or "").strip().lower()
-    skin_realm = str(skin_session.get("realm_id") or "").strip().lower()
-    if profile_realm and skin_realm and profile_realm != skin_realm:
-        raise HTTPException(
-            status_code=403,
-            detail="Skin session realm does not match character session",
-        )
-    return skin_session
 
 
 def _wardrobe_http(exc: WardrobeError) -> HTTPException:
@@ -399,7 +369,6 @@ async def post_lore_item_customise(
     character_id: str | None = None,
     kit_id: str | None = None,
     authorization: str | None = Header(default=None),
-    x_skin_session: str | None = Header(default=None, alias=HEADER_SKIN_SESSION),
 ):
     """Store name/lore draft; optional existing skin or new handheld PNG upload."""
     session = _profile_session_from_auth(authorization)
@@ -511,11 +480,6 @@ async def post_lore_item_customise(
         or signed_bytes is not None
         or model_bytes is not None
     )
-    skin_session_row = (
-        _require_skin_session_for_upload(session, x_skin_session)
-        if has_upload
-        else None
-    )
 
     try:
         kwargs = dict(
@@ -529,7 +493,6 @@ async def post_lore_item_customise(
             name_colours=name_colours,
             name_styles=name_styles,
             kit_id=kit_id,
-            skin_session_row=skin_session_row,
         )
         if existing_provided:
             return customise_lore_item(
