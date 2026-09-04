@@ -10,11 +10,11 @@ npm install
 npx playwright install chromium
 ```
 
-On Linux you may also need `npx playwright install-deps chromium` (system libraries for headless Chromium).
+`npm install` runs `prebuild`, which copies [`frontend/lib/skins`](../../frontend/lib/skins) into `src/skins/` so esbuild can resolve `three` from this package’s `node_modules`.
 
 ## Production
 
-The backend Docker image runs `npm ci`, installs Playwright Chromium, and `install-deps` during build ([`backend/Dockerfile`](../Dockerfile)). The image also copies [`frontend/lib/skins`](../../frontend/lib/skins) to `/frontend/lib/skins` because `scene.ts` shares Three.js helpers with the web app. Rebuild the backend image after any change under `backend/render/` or those shared skin modules.
+The backend Docker image runs `npm ci`, installs Playwright Chromium, and `install-deps` during build ([`backend/Dockerfile`](../Dockerfile)). The image copies the same skin helpers to `backend/render/src/skins` before `npm ci`. Rebuild the backend image after any change under `backend/render/` or those shared skin modules.
 
 Non-Docker hosts: run the local setup commands above on the API machine; ensure `node` is on `PATH` for the uvicorn process.
 

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/sync-skins.mjs",
     "build": "esbuild src/browser.ts --bundle --outfile=dist/browser.js --format=iife --global-name=SheetRender --platform=browser",
     "postinstall": "npm run build"
   },

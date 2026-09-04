@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 # constants.py resolves ProvinceSystem/shared via parents[4] → /shared/...
 COPY shared /shared
-# scene.ts imports ../../../frontend/lib/skins/* (repo root from /app/render/src → /frontend/...)
-COPY frontend/lib/skins /frontend/lib/skins
+# Shared Three.js helpers (also synced locally via scripts/sync-skins.mjs before build).
+COPY frontend/lib/skins /app/render/src/skins
 
 WORKDIR /app/render
 RUN npm ci \
