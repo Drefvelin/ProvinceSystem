@@ -106,6 +106,31 @@ export function uiDevLoreItemsResponse(
   return { character_id: characterId, items: [uiDevCached] };
 }
 
+/** Fixture with no pickable skins — opens editor on upload tab in UI dev. */
+export function uiDevFreshLoreItem(
+  characterId: string = UI_DEV_LORE_CHARACTER_ID
+): LoreItemsResponse {
+  const base = buildFixtureItem();
+  const fresh: LoreItemRow = {
+    ...base,
+    draft: {
+      ...base.draft,
+      display_name: "",
+      lore: [],
+      existing_skin_id: null,
+      submission_id: null,
+      submission_status: null,
+      deny_reason: null,
+      state: "draft",
+      name_colours: [],
+      name_styles: [],
+    },
+    pickable_skins: [],
+  };
+  uiDevCached = fresh;
+  return { character_id: characterId, items: [fresh] };
+}
+
 export function uiDevApplyCustomise(
   prev: LoreItemRow,
   input: {

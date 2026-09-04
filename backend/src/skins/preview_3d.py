@@ -1,6 +1,7 @@
 """Headless 3D preview tiles for staff review sheets.
 
 Fail-soft: missing Node/Chromium or a render error leaves the 2D sheet intact.
+Callers receive an optional error string and may persist it; compose still proceeds.
 """
 
 from __future__ import annotations
@@ -26,7 +27,11 @@ log = logging.getLogger("skins.preview_3d")
 
 RENDER_DIR = Path(__file__).resolve().parents[2] / "render"
 CLI = RENDER_DIR / "cli.mjs"
+BUNDLE = RENDER_DIR / "dist" / "browser.js"
 TIMEOUT_SEC = 90
+
+PREVIEW_RENDER_ERROR_NAME = "preview_render_error.txt"
+MAX_RENDER_ERROR_LEN = 500
 
 PREVIEW_NAMES = {
     "model": "preview_model.png",
@@ -38,6 +43,43 @@ PREVIEW_NAMES = {
     "book_unsigned": "preview_book_unsigned.png",
     "book_signed": "preview_book_signed.png",
 }
+
+
+def _truncate_error(message: str) -> str:
+    text = (message or "").strip()
+    if not text:
+        return ""
+    first_line = text.splitlines()[0].strip()
+    if len(first_line) > MAX_RENDER_ERROR_LEN:
+        return first_line[:MAX_RENDER_ERROR_LEN]
+    return first_line
+
+
+def write_preview_render_error(out_dir: Path, message: str) -> None:
+    text = _truncate_error(message)
+    if not text:
+        return
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / PREVIEW_RENDER_ERROR_NAME).write_text(text + "\n", encoding="utf-8")
+
+
+def clear_preview_render_error(out_dir: Path) -> None:
+    path = out_dir / PREVIEW_RENDER_ERROR_NAME
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def read_preview_render_error(out_dir: Path) -> str | None:
+    path = out_dir / PREVIEW_RENDER_ERROR_NAME
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return text or None
 
 
 def _node_bin() -> str | None:
@@ -60,6 +102,25 @@ def _inputs_newer_than_outputs(inputs: list[Path], outputs: list[Path]) -> bool:
     newest_in = max((_mtime(p) for p in inputs if p.is_file()), default=0)
     oldest_out = min(_mtime(p) for p in outputs)
     return newest_in > oldest_out
+
+
+def _existing_tiles(
+    wanted: list[tuple[str, Path]],
+) -> list[tuple[str, Path]]:
+    return [(view, path) for view, path in wanted if path.is_file()]
+
+
+def _incomplete_error(
+    wanted: list[tuple[str, Path]],
+    tiles: list[tuple[str, Path]],
+) -> str | None:
+    existing_views = {view for view, _ in tiles}
+    missing = [view for view, _ in wanted if view not in existing_views]
+    if not missing:
+        return None
+    expected = ", ".join(view for view, _ in wanted)
+    missing_str = ", ".join(missing)
+    return f"3D preview incomplete: expected {expected}; missing {missing_str}"
 
 
 def _job_for_kind(kind: str, slug: str, out_dir: Path, tiers: list[str]) -> dict | None:
@@ -135,11 +196,11 @@ def ensure_preview_tiles(
     slug: str,
     out_dir: Path,
     tiers: list[str] | None = None,
-) -> list[tuple[str, Path]]:
-    """Render missing 3D tiles. Returns (label, path) for files that exist."""
+) -> tuple[list[tuple[str, Path]], str | None]:
+    """Render missing 3D tiles. Returns (tiles, error)."""
     job = _job_for_kind(kind, slug, out_dir, tiers or [])
     if job is None:
-        return []
+        return [], None
 
     wanted = [
         (view, out_dir / PREVIEW_NAMES[view])
@@ -148,16 +209,30 @@ def ensure_preview_tiles(
     ]
     outputs = [path for _, path in wanted]
     inputs = [Path(p) for p in job["files"].values()]
+
     if not _inputs_newer_than_outputs(inputs, outputs):
-        return [(view, path) for view, path in wanted if path.is_file()]
+        tiles = _existing_tiles(wanted)
+        return tiles, _incomplete_error(wanted, tiles)
+
+    tiles = _existing_tiles(wanted)
+    if len(tiles) == len(wanted):
+        return tiles, None
 
     if os.environ.get("SHEET_RENDER_DISABLE", "").strip() in ("1", "true", "yes"):
-        return [(view, path) for view, path in wanted if path.is_file()]
+        return tiles, "3D preview disabled (SHEET_RENDER_DISABLE=1)"
 
     node = _node_bin()
-    if not node or not CLI.is_file():
-        log.warning("3D sheet renderer unavailable (node or backend/render/cli.mjs)")
-        return [(view, path) for view, path in wanted if path.is_file()]
+    if not node:
+        log.warning("3D sheet renderer unavailable: node not found")
+        return tiles, "3D renderer unavailable: node not found"
+
+    if not CLI.is_file():
+        log.warning("3D sheet renderer unavailable: backend/render/cli.mjs missing")
+        return tiles, "3D renderer unavailable: backend/render/cli.mjs missing"
+
+    if not BUNDLE.is_file():
+        log.warning("3D sheet renderer unavailable: backend/render/dist/browser.js missing")
+        return tiles, "3D renderer unavailable: run npm install in backend/render"
 
     payload = {
         "kind": job["kind"],
@@ -165,6 +240,7 @@ def ensure_preview_tiles(
         "files": job["files"],
         "outDir": str(out_dir),
     }
+    render_error: str | None = None
     try:
         with tempfile.NamedTemporaryFile(
             "w", suffix=".json", delete=False, encoding="utf-8"
@@ -186,8 +262,19 @@ def ensure_preview_tiles(
                 pass
         if result.returncode != 0:
             err = (result.stderr or result.stdout or "").strip()
-            log.warning("3D sheet renderer failed: %s", err[:500] or result.returncode)
-    except (OSError, subprocess.TimeoutExpired) as e:
-        log.warning("3D sheet renderer error: %s", e)
+            render_error = (
+                _truncate_error(err)
+                or f"3D renderer failed (exit {result.returncode})"
+            )
+            log.warning("3D sheet renderer failed: %s", render_error)
+    except subprocess.TimeoutExpired:
+        render_error = f"3D renderer timed out after {TIMEOUT_SEC}s"
+        log.warning("3D sheet renderer error: %s", render_error)
+    except OSError as e:
+        render_error = _truncate_error(str(e)) or "3D renderer error"
+        log.warning("3D sheet renderer error: %s", render_error)
 
-    return [(view, path) for view, path in wanted if path.is_file()]
+    tiles = _existing_tiles(wanted)
+    if render_error is not None:
+        return tiles, render_error
+    return tiles, _incomplete_error(wanted, tiles)

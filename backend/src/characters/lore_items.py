@@ -1175,6 +1175,7 @@ def customise_lore_item(
     name_colours: list[str] | None = None,
     name_styles: list[str] | None = None,
     kit_id: str | None = None,
+    skin_session_row: dict | None = None,
 ) -> dict[str, Any]:
     """Validate and store customise draft; optionally bridge a new skin upload."""
     from src.skins.codes import normalize_realm_id
@@ -1215,6 +1216,13 @@ def customise_lore_item(
         or unsigned_bytes is not None
         or signed_bytes is not None
     )
+    if has_upload and skin_session_row is None:
+        raise LoreItemError(
+            "Skin session required for texture upload",
+            status_code=403,
+        )
+    submission_session = skin_session_row if has_upload else session_row
+
     if has_upload and existing_skin_id is not _UNSET and existing_skin_id:
         raise LoreItemError(
             "Provide either texture upload or existing_skin_id, not both"
@@ -1276,7 +1284,7 @@ def customise_lore_item(
         }
         try:
             created = create_submission(
-                session_row,
+                submission_session,
                 kind="book",
                 display_name=name,
                 files_bytes=files,
@@ -1311,7 +1319,7 @@ def customise_lore_item(
             files["model"] = model_bytes  # type: ignore[assignment]
         try:
             created = create_submission(
-                session_row,
+                submission_session,
                 kind=kind,
                 display_name=name,
                 files_bytes=files,
@@ -1542,7 +1550,10 @@ def delete_lore_item_customise(
     kit_key: str,
     kit_id: str | None = None,
 ) -> dict[str, Any]:
-    """Wipe one kit-item customise row (player). Does not delete skin submissions."""
+    """Wipe one kit-item customise row (player).
+
+    Releases orphaned pending skin uploads; does not delete applied player skins.
+    """
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -1570,7 +1581,25 @@ def delete_lore_item_customise(
             status_code=400,
         )
 
+    pending_submission_id: str | None = None
     with connect() as conn:
+        lore_row = conn.execute(
+            """
+            SELECT submission_id, LOWER(COALESCE(state, '')) AS state
+            FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (uuid, cid, kit_key_norm),
+        ).fetchone()
+        if lore_row is not None:
+            state = str(lore_row["state"] or "").strip().lower()
+            raw_sid = lore_row["submission_id"]
+            if (
+                state == STATE_PENDING_SKIN
+                and raw_sid is not None
+                and str(raw_sid).strip()
+            ):
+                pending_submission_id = str(raw_sid).strip()
         cur = conn.execute(
             """
             DELETE FROM lore_item_customisations
@@ -1580,6 +1609,14 @@ def delete_lore_item_customise(
         )
         deleted = int(cur.rowcount or 0)
         conn.commit()
+
+    if pending_submission_id:
+        from src.skins.submissions import rollback_pending_submission_if_unreferenced
+
+        rollback_pending_submission_if_unreferenced(
+            pending_submission_id,
+            player_uuid=uuid,
+        )
 
     return {
         "ok": True,

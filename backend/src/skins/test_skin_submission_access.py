@@ -229,6 +229,90 @@ class SkinSubmissionAccessTest(unittest.TestCase):
         out = self._submit_handheld(session, "Lore Sword")
         self.assertEqual("pending", out["status"])
 
+    def test_rollback_pending_if_unreferenced(self) -> None:
+        from skins.db import connect
+        from skins.submissions import rollback_pending_submission_if_unreferenced
+
+        self._link_player()
+        self._seed_entitlements()
+        session = self._skin_session()
+        created = self._submit_handheld(session, "Orphan Sword")
+        sid = created["id"]
+        code_id = session["code_id"]
+
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (code_id,),
+            ).fetchone()
+        self.assertIsNotNone(row["redeemed_at"])
+
+        self.assertTrue(
+            rollback_pending_submission_if_unreferenced(
+                sid, player_uuid="player-1"
+            )
+        )
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM submissions WHERE id = ?",
+                (sid,),
+            ).fetchone()
+            code_row = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (code_id,),
+            ).fetchone()
+        self.assertIsNone(row)
+        self.assertIsNone(code_row["redeemed_at"])
+
+    def test_rollback_skips_when_lore_row_still_references(self) -> None:
+        from skins.db import connect
+        from skins.submissions import rollback_pending_submission_if_unreferenced
+
+        self._link_player()
+        self._seed_entitlements()
+        session = self._skin_session()
+        created = self._submit_handheld(session, "Referenced Sword")
+        sid = created["id"]
+
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO lore_item_customisations (
+                    player_uuid, character_id, kit_key, submission_id,
+                    state, updated_at, realm_id
+                ) VALUES (?, ?, 'kit_a', ?, 'pending_skin', ?, 'main')
+                """,
+                ("player-1", "char-1", sid, "2026-01-01T00:00:00Z"),
+            )
+            conn.commit()
+
+        self.assertFalse(
+            rollback_pending_submission_if_unreferenced(
+                sid, player_uuid="player-1"
+            )
+        )
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM submissions WHERE id = ?",
+                (sid,),
+            ).fetchone()
+        self.assertIsNotNone(row)
+
+    def test_rollback_batch_dedupes_ids(self) -> None:
+        from skins.submissions import rollback_pending_submissions_if_unreferenced
+
+        self._link_player()
+        self._seed_entitlements()
+        session = self._skin_session()
+        created = self._submit_handheld(session, "Batch Orphan")
+        sid = created["id"]
+
+        count = rollback_pending_submissions_if_unreferenced(
+            [sid, sid, ""],
+            player_uuid="player-1",
+        )
+        self.assertEqual(1, count)
+
 
 if __name__ == "__main__":
     unittest.main()

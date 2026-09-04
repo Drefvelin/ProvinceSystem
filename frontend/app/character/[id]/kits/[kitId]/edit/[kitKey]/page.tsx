@@ -20,10 +20,14 @@ import {
 } from "../../../../../../../lib/characters/loreItemsDev";
 import {
   clearSession,
-  getSession,
-  isSessionValid,
+  getSession as getCharacterSession,
+  isSessionValid as isCharacterSessionValid,
   type CharacterSession,
 } from "../../../../../../../lib/characters/session";
+import {
+  getSession as getSkinsSession,
+  isSessionValid as isSkinsSessionValid,
+} from "../../../../../../../lib/skins/session";
 import {
   isCharacterUiDev,
   UI_DEV_SESSION_TOKEN,
@@ -105,8 +109,8 @@ export default function CharacterKitEditPage() {
       void load(s.session_token).finally(() => setReady(true));
       return;
     }
-    const s = getSession();
-    if (!s || !isSessionValid(s) || s.scope !== "profile") {
+    const s = getCharacterSession();
+    if (!s || !isCharacterSessionValid(s) || s.scope !== "profile") {
       clearSession();
       router.replace("/character");
       return;
@@ -149,12 +153,41 @@ export default function CharacterKitEditPage() {
         router.push(statusHref);
         return;
       }
+      const hasUpload = Boolean(
+        input.textureFile ||
+          input.unsignedFile ||
+          input.signedFile ||
+          input.modelFile
+      );
+      let skinSessionToken: string | null = null;
+      if (hasUpload) {
+        const skinsSession = getSkinsSession();
+        if (!skinsSession || !isSkinsSessionValid(skinsSession)) {
+          setFormError(
+            "Redeem a skin token on the Skins page before uploading a texture."
+          );
+          setSubmitting(false);
+          return;
+        }
+        if (
+          skinsSession.player_uuid.trim().toLowerCase() !==
+          session.player_uuid.trim().toLowerCase()
+        ) {
+          setFormError(
+            "Your skin token belongs to a different player. Redeem the correct token on the Skins page."
+          );
+          setSubmitting(false);
+          return;
+        }
+        skinSessionToken = skinsSession.session_token;
+      }
       await customiseLoreItem(
         session.session_token,
         characterId,
         item.kit_key,
         input,
-        kitId
+        kitId,
+        skinSessionToken
       );
       router.push(statusHref);
     } catch (err) {

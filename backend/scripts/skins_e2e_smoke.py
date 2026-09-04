@@ -751,6 +751,12 @@ def main() -> None:
             fail(f"review-sheet {label}: {r.status_code} {r.text}")
         if not r.content.startswith(PNG_MAGIC):
             fail(f"review-sheet {label}: not a PNG")
+        render_err = r.headers.get("X-Sheet-Render-Error")
+        if render_err:
+            print(
+                f"WARNING review-sheet {label}: 3D render failed "
+                f"({render_err[:120]})"
+            )
         print(f"review-sheet {label} ok ({len(r.content)} bytes)")
 
     r = client.get(f"/skins/submissions/{armor_id}/review-sheet")

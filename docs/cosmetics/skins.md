@@ -129,9 +129,10 @@ backend/src/data/skins/{submission_id}/
 
 | Phase | What the API serves | Who consumes |
 |-------|---------------------|--------------|
-| Discord MVP | Individual on-disk PNGs via staff file download | Bot attaches to `#bot-feed` |
-| Contact sheet | `review-sheet` PNG composite | curl / later Discord |
-| Later (3D) | Multi-view bake | Discord + site viewer |
+| Contact sheet | Composite `review-sheet` PNG (2D textures + 3D tiles when renderer is available) | Website status page + Discord `#bot-feed` |
+| Render failure | `preview_render_error.txt` on disk; staff `X-Sheet-Render-Error` header; Discord **3D preview** embed field | Staff only (texture-only sheet still attached) |
+
+Deploy and verify the headless renderer: [ops/sheet-render.md](../ops/sheet-render.md).
 
 ## HTTP contracts
 

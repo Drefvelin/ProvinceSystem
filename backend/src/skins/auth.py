@@ -14,6 +14,7 @@ logger = logging.getLogger("skins.auth")
 
 HEADER_PLUGIN_KEY = "X-Plugin-Key"
 HEADER_STAFF_KEY = "X-Staff-Key"
+HEADER_SKIN_SESSION = "X-Skin-Session"
 
 _DEV_PLUGIN = "dev-plugin-key"
 _DEV_STAFF = "dev-staff-key"

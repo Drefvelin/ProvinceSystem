@@ -14,7 +14,15 @@ from PIL import Image, ImageDraw, ImageFont
 from .db import SKINS_DIR, connect
 from .name_preview import render_name_preview_png
 from .naming import ARMOR_FIELDS
-from .preview_3d import ensure_preview_tiles
+from .preview_3d import (
+    PREVIEW_NAMES,
+    _inputs_newer_than_outputs,
+    _job_for_kind,
+    clear_preview_render_error,
+    ensure_preview_tiles,
+    read_preview_render_error,
+    write_preview_render_error,
+)
 from .storage import (
     BOOK_KIND,
     BOW_KINDS,
@@ -508,7 +516,7 @@ def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
         caption=caption,
     )
     parts = [header, body]
-    preview_tiles = ensure_preview_tiles(
+    preview_tiles, render_error = ensure_preview_tiles(
         kind,
         slug,
         out_dir,
@@ -516,10 +524,54 @@ def _compose_full_sheet(row, out_dir: Path) -> Image.Image:
         if kind == "armor_set"
         else [],
     )
+    if render_error:
+        write_preview_render_error(out_dir, render_error)
+    else:
+        clear_preview_render_error(out_dir)
     preview_row = _preview_tiles_row(preview_tiles)
     if preview_row is not None:
         parts.append(preview_row)
     return _stack_vertical(parts, min_width=header.width)
+
+
+def _review_sheet_cache_stale(row, out_dir: Path) -> bool:
+    cached = out_dir / REVIEW_SHEET_NAME
+    if not cached.is_file() or cached.stat().st_size == 0:
+        return True
+
+    if read_preview_render_error(out_dir):
+        return True
+
+    kind = row["kind"]
+    slug = row["slug"]
+    tiers = (
+        _parse_tiers_json(row["tiers"] if "tiers" in row.keys() else None)
+        if kind == "armor_set"
+        else []
+    )
+    job = _job_for_kind(kind, slug, out_dir, tiers)
+    if job is None:
+        return False
+
+    wanted = [
+        (view, out_dir / PREVIEW_NAMES[view])
+        for view in job["views"]
+        if view in PREVIEW_NAMES
+    ]
+    if any(not path.is_file() for _, path in wanted):
+        return True
+
+    inputs = [Path(p) for p in job["files"].values()]
+    outputs = [path for _, path in wanted]
+    if _inputs_newer_than_outputs(inputs, outputs):
+        return True
+
+    sheet_mtime = cached.stat().st_mtime
+    for _, path in wanted:
+        if path.is_file() and path.stat().st_mtime > sheet_mtime:
+            return True
+
+    return False
 
 
 def build_review_sheet(submission_id: str) -> bytes | None:
@@ -540,9 +592,13 @@ def build_review_sheet(submission_id: str) -> bytes | None:
     if not out_dir.is_dir():
         raise ReviewSheetError("Submission files directory missing")
 
-    # Prefer cached file when present and non-empty
+    # Prefer cached file when present, non-empty, and still valid for 3D previews.
     cached = out_dir / REVIEW_SHEET_NAME
-    if cached.is_file() and cached.stat().st_size > 0:
+    if (
+        cached.is_file()
+        and cached.stat().st_size > 0
+        and not _review_sheet_cache_stale(row, out_dir)
+    ):
         return cached.read_bytes()
 
     canvas = _compose_full_sheet(row, out_dir)

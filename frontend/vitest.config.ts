@@ -18,6 +18,6 @@ export default defineConfig({
     // green. Component tests opt into jsdom with a
     // `@vitest-environment jsdom` docblock at the top of the file, so the
     // node-env `.test.ts` files keep running exactly as they did.
-    include: ["app/**/*.test.ts", "app/**/*.test.tsx"],
+    include: ["app/**/*.test.ts", "app/**/*.test.tsx", "lib/**/*.test.ts"],
   },
 });

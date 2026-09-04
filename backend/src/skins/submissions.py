@@ -1011,6 +1011,66 @@ def _rollback_submission(submission_id: str) -> None:
         shutil.rmtree(out, ignore_errors=True)
 
 
+def rollback_pending_submission_if_unreferenced(
+    submission_id: str,
+    *,
+    player_uuid: str | None = None,
+) -> bool:
+    """Drop a pending submission when no lore customise row still references it."""
+    sid = (submission_id or "").strip()
+    if not sid:
+        return False
+    uuid = (player_uuid or "").strip() or None
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT player_uuid, status
+            FROM submissions
+            WHERE id = ?
+            """,
+            (sid,),
+        ).fetchone()
+        if row is None:
+            return False
+        if str(row["status"] or "").strip().lower() != "pending":
+            return False
+        owner = str(row["player_uuid"] or "").strip()
+        if uuid and owner.lower() != uuid.lower():
+            return False
+        ref = conn.execute(
+            """
+            SELECT 1 FROM lore_item_customisations
+            WHERE submission_id = ?
+            LIMIT 1
+            """,
+            (sid,),
+        ).fetchone()
+        if ref is not None:
+            return False
+    _rollback_submission(sid)
+    return True
+
+
+def rollback_pending_submissions_if_unreferenced(
+    submission_ids: list[str],
+    *,
+    player_uuid: str | None = None,
+) -> int:
+    """Rollback pending submissions with no remaining lore customise references."""
+    seen: set[str] = set()
+    rolled_back = 0
+    for raw in submission_ids:
+        sid = (raw or "").strip()
+        if not sid or sid in seen:
+            continue
+        seen.add(sid)
+        if rollback_pending_submission_if_unreferenced(
+            sid, player_uuid=player_uuid
+        ):
+            rolled_back += 1
+    return rolled_back
+
+
 def get_submission_for_owner(
     submission_id: str, player_uuid: str
 ) -> dict | None:

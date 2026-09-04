@@ -240,6 +240,10 @@ def main() -> None:
 
     token = redeem_character_session(client, player)
     auth = {"Authorization": f"Bearer {token}"}
+    skin_auth = {
+        **auth,
+        "X-Skin-Session": f"Bearer {skin_token}",
+    }
 
     r = client.get(
         f"/characters/lore-items?character_id={char_id}",
@@ -540,6 +544,19 @@ def main() -> None:
         files={"texture": ("bad.png", b"not-a-png", "image/png")},
         headers=auth,
     )
+    if r.status_code != 403:
+        fail(f"upload without skin session expected 403, got {r.status_code} {r.text}")
+    print("OK POST texture without skin session -> 403")
+
+    r = client.post(
+        f"/characters/lore-items/iron_hunting_knife/customise?character_id={char_id}",
+        data={
+            "display_name": "Trailblade",
+            "lore": json.dumps(["A custom line."]),
+        },
+        files={"texture": ("bad.png", b"not-a-png", "image/png")},
+        headers=skin_auth,
+    )
     if r.status_code != 400:
         fail(f"invalid PNG expected 400, got {r.status_code} {r.text}")
     print("OK POST invalid PNG -> 400")
@@ -551,7 +568,7 @@ def main() -> None:
             "lore": json.dumps(["A custom line."]),
         },
         files={"texture": ("knife.png", make_png(32, 32), "image/png")},
-        headers=auth,
+        headers=skin_auth,
     )
     if r.status_code != 400:
         fail(f"oversized PNG expected 400, got {r.status_code} {r.text}")
@@ -564,7 +581,7 @@ def main() -> None:
             "lore": json.dumps(["Forged on the road."]),
         },
         files={"texture": ("knife.png", make_png(16, 16, fill=90), "image/png")},
-        headers=auth,
+        headers=skin_auth,
     )
     if r.status_code != 200:
         fail(f"POST valid PNG expected 200, got {r.status_code} {r.text}")
@@ -593,6 +610,26 @@ def main() -> None:
         fail(f"submission status expected pending: {dict(row)}")
     if str(row["kind"]) != "handheld":
         fail(f"submission kind expected handheld: {dict(row)}")
+    from src.skins.codes import get_session
+
+    profile_sess = get_session(token)
+    skin_sess = get_session(skin_token)
+    if profile_sess is None or skin_sess is None:
+        fail("expected profile and skin sessions")
+    with connect() as conn:
+        sub_row = conn.execute(
+            "SELECT code_id FROM submissions WHERE id = ?",
+            (sub_id,),
+        ).fetchone()
+    if sub_row is None:
+        fail(f"submission code_id missing for {sub_id}")
+    if int(sub_row["code_id"]) != int(skin_sess["code_id"]):
+        fail(
+            f"submission code_id must be skin session code "
+            f"(got {sub_row['code_id']}, skin {skin_sess['code_id']})"
+        )
+    if int(sub_row["code_id"]) == int(profile_sess["code_id"]):
+        fail("submission must not use profile session code_id")
     with connect() as conn:
         lore_row = conn.execute(
             """

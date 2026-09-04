@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import FancyCheckbox from "../skins/FancyCheckbox";
 import ModelPreview from "../skins/ModelPreview";
@@ -32,6 +33,11 @@ import {
 import { DEV_CATALOG_ENTITLEMENTS } from "../../../lib/skins/entitlementsDev";
 import { isCharacterUiDev } from "../../../lib/characters/uiDev";
 import {
+  loreItemDraftSyncKey,
+  resolveInitialSkinMode,
+  type LoreSkinMode,
+} from "../../../lib/characters/loreSkinMode";
+import {
   assert3dPairBudgets,
   assertFileSize,
   expectedSizeForField,
@@ -63,8 +69,6 @@ function asSkinKind(raw: string | null | undefined, fallback: SkinKind): SkinKin
 
 const FILE_INPUT_CLASS =
   "text-sm text-[var(--tfmc-mist)] file:mr-3 file:rounded-sm file:border-0 file:bg-[var(--tfmc-moss)] file:px-3 file:py-1.5 file:text-[var(--tfmc-cream)]";
-
-type SkinMode = "upload" | "pick";
 
 type Props = {
   item: LoreItemRow;
@@ -206,8 +210,8 @@ export default function LoreItemEditor({
   const [lore, setLore] = useState<string[]>(
     item.draft.lore.length > 0 ? [...item.draft.lore] : []
   );
-  const [skinMode, setSkinMode] = useState<SkinMode>(
-    item.draft.existing_skin_id ? "pick" : "upload"
+  const [skinMode, setSkinMode] = useState<LoreSkinMode>(() =>
+    resolveInitialSkinMode(item)
   );
   const [textureFile, setTextureFile] = useState<File | null>(null);
   const [unsignedFile, setUnsignedFile] = useState<File | null>(null);
@@ -246,7 +250,7 @@ export default function LoreItemEditor({
         ? item.draft.name_colours.map(String)
         : [],
       styles: parseDraftStyles(item.draft.name_styles),
-      skinMode: (item.draft.existing_skin_id ? "pick" : "upload") as SkinMode,
+      skinMode: resolveInitialSkinMode(item),
       pickedSkinId: item.draft.existing_skin_id || "",
       use3d: false,
     }),
@@ -290,6 +294,20 @@ export default function LoreItemEditor({
   ]);
 
   const showDelete = Boolean(onDelete) && draftHasCustomise(item);
+
+  const draftSyncKey = loreItemDraftSyncKey(item);
+
+  useEffect(() => {
+    setSkinMode(resolveInitialSkinMode(item));
+    setPickedSkinId(item.draft.existing_skin_id || "");
+    setTextureFile(null);
+    setUnsignedFile(null);
+    setSignedFile(null);
+    setModelFile(null);
+    setUse3d(false);
+    if (fileRef.current) fileRef.current.value = "";
+    if (modelRef.current) modelRef.current.value = "";
+  }, [draftSyncKey, item]);
 
   useEffect(() => {
     if (!allows3d && use3d) {
@@ -727,8 +745,8 @@ export default function LoreItemEditor({
         </h2>
         <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
           {isBook
-            ? "Upload unsigned and signed 16×16 covers, or pick an applied book skin. Unsigned is the writable look; signed appears after you sign the book in-game."
-            : "Upload a new texture or pick one of your applied skins for this base set. After approval, uploads land in player skins for later use in-game."}
+            ? "Pick an applied book skin from your account (works on any character), or upload a new one with a skin token."
+            : "Pick an applied skin from your account (works on any character), or upload a new one with a skin token."}
         </p>
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <button
@@ -743,7 +761,7 @@ export default function LoreItemEditor({
                 : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
             }
           >
-            Upload new
+            Upload new skin
           </button>
           <button
             type="button"
@@ -763,10 +781,22 @@ export default function LoreItemEditor({
                 : "text-[var(--tfmc-stone)] hover:text-[var(--tfmc-cream)]"
             }
           >
-            Pick existing
+            Use existing skin
           </button>
         </div>
 
+        {skinMode === "upload" ? (
+          <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+            Uploading a new texture uses a skin token — redeem one on the{" "}
+            <Link
+              href="/skins"
+              className="text-[var(--tfmc-cream)] underline underline-offset-2 hover:text-[var(--tfmc-mist)]"
+            >
+              Skins
+            </Link>{" "}
+            page first (same as standalone skin uploads).
+          </p>
+        ) : null}
         {skinMode === "upload" ? (
           <div className="mt-4 flex flex-col gap-4">
             {isBook ? (
@@ -901,10 +931,16 @@ export default function LoreItemEditor({
           </div>
         ) : item.pickable_skins.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-            No pickable skins yet. Upload one first.
+            No applied skins for this base set yet. Upload one with a skin token;
+            after staff approval you can reuse it on other characters.
           </p>
         ) : (
-          <ul className="mt-4 flex flex-col gap-2">
+          <>
+            <p className="mt-4 text-sm font-medium text-[var(--tfmc-stone)]">
+              Your skins ({item.pickable_skins.length}) — usable on any
+              character
+            </p>
+            <ul className="mt-2 flex flex-col gap-2">
             {item.pickable_skins.map((skin) => {
               const selected = pickedSkinId === skin.id;
               return (
@@ -936,6 +972,7 @@ export default function LoreItemEditor({
               );
             })}
           </ul>
+          </>
         )}
 
         {isBook ? (

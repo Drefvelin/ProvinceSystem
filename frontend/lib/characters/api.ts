@@ -58,6 +58,14 @@ export function authHeaders(token: string): HeadersInit {
   };
 }
 
+export const HEADER_SKIN_SESSION = "X-Skin-Session";
+
+export function skinSessionHeader(token: string): HeadersInit {
+  return {
+    [HEADER_SKIN_SESSION]: `Bearer ${token}`,
+  };
+}
+
 export type RedeemResult = {
   session_token: string;
   player_uuid: string;
@@ -677,7 +685,8 @@ export async function customiseLoreItem(
   characterId: string,
   kitKey: string,
   input: CustomiseLoreItemInput,
-  kitId = "starter"
+  kitId = "starter",
+  skinSessionToken?: string | null
 ): Promise<CustomiseLoreItemResult> {
   const cid = encodeURIComponent(characterId.trim());
   const key = encodeURIComponent(kitKey.trim());
@@ -719,9 +728,13 @@ export async function customiseLoreItem(
     if (input.existingSkinId) {
       form.append("existing_skin_id", input.existingSkinId);
     }
+    const uploadHeaders: HeadersInit = {
+      ...authHeaders(sessionToken),
+      ...(skinSessionToken ? skinSessionHeader(skinSessionToken) : {}),
+    };
     res = await apiFetch(url, {
       method: "POST",
-      headers: authHeaders(sessionToken),
+      headers: uploadHeaders,
       body: form,
     });
   } else {

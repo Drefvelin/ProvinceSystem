@@ -127,6 +127,14 @@ curl -o sheet.png http://localhost:8000/skins/submissions/{id}/review-sheet \
   -H "X-Staff-Key: …"
 ```
 
+For **3D kinds** (`item_3d`, `shield`, `gun`, …), install the sheet renderer once on the API host ([sheet-render.md](./sheet-render.md)):
+
+```bash
+cd backend/render && npm install && npx playwright install chromium
+```
+
+Without Node/Playwright, the sheet is texture-only; staff Discord posts show a **3D preview** error field.
+
 6. Approve with curl + staff key:
 
 ```bash

@@ -826,6 +826,22 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
     delete_all_pending_create_wardrobe(cid)
 
     with connect() as conn:
+        pending_sub_rows = conn.execute(
+            """
+            SELECT DISTINCT submission_id
+            FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ?
+              AND submission_id IS NOT NULL
+              AND TRIM(submission_id) != ''
+              AND LOWER(COALESCE(state, '')) = 'pending_skin'
+            """,
+            (uuid, cid),
+        ).fetchall()
+        pending_submission_ids = [
+            str(row["submission_id"]).strip()
+            for row in pending_sub_rows
+            if row["submission_id"] is not None and str(row["submission_id"]).strip()
+        ]
         conn.execute(
             """
             DELETE FROM lore_item_customisations
@@ -843,5 +859,13 @@ def delete_pending_create(player_uuid: str, create_id: str) -> dict[str, Any]:
         conn.commit()
         if cur.rowcount == 0:
             raise CreateError("Create not found", status_code=404)
+
+    if pending_submission_ids:
+        from src.skins.submissions import rollback_pending_submissions_if_unreferenced
+
+        rollback_pending_submissions_if_unreferenced(
+            pending_submission_ids,
+            player_uuid=uuid,
+        )
 
     return {"ok": True, "deleted": cid}
