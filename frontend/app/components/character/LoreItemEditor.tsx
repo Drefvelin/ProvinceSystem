@@ -272,7 +272,7 @@ export default function LoreItemEditor({
   const pickedIs3d = Boolean(
     skinMode === "pick" &&
       pickedSkin &&
-      isModel3dKind(asSkinKind(pickedSkin.kind))
+      isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d"))
   );
 
   const isDirty = useMemo(() => {
@@ -465,7 +465,7 @@ export default function LoreItemEditor({
         if (
           skinMode === "pick" &&
           pickedSkin &&
-          isModel3dKind(asSkinKind(pickedSkin.kind))
+          isModel3dKind(asSkinKind(pickedSkin.kind, "item_3d"))
         ) {
           modelFile = await fetchAsFile(
             loreItemSkinModelUrl(pickedSkinId, item.base_set),
@@ -980,7 +980,7 @@ export default function LoreItemEditor({
                     />
                     <span>
                       {skin.display_name || skin.id}
-                      {isModel3dKind(asSkinKind(skin.kind)) ? (
+                      {isModel3dKind(asSkinKind(skin.kind, "handheld")) ? (
                         <span className="ml-2 text-xs text-[var(--tfmc-stone)]">
                           3D
                         </span>
@@ -1038,7 +1038,7 @@ export default function LoreItemEditor({
             <ModelPreview
               kind={
                 pickedIs3d
-                  ? asSkinKind(pickedSkin!.kind)
+                  ? asSkinKind(pickedSkin!.kind, "item_3d")
                   : skinMode === "upload" && allows3d && use3d && modelFile
                     ? threeDKind || "item_3d"
                     : flatKind
