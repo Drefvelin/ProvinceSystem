@@ -36,6 +36,7 @@ from src.characters.lore_items import (
     list_pending_for_plugin,
     mark_lore_items_applied,
     resolve_default_kit_texture,
+    resolve_pickable_model,
     resolve_pickable_texture,
     store_plugin_kit_skin,
 )
@@ -339,6 +340,30 @@ def get_lore_item_skin_texture(
         path,
         media_type="image/png",
         filename=filename,
+    )
+
+
+@characters_router.get("/lore-items/skins/{submission_id}/model")
+def get_lore_item_skin_model(
+    submission_id: str,
+    base_set: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Java model JSON preview for a pickable 3D skin."""
+    from fastapi.responses import FileResponse
+
+    session = _profile_session_from_auth(authorization)
+    try:
+        path = resolve_pickable_model(
+            session["player_uuid"], submission_id, base_set
+        )
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+    sid = (submission_id or "").strip()
+    return FileResponse(
+        path,
+        media_type="application/json",
+        filename=f"{sid}.json",
     )
 
 

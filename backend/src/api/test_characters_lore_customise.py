@@ -377,6 +377,120 @@ class CharactersLoreCustomiseTest(unittest.TestCase):
         draft = out.get("draft") or {}
         self.assertEqual(applied_id, draft.get("existing_skin_id"))
 
+    def _seed_applied_skin(
+        self,
+        submission_id: str,
+        *,
+        player_uuid: str,
+        kind: str = "handheld",
+        base_set: str = "knives",
+        with_model: bool = False,
+        code_id: int = 99,
+    ) -> None:
+        from skins.db import SKINS_DIR, connect
+
+        tex_dir = SKINS_DIR / submission_id
+        tex_dir.mkdir(parents=True, exist_ok=True)
+        (tex_dir / f"{submission_id}.png").write_bytes(TINY_PNG)
+        if with_model:
+            (tex_dir / f"{submission_id}.json").write_text(
+                '{"textures":{}}',
+                encoding="utf-8",
+            )
+
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO codes (
+                    id, code_hash, player_uuid, scope, realm_id,
+                    created_at, expires_at, redeemed_at, revoked
+                ) VALUES (?, ?, ?, 'skin', 'main', ?, ?, ?, 0)
+                """,
+                (
+                    code_id,
+                    f"hash-{code_id}",
+                    player_uuid,
+                    "2026-01-01T00:00:00Z",
+                    "2099-01-01T00:00:00Z",
+                    "2026-01-01T00:00:00Z",
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO submissions (
+                    id, player_uuid, code_id, kind, slug, display_name,
+                    status, dir_path, created_at, discord_user_id, staff, realm_id,
+                    base_set
+                ) VALUES (?, ?, ?, ?, ?, ?, 'applied',
+                    'skins/applied', ?, 'discord-1', 0, 'main', ?)
+                """,
+                (
+                    submission_id,
+                    player_uuid,
+                    code_id,
+                    kind,
+                    submission_id,
+                    f"Skin {submission_id}",
+                    "2026-01-01T00:00:00Z",
+                    base_set,
+                ),
+            )
+            conn.commit()
+
+    def test_resolve_pickable_model_owner_with_json(self) -> None:
+        from src.characters.lore_items import (
+            LoreItemError,
+            resolve_pickable_model,
+            resolve_pickable_texture,
+        )
+
+        applied_id = "testplayer-applied3d"
+        self._seed_applied_skin(
+            applied_id,
+            player_uuid=self.PLAYER,
+            kind="item_3d",
+            with_model=True,
+            code_id=100,
+        )
+
+        tex = resolve_pickable_texture(self.PLAYER, applied_id, "knives")
+        self.assertTrue(tex.is_file())
+        model = resolve_pickable_model(self.PLAYER, applied_id, "knives")
+        self.assertTrue(model.is_file())
+        self.assertEqual(f"{applied_id}.json", model.name)
+
+    def test_resolve_pickable_model_wrong_owner(self) -> None:
+        from src.characters.lore_items import LoreItemError, resolve_pickable_model
+
+        applied_id = "testplayer-applied3d-deny"
+        self._seed_applied_skin(
+            applied_id,
+            player_uuid=self.PLAYER,
+            kind="item_3d",
+            with_model=True,
+            code_id=101,
+        )
+
+        with self.assertRaises(LoreItemError) as ctx:
+            resolve_pickable_model(self.OTHER, applied_id, "knives")
+        self.assertEqual(404, ctx.exception.status_code)
+
+    def test_resolve_pickable_model_missing_json(self) -> None:
+        from src.characters.lore_items import LoreItemError, resolve_pickable_model
+
+        applied_id = "testplayer-applied3d-nomodel"
+        self._seed_applied_skin(
+            applied_id,
+            player_uuid=self.PLAYER,
+            kind="item_3d",
+            with_model=False,
+            code_id=102,
+        )
+
+        with self.assertRaises(LoreItemError) as ctx:
+            resolve_pickable_model(self.PLAYER, applied_id, "knives")
+        self.assertEqual(404, ctx.exception.status_code)
+
 
 if __name__ == "__main__":
     unittest.main()

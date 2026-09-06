@@ -671,6 +671,59 @@ def _submission_texture_path(submission_id: str, variant: str | None = None):
     return None
 
 
+def _submission_model_path(submission_id: str):
+    """Return Path to primary Java model JSON if present on website disk."""
+    from src.skins.db import SKINS_DIR
+
+    sid = (submission_id or "").strip()
+    if not sid or "/" in sid or "\\" in sid or ".." in sid:
+        return None
+    path = SKINS_DIR / sid / f"{sid}.json"
+    if path.is_file():
+        return path
+    return None
+
+
+def _assert_pickable_skin_access(
+    player_uuid: str,
+    submission_id: str,
+    base_set: str | None = None,
+) -> str:
+    """Verify pickable skin ACL. Returns submission id. Raises LoreItemError."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    sid = (submission_id or "").strip()
+    if not uuid or not sid:
+        raise LoreItemError("not found", status_code=404)
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id, base_set, status, staff, category, player_uuid
+            FROM submissions
+            WHERE id = ?
+            """,
+            (sid,),
+        ).fetchone()
+    if row is None:
+        raise LoreItemError("not found", status_code=404)
+    if str(row["status"] or "").strip().lower() != "applied":
+        raise LoreItemError("not found", status_code=404)
+    staff = bool(row["staff"]) if "staff" in row.keys() else False
+    cat = str(row["category"] or "").strip().lower()
+    owner = str(row["player_uuid"] or "").strip()
+    if staff:
+        if cat != "i_tools":
+            raise LoreItemError("not found", status_code=404)
+    elif owner.lower() != uuid.lower():
+        raise LoreItemError("not found", status_code=404)
+    if base_set:
+        row_base = str(row["base_set"] or "").strip().lower()
+        if row_base != base_set.strip().lower():
+            raise LoreItemError("not found", status_code=404)
+    return sid
+
+
 def _namespace_for_staff(staff: bool) -> str:
     from src.skins.catalog import IA_NAMESPACE_ARMOURSHOP
 
@@ -923,38 +976,21 @@ def resolve_pickable_texture(
     variant: str | None = None,
 ):
     """ACL + path for character-session texture preview. Raises LoreItemError."""
-    from src.skins.db import connect
-
-    uuid = (player_uuid or "").strip()
-    sid = (submission_id or "").strip()
-    if not uuid or not sid:
-        raise LoreItemError("not found", status_code=404)
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT id, base_set, status, staff, category, player_uuid
-            FROM submissions
-            WHERE id = ?
-            """,
-            (sid,),
-        ).fetchone()
-    if row is None:
-        raise LoreItemError("not found", status_code=404)
-    if str(row["status"] or "").strip().lower() != "applied":
-        raise LoreItemError("not found", status_code=404)
-    staff = bool(row["staff"]) if "staff" in row.keys() else False
-    cat = str(row["category"] or "").strip().lower()
-    owner = str(row["player_uuid"] or "").strip()
-    if staff:
-        if cat != "i_tools":
-            raise LoreItemError("not found", status_code=404)
-    elif owner.lower() != uuid.lower():
-        raise LoreItemError("not found", status_code=404)
-    if base_set:
-        row_base = str(row["base_set"] or "").strip().lower()
-        if row_base != base_set.strip().lower():
-            raise LoreItemError("not found", status_code=404)
+    sid = _assert_pickable_skin_access(player_uuid, submission_id, base_set)
     path = _submission_texture_path(sid, variant)
+    if path is None:
+        raise LoreItemError("not found", status_code=404)
+    return path
+
+
+def resolve_pickable_model(
+    player_uuid: str,
+    submission_id: str,
+    base_set: str | None = None,
+):
+    """ACL + path for character-session model preview. Raises LoreItemError."""
+    sid = _assert_pickable_skin_access(player_uuid, submission_id, base_set)
+    path = _submission_model_path(sid)
     if path is None:
         raise LoreItemError("not found", status_code=404)
     return path

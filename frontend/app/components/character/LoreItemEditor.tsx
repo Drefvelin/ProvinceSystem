@@ -9,6 +9,7 @@ import FormattedMcRuns from "../shared/FormattedMcRuns";
 import {
   authHeaders,
   loreItemDefaultTextureUrl,
+  loreItemSkinModelUrl,
   loreItemSkinTextureUrl,
   type LoreItemRow,
 } from "../../../lib/characters/api";
@@ -40,6 +41,7 @@ import {
   assert3dPairBudgets,
   assertFileSize,
   expectedSizeForField,
+  isModel3dKind,
   pairBudgetHint,
   type SkinKind,
 } from "../../../lib/skins/sizes";
@@ -225,6 +227,7 @@ export default function LoreItemEditor({
   const [previewTextureSigned, setPreviewTextureSigned] = useState<File | null>(
     null
   );
+  const [previewModelFile, setPreviewModelFile] = useState<File | null>(null);
   const [bookPreviewUrls, setBookPreviewUrls] = useState<{
     unsigned: string | null;
     signed: string | null;
@@ -261,6 +264,16 @@ export default function LoreItemEditor({
   const threeDKindRaw = String(item["3d_template"] || "").trim();
   const allows3d = Boolean(threeDKindRaw) && !isBook;
   const threeDKind = allows3d ? asSkinKind(threeDKindRaw, "item_3d") : null;
+
+  const pickedSkin = useMemo(
+    () => item.pickable_skins.find((skin) => skin.id === pickedSkinId),
+    [item.pickable_skins, pickedSkinId]
+  );
+  const pickedIs3d = Boolean(
+    skinMode === "pick" &&
+      pickedSkin &&
+      isModel3dKind(asSkinKind(pickedSkin.kind))
+  );
 
   const isDirty = useMemo(() => {
     if (displayName.trim() !== baseline.displayName.trim()) return true;
@@ -382,6 +395,7 @@ export default function LoreItemEditor({
           if (!dead) {
             setPreviewTexture(unsignedFile);
             setPreviewTextureSigned(signedFile);
+            setPreviewModelFile(null);
           }
           if (unsignedFile && signedFile) return;
           if (!unsignedFile && (item.skin_png || item.kit_key)) {
@@ -404,6 +418,7 @@ export default function LoreItemEditor({
           if (!dead) {
             setPreviewTexture(textureFile);
             setPreviewTextureSigned(null);
+            setPreviewModelFile(null);
           }
           return;
         }
@@ -427,6 +442,7 @@ export default function LoreItemEditor({
             if (!dead) {
               setPreviewTexture(unsignedFile);
               setPreviewTextureSigned(signedFile);
+              setPreviewModelFile(null);
             }
             return;
           }
@@ -440,18 +456,32 @@ export default function LoreItemEditor({
           if (!dead) {
             setPreviewTexture(null);
             setPreviewTextureSigned(null);
+            setPreviewModelFile(null);
           }
           return;
         }
         const file = await fetchAsFile(url, filename);
+        let modelFile: File | null = null;
+        if (
+          skinMode === "pick" &&
+          pickedSkin &&
+          isModel3dKind(asSkinKind(pickedSkin.kind))
+        ) {
+          modelFile = await fetchAsFile(
+            loreItemSkinModelUrl(pickedSkinId, item.base_set),
+            `${pickedSkinId.trim()}.json`
+          );
+        }
         if (!dead) {
           setPreviewTexture(file);
           setPreviewTextureSigned(null);
+          setPreviewModelFile(modelFile);
         }
       } catch {
         if (!dead) {
           setPreviewTexture(null);
           setPreviewTextureSigned(null);
+          setPreviewModelFile(null);
         }
       }
     }
@@ -471,6 +501,7 @@ export default function LoreItemEditor({
     item.skin_png,
     item.skin_png_signed,
     item.base_set,
+    item.pickable_skins,
     sessionToken,
   ]);
 
@@ -949,6 +980,11 @@ export default function LoreItemEditor({
                     />
                     <span>
                       {skin.display_name || skin.id}
+                      {isModel3dKind(asSkinKind(skin.kind)) ? (
+                        <span className="ml-2 text-xs text-[var(--tfmc-stone)]">
+                          3D
+                        </span>
+                      ) : null}
                       {skin.staff ? (
                         <span className="ml-2 text-xs text-[var(--tfmc-stone)]">
                           staff
@@ -1001,14 +1037,18 @@ export default function LoreItemEditor({
             </p>
             <ModelPreview
               kind={
-                skinMode === "upload" && allows3d && use3d && modelFile
-                  ? threeDKind || "item_3d"
-                  : flatKind
+                pickedIs3d
+                  ? asSkinKind(pickedSkin!.kind)
+                  : skinMode === "upload" && allows3d && use3d && modelFile
+                    ? threeDKind || "item_3d"
+                    : flatKind
               }
               modelFile={
-                skinMode === "upload" && allows3d && use3d && modelFile
-                  ? modelFile
-                  : null
+                pickedIs3d
+                  ? previewModelFile
+                  : skinMode === "upload" && allows3d && use3d && modelFile
+                    ? modelFile
+                    : null
               }
               textureFile={previewTexture}
             />
