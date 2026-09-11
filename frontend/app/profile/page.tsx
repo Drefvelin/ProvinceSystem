@@ -200,8 +200,9 @@ export default function ProfilePage() {
         ) : null}
       </div>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        Log in with a profile token to see your characters, submissions, and kit
-        custom items.
+        Create a profile token with{" "}
+        <code className="text-[var(--tfmc-accent)]">/token create profile</code>, then log in to
+        see your characters, submissions, and kit custom items.
       </p>
 
       {!valid ? (

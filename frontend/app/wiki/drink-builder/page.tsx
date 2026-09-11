@@ -1,0 +1,54 @@
+import {
+  DataTable,
+  RankName,
+  SeeAlso,
+  WikiPage,
+  WikiSectionHeading,
+} from "@/app/components/wiki";
+export default function DrinkBuilderPage() {
+  return (
+    <WikiPage
+      title="DrinkBuilder"
+    >
+      <WikiSectionHeading id="how" intro="There is no in-game command for any of this.">
+        How it works
+      </WikiSectionHeading>
+      <ol className="mt-4 flex flex-col gap-2 text-sm text-[var(--tfmc-mist)]">
+        <li>1. On a donator rank, open the website&apos;s drinks page and design a drink: name (with colour stops), ingredients from an allowlist, cooking time, distill runs and time, barrel wood, age, difficulty, alcohol, lore, drink message and title, glint, potion effects, colour, and: on higher ranks: a custom bottle texture.</li>
+        <li>2. Submit the design for review.</li>
+        <li>3. Once approved, the recipe and bottle appearance become available after a short processing delay.</li>
+        <li>4. From there, your drink is brewed like any other server brew: cauldron, optional distillation, optional barrel ageing.</li>
+      </ol>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        A real example already merged this way: &quot;Big Gulp&quot;, a Milk Bucket + Rabbit Foot +
+        Bark recipe with 4 minutes cooking time, no distilling, oak wood, no ageing, difficulty 3
+        and 0 alcohol.
+      </p>
+
+      <WikiSectionHeading id="ranks" intro="What each donator tier can put into a drink's name and appearance.">
+        Rank entitlements
+      </WikiSectionHeading>
+      <DataTable
+        className="mt-4"
+        minWidth="34rem"
+        columns={[
+          { header: "Rank", width: "10rem" },
+          { header: "Name colour stops", align: "center" },
+          { header: "Custom bottle texture", align: "center" },
+        ]}
+        rows={[
+          [<RankName key="commoner" rank="Commoner" />, "0", "No"],
+          [<RankName key="noble" rank="Noble" />, "1", "No"],
+          [<RankName key="gilded" rank="Gilded" />, "2", "Yes"],
+          [<RankName key="ascended" rank="Ascended" />, "8", "Yes"],
+          [<RankName key="legacy" rank="Legacy" />, "8", "Yes"],
+        ]}
+      />
+      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+        The website itself hard-caps every drink at 8 colour stops regardless of rank.
+      </p>
+
+      <SeeAlso hrefs={["/wiki/brewing", "/wiki/cooking", "/wiki/materials", "/wiki/commands"]} />
+    </WikiPage>
+  );
+}

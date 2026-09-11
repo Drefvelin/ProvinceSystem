@@ -1,0 +1,140 @@
+import Link from "next/link";
+
+import {
+  Callout,
+  CommandTable,
+  DataTable,
+  RankName,
+  SeeAlso,
+  StatGrid,
+  WikiPage,
+  WikiSectionHeading,
+} from "@/app/components/wiki";
+import CraftingGrid from "@/app/components/wiki/CraftingGrid";
+import { letterRecipe, serverFeaturesCommands } from "../data/server-features";
+
+export default function ServerFeaturesPage() {
+  return (
+    <WikiPage
+      title="Server Features & Website Link"
+      lastVerified="2026-09-11"
+    >
+      <WikiSectionHeading id="sealed-letters" intro="Not to be confused with BirdMessenger's mail: see below.">
+        Sealed letters
+      </WikiSectionHeading>
+      <div className="mt-4">
+        <CraftingGrid recipe={letterRecipe} />
+      </div>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Craft four Paper in a square to make a Letter. Write your message in it and click &quot;Sign.&quot; It
+        becomes a sealed letter instead of a normal written book. Anyone who right-clicks it reads
+        it, and the letter is then marked opened. Right-clicking it onto a lectern or a chiselled
+        bookshelf does not break the seal, so you can use those as regular storage without
+        accidentally reading someone&apos;s letter.
+      </p>
+      <Callout variant="note">
+        This is a different system from <strong>BirdMessenger</strong>, which delivers letters to
+        a specific character over real time via a bird coop. TFMCCore&apos;s sealed letters are
+        just an item: sending it anywhere is still up to you.
+      </Callout>
+
+      <WikiSectionHeading id="lorestones" intro="Add a permanent line of lore or a new name to an item.">
+        Lore stones and name stones
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Hold Shift and right-click a crafting table to craft lore stones and name stones. Pick up
+        a lorestone or namestone on your cursor, then click it onto a single item in your
+        own inventory (it must not be stacked). A chat prompt appears: type the text within{" "}
+        <strong>60 seconds</strong>, or type <code className="text-[var(--tfmc-accent)]">cancel</code>.
+        A lorestone adds a line of lore; a namestone renames the item instead. If anything goes
+        wrong the stone is refunded rather than wasted.
+      </p>
+      <StatGrid
+        columns={3}
+        stats={[
+          { label: "Prompt timeout", value: "60 seconds" },
+          { label: "Max line length", value: "100 characters", note: "colour codes count" },
+          { label: "Max lore lines per item", value: "10" },
+        ]}
+      />
+
+      <WikiSectionHeading id="whistle" intro="Right-click it to find your mount.">
+        Animal whistle
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Hold Shift and right-click a crafting table to craft an Animal Whistle. Right-click while
+        holding the animal whistle and every horse, donkey, mule, llama or
+        trader llama within range glows so you can spot it through walls.
+      </p>
+      <StatGrid
+        columns={3}
+        stats={[
+          { label: "Detection range", value: "64 blocks" },
+          { label: "Glow duration", value: "5 seconds" },
+          { label: "Cooldown", value: "3 seconds" },
+        ]}
+      />
+
+      <WikiSectionHeading id="crafting-stations" intro="Ordinary-looking blocks open custom crafting menus.">
+        Crafting stations
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Right-click (or shift-right-click, depending on the block) a station block, for
+        example, a brewing stand for the alchemy station, and a custom crafting-station GUI
+        opens instead of the vanilla menu. See the{" "}
+        {/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting.
+        <Link href="/wiki/stations" className="text-[var(--tfmc-accent)] hover:underline">
+          Crafting Stations guide
+        </Link>{" "} */}
+        Crafting Stations guide{" "}
+        for the full list of stations and what each one crafts.
+      </p>
+
+      <WikiSectionHeading id="website-link" intro="Your in-game account and the TFMC website are separate until you link Discord.">
+        Linking Discord and the website
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Type <code className="text-[var(--tfmc-accent)]">/linkdiscord</code> and the server prints
+        a click-to-copy code with instructions. Run <code className="text-[var(--tfmc-accent)]">
+        /linkdiscord &lt;code&gt;</code> in the Discord server, and within about a second the
+        game confirms the link and opens access to Survival.{" "}
+        <code className="text-[var(--tfmc-accent)]">/unlinkdiscord</code> removes the link again
+        and reapplies the gate.
+      </p>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        <code className="text-[var(--tfmc-accent)]">/token create profile</code> mints a code to
+        sign into your website profile. Selecting <strong>Remember me</strong> keeps that session
+        on this device for 30 days.{" "}
+        <code className="text-[var(--tfmc-accent)]">/token create skin</code> and{" "}
+        <code className="text-[var(--tfmc-accent)]">/token create drink</code> mint codes for
+        uploading a custom skin or a custom drink, but these two share one cooldown, and how
+        often you can mint one depends on your rank.
+      </p>
+      <div className="mt-4">
+        <DataTable
+          columns={[
+            { header: "Rank", nowrap: true },
+            { header: "Skin/drink mint cooldown", align: "right" },
+          ]}
+          rows={[
+            [<RankName key="commoner" rank="Commoner" />, "Cannot mint"],
+            [<RankName key="legacy" rank="Legacy" />, "7 days"],
+            [<RankName key="ascended" rank="Ascended" />, "14 days"],
+            [<RankName key="gilded" rank="Gilded" />, "21 days"],
+            [<RankName key="noble" rank="Noble" />, "28 days"],
+          ]}
+        />
+      </div>
+      <Callout variant="note" className="mt-4">Bird-mail arrivals are forwarded to your Discord messages when your account is linked. The message does not reveal the sender or the letter&apos;s contents.</Callout>
+
+      <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
+      <CommandTable
+        commands={serverFeaturesCommands.commands}
+        excludedStaffCommands={serverFeaturesCommands.excludedStaffCommands}
+        showAliases={false}
+      />
+
+      <SeeAlso hrefs={[/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/bird-mail", "/wiki/characters"]} />
+    </WikiPage>
+  );
+}

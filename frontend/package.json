@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "prebuild": "node scripts/assert-prod-build-env.mjs",
     "build": "next build",
+    "postbuild": "node scripts/build-wiki-search-index.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run"

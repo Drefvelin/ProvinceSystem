@@ -1,6 +1,6 @@
 import Link from "next/link";
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { dropOnlyMaterials, materialRecipes, slugify } from "../data";
+import { allRecipes, catalogNames, dropOnlyMaterials, slugify } from "../data";
 
 const stationOrder = [
   "Ingot Station",
@@ -11,9 +11,11 @@ const stationOrder = [
 ];
 
 export default function MaterialsPage() {
+  // Every registered recipe whose output is a catalogued material, hand-written
+  // or generated from the server config, grouped by the station that makes it.
   const byStation = stationOrder.map((station) => ({
     station,
-    recipes: materialRecipes.filter((r) => r.station === station),
+    recipes: allRecipes.filter((r) => r.station === station && catalogNames.has(r.output.name)),
   }));
 
   return (
@@ -22,17 +24,10 @@ export default function MaterialsPage() {
         Materials
       </h1>
       <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        The custom material catalogue used across every crafting station on the server —
+        The custom material catalogue used across every crafting station on the server :
         ingots, herbal alchemy components, magical cores, and more. Icons shown are the exact
         item textures players see in their inventory.
       </p>
-
-      <div className="mt-6 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_45%,transparent)] p-4">
-        <p className="text-sm text-[var(--tfmc-mist)]">
-          Special case — <span className="text-[var(--tfmc-cream)]">Leather</span> is crafted with a
-          single Saddle placed in the centre slot of the grid, every other slot left empty.
-        </p>
-      </div>
 
       {byStation.map(({ station, recipes }) =>
         recipes.length ? (
@@ -46,7 +41,7 @@ export default function MaterialsPage() {
               ))}
             </div>
           </section>
-        ) : null
+        ): null
       )}
 
       <section className="mt-10">
@@ -54,7 +49,7 @@ export default function MaterialsPage() {
           Drop / gather only
         </h2>
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          These materials have no crafting recipe — they come from loot, mining, or mobs.
+          These materials have no crafting recipe. They come from loot, mining, or mobs.
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {dropOnlyMaterials.map((m) => (
@@ -71,7 +66,7 @@ export default function MaterialsPage() {
                   alt={m.name}
                   className="h-8 w-8 shrink-0 [image-rendering:pixelated] transition-transform duration-150 group-hover:scale-105"
                 />
-              ) : (
+              ): (
                 <div className="h-8 w-8 shrink-0 border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)]" />
               )}
               <span className="text-xs text-[var(--tfmc-stone)] group-hover:text-[var(--tfmc-cream)]">

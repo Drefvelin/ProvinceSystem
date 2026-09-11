@@ -30,7 +30,7 @@ export default async function MaterialDetailPage({
             alt={material.name}
             className="h-16 w-16 [image-rendering:pixelated]"
           />
-        ) : null}
+        ): null}
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
           {material.name}
         </h1>
@@ -38,23 +38,23 @@ export default async function MaterialDetailPage({
 
       {material.lore ? (
         <p className="mt-3 text-sm italic text-[var(--tfmc-mist)]">{material.lore}</p>
-      ) : null}
+      ): null}
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="acquisition" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         How to acquire
       </h2>
       {material.recipe ? (
         <div className="mt-4">
           <CraftingGrid recipe={material.recipe} />
         </div>
-      ) : (
+      ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          No crafting recipe — this material comes from loot, mining, or mobs, not a crafting
+          No crafting recipe. This material comes from loot, mining, or mobs, not a crafting
           station.
         </p>
       )}
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="used-in" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         What can be crafted from it
       </h2>
       {material.usedIn.length ? (
@@ -63,7 +63,7 @@ export default async function MaterialDetailPage({
             <CraftingGrid key={r.key} recipe={r} />
           ))}
         </div>
-      ) : (
+      ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
           Nothing on the Gameplay Guide currently lists this as an ingredient.
         </p>

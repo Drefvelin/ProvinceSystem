@@ -1,0 +1,132 @@
+{
+  "abyssalite_block": {
+    "name": "Block of Abyssalite",
+    "texture": "itemsadder/abyssalite_block.png"
+  },
+  "archeology_cabinet": {
+    "name": "Archeology Cabinet"
+  },
+  "artifact_display": {
+    "name": "Artifact Display"
+  },
+  "blindfold_helmet": {
+    "name": "Blindfold",
+    "texture": "itemsadder/blindfold_helmet.png"
+  },
+  "bowl": {
+    "name": "Bowl"
+  },
+  "bronze_block": {
+    "name": "Block of Bronze",
+    "texture": "itemsadder/bronze_block.png"
+  },
+  "butter_churn": {
+    "name": "Butter Churn"
+  },
+  "butter_plate": {
+    "name": "Butter Plate"
+  },
+  "coke_block": {
+    "name": "Block of Coke",
+    "texture": "itemsadder/coke_block.png"
+  },
+  "cutting_board": {
+    "name": "Cutting Board"
+  },
+  "deck": {
+    "name": "Deck of Cards",
+    "texture": "itemsadder/deck.png"
+  },
+  "demonwood_log": {
+    "name": "Demonwood Log",
+    "texture": "itemsadder/demonwood_log.png"
+  },
+  "demonwood_plank": {
+    "name": "Demonwood Plank",
+    "texture": "itemsadder/demonwood_plank.png"
+  },
+  "elderwood_log": {
+    "name": "Elderwood Log",
+    "texture": "itemsadder/elderwood_log.png"
+  },
+  "elderwood_plank": {
+    "name": "Elderwood Plank",
+    "texture": "itemsadder/elderwood_plank.png"
+  },
+  "frying_pan": {
+    "name": "Frying Pan"
+  },
+  "ignitium_block": {
+    "name": "Block of Ignitium",
+    "texture": "itemsadder/ignitium_block.png"
+  },
+  "lure": {
+    "name": "Lure"
+  },
+  "maplewood_log": {
+    "name": "Maplewood Log",
+    "texture": "itemsadder/maplewood_log.png"
+  },
+  "maplewood_plank": {
+    "name": "Maplewood Plank",
+    "texture": "itemsadder/maplewood_plank.png"
+  },
+  "marauder_coins": {
+    "name": "Marauder Coins"
+  },
+  "marauder_coins_small": {
+    "name": "Marauder Coins Small"
+  },
+  "marauder_goldbag": {
+    "name": "Marauder Bag with Gold"
+  },
+  "marauder_goldbars": {
+    "name": "Marauder Goldbars"
+  },
+  "mythril_block1": {
+    "name": "Block of Mythril",
+    "texture": "itemsadder/mythril_block1.png"
+  },
+  "mythril_block2": {
+    "name": "Exposed Mythril",
+    "texture": "itemsadder/mythril_block2.png"
+  },
+  "mythril_block3": {
+    "name": "Weathered Mythril",
+    "texture": "itemsadder/mythril_block3.png"
+  },
+  "mythril_block4": {
+    "name": "Oxidized Mythril",
+    "texture": "itemsadder/mythril_block4.png"
+  },
+  "pedestal": {
+    "name": "Pedestal"
+  },
+  "plate": {
+    "name": "Plate"
+  },
+  "pot": {
+    "name": "Pot"
+  },
+  "saucepan": {
+    "name": "Saucepan"
+  },
+  "steel_block": {
+    "name": "Block of Steel",
+    "texture": "itemsadder/steel_block.png"
+  },
+  "tin_block": {
+    "name": "Block of Tin",
+    "texture": "itemsadder/tin_block.png"
+  },
+  "tool_shelf": {
+    "name": "Tool Shelf"
+  },
+  "train_track": {
+    "name": "Train Track",
+    "texture": "itemsadder/train_track.png"
+  },
+  "voting_booth": {
+    "name": "Voting Booth"
+  }
+}

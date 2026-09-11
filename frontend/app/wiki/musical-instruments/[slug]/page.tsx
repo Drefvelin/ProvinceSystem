@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
 import InstrumentKeyboard from "../../../components/wiki/InstrumentKeyboard";
-import { getInstrumentBySlug, instrumentRecipes, instruments } from "../../data";
+import { getInstrumentBySlug, getInstrumentRecipe, instruments } from "../../data";
 
 export function generateStaticParams() {
   return instruments.map((i) => ({ slug: i.slug }));
@@ -17,7 +17,7 @@ export default async function InstrumentDetailPage({
   const instrument = getInstrumentBySlug(slug);
   if (!instrument) notFound();
 
-  const recipe = instrumentRecipes.find((r) => r.key === slug);
+  const recipe = getInstrumentRecipe(slug);
 
   return (
     <article className="max-w-3xl">
@@ -43,24 +43,24 @@ export default async function InstrumentDetailPage({
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         {instrument.mode === "chord"
           ? "Keys 1-8 play a single note; hold Shift for the same eight notes as full chords."
-          : "Keys 1-8 play the base octave; hold Shift for the same eight notes one octave higher — sixteen notes total."}
+         : "Keys 1-8 play the base octave; hold Shift for the same eight notes one octave higher: sixteen notes total."}
       </p>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="keyboard" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         Try it
       </h2>
       <div className="mt-4">
         <InstrumentKeyboard instrument={instrument} />
       </div>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="crafting" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         How to craft
       </h2>
       {recipe ? (
         <div className="mt-4 max-w-sm">
           <CraftingGrid recipe={recipe} />
         </div>
-      ) : (
+      ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">Not documented yet.</p>
       )}
     </article>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { wikiBlockPreviewHeight } from "./wikiStyles";
 
 export type CubeFaces = {
   up: string;
@@ -79,7 +80,7 @@ export default function SimpleCubeViewer({
       if (disposed) return;
 
       const mkMat = (tex: THREE.Texture | null) =>
-        new THREE.MeshLambertMaterial({ map: tex ?? undefined, color: tex ? 0xffffff : 0x88a088 });
+        new THREE.MeshLambertMaterial({ map: tex ?? undefined, color: tex ? 0xffffff: 0x88a088 });
 
       const materials = [east, west, up, down, south, north].map(mkMat);
       const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -101,7 +102,7 @@ export default function SimpleCubeViewer({
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
       controls.autoRotate = true;
-      controls.autoRotateSpeed = variant === "thumb" ? 3 : 1.2;
+      controls.autoRotateSpeed = variant === "thumb" ? 3: 1.2;
       controls.minDistance = 0.8;
       controls.maxDistance = 4;
       if (variant === "thumb") {
@@ -159,9 +160,9 @@ export default function SimpleCubeViewer({
       >
         {error ? (
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">
-            ?
+            :
           </span>
-        ) : null}
+        ): null}
       </div>
     );
   }
@@ -169,13 +170,13 @@ export default function SimpleCubeViewer({
   return (
     <div
       ref={mountRef}
-      className="relative h-64 w-full overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] sm:h-80"
+      className={`relative w-full overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] ${wikiBlockPreviewHeight}`}
     >
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">
           {error}
         </p>
-      ) : null}
+      ): null}
     </div>
   );
 }

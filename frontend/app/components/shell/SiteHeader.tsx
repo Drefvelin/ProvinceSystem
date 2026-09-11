@@ -10,6 +10,7 @@ const staticLinks = [
   { href: "/skins", label: "Skins" },
   { href: "/drinks", label: "Drinks" },
   { href: "/profile", label: "Profile" },
+  { href: "/wiki", label: "Guide" },
 ] as const;
 
 export default function SiteHeader() {
@@ -39,12 +40,6 @@ export default function SiteHeader() {
         ))}
         {isStaff ? (
           <>
-            <Link
-              href="/wiki"
-              className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
-            >
-              Guide
-            </Link>
             <Link
               href="/precedent"
               className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"

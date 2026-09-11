@@ -1,0 +1,154 @@
+import { advancedCraftingSection } from "./advanced-crafting";
+import { archaeologySection } from "./archaeology";
+import { armourShopSection } from "./armour-shop";
+import { birdMailSection } from "./bird-mail";
+import { brewingSection } from "./brewing";
+import { charactersSection } from "./characters";
+import { classesSection } from "./classes";
+import { codexSection } from "./codex";
+import { commandIndexSection } from "./command-index";
+import { cookingSection } from "./cooking";
+import { detectorSection } from "./detector";
+import { drinkBuilderSection } from "./drink-builder";
+import { economySection } from "./economy";
+import { equipmentSlotsSection } from "./equipment-slots";
+import { factionsSection } from "./factions";
+import { farmingSection } from "./farming";
+import { fishingSection } from "./fishing";
+import { furnitureSection } from "./furniture";
+import { gamesSection } from "./games";
+import { gatheringSection } from "./gathering";
+import { gemInfusionSection } from "./gem-infusion";
+import { gettingStartedSection } from "./getting-started";
+import { gunsSection } from "./guns";
+import { harvestingSection } from "./harvesting";
+import { infestationsSection } from "./infestations";
+import { instrumentsSection } from "./instruments";
+import { magicSection } from "./magic";
+import { marketBlockSection } from "./market-blocks";
+import { materialsSection } from "./materials";
+import { recyclerSection } from "./recycler";
+import { researchSection } from "./research";
+import { serverFeaturesSection } from "./server-features";
+import { sittingSection } from "./sitting";
+// TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. The guide's
+// Stations pages are unfinished, so the section is unregistered; its recipes are
+// still fed into `allRecipes` below via `stationRecipes` directly.
+// import { stationsSection } from "./stations";
+import { stationRecipes } from "./station-recipes";
+import { thieverySection } from "./thievery";
+import { vehiclesSection } from "./vehicles";
+import type {
+  DuplicateCommand,
+  Recipe,
+  RegisteredCommand,
+  WikiCommandSet,
+  WikiSection,
+} from "./types";
+
+/**
+ * THE registration point for the wiki.
+ *
+ * A content module becomes part of the wiki by having its `WikiSection` added to
+ * this array, and that single act wires up *everything*: the sidebar entry, the
+ * overview card, the section's recipes in the global recipe index, and its
+ * commands in the global command index at `/wiki/commands`. There is
+ * no second list to keep in sync, so a section's recipes can no longer go missing
+ * from station pages or from materials' "used in" lists while the page itself
+ * still renders: if you forget to register, the page is absent from the sidebar
+ * and the overview, which is immediately visible.
+ */
+export const wikiSections: readonly WikiSection[] = [
+  gettingStartedSection,
+  charactersSection,
+  classesSection,
+  equipmentSlotsSection,
+  serverFeaturesSection,
+  sittingSection,
+  advancedCraftingSection,
+  furnitureSection,
+  gatheringSection,
+  harvestingSection,
+  farmingSection,
+  fishingSection,
+  cookingSection,
+  brewingSection,
+  drinkBuilderSection,
+  magicSection,
+  researchSection,
+  codexSection,
+  gemInfusionSection,
+  archaeologySection,
+  detectorSection,
+  gunsSection,
+  armourShopSection,
+  infestationsSection,
+  thieverySection,
+  vehiclesSection,
+  factionsSection,
+  economySection,
+  marketBlockSection,
+  birdMailSection,
+  gamesSection,
+  instrumentsSection,
+  recyclerSection,
+  materialsSection,
+  // TEMPORARILY DISABLED: Stations section - re-enable by uncommenting (and restore
+  // the `stationsSection` import plus the `allRecipes` note below).
+  // stationsSection,
+  commandIndexSection,
+];
+
+/** Every recipe in the wiki, derived from the registry. Never hand-maintained. */
+export const allRecipes: readonly Recipe[] = [
+  ...wikiSections.flatMap((s) => s.recipes ?? []),
+  // TEMPORARILY DISABLED: Stations section - re-enable by deleting this spread once
+  // `stationsSection` is back in `wikiSections`. The section carries the generated
+  // station recipes, which the material catalogue and `getRecipesForStation()`
+  // depend on; unregistering the section must not strip them from the index.
+  ...stationRecipes,
+];
+
+/** Every registered command set, derived from the registry. Never hand-maintained. */
+export const allCommands: readonly WikiCommandSet[] = wikiSections.flatMap((s) =>
+  s.commands ? [s.commands]: []
+);
+
+/** The command set registered by the section at `href`, if it registered one. */
+export function getCommandsForHref(href: string): WikiCommandSet | undefined {
+  return allCommands.find((set) => set.href === href);
+}
+
+/**
+ * Every individual command row across the whole wiki, each tagged with the
+ * system and page that registered it, sorted alphabetically by command.
+ */
+export const allCommandRows: readonly RegisteredCommand[] = allCommands
+  .flatMap((set) => set.commands.map((row) => ({ row, system: set.system, href: set.href })))
+  .sort((a, b) => (a.row.command < b.row.command ? -1: a.row.command > b.row.command ? 1: 0));
+
+/**
+ * Commands claimed by more than one section. This remains available for
+ * internal validation and is not shown in the player guide.
+ */
+export function findDuplicateCommands(
+  sets: readonly WikiCommandSet[] = allCommands
+): DuplicateCommand[] {
+  const byCommand = new Map<string, RegisteredCommand[]>();
+  for (const set of sets) {
+    for (const row of set.commands) {
+      const key = row.command.trim().toLowerCase();
+      const entry: RegisteredCommand = { row, system: set.system, href: set.href };
+      const bucket = byCommand.get(key);
+      if (bucket) bucket.push(entry);
+      else byCommand.set(key, [entry]);
+    }
+  }
+  return [...byCommand.entries()]
+    .filter(([, entries]) => new Set(entries.map((e) => e.href)).size > 1)
+    .map(([command, registrations]) => ({ command, registrations }))
+    .sort((a, b) => a.command.localeCompare(b.command));
+}
+
+/** The conflicts in the live registry, retained for internal validation. */
+export const duplicateCommands: readonly DuplicateCommand[] = findDuplicateCommands();
