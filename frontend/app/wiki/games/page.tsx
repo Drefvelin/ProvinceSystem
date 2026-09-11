@@ -153,6 +153,7 @@ export default function GamesPage() {
       <CommandTable
         commands={gamesCommands.commands}
         showAliases={false}
+        showNotes={false}
       />
 
       <SeeAlso hrefs={["/wiki/materials", "/wiki/commands"]} />
