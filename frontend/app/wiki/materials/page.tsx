@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { allRecipes, catalogNames, dropOnlyMaterials, slugify } from "../data";
+import { StationLink, WikiPage } from "@/app/components/wiki";
+import { allRecipes, catalogNames, dropOnlyMaterials, materialUnpackingRecipeKeys, slugify } from "../data";
 
 const stationOrder = [
   "Ingot Station",
@@ -15,25 +16,21 @@ export default function MaterialsPage() {
   // or generated from the server config, grouped by the station that makes it.
   const byStation = stationOrder.map((station) => ({
     station,
-    recipes: allRecipes.filter((r) => r.station === station && catalogNames.has(r.output.name)),
+    recipes: allRecipes.filter((r) => r.station === station && catalogNames.has(r.output.name) && !materialUnpackingRecipeKeys.has(r.key)),
   }));
 
   return (
-    <article className="max-w-4xl">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Materials
-      </h1>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+    <WikiPage title="Materials" width="lg" intro={<>
         The custom material catalogue used across every crafting station on the server :
         ingots, herbal alchemy components, magical cores, and more. Icons shown are the exact
         item textures players see in their inventory.
-      </p>
+      </>}>
 
       {byStation.map(({ station, recipes }) =>
         recipes.length ? (
           <section key={station} className="mt-10">
             <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-              {station}
+              <StationLink name={station} />
             </h2>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {recipes.map((r) => (
@@ -46,10 +43,11 @@ export default function MaterialsPage() {
 
       <section className="mt-10">
         <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
-          Drop / gather only
+          Gathered materials and loot
         </h2>
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          These materials have no crafting recipe. They come from loot, mining, or mobs.
+          Open a material for its acquisition methods and known chances. Some materials
+          can also be unpacked from storage blocks; those conversions are shown on their detail pages.
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {dropOnlyMaterials.map((m) => (
@@ -76,6 +74,6 @@ export default function MaterialsPage() {
           ))}
         </div>
       </section>
-    </article>
+    </WikiPage>
   );
 }

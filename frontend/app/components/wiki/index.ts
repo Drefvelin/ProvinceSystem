@@ -35,8 +35,14 @@ export type { SeeAlsoProps } from "./SeeAlso";
 export { default as StatGrid } from "./StatGrid";
 export type { StatGridItem, StatGridProps } from "./StatGrid";
 
-export { default as WikiPage } from "./WikiPage";
+export { default as StationLink } from "./StationLink";
+export type { StationLinkProps } from "./StationLink";
+
+export { default as WikiPage, WIKI_LAST_MODIFIED } from "./WikiPage";
 export type { WikiPageProps, WikiPageWidth } from "./WikiPage";
+
+export { default as WikiItemLink, WikiItemText } from "./WikiItemLink";
+export type { WikiItemLinkProps, WikiItemTextProps } from "./WikiItemLink";
 
 export { default as WikiSearch } from "./WikiSearch";
 

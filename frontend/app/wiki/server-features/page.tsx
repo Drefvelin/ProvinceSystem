@@ -6,12 +6,20 @@ import {
   DataTable,
   RankName,
   SeeAlso,
+  StationLink,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
 import { letterRecipe, serverFeaturesCommands } from "../data/server-features";
+import { stationRecipe } from "../data/station-recipes";
+
+const stoneRecipes = [
+  stationRecipe("gen-tool-station-lorestone"),
+  stationRecipe("gen-tool-station-namestone"),
+];
 
 export default function ServerFeaturesPage() {
   return (
@@ -26,7 +34,7 @@ export default function ServerFeaturesPage() {
         <CraftingGrid recipe={letterRecipe} />
       </div>
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
-        Craft four Paper in a square to make a Letter. Write your message in it and click &quot;Sign.&quot; It
+        Craft four Paper in a square to make a <WikiItemLink name="Letter" />. Write your message in it and click &quot;Sign.&quot; It
         becomes a sealed letter instead of a normal written book. Anyone who right-clicks it reads
         it, and the letter is then marked opened. Right-clicking it onto a lectern or a chiselled
         bookshelf does not break the seal, so you can use those as regular storage without
@@ -39,16 +47,19 @@ export default function ServerFeaturesPage() {
       </Callout>
 
       <WikiSectionHeading id="lorestones" intro="Add a permanent line of lore or a new name to an item.">
-        Lore stones and name stones
+        <WikiItemLink name="Lorestone">Lore stones</WikiItemLink> and <WikiItemLink name="Namestone">name stones</WikiItemLink>
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Hold Shift and right-click a crafting table to craft lore stones and name stones. Pick up
-        a lorestone or namestone on your cursor, then click it onto a single item in your
+        Craft a <WikiItemLink name="Lorestone" /> or <WikiItemLink name="Namestone" /> at the <StationLink name="Tool Station" /> using the recipes below. Pick up
+        a <WikiItemLink name="Lorestone" /> or <WikiItemLink name="Namestone" /> on your cursor, then click it onto a single item in your
         own inventory (it must not be stacked). A chat prompt appears: type the text within{" "}
         <strong>60 seconds</strong>, or type <code className="text-[var(--tfmc-accent)]">cancel</code>.
-        A lorestone adds a line of lore; a namestone renames the item instead. If anything goes
+        A <WikiItemLink name="Lorestone" /> adds a line of lore; a <WikiItemLink name="Namestone" /> renames the item instead. If anything goes
         wrong the stone is refunded rather than wasted.
       </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {stoneRecipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+      </div>
       <StatGrid
         columns={3}
         stats={[
@@ -59,11 +70,11 @@ export default function ServerFeaturesPage() {
       />
 
       <WikiSectionHeading id="whistle" intro="Right-click it to find your mount.">
-        Animal whistle
+        <WikiItemLink name="Mount Whistle">Animal whistle</WikiItemLink>
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
-        Hold Shift and right-click a crafting table to craft an Animal Whistle. Right-click while
-        holding the animal whistle and every horse, donkey, mule, llama or
+        Right click an <StationLink name="Animal Station" /> to craft an <WikiItemLink name="Mount Whistle">Animal Whistle</WikiItemLink>. Right-click while
+        holding the <WikiItemLink name="Mount Whistle">animal whistle</WikiItemLink> and every horse, donkey, mule, llama or
         trader llama within range glows so you can spot it through walls.
       </p>
       <StatGrid
@@ -80,13 +91,11 @@ export default function ServerFeaturesPage() {
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         Right-click (or shift-right-click, depending on the block) a station block, for
-        example, a brewing stand for the alchemy station, and a custom crafting-station GUI
+        example, a brewing stand for the <StationLink name="Alchemy Station">alchemy station</StationLink>, and a custom crafting-station GUI
         opens instead of the vanilla menu. See the{" "}
-        {/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting.
         <Link href="/wiki/stations" className="text-[var(--tfmc-accent)] hover:underline">
           Crafting Stations guide
-        </Link>{" "} */}
-        Crafting Stations guide{" "}
+        </Link>{" "}
         for the full list of stations and what each one crafts.
       </p>
 
@@ -134,7 +143,7 @@ export default function ServerFeaturesPage() {
         showAliases={false}
       />
 
-      <SeeAlso hrefs={[/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/bird-mail", "/wiki/characters"]} />
+      <SeeAlso hrefs={["/wiki/stations", "/wiki/bird-mail", "/wiki/characters"]} />
     </WikiPage>
   );
 }

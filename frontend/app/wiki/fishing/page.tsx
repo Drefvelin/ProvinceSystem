@@ -1,13 +1,8 @@
-import { DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { DataTable, SeeAlso, WikiItemLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
-import type { Recipe } from "../data/types";
+import { rodRecipes } from "../data/fishing";
 
-const rodRecipes: Recipe[] = [
-  {key:"fishing-rod",title:"Fishing Rod",station:"Fishing Station",time:10,ingredients:[{name:"Stick",qty:2,texture:"/wiki/textures/vanilla/stick.png"}], output:{name:"Fishing Rod",qty:1,texture:"/wiki/textures/fishing-rods/fishing_rod.png"}},
-  {key:"steel-rod",title:"Steel Rod",station:"Fishing Station",time:10,ingredients:[{name:"Steel Ingot",qty:2,texture:"/wiki/textures/materials/steel_ingot.png"},{name:"String",qty:2,texture:"/wiki/textures/vanilla/string.png"}], output:{name:"Steel Rod",qty:1,texture:"/wiki/textures/fishing-rods/steel_rod.png"}, requirement:"Fisher profession"},
-  {key:"abyssalite-rod",title:"Abyssalite Rod",station:"Fishing Station",time:10,ingredients:[{name:"Abyssalite Ingot",qty:2,texture:"/wiki/textures/materials/abyssalite_ingot.png"},{name:"String",qty:2,texture:"/wiki/textures/vanilla/string.png"}], output:{name:"Abyssalite Rod",qty:1,texture:"/wiki/textures/fishing-rods/abyssalite_rod.png"}, requirement:"Fisher profession"},
-  {key:"mythril-rod",title:"Mythril Rod",station:"Fishing Station",time:10,ingredients:[{name:"Mythril Ingot",qty:2,texture:"/wiki/textures/materials/mythril_ingot.png"},{name:"String",qty:2,texture:"/wiki/textures/vanilla/string.png"}], output:{name:"Mythril Rod",qty:1,texture:"/wiki/textures/fishing-rods/mythril_rod.png"}, requirement:"Fisher profession"},
-];
+
 
 export default function FishingPage() {
   return (
@@ -49,10 +44,10 @@ export default function FishingPage() {
           { header: "Minigame tier" },
         ]}
         rows={[
-          ["Fishing Rod", "Iron Hook", "250 uses", "0.9", "Easy"],
-          ["Steel Rod", "Steel Hook", "500 uses", "0.8", "Normal"],
-          ["Abyssalite Rod", "Abyssalite Hook", "1000 uses", "0.7", "Hard"],
-          ["Mythril Rod", "Mythril Hook", "1500 uses", "0.6", "Very hard"],
+          ["Fishing Rod", <WikiItemLink key="iron-hook" name="Iron Hook" />, "250 uses", "0.9", "Easy"],
+          [<WikiItemLink key="steel-rod" name="Steel Rod" />, <WikiItemLink key="steel-hook" name="Steel Hook" />, "500 uses", "0.8", "Normal"],
+          [<WikiItemLink key="abyssalite-rod" name="Abyssalite Rod" />, <WikiItemLink key="abyssalite-hook" name="Abyssalite Hook" />, "1000 uses", "0.7", "Hard"],
+          [<WikiItemLink key="mythril-rod" name="Mythril Rod" />, <WikiItemLink key="mythril-hook" name="Mythril Hook" />, "1500 uses", "0.6", "Very hard"],
         ]}
       />
       <div className="mt-4 grid gap-4 xl:grid-cols-2">{rodRecipes.map(recipe=><CraftingGrid key={recipe.key} recipe={recipe}/>)}</div>

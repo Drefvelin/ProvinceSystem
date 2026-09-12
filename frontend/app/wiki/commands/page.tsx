@@ -17,7 +17,7 @@ export default function CommandIndexPage() {
           entry.row.description,
           <Link key="guide" href={entry.href} className="underline decoration-dotted hover:text-[var(--tfmc-accent)]">{getNavItemByHref(entry.href)?.label ?? entry.system}</Link>,
         ])} />
-      <SeeAlso hrefs={["/wiki/getting-started", "/wiki/materials" /* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. , "/wiki/stations" */]} />
+      <SeeAlso hrefs={["/wiki/getting-started", "/wiki/materials", "/wiki/stations"]} />
     </WikiPage>
   );
 }

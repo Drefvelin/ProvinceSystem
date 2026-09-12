@@ -1,6 +1,7 @@
 import { slugify } from "./helpers";
 import { dropOnlyMaterials, materialRecipes, serverCraftedMaterials } from "./materials";
 import { allRecipes } from "./registry";
+import { customItemIdentity } from "./item-identity";
 import type { MaterialCatalogEntry, Recipe } from "./types";
 
 // ---------- Material catalogue (for cross-linking + detail pages) ----------
@@ -18,6 +19,8 @@ function buildMaterialCatalog(): Map<string, MaterialCatalogEntry> {
       name: r.output.name,
       texture: r.output.texture,
       recipe: r,
+      recipes: [],
+      unpackingRecipes: [],
       usedIn: [],
     });
   }
@@ -28,6 +31,9 @@ function buildMaterialCatalog(): Map<string, MaterialCatalogEntry> {
         name: m.name,
         texture: m.texture,
         lore: m.lore,
+        recipes: [],
+        acquisition: m.acquisition,
+        unpackingRecipes: allRecipes.filter((r) => m.unpackingRecipeKeys?.includes(r.key)),
         usedIn: [],
       });
     } else {
@@ -40,13 +46,16 @@ function buildMaterialCatalog(): Map<string, MaterialCatalogEntry> {
   // registered recipe produces it: the server-generated station recipes are
   // where most material recipes now live.
   for (const entry of map.values()) {
-    if (!entry.recipe) entry.recipe = allRecipes.find((r) => r.output.name === entry.name);
+    const identity = customItemIdentity(entry);
+    entry.recipes = identity ? allRecipes.filter((r) => customItemIdentity(r.output) === identity && !entry.unpackingRecipes.some((unpacking) => unpacking.key === r.key)) : [];
+    if (!entry.recipe) entry.recipe = entry.recipes[0];
   }
 
   for (const r of allRecipes) {
     for (const ing of r.ingredients) {
-      const entry = map.get(ing.name);
-      if (entry && entry.recipe?.key !== r.key) {
+      const identity = customItemIdentity(ing);
+      const entry = identity ? [...map.values()].find(material => customItemIdentity(material) === identity) : undefined;
+      if (entry && !entry.usedIn.some(recipe => recipe.key === r.key)) {
         entry.usedIn.push(r);
       }
     }
@@ -56,6 +65,10 @@ function buildMaterialCatalog(): Map<string, MaterialCatalogEntry> {
 }
 
 export const materialCatalog = buildMaterialCatalog();
+
+export const materialUnpackingRecipeKeys = new Set(
+  [...materialCatalog.values()].flatMap((m) => m.unpackingRecipes.map((r) => r.key)),
+);
 
 /** Names in the catalogue, for CraftingGrid to decide which slots become clickable material links. */
 export const catalogNames = new Set(materialCatalog.keys());

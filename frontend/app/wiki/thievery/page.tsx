@@ -1,4 +1,4 @@
-import { CommandTable, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { CommandTable, DataTable, SeeAlso, WikiItemLink, WikiItemText, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { thieveryCommandSet, thieveryKeyCopies } from "../data/thievery";
 
 export default function ThieveryPage() {
@@ -21,7 +21,7 @@ export default function ThieveryPage() {
       </WikiSectionHeading>
       <ul className="list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>
-          <strong>Doors</strong>: hold a key (Iron Key or Gold Key) and sneak + right-click the
+          <strong>Doors</strong>: hold a key (<WikiItemLink name="Iron Key" /> or Gold Key) and sneak + right-click the
           door to lock it. Sneak + right-click again with the same key to unlock it; a wrong key is
           rejected. While locked, a door will not open (and cannot be broken) without the matching
           key.
@@ -46,7 +46,11 @@ export default function ThieveryPage() {
             { header: "Click onto" },
             { header: "Result" },
           ]}
-          rows={thieveryKeyCopies.map((c) => [c.pickUp, c.clickOnto, c.result])}
+          rows={thieveryKeyCopies.map((c) => [
+            <WikiItemText key={`${c.pickUp}-pickup`} text={c.pickUp} />,
+            <WikiItemText key={`${c.clickOnto}-target`} text={c.clickOnto} />,
+            <WikiItemText key={`${c.result}-result`} text={c.result} />,
+          ])}
           caption="Copying a key to paper is on a 240-minute (4 hour) per-player, per-key cooldown."
         />
       </div>
@@ -56,7 +60,7 @@ export default function ThieveryPage() {
         Lockpicking
       </WikiSectionHeading>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Hold a lockpick (only one exists on this server: the Basic Lockpick Set) and right-click a closed, locked door within 3 blocks: or a lockable container, display furniture (artifact display, pedestal), or entity (armor stand, item frame, glow item frame).</li>
+        <li>Hold a lockpick (only one exists on this server: the <WikiItemLink name="Basic Lockpick">Basic Lockpick</WikiItemLink> Set) and right-click a closed, locked door within 3 blocks: or a lockable container, display furniture (<WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, <WikiItemLink name="Pedestal">pedestal</WikiItemLink>), or entity (armor stand, item frame, glow item frame).</li>
         <li>
           Doing this requires the &quot;thief&quot; character trait; without it you are told you
           lack the needed trait(s).

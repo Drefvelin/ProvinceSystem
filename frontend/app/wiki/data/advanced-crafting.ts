@@ -24,7 +24,7 @@ const alloyForgeModel = {
 
 export const weaponStationRecipe: Recipe = {
   key: "craft-weapon-station",
-  title: "Weapon Station",
+  title: "Forging Station",
   station: "Crafting Table",
   requirement: "None",
   ingredients: [
@@ -38,7 +38,7 @@ export const weaponStationRecipe: Recipe = {
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
   ],
-  output: { name: "Weapon Station", qty: 1, model: weaponStationModel },
+  output: { name: "Forging Station", qty: 1, sourceId: "itemsadder:weapon_station", model: weaponStationModel },
 };
 
 export const ingredientConverterRecipe: Recipe = {
@@ -57,7 +57,7 @@ export const ingredientConverterRecipe: Recipe = {
     { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
   ],
-  output: { name: "Ingredient Converter", qty: 1, model: ingredientConverterModel },
+  output: { name: "Ingredient Converter", qty: 1, sourceId: "itemsadder:ingredient_converter", model: ingredientConverterModel },
 };
 
 export const alloyForgeRecipe: Recipe = {
@@ -76,7 +76,7 @@ export const alloyForgeRecipe: Recipe = {
     { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
     { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
   ],
-  output: { name: "Alloy Forge", qty: 1, model: alloyForgeModel },
+  output: { name: "Alloy Forge", qty: 1, sourceId: "itemsadder:alloy_forge", model: alloyForgeModel },
   note: "Requires nearby lava to operate.",
 };
 
@@ -124,7 +124,7 @@ export const advancedCraftingSection: WikiSection = {
   commands: advancedCraftingCommands,
 };
 
-// ---------- Weapon Station recipe templates ----------
+// ---------- Forging Station recipe templates ----------
 //
 // Source: plugins/AdvancedCrafting/recipes/{weapons,armor,bows}.yml (35 entries).
 //
@@ -167,7 +167,7 @@ export type TemplateIngredient = { type: IngredientTypeId; qty: number };
 export type StationRecipeCategory = "armor" | "weapons" | "bows";
 
 /**
- * A Weapon Station recipe template.
+ * A Forging Station recipe template.
  *
  * `name` is kept verbatim from the config, including the `%material%`
  * placeholder that the plugin replaces at craft time with a procedurally
@@ -235,7 +235,7 @@ export const armorRecipeTemplates: StationRecipeTemplate[] = [
 ];
 
 /**
- * All 35 Weapon Station recipes, in the order the in-game category menu lists
+ * All 35 Forging Station recipes, in the order the in-game category menu lists
  * them (`recipe-categories.yml`: armor, weapons, bows).
  */
 export const weaponStationTemplates: StationRecipeTemplate[] = [

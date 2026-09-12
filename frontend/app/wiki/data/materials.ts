@@ -1,4 +1,5 @@
 import { T } from "./helpers";
+import { collectorHerbMaterials } from "./herb-acquisition";
 import type { CatalogMaterial, DropOnlyMaterial, Recipe, WikiSection } from "./types";
 
 // ---------- Materials ----------
@@ -155,16 +156,35 @@ export const serverCraftedMaterials: CatalogMaterial[] = [
   { name: "Transmutation Powder", texture: T("materials/transmutation_powder.png") },
   { name: "Sulfur", texture: T("materials/sulfur.png") },
   { name: "Saltpeter", texture: T("materials/saltpeter.png") },
-  { name: "Niter", texture: T("materials/niter.png") },
   { name: "Dynamite", texture: T("materials/dynamite.png") },
   { name: "Detoxed Leather", texture: T("materials/detoxed_leather.png") },
-  { name: "Arcane Crystal", texture: T("materials/arcane_crystal.png") },
 ];
 
+// Historical export name retained for the station recipe generator's catalogue scan.
+// Gathered/loot materials may also have unpacking recipes. Acquisition evidence:
+// docs/wiki-research/material-acquisition.md (cloned server config + local drop implementation).
 export const dropOnlyMaterials: DropOnlyMaterial[] = [
   { name: "Enchanted Dust", texture: T("magic_crafting/enchanted_dust.png"), lore: "A magical crafting ingredient used in equipment and material recipes." },
-  { name: "Ignitium", texture: T("materials/ignitium.png"), lore: "Uncommon crystal: catalyst in Coke production." },
-  { name: "Tin", texture: T("materials/raw_tin.png"), lore: "Malleable metal used to produce alloys like Bronze." },
+  {
+    name: "Ignitium", texture: T("materials/ignitium.png"), lore: "Uncommon crystal: catalyst in Coke production.",
+    unpackingRecipeKeys: ["gen-ingot-station-ignitium-block2"],
+    acquisition: [
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Ignitium.", chance: "0.2% per eligible ore block before Fortune." },
+      { method: "Logging with Tree Gatherer IV", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV. Drops 1 Ignitium.", chance: "0.01% per eligible log before Fortune." },
+      { method: "Detector rewards", detail: "Find a source with the detector. The current Prologue reward pool includes 2, 4, 8 or 16 Ignitium, depending on the reward tier.", chance: "Exact item chance unverified; rewards use weighted tiers." },
+      { method: "Pouch of Rare Materials", detail: "Right-click a Pouch of Rare Materials to receive Ignitium. Its configured rewards are 3, 6, 9 or 12 Ignitium.", chance: "Exact amount chances unverified." },
+      { method: "Voting Crate rewards", detail: "Ignitium is included in configured Voting Crate reward pools. Availability and amount depend on the crate variant offered in game.", chance: "Exact item chance unverified; crate rewards use weights." },
+    ],
+  },
+  {
+    name: "Tin", texture: T("materials/raw_tin.png"), lore: "Malleable metal used to produce alloys like Bronze.",
+    unpackingRecipeKeys: ["gen-ingot-station-tin-block2"],
+    acquisition: [
+      { method: "Voting Crate rewards", detail: "Tin is included in configured Voting Crate variants. Check the available crate preview in game for its rewards.", chance: "Exact item chance unverified; crate rewards use weights." },
+      { method: "Detector rewards (other reward pools)", detail: "Tin rewards of 4, 8 or 12 exist in the Default and Event pools. The current Prologue pool does not include Tin, so this detector route is currently unavailable.", chance: "Unavailable in the current Prologue pool; other pool chances unverified." },
+      { method: "Mining", detail: "Tin is not enabled as a Lucky Miner drop in the current configuration.", chance: "No active Lucky Miner Tin drop." },
+    ],
+  },
   {
     name: "Abyssalite Fragment",
     texture: T("materials/abyssalite.png"),
@@ -205,8 +225,21 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
     texture: T("materials/shiny_gold.png"),
     lore: "Rare gold variant with Goldsmithing applications.",
   },
-  { name: "Arcane Crystal", texture: T("materials/arcane_crystal.png"), lore: "Found deep below the earth: not of this Plane." },
-  { name: "Niter", texture: T("materials/niter.png") },
+  {
+    name: "Arcane Crystal", texture: T("materials/arcane_crystal.png"), lore: "Found deep below the earth: not of this Plane.",
+    acquisition: [
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Arcane Crystal.", chance: "0.05% per eligible ore block before Fortune." },
+      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus for a Dowsing mine to include Arcane Crystal in its output pool.", chance: "Exact output chance unverified; production uses weighted drops and other method modifiers." },
+      { method: "War Crate rewards", detail: "The configured War Crate reward pool includes 32 Arcane Crystals. Check crate availability in game.", chance: "Exact item chance unverified; crate rewards use weights." },
+    ],
+  },
+  {
+    name: "Niter", texture: T("materials/niter.png"),
+    acquisition: [
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Niter.", chance: "0.05% per eligible ore block before Fortune." },
+      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus for a Dowsing mine to include Niter in its output pool.", chance: "Exact output chance unverified; production uses weighted drops and other method modifiers." },
+    ],
+  },
   { name: "Smokeless Powder", texture: T("materials/smokeless_powder.png") },
   { name: "Raw Iron Fragment", texture: T("materials/rawiron_fragment.png"), lore: "Crafted into Iron Ingots at a Fishing Station." },
   { name: "Raw Gold Fragment", texture: T("materials/rawgold_fragment.png"), lore: "Crafted into Gold Ingots at a Fishing Station." },
@@ -224,22 +257,15 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
   // Alchemy herbs: gathered from the world, used as Alchemy Station reagents.
   { name: "Nightshade", texture: T("herbs/icon36.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Grapeberries", texture: T("herbs/icon33.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Burrow Root", texture: T("herbs/icon32.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Arcane Leaf", texture: T("herbs/icon5.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Fiery Fruit", texture: T("herbs/icon20.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Barkshroom", texture: T("herbs/icon24.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Caveshroom", texture: T("herbs/icon21.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Flatshroom", texture: T("herbs/icon45.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Spot Leaf", texture: T("herbs/icon19.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Death Fruit", texture: T("herbs/icon42.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Long Leaf", texture: T("herbs/icon14.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Clover", texture: T("herbs/icon17.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Thorn Root", texture: T("herbs/icon41.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Dying Leaf", texture: T("herbs/icon29.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Autumn Leaf", texture: T("herbs/icon4.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Blazed Root", texture: T("herbs/icon44.png"), lore: "Herbal reagent gathered from the world." },
   { name: "Serpent Root", texture: T("herbs/icon18.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Fire Leaf", texture: T("herbs/icon2.png"), lore: "Herbal reagent gathered from the world." },
+  ...collectorHerbMaterials,
 ];
 
 export const materialsSection: WikiSection = {

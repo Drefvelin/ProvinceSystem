@@ -27,7 +27,7 @@ export const magicStationRecipe: Recipe = {
   output: {
     name: "Magic Station",
     qty: 1,
-    texture: T("stations/magic-station.png"),
+    sourceId: "itemsadder:magic_crafting_station",
     model: { url: M("magic-station.json"), texture: T("stations/magic-station.png") },
   },
   note: "Place it, then interact to open the weapon assembly menu.",

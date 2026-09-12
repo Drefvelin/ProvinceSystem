@@ -1,4 +1,5 @@
 import type { Recipe, Slot, WikiCommandSet, WikiSection } from "./types";
+import { constructionStations } from "./vehicle-construction";
 import { T, V } from "./helpers";
 import modelCatalogue from "../../../public/wiki/models/vehicles/catalogue.json";
 
@@ -716,16 +717,18 @@ export const vehicleCommands: WikiCommandSet = {
 };
 // Every distinct ingredient name across `vehicles[].inputs`. Vanilla items live under
 // `vanilla/`, server-added ones under `materials/`, so the root cannot be derived from
-// the name. A name deliberately left out (no texture exists on disk) falls back to
-// being rendered as plain text by `CraftingGrid`'s `Slot`.
+// the name. Every configured ingredient has a matching icon.
 const vehicleInputTextures: Record<string, string> = {
   "Oak Log": V("oak_log.png"),
   "White Wool": V("white_wool.png"),
+  "Cyan Wool": V("cyan_wool.png"),
+  // Exact vanilla 1.21.10 client textures: block/furnace_front.png and item/lantern.png.
+  "Furnace": V("furnace.png"),
+  "Lantern": V("lantern.png"),
   "Iron Ingot": V("iron_ingot.png"),
   "Stick": V("stick.png"),
   "Steel Ingot": T("materials/steel_ingot.png"),
   "Arcane Crystal": T("materials/arcane_crystal.png"),
-  // Unmapped, no texture shipped: "Cyan Wool", "Furnace", "Lantern".
 };
 
 /**
@@ -756,7 +759,7 @@ export const vehicleRecipes: Recipe[] = vehicles.map((vehicle) => ({
 export const vehiclesSection: WikiSection = {
   nav: { href: "/wiki/vehicles", label: "Vehicles & Construction", category: "vehicles",
     blurb: "Build, crew, fuel and repair all 21 vehicles, with 3D previews and complete blueprints." },
-  commands: vehicleCommands, recipes: vehicleRecipes,
+  commands: vehicleCommands, recipes: [...vehicleRecipes, ...constructionStations],
 };
 
 export const vehicleAmmunition: string[][] = [

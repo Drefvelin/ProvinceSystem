@@ -28,15 +28,25 @@ type BlockModel = {
   elements: Element[];
 };
 
+const faceOrder: Array<keyof Element["faces"]> = ["east", "west", "up", "down", "south", "north"];
+
 export function textureMaterialIndices(
   faces: Element["faces"],
   textureKeys: string[],
 ): number[] {
-  const order: Array<keyof Element["faces"]> = ["east", "west", "up", "down", "south", "north"];
-  return order.map((dir) => {
+  return faceOrder.map((dir) => {
     const key = faces[dir]?.texture.replace(/^#/, "");
     return key ? textureKeys.indexOf(key) : -1;
   });
+}
+
+export function visibleFaceMaterialGroups(
+  faces: Element["faces"],
+  textureKeys: string[],
+): Array<{ faceIndex: number; materialIndex: number }> {
+  return textureMaterialIndices(faces, textureKeys).flatMap((materialIndex, faceIndex) =>
+    faces[faceOrder[faceIndex]] ? [{ faceIndex, materialIndex }] : [],
+  );
 }
 
 export async function loadTextureBindings<T>(
@@ -79,10 +89,9 @@ function buildGeometryForElement(el: Element, textureKeys: string[]) {
   const geo = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
 
   // BoxGeometry face groups order: px, nx, py, ny, pz, nz
-  const order: Array<keyof Element["faces"]> = ["east", "west", "up", "down", "south", "north"];
   const uvAttr = geo.getAttribute("uv") as THREE.BufferAttribute;
 
-  order.forEach((dir, faceIdx) => {
+  faceOrder.forEach((dir, faceIdx) => {
     const face = el.faces[dir];
     const vertOffset = faceIdx * 4;
     if (!face) {
@@ -97,13 +106,11 @@ function buildGeometryForElement(el: Element, textureKeys: string[]) {
   });
   uvAttr.needsUpdate = true;
 
-  if (textureKeys.length) {
-    geo.clearGroups();
-    textureMaterialIndices(el.faces, textureKeys).forEach((materialIndex, faceIdx) => {
-      // BoxGeometry emits two triangles (six indices) for every face.
-      geo.addGroup(faceIdx * 6, 6, materialIndex >= 0 ? materialIndex : textureKeys.length);
-    });
-  }
+  geo.clearGroups();
+  visibleFaceMaterialGroups(el.faces, textureKeys).forEach(({ materialIndex, faceIndex }) => {
+    // BoxGeometry emits two triangles (six indices) for every visible face.
+    geo.addGroup(faceIndex * 6, 6, materialIndex >= 0 ? materialIndex : textureKeys.length);
+  });
 
   const cx = (x1 + x2) / 2 / 16;
   const cy = (y1 + y2) / 2 / 16;

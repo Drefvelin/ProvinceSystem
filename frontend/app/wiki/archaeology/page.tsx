@@ -1,43 +1,125 @@
-import { Callout, DataTable, SeeAlso, StatGrid, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { Callout, DataTable, SeeAlso, WikiItemLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
-import { archaeologyRecipes, archaeologyTables } from "../data/archaeology";
+import { archaeologyRecipes } from "../data/archaeology";
 
 export default function ArchaeologyPage() {
-  return <WikiPage title="Archaeology" width="lg" intro="Archaeology turns a buried ruin into a field collection: listen for a site, sample the soil, establish a camp, uncover connected shapes, brush them free, and record their conservation and interpretation.">
-    <WikiSectionHeading id="equipment">Prepare the equipment</WikiSectionHeading>
-    <div className="mt-4"><CraftingGrid recipe={archaeologyRecipes[0]}/></div>
-    <div className="mt-4 grid gap-4 xl:grid-cols-2">{archaeologyRecipes.slice(1).map(recipe => <CraftingGrid key={recipe.key} recipe={recipe}/>)}</div>
-    <WikiSectionHeading id="prospecting">1. Listen and confirm a site</WikiSectionHeading>
-    <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
-      <li>Hold a Recovery Compass and walk through likely field areas. Pulses accelerate as you approach a ruin; if they fade, change direction. There is no ruin list or directional needle.</li>
-      <li>On approaching and facing the ruin, watch for the prospecting prompt. Use the Soil Probe or Stone Hoe fallback to right-click dirt, grass, sand, gravel, clay or mud. Stone and furniture do not count.</li>
-      <li>Stay within 2 blocks during each 2-second sample. Take four distinct samples, at least 3 blocks apart. A spot counts only once. Two samples give weak traces; three give a possible site; four confirm it.</li>
-      <li>Confirmation belongs to you and does not claim the site. Hold the Camp Kit or documented Stick fallback, aim into a neighboring chunk, adjust the preview to valid ground, then right-click to plant the camp. Do not plant it in the ruin chunk.</li>
-    </ol>
-    <StatGrid stats={[{label:"Tracker maximum",value:"256 blocks",note:"The smaller of this and the site's radius applies"},{label:"Pulse interval",value:"3.5 to 0.25 seconds",note:"Medium band 64 blocks; close band 32"},{label:"Confirmation",value:"4 samples",note:"2 seconds each, 3 blocks apart"}]}/>
-    <WikiSectionHeading id="camp">2. Use the camp board</WikiSectionHeading>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">The person establishing the camp becomes its director. Right-click the board for the field book, roster and finds list. Add workers by name: the roster has 18 places including the director and no second page. Only roster members may dig. The camp is not a land claim; the excavation prism is the ruin chunk and its depth bands, separate from the tents. Show limits outlines that volume through terrain for you alone for 12 seconds, visible up to 96 blocks away.</p>
-    <StatGrid stats={[{label:"Open digs you can direct",value:"1"},{label:"Roster",value:"18 people"},{label:"Workday",value:"8 successful cuts",note:"Per Minecraft day; camp planting and brushing are free"}]}/>
-    <WikiSectionHeading id="dig">3. Dig by sound, then brush</WikiSectionHeading>
-    <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
-      <li>Inside the prism, hold left-click on fill with an excavation tool. Soft clings lead to a ready chime. Release on that chime to lift the intended number of cubes. Releasing early lifts nothing; releasing late lifts more cubes with most tools.</li>
-      <li>A distinct find cling or Stop prompt means the cube contains part of a find. Stop treating it as fill. Removed empty cubes reveal neighboring material traces: only shared faces count, not diagonals.</li>
-      <li>Uncover the shape carefully until every surviving find cube has an air face and the shape drips. Hold right-click with a Brush on a dripping cube for 2 seconds. Looking away pauses progress; looking back resumes it.</li>
-      <li>Brush min(shape size, 6) distinct cubes. Small finds need their whole shape brushed. One item then drops with conservation and provenance. The pick never drops the piece; a find at zero conservation cannot be recovered.</li>
-    </ol>
-    <Callout variant="warning" title="Destroyed find cells are gone permanently">Digging through a find reduces conservation. An ordinary pick can permanently destroy buried finds before a site is established. Faster mining changes cue timing, not the number of cubes lifted. Every successful profile costs one workday action, even a late heavy cut; tool wear is one durability per cube removed and brush wear one per cube cleared. Unbreaking applies normally.</Callout>
-    <WikiSectionHeading id="cabinet">4. Clean, sketch and register</WikiSectionHeading>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Hold a dirty recovered piece and right-click the Archeology Cabinet. Match each stain to the lab tool: Water for Limescale, Brush for Soil or Rust, and Air for Mud. Soil and Mud use the same brown pane, so read the stain name. Empty-handed cabinet clicks do nothing.</p>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Make a field sketch with Paper in one hand and the Field Pencil or Feather fallback in the other; alternatively click the sheet onto the pencil in inventory. Sign the drawing. The paper is consumed and the pencil lasts 64 sketches. Take the cleaned piece to the cabinet: in the furnace-style registration window, put the drawing in the top slot and the piece in the fuel slot, then choose Register. Filed pieces open a reading.</p>
-    <Callout title="Classifying a find">Each reading question offers three phrases. Suggested tags make a matching option more likely to appear, while guaranteed artifact matches ensure that a fitting option is offered. You still choose the interpretation.</Callout>
-    <WikiSectionHeading id="conservation">Conservation and depth</WikiSectionHeading>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Conservation is rolled when the site is generated, from a centered 40-100 range. Subtract 4 for each stratum below the first and another 10 if the band is disturbed; multiply by the material's survival factor, round, then clamp to 1-100. Digging can only reduce it. A careful dig cannot restore a naturally worn piece. Depth is measured below the chunk's median ground level, not absolute Y. Strata do not provide dates: Epoch is a separate reading.</p>
-    <Callout title="Read weights as relative selection weights">The find table does not give final drop percentages: available artifacts are filtered by stratum first. Only Pottery sherd, Ancient sword and Burial can occur in Stratum IV. The deepest layer exists only according to the site's interest chance. Burial is the largest shape at 8-15 cells.</Callout>
-    {archaeologyTables.filter(table => !["Excavation tools", "Lab tools", "Stains and the correct tool", "Site interest levels", "Depth bands", "Find materials", "All nine buried finds", "Study notes after registration", "Site hints", "What the hints tell you", "Classification paths", "Function: what was it for?", "Formation: how did it reach this layer?", "Epoch: which time?", "Species: individual and animal finds", "Deposit: how was it left?", "Workshop recipes"].includes(table.title)).map((table,index)=><section key={table.title}><WikiSectionHeading id={`reference-${index}`}>{table.title}</WikiSectionHeading><DataTable columns={table.columns.map(header=>({header}))} rows={table.rows} minWidth="48rem"/></section>)}
-    <WikiSectionHeading id="museum">5. Display finds and close the dig</WikiSectionHeading>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">Shift-right-click a recovered find on an Item Frame, Glow Item Frame, Armor Stand, Lectern or Shelf support to open its plaque. Ordinary clicking keeps Minecraft's normal hang, rotate and take behavior. Empty supports and ordinary items do nothing. Item Displays and custom display cases are not enabled.</p>
-    <p className="mt-4 text-sm text-[var(--tfmc-mist)]">When every find is recovered or destroyed, the site exhausts: digging and brushing stop, but the camp and board remain. The director can close the camp from the board to free the one excavation slot. Keep the resulting field book and right-click it later to read the archived field book and finds.</p>
-    <Callout title="Care for your tools">Archaeology tools cannot be repaired, enchanted, or used in vanilla crafting. Workshop crafting times are listed in seconds. Era names describe the reading attached to a find; they do not assign a precise calendar date.</Callout>
-    <SeeAlso hrefs={[/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */"/wiki/materials"]}/>
-  </WikiPage>;
+  return (
+    <WikiPage
+      title="Archaeology"
+      width="lg"
+      intro="Find an unclaimed ruin, confirm it from soil samples, establish a field camp, excavate by sound, and preserve each find for study or display."
+    >
+      <WikiSectionHeading id="equipment">Prepare the equipment</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Make the <WikiItemLink name="Archeology Table" /> at a Crafting Table. This workshop is where you make all
+        archaeology tools, including the tracker, prospecting kit, establishment kit, excavation
+        tools, brush, <WikiItemLink name="Field Pencil">field pencil</WikiItemLink>, and cabinet.
+      </p>
+      <div className="mt-4"><CraftingGrid recipe={archaeologyRecipes[0]} /></div>
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        {archaeologyRecipes.slice(1).map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+      </div>
+
+      <WikiSectionHeading id="find-a-ruin">1. Find a ruin</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Hold the tracker and follow its pulses. They get faster as you approach a ruin that nobody
+        has claimed. If the beeps fade, turn back and try another direction. The tracker stays quiet
+        for a ruin where you already planted a camp. When you are close enough, chat tells you to
+        prospect the ground.
+      </p>
+
+      <WikiSectionHeading id="prospect">2. Confirm it</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Use the prospecting kit on shovel-dug earth: dirt, grass, sand, gravel, clay, or mud. Stone
+        and furniture do not count. Hold still while taking each sample; walking away cancels it.
+        Spread samples out and follow the traces until chat confirms the site. Confirmation alone
+        does not claim the ruin.
+      </p>
+
+      <WikiSectionHeading id="camp">3. Plant the camp</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        After confirmation, hold the establishment kit and aim at a neighboring chunk rather than
+        the ruin itself. Turn until the camp ghost sits cleanly, then confirm. You become the
+        director, and the tracker will no longer pulse for this ruin. The tents sit beside the dig;
+        the prism marks the ruin ground and the layers below it. Establishing camp does not spend
+        the work day.
+      </p>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Use the camp board to read the dossier, manage who may work, review the finds list, and
+        choose <strong>Show limits</strong>. The glowing cut boundary appears only to you and only
+        briefly. If you have reached your camp limit, close an old camp before claiming another.
+      </p>
+
+      <WikiSectionHeading id="dig">4. Dig: hear, then release</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Inside the dig site, hold left-click with an excavation tool. The block does not crack like
+        ordinary mining. Listen to the cue, then release the button.
+      </p>
+      <DataTable
+        className="mt-4"
+        columns={[{ header: "Cue" }, { header: "Meaning" }]}
+        rows={[
+          ["Soft clings, then a louder ready chime", "Empty fill. Release on the ready chime to lift cubes."],
+          ["Release too soon", "Nothing leaves. The next hold starts clean."],
+          ["Release too late", "More cubes leave, giving you less control."],
+        ]}
+      />
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        The HUD names the stratum and may show how many cuts remain today. Light tools make narrow
+        shafts; heavier tools take wider bites, and a late release always removes more than a timely
+        one. Empty fill can reveal traces of material still touching the hole, which tells you when
+        to slow down.
+      </p>
+      <Callout variant="warning" title="A buried find can be destroyed">
+        A find cling means you are cutting into a piece. Punching through it damages the find, and a
+        destroyed cell is gone for good. An ordinary pick can wreck a buried find too, even before
+        anyone establishes a camp.
+      </Callout>
+
+      <WikiSectionHeading id="brush">5. Brush the find out</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        A find is a shape inside the dirt, not a loot block. Expose the shape carefully. When every
+        remaining cube has air on at least one face, those cubes begin dripping. Hold right-click
+        with the brush while aiming at a dripping cube. Looking away pauses that cube; looking back
+        continues it. Keep brushing until one recovered item comes free. A pick never drops the
+        item, and a completely destroyed find drops nothing.
+      </p>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        The item label tells you whether it is intact, worn, crumbling, or somewhere between. Its
+        starting condition was decided in the ground; careful excavation can preserve it, but
+        cannot turn a naturally damaged piece into a pristine one.
+      </p>
+
+      <WikiSectionHeading id="register">6. Clean, sketch, register</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Take the recovered piece to the cabinet and right-click while holding it. Sneak if you only
+        want the block&apos;s ordinary Minecraft use. A dirty piece opens the lab, where each stain
+        names the tool that removes it. A cleaned piece without a drawing can be registered, and an
+        already filed piece opens its reading. Empty-handed clicks do not open the cabinet workflow.
+      </p>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        To make the drawing, click a field sheet onto the pencil in your inventory, or hold the
+        sheet and use the pencil in your other hand. Sign the sketch, then return to the cabinet and
+        register it with the find in hand.
+      </p>
+
+      <WikiSectionHeading id="museum">7. Museum</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Build any room you like. Shift-right-click a recovered find on a frame, lectern, shelf,
+        armor stand, or a case that accepts plaques to open the same reading available from the camp
+        board. Clicking without Shift keeps the ordinary Minecraft action, such as hanging,
+        rotating, or taking an item. Empty supports and unrelated items do nothing extra.
+      </p>
+
+      <WikiSectionHeading id="finish">8. When the site is finished</WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        Once every find has been recovered or destroyed, the excavation is exhausted. Close the
+        camp from the board to leave the site and free room for another ruin. You receive a field
+        book; right-click it later to reopen the excavation dossier and finds record even after the
+        tents are gone.
+      </p>
+
+      <SeeAlso hrefs={["/wiki/materials"]} />
+    </WikiPage>
+  );
 }

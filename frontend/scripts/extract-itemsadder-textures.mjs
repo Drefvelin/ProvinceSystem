@@ -24,6 +24,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildItemIndex, parseRef, parseStationRecipes } from "./build-station-recipes.mjs";
 
 const FRONTEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_CONTENTS_DIR = "C:/Users/MSI/Desktop/plugins/ItemsAdder/contents";
@@ -33,6 +34,9 @@ const DEFAULT_STATIONS_DIR = "C:/Users/MSI/Desktop/plugins/MMOItems/crafting-sta
 export const ITEMSADDER_TEXTURE_DIR = "itemsadder";
 const OUTPUT_TEXTURE_DIR = path.join(FRONTEND_ROOT, "public", "wiki", "textures", ITEMSADDER_TEXTURE_DIR);
 const OUTPUT_MANIFEST = path.join(FRONTEND_ROOT, "app", "wiki", "data", "generated", "itemsadderItems.json");
+export const MMOITEMS_TEXTURE_DIR = "mmoitems";
+const MMOITEMS_OUTPUT_TEXTURE_DIR = path.join(FRONTEND_ROOT, "public", "wiki", "textures", MMOITEMS_TEXTURE_DIR);
+const MMOITEMS_OUTPUT_MANIFEST = path.join(FRONTEND_ROOT, "app", "wiki", "data", "generated", "mmoitemsItems.json");
 
 // ---------------------------------------------------------------------------
 // YAML subset parser
@@ -175,6 +179,7 @@ export function buildPackIndex(contentsDir) {
             id,
             source: path.relative(contentsDir, file).split(path.sep).join("/"),
             name: typeof item.display_name === "string" ? stripColours(item.display_name) : undefined,
+            material: typeof resource.material === "string" ? resource.material : undefined,
             textures,
             modelPath: typeof resource.model_path === "string" ? resource.model_path : undefined,
           });
@@ -241,8 +246,8 @@ function resolveLogStyleIcon(contentsDir, entry) {
  *    whose parent is vanilla `item/generated` (or `item/handheld`) is a flat
  *    sprite wearing a model file, and its single `layer0` IS the icon. A
  *    Blockbench furniture model instead paints a UV atlas across dozens of 3D
- *    faces; that atlas is not an icon and renders as a blob at slot size.
- *    Rejected.
+ *    faces. A UV atlas is not an inventory icon, so reject it. The manifest
+ *    retains the configured vanilla carrier material for that fallback.
  */
 export function resolveEntryTexture(contentsDir, entry) {
   if (entry.textures.length > 1) {
@@ -274,7 +279,7 @@ export function resolveEntryTexture(contentsDir, entry) {
   }
   const parent = typeof model.parent === "string" ? model.parent.replace(/^minecraft:/, "") : "";
   if (parent !== "item/generated" && parent !== "item/handheld") {
-    return { reason: `3D model (${entry.modelPath}), no flat item sprite` };
+    return { reason: `3D model (${entry.modelPath}) has no flat inventory sprite` };
   }
   const layer0 = model.textures?.layer0;
   if (typeof layer0 !== "string") return { reason: `model ${entry.modelPath} has no layer0 texture` };
@@ -300,22 +305,25 @@ function sha256(file) {
  */
 export function resolveId(contentsDir, entries) {
   const names = [...new Set(entries.map((e) => e.name).filter(Boolean))].sort();
+  const materials = [...new Set(entries.map((e) => e.material).filter(Boolean))].sort();
   const conflicts = [];
   if (names.length > 1) conflicts.push(`conflicting display names: ${names.join(" / ")}`);
+  if (materials.length > 1) conflicts.push(`conflicting carrier materials: ${materials.join(" / ")}`);
 
   const files = [];
   const reasons = [];
   for (const entry of entries) {
     const result = resolveEntryTexture(contentsDir, entry);
-    if (result.file) files.push({ entry, file: result.file, hash: sha256(result.file) });
+    if (result.file) files.push({ entry, ...result, hash: sha256(result.file) });
     else reasons.push(`${entry.pack}: ${result.reason}`);
   }
   const name = names.length === 1 ? names[0] : undefined;
+  const material = materials.length === 1 ? materials[0] : undefined;
   if (new Set(files.map((f) => f.hash)).size > 1) {
     conflicts.push(`byte-different sprites in ${files.map((f) => f.entry.pack).join(", ")}`);
-    return { name, reasons, conflicts };
+    return { name, material, reasons, conflicts };
   }
-  return { name, texture: files[0], reasons, conflicts };
+  return { name, material, texture: files[0], reasons, conflicts };
 }
 
 // ---------------------------------------------------------------------------
@@ -345,6 +353,217 @@ export function collectReferencedIds(stationsDir) {
   return counts;
 }
 
+/** Every MMOItems id used by a station ingredient or output. */
+export function collectReferencedMmoItems(stationsDir) {
+  const counts = new Map();
+  const add = (id) => {
+    if (typeof id === "string" && id) counts.set(id, (counts.get(id) ?? 0) + 1);
+  };
+  for (const file of readdirSync(stationsDir).filter((f) => f.endsWith(".yml")).sort()) {
+    const { recipes } = parseStationRecipes(readFileSync(path.join(stationsDir, file), "utf8"));
+    for (const recipe of recipes) {
+      const ingredients = Array.isArray(recipe.fields.ingredients)
+        ? recipe.fields.ingredients
+        : typeof recipe.fields.ingredients === "string"
+          ? [recipe.fields.ingredients]
+          : [];
+      for (const raw of ingredients) {
+        const ref = parseRef(raw);
+        if (ref?.kind === "mmoitem") add(ref.attrs.id);
+      }
+      const output = recipe.fields.output;
+      if (typeof output === "string") {
+        const ref = parseRef(output);
+        if (ref?.kind === "mmoitem") add(ref.attrs.id);
+      } else if (isMap(output) && output.id) {
+        add(output.id);
+      }
+    }
+  }
+  return counts;
+}
+
+function modelParts(ref, defaultNamespace = "minecraft") {
+  const colon = ref.indexOf(":");
+  return colon === -1
+    ? { namespace: defaultNamespace, relative: ref }
+    : { namespace: ref.slice(0, colon), relative: ref.slice(colon + 1) };
+}
+
+function readModel(packRoot, ref, seen = new Set()) {
+  const { namespace, relative } = modelParts(ref);
+  const key = `${namespace}:${relative}`;
+  if (seen.has(key)) return null;
+  seen.add(key);
+  const file = path.join(packRoot, "assets", namespace, "models", `${relative}.json`);
+  if (!existsSync(file)) return null;
+  let own;
+  try {
+    own = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+  const parent = typeof own.parent === "string" ? readModel(packRoot, own.parent, seen) : null;
+  return {
+    file,
+    textures: { ...(parent?.textures ?? {}), ...(isMap(own.textures) ? own.textures : {}) },
+  };
+}
+
+function resolveTextureVariable(textures, key) {
+  let value = textures[key];
+  const seen = new Set();
+  while (typeof value === "string" && value.startsWith("#")) {
+    const next = value.slice(1);
+    if (seen.has(next)) return null;
+    seen.add(next);
+    value = textures[next];
+  }
+  return typeof value === "string" ? value : null;
+}
+
+/** Resolves a base material + custom-model-data pair through the pack's item override. */
+function resolveMmoItemTexture(contentsDir, item) {
+  if (!item?.material || !Number.isFinite(item.customModelData)) return { matches: [] };
+  const matches = [];
+  for (const pack of readdirSync(contentsDir).sort()) {
+    const packRoot = path.join(contentsDir, pack, "resourcepack");
+    const baseModel = path.join(
+      packRoot,
+      "assets",
+      "minecraft",
+      "models",
+      "item",
+      `${item.material.toLowerCase()}.json`
+    );
+    if (!existsSync(baseModel)) continue;
+    let model;
+    try {
+      model = JSON.parse(readFileSync(baseModel, "utf8"));
+    } catch {
+      continue;
+    }
+    const overrides = Array.isArray(model.overrides) ? model.overrides : [];
+    const candidates = overrides
+      .filter((entry) => Number(entry?.predicate?.custom_model_data) === item.customModelData)
+      .sort((a, b) => Object.keys(a.predicate ?? {}).length - Object.keys(b.predicate ?? {}).length);
+    const override = candidates[0];
+    if (typeof override?.model !== "string") continue;
+    const resolvedModel = readModel(packRoot, override.model);
+    if (!resolvedModel) continue;
+    const textureKeys = ["layer0", "0", ...Object.keys(resolvedModel.textures).sort()]
+      .filter((value, index, all) => value !== "particle" && all.indexOf(value) === index);
+    let sourceTexture = null;
+    for (const key of textureKeys) {
+      const ref = resolveTextureVariable(resolvedModel.textures, key);
+      if (!ref) continue;
+      const { namespace, relative } = modelParts(ref);
+      const file = path.join(packRoot, "assets", namespace, "textures", `${relative}.png`);
+      if (existsSync(file)) {
+        sourceTexture = file;
+        break;
+      }
+    }
+    if (!sourceTexture) continue;
+    matches.push({
+      pack,
+      model: resolvedModel.file,
+      texture: sourceTexture,
+      hash: sha256(sourceTexture),
+    });
+  }
+  return { matches };
+}
+
+// These MMOItems intentionally omit custom-model-data, but the TFMC pack ships
+// dedicated handheld models whose layer0 is the authoritative inventory icon.
+// Keep this explicit: an arbitrary filename match must never replace a custom
+// model selected by CMD, and the model path proves which sprite Minecraft uses.
+const NAMED_MMOITEM_MODELS = new Map([
+  "ABYSSALITE_AXE", "ABYSSALITE_HOE", "ABYSSALITE_PICKAXE", "ABYSSALITE_SHOVEL",
+  "MYTHRIL_AXE", "MYTHRIL_HOE", "MYTHRIL_PICKAXE", "MYTHRIL_SHOVEL",
+].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]));
+
+function resolveNamedMmoItemTexture(contentsDir, id) {
+  const modelRef = NAMED_MMOITEM_MODELS.get(id);
+  if (!modelRef) return null;
+  const pack = "tfmc_pack";
+  const packRoot = path.join(contentsDir, pack, "resourcepack");
+  const resolvedModel = readModel(packRoot, modelRef);
+  if (!resolvedModel) return null;
+  const layer0 = resolveTextureVariable(resolvedModel.textures, "layer0");
+  if (!layer0) return null;
+  const { namespace, relative } = modelParts(layer0);
+  const texture = path.join(packRoot, "assets", namespace, "textures", `${relative}.png`);
+  if (!existsSync(texture)) return null;
+  return { pack, model: resolvedModel.file, texture, hash: sha256(texture) };
+}
+
+async function extractMmoItemsTextures(contentsDir, stationsDir, itemDir) {
+  const referenced = collectReferencedMmoItems(stationsDir);
+  const items = buildItemIndex(itemDir);
+  await mkdir(MMOITEMS_OUTPUT_TEXTURE_DIR, { recursive: true });
+  const manifest = {};
+  let copied = 0;
+  let kept = 0;
+  let customConfigured = 0;
+  let customResolved = 0;
+  const unresolved = [];
+  for (const [id, count] of [...referenced].sort(([a], [b]) => a.localeCompare(b))) {
+    const item = items.get(id);
+    if (!item) {
+      unresolved.push(`${id} (x${count}): no MMOItems item config`);
+      continue;
+    }
+    const record = {
+      ...(item.name ? { name: item.name } : {}),
+      ...(item.material ? { material: item.material } : {}),
+      ...(Number.isFinite(item.customModelData) ? { customModelData: item.customModelData } : {}),
+    };
+    if (Number.isFinite(item.customModelData)) {
+      customConfigured += 1;
+      const { matches } = resolveMmoItemTexture(contentsDir, item);
+      const hashes = new Set(matches.map((match) => match.hash));
+      if (hashes.size === 1 && matches.length) {
+        const source = matches[0];
+        const destName = `${id.toLowerCase()}.png`;
+        const dest = path.join(MMOITEMS_OUTPUT_TEXTURE_DIR, destName);
+        if (existsSync(dest) && sha256(dest) === source.hash) kept += 1;
+        else {
+          copyFileSync(source.texture, dest);
+          copied += 1;
+        }
+        customResolved += 1;
+        record.texture = `${MMOITEMS_TEXTURE_DIR}/${destName}`;
+        record.sourceModel = path.relative(contentsDir, source.model).split(path.sep).join("/");
+        record.sourceTexture = path.relative(contentsDir, source.texture).split(path.sep).join("/");
+      } else if (hashes.size > 1) {
+        unresolved.push(`${id} (x${count}): conflicting custom sprites in ${matches.map((m) => m.pack).join(", ")}`);
+      } else {
+        unresolved.push(`${id} (x${count}): no pack override for ${item.material} CMD ${item.customModelData}`);
+      }
+    } else {
+      const source = resolveNamedMmoItemTexture(contentsDir, id);
+      if (source) {
+        const destName = `${id.toLowerCase()}.png`;
+        const dest = path.join(MMOITEMS_OUTPUT_TEXTURE_DIR, destName);
+        if (existsSync(dest) && sha256(dest) === source.hash) kept += 1;
+        else {
+          copyFileSync(source.texture, dest);
+          copied += 1;
+        }
+        record.texture = `${MMOITEMS_TEXTURE_DIR}/${destName}`;
+        record.sourceKind = "named-pack-model";
+        record.sourceModel = path.relative(contentsDir, source.model).split(path.sep).join("/");
+        record.sourceTexture = path.relative(contentsDir, source.texture).split(path.sep).join("/");
+      }
+    }
+    manifest[id] = record;
+  }
+  await writeFile(MMOITEMS_OUTPUT_MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  return { referenced: referenced.size, customConfigured, customResolved, copied, kept, unresolved };
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -353,6 +572,7 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 if (isMain) {
   const contentsDir = process.argv[2] ?? DEFAULT_CONTENTS_DIR;
   const stationsDir = process.argv[3] ?? DEFAULT_STATIONS_DIR;
+  const itemDir = process.argv[4] ?? path.join(stationsDir, "..", "item");
   for (const [label, dir] of [["ItemsAdder contents", contentsDir], ["crafting stations", stationsDir]]) {
     if (!existsSync(dir) || !statSync(dir).isDirectory()) {
       console.error(
@@ -378,10 +598,11 @@ if (isMain) {
       lines.push(`SKIP      ${id} (x${count}) -- declared by no pack`);
       continue;
     }
-    const { name, texture, reasons, conflicts } = resolveId(contentsDir, entries);
+    const { name, material, texture, reasons, conflicts } = resolveId(contentsDir, entries);
     for (const conflict of conflicts) lines.push(`CONFLICT  ${id}: ${conflict}`);
     const record = {};
     if (name) record.name = name;
+    if (material) record.material = material;
 
     if (texture) {
       const destName = `${id}.png`;
@@ -402,6 +623,9 @@ if (isMain) {
         );
       }
       record.texture = `${ITEMSADDER_TEXTURE_DIR}/${destName}`;
+      record.sourceKind = texture.sourceKind ?? "flat-sprite";
+      record.sourceConfig = texture.entry.source;
+      record.sourceTexture = path.relative(contentsDir, texture.file).split(path.sep).join("/");
     } else {
       lines.push(`SKIP      ${id} (x${count}) -- ${reasons.join(" | ")}`);
     }
@@ -419,5 +643,13 @@ if (isMain) {
     `\n${referenced.size} referenced ItemsAdder ids; ${withTexture} with a sprite ` +
       `(${copied} copied, ${kept} already present); ` +
       `manifest: ${path.relative(FRONTEND_ROOT, OUTPUT_MANIFEST).split(path.sep).join("/")}`
+  );
+
+  const mmo = await extractMmoItemsTextures(contentsDir, stationsDir, itemDir);
+  for (const line of mmo.unresolved) console.log(`MMO SKIP  ${line}`);
+  console.log(
+    `${mmo.referenced} referenced MMOItems ids; ${mmo.customConfigured} configure custom-model-data; ` +
+      `${mmo.customResolved} resolved to exact pack sprites (${mmo.copied} copied, ${mmo.kept} unchanged); ` +
+      `manifest: ${path.relative(FRONTEND_ROOT, MMOITEMS_OUTPUT_MANIFEST).split(path.sep).join("/")}`
   );
 }

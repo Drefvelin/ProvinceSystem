@@ -4,6 +4,7 @@ import {
   DataTable,
   SeeAlso,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -76,7 +77,7 @@ export default function FactionsPage() {
         Halls, Workshops, Storehouses). The faction leader runs the &quot;base guild&quot; automatically.
         From <code className="text-[var(--tfmc-accent)]">/faction menu</code> you can also open
         government, laws, taxes, council and elections: under a democracy the leader can&apos;t be
-        set directly; players vote at voting booths instead.
+        set directly; players vote at <WikiItemLink name="Voting Booth">voting booths</WikiItemLink> instead.
       </p>
 
       <WikiSectionHeading id="war" intro="Battles are scheduled events, not spontaneous fights.">

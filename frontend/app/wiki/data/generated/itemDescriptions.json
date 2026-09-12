@@ -1,0 +1,511 @@
+{
+  "mmoitem:ARMORS:DOCTORS_MASK": [
+    "Offers protection against Diseases.",
+    "WARNING: Usage outside of medical RP is strictly forbidden!"
+  ],
+  "mmoitem:ARMORS:DOCTORS_COAT": [
+    "Offers protection against Diseases.",
+    "WARNING: Usage outside of medical RP is strictly forbidden!"
+  ],
+  "mmoitem:ARMORS:DOCTORS_LEGGINGS": [
+    "Offers protection against Diseases.",
+    "WARNING: Usage outside of medical RP is strictly forbidden!"
+  ],
+  "mmoitem:ARMORS:DOCTORS_BOOTS": [
+    "Offers protection against Diseases.",
+    "WARNING: Usage outside of medical RP is strictly forbidden!"
+  ],
+  "mmoitem:BOOKS:SKILL_REALLOCATION_BOOK": [
+    "Right Click to gain a Skill Reallocation Point."
+  ],
+  "mmoitem:CONSUMABLES:UNSOCKET_TOOL": [
+    "Drag & Click onto an item to unsocket",
+    "its upgrade item, Gemstone, or Rune."
+  ],
+  "mmoitem:CONSUMABLES:MAJOR_MANA_POTION": [
+    "■ Restores 20% Mana if Max > 50"
+  ],
+  "mmoitem:CONSUMABLES:GREATER_MANA_POTION": [
+    "■ Restores 20% Mana if Max > 50"
+  ],
+  "mmoitem:CURRENCY:GOLD_COIN": [
+    "Currency of a fallen empire.",
+    "Worth: 1d"
+  ],
+  "mmoitem:CURRENCY:HANDFUL_OF_COINS": [
+    "Currency of a fallen empire.",
+    "Worth: 5d"
+  ],
+  "mmoitem:CURRENCY:STACK_OF_COINS": [
+    "Currency of a fallen empire.",
+    "Worth: 10d"
+  ],
+  "mmoitem:CURRENCY:POUCH_OF_COINS": [
+    "Currency of a fallen empire.",
+    "Worth: 100d"
+  ],
+  "mmoitem:CURRENCY:SILVER_COIN": [
+    "Currency of a fallen empire.",
+    "Worth: 0.01d"
+  ],
+  "mmoitem:CURRENCY:SILVER_COIN5": [
+    "Currency of a fallen empire.",
+    "Worth: 0.05d"
+  ],
+  "mmoitem:CURRENCY:SILVER_COIN10": [
+    "Currency of a fallen empire.",
+    "Worth: 0.1d"
+  ],
+  "mmoitem:CURRENCY:ENCHANTED_DUST": [
+    "A mystical ingredient used in",
+    "the crafting of Magical items."
+  ],
+  "mmoitem:INSTRUMENTS:ACCORDION": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:BAGPIPE": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:CELTIC_HARP": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:DULCIMER": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:FLUTE": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:KALIMBA": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:LUTE": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:TRUMPET": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:INSTRUMENTS:VIELLE": [
+    "Hold in off-hand to play it"
+  ],
+  "mmoitem:KEYS:IRON_KEY": [
+    "Requires a Basic Lockpicking Set to be Lockpicked."
+  ],
+  "mmoitem:LOCKPICKS:BASIC_LOCKPICK_SET": [
+    "Success Chance: 5%",
+    "Break Chance: 40%",
+    "Left Click on a locked door to attempt a Lockpick.",
+    "HINT: Using this item will consume the entire",
+    "stack. Make sure to unstack before using."
+  ],
+  "mmoitem:LOCKPICKS:STRONG_LOCKPICK_SET": [
+    "Success Chance: 5%",
+    "Break Chance: 50%",
+    "Left Click on a locked door to attempt a Lockpick.",
+    "HINT: Using this item will consume the entire",
+    "stack. Make sure to unstack before using."
+  ],
+  "mmoitem:LOOT:INFUSION_TOKEN": [
+    "Can be used to Infuse up to 10",
+    "Gemstones in an Enchanting Table.",
+    "HINT: The more Gemstones you infuse at a time,",
+    "the lower the average Success Chance of each."
+  ],
+  "mmoitem:LOOT:COMMON_ITEM_SKIN_SCROLL": [
+    "Used to Reskin an item.",
+    "Type /armourshop to use."
+  ],
+  "mmoitem:MATERIALS:IGNITIUM": [
+    "An uncommon crystal used as",
+    "the catalyst in Coke production."
+  ],
+  "mmoitem:MATERIALS:COKE": [
+    "A highly carbonic fuel primarily",
+    "used in the production of Steel."
+  ],
+  "mmoitem:MATERIALS:RAW_TIN": [
+    "A rare, malleable metal often used",
+    "to produce alloys such as Bronze."
+  ],
+  "mmoitem:MATERIALS:ABYSSALITE_FRAGMENT": [
+    "An extremely tough fragment of metal,",
+    "serving as an ideal upgrade to Steel."
+  ],
+  "mmoitem:MATERIALS:MYTHRIL_FRAGMENT": [
+    "A metal of legend, renowned for its",
+    "hardness and durability. A worthy",
+    "successor to Abyssalite in utility."
+  ],
+  "mmoitem:MATERIALS:MYTHRILITE": [
+    "One of the rarest materials in all",
+    "of Cerrith; it the key to unlocking",
+    "the untapped potential of Mythril."
+  ],
+  "mmoitem:MATERIALS:ALCHEMY_POWDER": [
+    "Used in various alchemical recipes."
+  ],
+  "mmoitem:MATERIALS:TRANSMUTATION_POWDER": [
+    "Used in various alchemical recipes."
+  ],
+  "mmoitem:MATERIALS:CARBON_POWDER": [
+    "One of the three components",
+    "in the Black Powder Triangle."
+  ],
+  "mmoitem:MATERIALS:SULFUR": [
+    "One of the three components",
+    "in the Black Powder Triangle."
+  ],
+  "mmoitem:MATERIALS:SALTPETER": [
+    "One of the three components",
+    "in the Black Powder Triangle."
+  ],
+  "mmoitem:MATERIALS:DETOXED_LEATHER": [
+    "Used to craft the Plague Doctor outfit."
+  ],
+  "mmoitem:MATERIALS:ARCANE_CRYSTAL": [
+    "A crystal found deep below the",
+    "earth, but not of this Plane..."
+  ],
+  "mmoitem:MATERIALS:RARE_FEATHER": [
+    "Used to make weapons and armor on the Anvil."
+  ],
+  "mmoitem:MATERIALS:EPIC_FEATHER": [
+    "Used to make weapons and armor on the Anvil."
+  ],
+  "mmoitem:MATERIALS:LEGENDARY_FEATHER": [
+    "Used to make weapons and armor on the Anvil."
+  ],
+  "mmoitem:MEDICINES:MINOR_FOCUS_POTION": [
+    "Restores 50 Mental Points."
+  ],
+  "mmoitem:MEDICINES:HERB_MIXTURE": [
+    "A mixture of various herbs."
+  ],
+  "mmoitem:MEDICINES:VIRAL_SERUM": [
+    "A potent but effective serum."
+  ],
+  "mmoitem:MEDICINES:ROOT_MIXTURE": [
+    "A mixture of various roots."
+  ],
+  "mmoitem:MEDICINES:COOLING_SERUM": [
+    "Cold to the touch."
+  ],
+  "mmoitem:MEDICINES:STABILIZING_SERUM": [
+    "Stabilizes a patient on death's door."
+  ],
+  "mmoitem:MEDICINES:FEVER_FLUSH": [
+    "Extremely strong medication."
+  ],
+  "mmoitem:MEDICINES:FIRELEAF_BREW": [
+    "Warm to the touch."
+  ],
+  "mmoitem:MEDICINES:FROST_SERUM": [
+    "Feels oddly freezing."
+  ],
+  "mmoitem:MEDICINES:RERYTHMETIZER": [
+    "Pulsating rhythmically."
+  ],
+  "mmoitem:MEDICINES:NASAL_FLUSH": [
+    "Highly unpleasant."
+  ],
+  "mmoitem:MEDICINES:SHROOM_SERUM": [
+    "A fungal concoction."
+  ],
+  "mmoitem:MEDICINES:NEURON_STABILIZER": [
+    "Soothing and stabilizing."
+  ],
+  "mmoitem:MEDICINES:VEIN_DETOXIFIER": [
+    "Purifies the blood."
+  ],
+  "mmoitem:MEDICINES:MUSCLE_STIMULATOR": [
+    "Helps to build strength."
+  ],
+  "mmoitem:MEDICINES:COUGH_SYRUP": [
+    "Calms an irritated throat."
+  ],
+  "mmoitem:PETS:TAMING_ITEM": [
+    "Used to tame an animal.",
+    "Right Click an animal to tame it."
+  ],
+  "mmoitem:PETS:COOWNERSHIP_ITEM": [
+    "Shares the ownership of an animal.",
+    "Right Click an animal to select it.",
+    "Right Click a player to give co-ownership.",
+    "Linked tokens can be used directly by other players."
+  ],
+  "mmoitem:PETS:ANIMAL_WHISTLE": [
+    "Used to find mounts.",
+    "Right Click to locate nearby mounts."
+  ],
+  "mmoitem:PETS:UNIVERSAL_FEED": [
+    "Used daily to feed your animals.",
+    "Right Click an animal to",
+    "boost its happiness."
+  ],
+  "mmoitem:PETS:CARING_ITEM": [
+    "Used daily to pet your animals.",
+    "Right Click an animal to",
+    "boost its happiness."
+  ],
+  "mmoitem:PETS:FARMREPORT_ITEM": [
+    "Right Click to check the",
+    "status of your animals."
+  ],
+  "mmoitem:PETS:STABLECHUNK_ITEM": [
+    "Right Click in a chunk to turn it",
+    "into a stable chunk for animals.",
+    "HINT: Holding F3 and pressing",
+    "G shows chunk borders."
+  ],
+  "mmoitem:PETS:COLLECTOR_ITEM": [
+    "Used to collect animal goods.",
+    "Right Click an animal",
+    "to collect its Bundle."
+  ],
+  "mmoitem:PETS:GREEN_CONCOCTION": [
+    "Grants a little EXP boost to your pets"
+  ],
+  "mmoitem:PETS:RED_CONCOCTION": [
+    "Grants a little EXP boost to your pets"
+  ],
+  "mmoitem:PETS:MEAT_TREAT": [
+    "Delicious treat with healing properties"
+  ],
+  "mmoitem:PETS:FISH_TREAT": [
+    "Delicious treat with healing properties"
+  ],
+  "mmoitem:RESEARCH:SCRIBE_PAPER": [
+    "Used to create various Research",
+    "Papers in a Cartography Table.",
+    "HINT: Check the Research category of /codex",
+    "to get hints on which items are Researchable."
+  ],
+  "mmoitem:RESEARCH:LOST_KNOWLEDGE_SCRAP": [
+    "A rare scrap of esoteric knowledge.",
+    "Perhaps it can be used in Research...",
+    "HINT: Check the Cartography Table for recipes."
+  ],
+  "mmoitem:RESEARCH:RARE_RESEARCH_PAPER": [
+    "Study: @@@@@@@ @@@@@@@@",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_IGNITIUM": [
+    "Study: Ignitium",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_BRONZE": [
+    "Study: Bronze",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_ABYSSALITE": [
+    "Study: Abyssalite",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_MYTHRIL": [
+    "Study: Mythril",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_DEMONWOOD": [
+    "Study: Demonwood",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_ELDERWOOD": [
+    "Study: Elderwood",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_ENCHANTED_DUST": [
+    "Study: Enchanted Dust",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_GUNPOWDER": [
+    "Study: Gunpowder",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_ARCANE_CRYSTAL": [
+    "Study: Arcane Crystals",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_RUNESTONE": [
+    "Study: Runestones",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_DENAR": [
+    "Study: Imperial Denar",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:RESEARCH:R_INFUSION": [
+    "Study: Gemstone Infusion",
+    "Research this paper in a Lectern",
+    "to unlock its secrets and gain EXP!"
+  ],
+  "mmoitem:SURGERY:DEFIBRILLATOR": [
+    "If a patients heart stops,",
+    "(which can happen when they are anesthetized)",
+    "zap then with this to fire it up again."
+  ],
+  "mmoitem:SURGERY:PINS": [
+    "When a bone is absolutely shattered,",
+    "you need to use pins to put it back together.",
+    "Only once you have opened an incision, of course."
+  ],
+  "mmoitem:SURGERY:SURGICAL_GLOVE": [
+    "Once you find the problem, just fix it."
+  ],
+  "mmoitem:SURGERY:ANTIBIOTICS": [
+    "If someone gets an infection,",
+    "antibiotics should clear it up."
+  ],
+  "mmoitem:SURGERY:CLAMP": [
+    "This can reduce a patients bleeding significantly,",
+    "but only when you have open incisions."
+  ],
+  "mmoitem:SURGERY:ULTRASOUND": [
+    "This detailed scan can inform you of any broken bones,",
+    "tumors, or other physical issues within the pateints body."
+  ],
+  "mmoitem:SURGERY:LAB_KIT": [
+    "This kit will identify different microbes",
+    "that could be present in the patient."
+  ],
+  "mmoitem:SURGERY:TRANSFUSION": [
+    "If a patients blood supply gets",
+    "dangerously low, this will fill it up."
+  ],
+  "mmoitem:SURGERY:SCALPEL": [
+    "Use this to cut people open."
+  ],
+  "mmoitem:SURGERY:STITCHES": [
+    "Use this to close incisions and remove bleeding."
+  ],
+  "mmoitem:SURGERY:ANESTHETIC": [
+    "You probably dont want to operate on somebody",
+    "unless they are unconcious.",
+    "Use this to knock them out."
+  ],
+  "mmoitem:SURGERY:ANTISEPTIC": [
+    "This is used for cleaning an area before you cut it open."
+  ],
+  "mmoitem:SURGERY:SPLINT": [
+    "If somebody has a broken bone,",
+    "you better splint it up or it will heal all crooked."
+  ],
+  "mmoitem:SURGERY:SPONGE": [
+    "If you make a mess, a sponge can suck it up easily."
+  ],
+  "mmoitem:TOOLS:IRON_HUNTING_KNIFE": [
+    "Concealable during an RP search."
+  ],
+  "mmoitem:TOOLS:STEEL_HOE": [
+    "Harvest I"
+  ],
+  "mmoitem:TOOLS:ABYSSALITE_HOE": [
+    "Harvest II"
+  ],
+  "mmoitem:TOOLS:MYTHRIL_HOE": [
+    "Harvest III"
+  ],
+  "mmoitem:TOOLS:IRON_ALCHEMY_COLLECTOR": [
+    "Can harvest Alchemy Materials from certain things..."
+  ],
+  "mmoitem:TOOLS:STEEL_ALCHEMY_COLLECTOR": [
+    "Can harvest Alchemy Materials from certain things..."
+  ],
+  "mmoitem:TOOLS:ABYSSALITE_ALCHEMY_COLLECTOR": [
+    "Can harvest Alchemy Materials from certain things..."
+  ],
+  "mmoitem:TOOLS:MYTHRIL_ALCHEMY_COLLECTOR": [
+    "Can harvest Alchemy Materials from certain things..."
+  ],
+  "mmoitem:TOOLS:GOLDSMITH_BRANDING_TOOL": [
+    "A tool used in Goldsmithing at a Smithing Table.",
+    "Right Click to start a project.",
+    "Left Click to finish a project.",
+    "Shift-Right Click to check a project progress.",
+    "Shift-Left Click to cancel and refund a project."
+  ],
+  "mmoitem:TOOLS:GOLDSMITH_HAMMER": [
+    "A tool used in Goldsmithing at a Smithing Table.",
+    "Left Click to peform a regular smithing hit."
+  ],
+  "mmoitem:TOOLS:SMALL_GOLDSMITH_HAMMER": [
+    "A tool used in Goldsmithing at a Smithing Table.",
+    "Left Click to peform a small smithing hit."
+  ],
+  "mmoitem:TOOLS:GOLDSMITH_TINKER_TOOL": [
+    "A tool used in Goldsmithing at a Smithing Table.",
+    "Left Click to peform a tinkering smithing hit."
+  ],
+  "mmoitem:TOOLS:SKIN_BRANDING_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Right Click to start a project.",
+    "Left Click to finish a project.",
+    "Shift-Right Click to check a project progress.",
+    "Shift-Left Click to cancel and refund a project."
+  ],
+  "mmoitem:TOOLS:HAMMER_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a regular hammer hit."
+  ],
+  "mmoitem:TOOLS:SMALL_HAMMER_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a small hammer hit."
+  ],
+  "mmoitem:TOOLS:ENGRAVING_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a regular engrave hit."
+  ],
+  "mmoitem:TOOLS:WHITTLING_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a regular whittle hit."
+  ],
+  "mmoitem:TOOLS:ETCHING_TOOL": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a regular etching hit."
+  ],
+  "mmoitem:TOOLS:SEWING_NEEDLE": [
+    "A tool used in Artisanship and Forging",
+    "at a Woodworking Table or Anvil.",
+    "Left Click to peform a regular sewing hit."
+  ],
+  "mmoitem:TOOLS:LOCKPICK": [
+    "Shift Right Click any chest to lockpick it."
+  ],
+  "mmoitem:TOOLS:GEIGER_COUNTER": [
+    "A device that detects traces of Arcanum"
+  ],
+  "mmoitem:TOOLS:DEAD_GEIGER_COUNTER": [
+    "A device that detects traces of Arcanum"
+  ],
+  "mmoitem:UTILS:THERMOMETER": [
+    "Right Click to check someone's body temperature.",
+    "Shift-Right Click to check your own temperature."
+  ],
+  "mmoitem:UTILS:LORESTONE": [
+    "Drag & Click onto an item to add a line of custom lore."
+  ],
+  "mmoitem:UTILS:NAMESTONE": [
+    "Drag & Click onto an item to give it a custom name."
+  ],
+  "mmoitem:UTILS:INSURANCE_TICKET": [
+    "Allows you to fetch your Angel",
+    "Chest from anywhere in the world.",
+    "WARNING: Usage in PvP or RP is strictly forbidden!"
+  ]
+}

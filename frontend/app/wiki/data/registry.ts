@@ -31,11 +31,7 @@ import { recyclerSection } from "./recycler";
 import { researchSection } from "./research";
 import { serverFeaturesSection } from "./server-features";
 import { sittingSection } from "./sitting";
-// TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. The guide's
-// Stations pages are unfinished, so the section is unregistered; its recipes are
-// still fed into `allRecipes` below via `stationRecipes` directly.
-// import { stationsSection } from "./stations";
-import { stationRecipes } from "./station-recipes";
+import { stationsSection } from "./stations";
 import { thieverySection } from "./thievery";
 import { vehiclesSection } from "./vehicles";
 import type {
@@ -93,21 +89,12 @@ export const wikiSections: readonly WikiSection[] = [
   instrumentsSection,
   recyclerSection,
   materialsSection,
-  // TEMPORARILY DISABLED: Stations section - re-enable by uncommenting (and restore
-  // the `stationsSection` import plus the `allRecipes` note below).
-  // stationsSection,
+  stationsSection,
   commandIndexSection,
 ];
 
 /** Every recipe in the wiki, derived from the registry. Never hand-maintained. */
-export const allRecipes: readonly Recipe[] = [
-  ...wikiSections.flatMap((s) => s.recipes ?? []),
-  // TEMPORARILY DISABLED: Stations section - re-enable by deleting this spread once
-  // `stationsSection` is back in `wikiSections`. The section carries the generated
-  // station recipes, which the material catalogue and `getRecipesForStation()`
-  // depend on; unregistering the section must not strip them from the index.
-  ...stationRecipes,
-];
+export const allRecipes: readonly Recipe[] = wikiSections.flatMap((s) => s.recipes ?? []);
 
 /** Every registered command set, derived from the registry. Never hand-maintained. */
 export const allCommands: readonly WikiCommandSet[] = wikiSections.flatMap((s) =>

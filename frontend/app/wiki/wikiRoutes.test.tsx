@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import * as wikiComponents from "@/app/components/wiki";
+import WikiOverviewPage from "./page";
 import { navItems, overviewNavItem, wikiSections } from "./data";
 
 type PageModule = { default: () => React.ReactNode | Promise<React.ReactNode> };
@@ -45,6 +46,10 @@ describe("public wiki page entry points", () => {
 
     const html = renderToStaticMarkup(await module.default());
     expect(html, `${href} rendered no heading`).toMatch(/<h1\b/);
+    expect(html.match(/Last modified:/g), `${href} must show one revision date`).toHaveLength(1);
+    expect(html, `${href} must expose a valid machine-readable revision date`).toMatch(
+      /<time dateTime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}<\/time>/
+    );
 
     const publicRoutes = new Set([overviewNavItem.href, ...discoveredPages.map((page) => page.href)]);
     const links = [...html.matchAll(/href="(\/wiki(?:\/[^":#]*):)/g)].map((match) => match[1]);
@@ -61,6 +66,27 @@ describe("public wiki page entry points", () => {
       .map((match) => match[1]);
     for (const asset of assets) {
       expect(existsSync(join(process.cwd(), "public", asset)), `${href} references missing asset ${asset}`).toBe(true);
+    }
+  });
+
+  it("renders the overview through the same dated frame", () => {
+    const html = renderToStaticMarkup(<WikiOverviewPage />);
+    expect(html.match(/Last modified:/g)).toHaveLength(1);
+    expect(html).toMatch(/<time dateTime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}<\/time>/);
+  });
+
+  it("keeps every static and dynamic wiki entry point on the dated frame", () => {
+    const wikiRoot = join(process.cwd(), "app", "wiki");
+    const pageFiles = [
+      join(wikiRoot, "page.tsx"),
+      ...Object.keys(import.meta.glob("./**/page.tsx", { eager: false }))
+        .map((modulePath) => join(wikiRoot, modulePath.slice(2))),
+    ];
+
+    expect(pageFiles.length).toBeGreaterThan(1);
+    for (const pageFile of pageFiles) {
+      const source = readFileSync(pageFile, "utf8");
+      expect(source, `${pageFile} must use WikiPage`).toMatch(/<WikiPage\b/);
     }
   });
 

@@ -5,10 +5,8 @@ import { gettingStartedSection } from "../data/getting-started";
 const steps = [
   ["1", "Create a roleplay character", "/rpcharacter create", "/wiki/characters"],
   ["2", "Claim a starting kit", "/rpcharacter kit starter", "/wiki/characters"],
-  // TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. Restore this row and renumber the
-  // materials row below back to "4".
-  // ["3", "Learn where custom recipes are made", "Find the station listed on a recipe, then interact with its block", "/wiki/stations"],
-  ["3", "Locate and research custom materials, such as steel", "Look up where to find materials and how to make them", "/wiki/materials"],
+  ["3", "Learn where custom recipes are made", "Find the station listed on a recipe, then interact with its block", "/wiki/stations"],
+  ["4", "Locate and research custom materials, such as steel", "Look up where to find materials and how to make them", "/wiki/materials"],
 ] as const;
 
 export default function GettingStartedPage() {

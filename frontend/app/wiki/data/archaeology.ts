@@ -1,12 +1,13 @@
 import { V } from "./helpers";
 import { stationRecipe } from "./station-recipes";
 import type { Recipe, Slot, WikiCommandSet, WikiSection } from "./types";
-// Source: docs/wiki-research/a2-gems-dowsing-archaeo.md, section 3.
+// Recipe source: live MMOItems crafting-station config. Player-flow source:
+// the user-supplied Archaeo gameplay guide (September 2026).
 
 const item = (name: string, texture: string, qty = 1): Slot => ({ name, qty, texture: V(texture) });
 
 /** Crafted at a vanilla Crafting Table, not at a station: it has no server-config counterpart. */
-export const archeologyTableRecipe: Recipe = { key:"archeology-table", title:"Archeology Table", station:"Crafting Table", ingredients:[item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Bone","bone.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png")], output:{name:"Archeology Table",qty:1,model:{url:"/wiki/models/archeology-station.json",texture:"/wiki/textures/stations/archeology-station.png"}}};
+export const archeologyTableRecipe: Recipe = { key:"archeology-table", title:"Archeology Table", station:"Crafting Table", ingredients:[item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Bone","bone.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png"),item("Oak Planks","oak_planks.png")], output:{name:"Archeology Table",qty:1,sourceId:"itemsadder:archeology_station",model:{url:"/wiki/models/archeology-station.json",texture:"/wiki/textures/stations/archeology-station.png"}}};
 
 /**
  * The table plus the twelve workshop recipes.
@@ -1052,4 +1053,4 @@ export const archaeologyTools = {
 };
 export const archaeologyTables = [{ title: "Excavation tools", ...digProfiles },{ title: "Lab tools", ...labTools },{ title: "Stains and the correct tool", ...labStains },{ title: "Site interest levels", ...interestLevels },{ title: "Depth bands", ...strata },{ title: "Find materials", ...findMaterials },{ title: "All nine buried finds", ...buriedArtifacts },{ title: "Study notes after registration", ...studyNotes },{ title: "Site hints", ...siteHints },{ title: "What the hints tell you", ...hintReadings },{ title: "Conservation grades", ...conservationGrades },{ title: "Classification paths", ...interpretationProfiles },{ title: "Function: what was it for?", ...functionReadings },{ title: "Formation: how did it reach this layer?", ...formationReadings },{ title: "Epoch: which time?", ...epochReadings },{ title: "Species: individual and animal finds", ...speciesReadings },{ title: "Deposit: how was it left?", ...depositReadings },{ title: "Workshop recipes", ...archaeologyTools }];
 export const archaeologyCommands: WikiCommandSet = {system: "Archaeo", href: "/wiki/archaeology", commands: [], excludedStaffCommands: ["/archaeo give ...", "/archaeo ruin ...", "/archaeo workday ...", "/archaeo find ...", "/archaeo sketch ...", "/archaeo reload"]};
-export const archaeologySection: WikiSection = {nav: {href: "/wiki/archaeology", label: "Archaeology", category: "magic", blurb: "Track, excavate, conserve and interpret buried finds; installed but awaiting registered sites."}, recipes: [archeologyTableRecipe], commands: archaeologyCommands};
+export const archaeologySection: WikiSection = {nav: {href: "/wiki/archaeology", label: "Archaeology", category: "magic", blurb: "Find a ruin, establish a field camp, excavate by sound, then clean, register, and display recovered finds."}, recipes: [archeologyTableRecipe], commands: archaeologyCommands};

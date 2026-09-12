@@ -22,6 +22,7 @@ export const recyclingStationRecipe: Recipe = {
   output: {
     name: "Recycling Station",
     qty: 1,
+    sourceId: "itemsadder:recycling_station",
     model: {
       url: M("recycling-station.json"),
       texture: T("stations/recycling-station.png"),

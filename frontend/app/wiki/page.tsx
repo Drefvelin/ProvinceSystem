@@ -1,17 +1,15 @@
 import Link from "next/link";
 
+import { WikiPage } from "@/app/components/wiki";
 import { navItemsForCategory, populatedCategories } from "./data";
 
 export default function WikiOverviewPage() {
   return (
-    <div className="max-w-2xl">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Gameplay Guide
-      </h1>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
-        TFMC Season 5: crafting stations, recipes, and mechanics for the custom systems on
-        the server. More sections will be added as the season goes on.
-      </p>
+    <WikiPage
+      title="Gameplay Guide"
+      intro="TFMC Season 5: crafting stations, recipes, and mechanics for the custom systems on the server. More sections will be added as the season goes on."
+      width="sm"
+    >
 
       {populatedCategories().map((category) => (
         <section key={category.key} className="mt-8">
@@ -36,6 +34,6 @@ export default function WikiOverviewPage() {
           </div>
         </section>
       ))}
-    </div>
+    </WikiPage>
   );
 }

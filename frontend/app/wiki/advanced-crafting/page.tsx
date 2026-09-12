@@ -6,8 +6,10 @@ import {
   ItemChip,
   ItemGallery,
   SeeAlso,
+  StationLink,
   StatGrid,
   WikiPage,
+  WikiItemLink,
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
@@ -209,12 +211,12 @@ export default function AdvancedCraftingPage() {
       title="AdvancedCrafting"
       intro={
         <>
-          Hands-on blacksmithing: pick a recipe at a <strong>Weapon Station</strong>, feed it raw
+          Hands-on blacksmithing: pick a recipe at a <strong><StationLink name="Forging Station" /></strong>, feed it raw
           materials, then physically hammer, carve, etch or sew it with smithing tools. Every
           ingredient you load adds a number of required hits per tool, and you work the station
           until each tool&apos;s counter is full: it refuses extra hits with a tool that is already
           done, and refuses to finish while any counter is short. The finished item has a quality
-          grade, stats and socket slots. A second station, the <strong>Alloy Forge</strong>, lets you invent and
+          grade, stats and socket slots. A second station, the <strong><StationLink name="Alloy Forge" /></strong>, lets you invent and
           name your own metal alloys, which anyone can then use as an ingredient.
         </>
       }
@@ -225,11 +227,11 @@ export default function AdvancedCraftingPage() {
         station refuses a material, continue that profession until you reach its required rank.
       </Callout>
 
-      <WikiSectionHeading id="crafting-a-weapon" intro="The loop at the Weapon Station.">
+      <WikiSectionHeading id="crafting-a-weapon" intro={<>The loop at the <StationLink name="Forging Station" />.</>}>
         Crafting a weapon or piece of armor
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Place a Weapon Station. Recipe below.</li>
+        <li>Place a <StationLink name="Forging Station" />. Recipe below.</li>
         <li>
           Right-click it. A <strong>Select Category</strong> menu opens (Armor / Weapons / Bows),
           then a <strong>Select Recipe</strong> menu. Pick one: a station can only hold one
@@ -254,14 +256,14 @@ export default function AdvancedCraftingPage() {
 
       <WikiSectionHeading
         id="recipes"
-        intro="All 35 recipes the Weapon Station offers, in the order its category menu lists them."
+        intro={<>All 35 recipes the <StationLink name="Forging Station" /> offers, in the order its category menu lists them.</>}
       >
-        Weapon Station recipes
+        <StationLink name="Forging Station" /> recipes
       </WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         Every one of these is a <strong>template</strong>, not a fixed recipe. The listed
         quantities are ingredient <em>types</em>, so &quot;4 × Metal&quot; means any four metal
-        ingredients: four Iron Ingots, four Mythril Ingots, a mix, or your own alloy. Which ones
+        ingredients: four Iron Ingots, four <WikiItemLink name="Mythril Ingot">Mythril Ingots</WikiItemLink>, a mix, or your own alloy. Which ones
         you pick is what changes the finished item. The name is generated at craft time, so the{" "}
         <span className="italic text-[var(--tfmc-accent)]">Material</span> part of each output
         name below is a placeholder rather than a literal word. None of the 35 has a crafting
@@ -349,7 +351,7 @@ export default function AdvancedCraftingPage() {
         <CraftingGrid recipe={alloyForgeRecipe} />
       </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        The <strong>Ingredient Converter</strong> turns a raw material into an AdvancedCrafting
+        The <strong><StationLink name="Ingredient Converter" /></strong> turns a raw material into an AdvancedCrafting
         ingredient: right-click it holding a listed material and it opens a{" "}
         <strong>Stat Preview</strong> showing what stats that ingredient contributes. Holding
         something with no matching stats gives &quot;This item has no stats matching any
@@ -412,7 +414,7 @@ export default function AdvancedCraftingPage() {
         ))}
       </ul>
 
-      <p className="mt-6 text-sm text-[var(--tfmc-mist)]">Leather, feather, wool, paper and dust.</p>
+      <p className="mt-6 text-sm text-[var(--tfmc-mist)]"><WikiItemLink name="Leather" />, feather, wool, paper and dust.</p>
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {["Leather", "Feather", "Wool", "Paper", "Enchanted Dust"].map((type) => (
           <section
@@ -431,17 +433,17 @@ export default function AdvancedCraftingPage() {
         ))}
       </div>
 
-      <WikiSectionHeading id="alloy-forge" intro="Invent your own named metal at the Alloy Forge.">
+      <WikiSectionHeading id="alloy-forge" intro={<>Invent your own named metal at the <StationLink name="Alloy Forge" />.</>}>
         Inventing an alloy
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Place an Alloy Forge (recipe above).</li>
+        <li>Place an <StationLink name="Alloy Forge" /> (recipe above).</li>
         <li>Right-click the forge holding ingredients to load them.</li>
         <li>
           The forge tracks one Base: only a metal or wood ingredient can fill it. The only
           catalysts a metal or wood base accepts are <strong>crystal</strong> ingredients: the
-          gemstones and other crystals listed above. Leather, feather, wool, paper and enchanted
-          dust are not valid alloy catalysts (<code>config.yml:47-51</code>).
+          gemstones and other crystals listed above. <WikiItemLink name="Leather" />, feather, wool, paper and <WikiItemLink name="Enchanted Dust">enchanted dust</WikiItemLink>{" "}
+          are not valid alloy catalysts (<code>config.yml:47-51</code>).
         </li>
         <li>Forge it. You need at least 2 ingredients total (a base plus at least one catalyst).</li>
         <li>
@@ -469,7 +471,7 @@ export default function AdvancedCraftingPage() {
         showAliases={false}
       />
 
-      <SeeAlso hrefs={["/wiki/materials", /* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/commands", "/wiki/recycler"]} />
+      <SeeAlso hrefs={["/wiki/materials", "/wiki/stations", "/wiki/commands", "/wiki/recycler"]} />
     </WikiPage>
   );
 }

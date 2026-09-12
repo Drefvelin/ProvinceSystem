@@ -1,5 +1,10 @@
 import { M, T, V, empty } from "./helpers";
+import { alloyForgeRecipe, ingredientConverterRecipe, weaponStationRecipe } from "./advanced-crafting";
+import { archeologyTableRecipe } from "./archaeology";
+import { magicStationRecipe } from "./magic";
+import { recyclingStationRecipe } from "./recycler";
 import { stationRecipes } from "./station-recipes";
+import { constructionStations } from "./vehicle-construction";
 import type { Recipe, StationInfo, WikiSection } from "./types";
 
 // ---------- Stations ----------
@@ -32,13 +37,6 @@ const dockyardModel = { url: M("vehicles/dockyard.json"), textures: {
   top: vehicleStationTexture("dockyard", "top"),
   particle: vehicleStationTexture("dockyard", "side"),
 } };
-const grindstoneModel = { url: M("stations/grindstone.json"), textures: {
-  pivot: T("stations/grindstone/pivot.png"),
-  round: T("stations/grindstone/round.png"),
-  side: T("stations/grindstone/side.png"),
-  leg: T("stations/grindstone/leg.png"),
-  particle: T("stations/grindstone/side.png"),
-} };
 const fishingStationModel = { url: M("stations/fishing-station.json"), textures: {
   "2": T("stations/fishing-station/fishing-station.png"),
 } };
@@ -54,10 +52,126 @@ const mealPrepStationModel = { url: M("stations/meal-prep-station.json"), textur
   "0": T("stations/meal-prep-station/meal-prep-station.png"),
   particle: T("stations/meal-prep-station/meal-prep-station.png"),
 } };
+const brewingStandModel = { url: M("vanilla/brewing_stand.json"), textures: {
+  base: V("brewing_stand_base.png"),
+  stand: V("brewing_stand_model.png"),
+} };
+const stonecutterModel = { url: M("vanilla/stonecutter.json"), textures: {
+  bottom: V("stonecutter_bottom.png"),
+  top: V("stonecutter_top.png"),
+  side: V("stonecutter_side.png"),
+  saw: V("stonecutter_saw.png"),
+} };
+const grindstoneModel = { url: M("vanilla/grindstone.json"), textures: {
+  pivot: V("grindstone_pivot.png"),
+  round: V("grindstone_round.png"),
+  side: V("grindstone_side.png"),
+  leg: V("dark_oak_log.png"),
+} };
 
-const alchemyStationCraft: Recipe = {
-  key: "craft-alchemy-station",
-  title: "Alchemy Station",
+const vanillaSlot = (name: string, id: string, texture: string) => ({
+  name,
+  qty: 1,
+  sourceId: `vanilla:${id}`,
+  texture: V(texture),
+});
+
+const vanillaStationRecipes = {
+  brewingStand: {
+    key: "vanilla-brewing-stand",
+    title: "Brewing Stand",
+    station: "Crafting Table",
+    ingredients: [
+      empty, vanillaSlot("Blaze Rod", "blaze_rod", "blaze_rod.png"), empty,
+      vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
+      vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
+      vanillaSlot("Stone Crafting Material", "#stone_crafting_materials", "cobblestone.png"),
+      empty, empty, empty,
+    ],
+    output: vanillaSlot("Brewing Stand", "brewing_stand", "brewing_stand.png"),
+  },
+  stonecutter: {
+    key: "vanilla-stonecutter",
+    title: "Stonecutter",
+    station: "Crafting Table",
+    ingredients: [
+      empty, vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), empty,
+      vanillaSlot("Stone", "stone", "stone.png"), vanillaSlot("Stone", "stone", "stone.png"), vanillaSlot("Stone", "stone", "stone.png"),
+      empty, empty, empty,
+    ],
+    output: vanillaSlot("Stonecutter", "stonecutter", "stonecutter_top.png"),
+  },
+  grindstone: {
+    key: "vanilla-grindstone",
+    title: "Grindstone",
+    station: "Crafting Table",
+    ingredients: [
+      vanillaSlot("Stick", "stick", "stick.png"), vanillaSlot("Stone Slab", "stone_slab", "stone.png"), vanillaSlot("Stick", "stick", "stick.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty, vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      empty, empty, empty,
+    ],
+    output: vanillaSlot("Grindstone", "grindstone", "grindstone_side.png"),
+  },
+  fletchingTable: {
+    key: "vanilla-fletching-table",
+    title: "Fletching Table",
+    station: "Crafting Table",
+    ingredients: [
+      vanillaSlot("Flint", "flint", "flint.png"), vanillaSlot("Flint", "flint", "flint.png"), empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+    ],
+    output: vanillaSlot("Fletching Table", "fletching_table", "fletching_table_front.png"),
+  },
+  blastFurnace: {
+    key: "vanilla-blast-furnace",
+    title: "Blast Furnace",
+    station: "Crafting Table",
+    ingredients: [
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"), vanillaSlot("Furnace", "furnace", "furnace.png"), vanillaSlot("Iron Ingot", "iron_ingot", "iron_ingot.png"),
+      vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"), vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"), vanillaSlot("Smooth Stone", "smooth_stone", "smooth_stone.png"),
+    ],
+    output: vanillaSlot("Blast Furnace", "blast_furnace", "blast_furnace_front.png"),
+  },
+  jukebox: {
+    key: "vanilla-jukebox",
+    title: "Jukebox",
+    station: "Crafting Table",
+    ingredients: [
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Diamond", "diamond", "diamond.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"),
+    ],
+    output: vanillaSlot("Jukebox", "jukebox", "jukebox_top.png"),
+  },
+  cartographyTable: {
+    key: "vanilla-cartography-table",
+    title: "Cartography Table",
+    station: "Crafting Table",
+    ingredients: [
+      vanillaSlot("Paper", "paper", "paper.png"), vanillaSlot("Paper", "paper", "paper.png"), empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+    ],
+    output: vanillaSlot("Cartography Table", "cartography_table", "cartography_table_top.png"),
+  },
+  craftingTable: {
+    key: "vanilla-crafting-table",
+    title: "Crafting Table",
+    station: "Player Crafting",
+    ingredients: [
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), vanillaSlot("Wooden Planks", "#planks", "oak_planks.png"), empty,
+      empty, empty, empty,
+    ],
+    output: vanillaSlot("Crafting Table", "crafting_table", "crafting_table_top.png"),
+  },
+} satisfies Record<string, Recipe>;
+
+const medicineStationCraft: Recipe = {
+  key: "craft-medicine-station",
+  title: "Medicine Station",
   station: "Crafting Table",
   requirement: "None",
   ingredients: [
@@ -71,143 +185,250 @@ const alchemyStationCraft: Recipe = {
     { name: "Stone", qty: 1, texture: V("stone.png") },
     { name: "Stone", qty: 1, texture: V("stone.png") },
   ],
-  output: { name: "Alchemy Station", qty: 1, model: alchemyModel },
+  output: { name: "Medicine Station", qty: 1, sourceId: "itemsadder:medicine_station", model: alchemyModel },
 };
+
+const engineerStationCraft: Recipe = {
+  key: "craft-engineer-station",
+  title: "Engineer Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: V("copper_ingot.png") },
+    { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: V("copper_ingot.png") },
+    { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: V("copper_ingot.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    empty,
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    empty,
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+  ],
+  output: { name: "Engineer Station", qty: 1, sourceId: "itemsadder:ammunition_station", model: engineerModel },
+};
+
+const gunsmithingStationCraft: Recipe = {
+  key: "craft-gunsmithing-station",
+  title: "Gunsmithing Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: V("copper_ingot.png") },
+    { name: "Iron Ingot", qty: 1, sourceId: "vanilla:iron_ingot", texture: V("iron_ingot.png") },
+    { name: "Copper Ingot", qty: 1, sourceId: "vanilla:copper_ingot", texture: V("copper_ingot.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    empty,
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    empty,
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+  ],
+  output: { name: "Gunsmithing Station", qty: 1, sourceId: "itemsadder:gunsmithing_station", model: gunsmithingStationModel },
+};
+
+const mealPrepStationCraft: Recipe = {
+  key: "craft-meal-prep-station",
+  title: "Meal Prep Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+    { name: "Bricks", qty: 1, sourceId: "vanilla:bricks", texture: V("bricks.png") },
+  ],
+  output: { name: "Meal Prep Station", qty: 1, sourceId: "itemsadder:meal_prep_station", model: mealPrepStationModel },
+};
+
+const fishingStationCraft: Recipe = {
+  key: "craft-fishing-station",
+  title: "Fishing Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "String", qty: 1, sourceId: "vanilla:string", texture: V("string.png") },
+    { name: "String", qty: 1, sourceId: "vanilla:string", texture: V("string.png") },
+    { name: "String", qty: 1, sourceId: "vanilla:string", texture: V("string.png") },
+    { name: "Mossy Cobblestone", qty: 1, sourceId: "vanilla:mossy_cobblestone", texture: V("mossy_cobblestone.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Mossy Cobblestone", qty: 1, sourceId: "vanilla:mossy_cobblestone", texture: V("mossy_cobblestone.png") },
+    { name: "Mossy Cobblestone", qty: 1, sourceId: "vanilla:mossy_cobblestone", texture: V("mossy_cobblestone.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Mossy Cobblestone", qty: 1, sourceId: "vanilla:mossy_cobblestone", texture: V("mossy_cobblestone.png") },
+  ],
+  output: { name: "Fishing Station", qty: 1, sourceId: "itemsadder:fishing_station", model: fishingStationModel },
+};
+
+const animalStationCraft: Recipe = {
+  key: "craft-animal-station",
+  title: "Animal Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Planks", qty: 1, sourceId: "vanilla:oak_planks", texture: V("oak_planks.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+    { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") },
+  ],
+  output: { name: "Animal Station", qty: 1, sourceId: "itemsadder:animal_station", model: animalModel },
+};
+
+const stationOwnedCraftRecipes = [
+  engineerStationCraft,
+  gunsmithingStationCraft,
+  mealPrepStationCraft,
+  medicineStationCraft,
+  fishingStationCraft,
+  animalStationCraft,
+];
+
+const [engineeringTableCraft, dockyardCraft] = constructionStations;
 
 export const stations: StationInfo[] = [
   {
     slug: "weapon-station",
-    name: "Weapon Station",
+    name: "Forging Station",
     blurb: "Hands-on crafting for weapons, armour, and bows.",
     icon: T("stations/weapon-station.png"),
+    interaction: "Right click",
+    guide: { href: "/wiki/advanced-crafting", label: "AdvancedCrafting guide" },
     model: weaponModel,
+    craftRecipe: weaponStationRecipe,
   },
   {
     slug: "ingredient-converter",
     name: "Ingredient Converter",
     blurb: "Previews how a raw material contributes to an Advanced Crafting project.",
     icon: T("stations/ingredient-converter.png"),
+    interaction: "Right click",
+    guide: { href: "/wiki/advanced-crafting", label: "AdvancedCrafting guide" },
     model: converterModel,
+    craftRecipe: ingredientConverterRecipe,
   },
   {
     slug: "alloy-forge",
     name: "Alloy Forge",
     blurb: "Combines base materials and catalysts into named alloys.",
     icon: T("stations/alloy-forge.png"),
+    interaction: "Right click",
+    guide: { href: "/wiki/advanced-crafting", label: "AdvancedCrafting guide" },
     model: alloyModel,
+    craftRecipe: alloyForgeRecipe,
   },
   {
     slug: "recycling-station",
     name: "Recycling Station",
     blurb: "Returns materials from supported weapons, armour, guns, and dedicated recipes.",
     icon: T("stations/recycling-station.png"),
+    interaction: "Right click",
+    guide: { href: "/wiki/recycler", label: "Recycler guide" },
     model: recyclingModel,
+    craftRecipe: recyclingStationRecipe,
   },
   {
     slug: "fishing-station",
     name: "Fishing Station",
     blurb: "Crafts fishing rods and processes recovered fragments.",
-    // The block's only texture is a 256x96 atlas, which is unreadable at icon size.
-    // Use the rod item texture instead, as gunsmithing-station does with an ammo sprite.
     icon: T("fishing-rods/fishing_rod.png"),
+    interaction: "Right click",
     model: fishingStationModel,
+    craftRecipe: fishingStationCraft,
   },
   {
     slug: "gunsmithing-station",
     name: "Gunsmithing Station",
     blurb: "Crafts gun parts for players with the Musketeer class.",
-    // pistol.png is a UV-mapped face of the block model, not an item sprite, so it
-    // reads as a blob at 16px. Use the bronzeshot ammo item texture instead.
     icon: T("ammunition/bronzeshot.png"),
+    interaction: "Right click",
     model: gunsmithingStationModel,
+    craftRecipe: gunsmithingStationCraft,
   },
   {
     slug: "meal-prep-station",
     name: "Meal Prep Station",
     blurb: "Crafts cooking furniture and prepares food before cooking.",
-    // The block's only texture is a 64x64 model atlas, which is unreadable at icon
-    // size. No clean cookware sprite exists in the texture set, so use the vanilla
-    // campfire item sprite as the closest readable cooking icon.
     icon: V("campfire.png"),
+    interaction: "Right click",
     model: mealPrepStationModel,
+    craftRecipe: mealPrepStationCraft,
   },
   {
     slug: "block-station",
     name: "Block Station",
     blurb: "Crafts furniture, displays, and building pieces.",
-    icon: T("stations/grindstone/side.png"),
-    model: grindstoneModel,
+    icon: V("stone.png"),
+    interaction: "Shift + Right click",
+    fallbackTexture: V("stone.png"),
+    model: stonecutterModel,
+    vanillaBlock: {
+      name: "Stonecutter",
+      recipe: vanillaStationRecipes.stonecutter,
+    },
+  },
+  {
+    slug: "engineering-table",
+    name: "Engineering Table",
+    blurb: "Builds land vehicles, aircraft, trains, carts, and fixed guns from selected blueprints.",
+    icon: T("vehicle-stations/engineering_table/front.png"),
+    interaction: "Right click",
+    fallbackTexture: T("vehicle-stations/engineering_table/front.png"),
+    cubeFaces: {
+      up: T("vehicle-stations/engineering_table/top.png"),
+      down: T("vehicle-stations/engineering_table/bottom.png"),
+      north: T("vehicle-stations/engineering_table/front.png"),
+      south: T("vehicle-stations/engineering_table/side.png"),
+      east: T("vehicle-stations/engineering_table/side.png"),
+      west: T("vehicle-stations/engineering_table/side.png"),
+    },
+    craftRecipe: engineeringTableCraft,
   },
   {
     slug: "dockyard",
     name: "Dockyard",
     blurb: "Builds ships after their blueprints are selected.",
     icon: T("vehicle-stations/dockyard/front.png"),
+    interaction: "Right click",
     model: dockyardModel,
+    craftRecipe: dockyardCraft,
   },
   {
     slug: "archeology-station",
     name: "Archeology Station",
     blurb: "Field equipment for surveying, excavating, cleaning, and registering finds.",
-    // The block's only texture is a 64x64 model atlas, which is unreadable at icon
-    // size. Use the vanilla brush item sprite instead, since a brush is the
-    // vanilla archaeology tool and one of this station's own workshop recipes.
     icon: V("brush.png"),
+    interaction: "Right click",
     model: { url: M("archeology-station.json"), texture: T("stations/archeology-station.png") },
-    craftRecipe: {
-      key: "craft-archeology-station",
-      title: "Archeology Table",
-      station: "Crafting Table",
-      requirement: "None",
-      ingredients: [
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Bone", qty: 1, texture: V("bone.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-      ],
-      output: { name: "Archeology Table", qty: 1, model: { url: M("archeology-station.json"), texture: T("stations/archeology-station.png") } },
-    },
+    craftRecipe: archeologyTableRecipe,
   },
   {
     slug: "engineer-station",
     name: "Engineer Station",
     blurb: "Trace detectors, arcane fuel, ammunition, and dynamite.",
     icon: T("tools/geiger_counter.png"),
+    interaction: "Right click",
     model: engineerModel,
-    craftRecipe: {
-      key: "craft-engineer-station",
-      title: "Engineering Table",
-      station: "Crafting Table",
-      requirement: "None",
-      ingredients: [
-        { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
-        { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
-        { name: "Iron Ingot", qty: 1, texture: V("iron_ingot.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-      ],
-      output: { name: "Engineering Table", qty: 1, model: engineerModel },
-    },
+    craftRecipe: engineerStationCraft,
   },
   {
     slug: "instrument-station",
     name: "Instrument Station",
-    blurb: "All nine musical instruments, Bard class required.",
+    blurb: "Crafts musical instruments for players with the Bard class.",
     icon: V("jukebox_top.png"),
+    interaction: "Shift + Right click",
     fallbackTexture: V("jukebox_top.png"),
     vanillaBlock: {
       name: "Jukebox",
-      accessNote:
-        "This is a plain vanilla Jukebox. Shift+right-click it to open the Instrument Station menu: a normal right-click just plays a disc like usual.",
+      recipe: vanillaStationRecipes.jukebox,
     },
     cubeFaces: {
       up: V("jukebox_top.png"),
@@ -223,36 +444,20 @@ export const stations: StationInfo[] = [
     name: "Animal Station",
     blurb: "Mount Whistle, taming tokens, and pet feed.",
     icon: T("pets/horse_whistle.png"),
+    interaction: "Right click",
     model: animalModel,
-    craftRecipe: {
-      key: "craft-animal-station",
-      title: "Animal Station",
-      station: "Crafting Table",
-      requirement: "None",
-      ingredients: [
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-        { name: "Oak Log", qty: 1, texture: V("oak_log.png") },
-      ],
-      output: { name: "Animal Station", qty: 1, model: animalModel },
-    },
+    craftRecipe: animalStationCraft,
   },
   {
     slug: "ingot-station",
     name: "Ingot Station",
     blurb: "Smelts raw materials into Steel, Bronze, Abyssalite, and Mythril ingots.",
     icon: V("blast_furnace_front.png"),
+    interaction: "Shift + Right click",
     fallbackTexture: V("blast_furnace_front.png"),
     vanillaBlock: {
       name: "Blast Furnace",
-      accessNote:
-        "This is a plain vanilla Blast Furnace. Shift+right-click it to open the Ingot Station menu: a normal right-click opens the regular smelting GUI instead.",
+      recipe: vanillaStationRecipes.blastFurnace,
     },
     cubeFaces: {
       up: V("blast_furnace_top.png"),
@@ -268,83 +473,131 @@ export const stations: StationInfo[] = [
     name: "Alchemy Station",
     blurb: "Herbal powders and reagents: Transmutation profession.",
     icon: T("materials/alchemy_powder.png"),
-    model: alchemyModel,
-    craftRecipe: alchemyStationCraft,
+    interaction: "Right click",
+    fallbackTexture: T("materials/alchemy_powder.png"),
+    vanillaBlock: {
+      name: "Brewing Stand",
+      recipe: vanillaStationRecipes.brewingStand,
+    },
+    model: brewingStandModel,
   },
   {
     slug: "magic-station",
     name: "Magic Station",
     blurb: "Magical handles, tomes, and cores: Mage class required.",
     icon: T("magic_crafting/heavy_magical_core.png"),
+    interaction: "Right click",
     model: magicModel,
-    craftRecipe: {
-      key: "craft-magic-station",
-      title: "Magic Crafting Station",
-      station: "Crafting Table",
-      requirement: "None",
-      ingredients: [
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Gold Ingot", qty: 1, texture: V("gold_ingot.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-        { name: "Amethyst Shard", qty: 1, texture: V("amethyst_shard.png") },
-        { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
-      ],
-      output: { name: "Magic Crafting Station", qty: 1, model: magicModel },
-    },
+    craftRecipe: magicStationRecipe,
   },
   {
     slug: "medicine-station",
     name: "Medicine Station",
-    blurb: "Detoxed Leather and other physician goods. Shares its block with the Alchemy Station.",
+    blurb: "Detoxed Leather, medicines, surgical supplies, and diagnostic tools.",
     icon: T("materials/detoxed_leather.png"),
+    interaction: "Right click",
     model: alchemyModel,
-    craftRecipe: alchemyStationCraft,
+    craftRecipe: medicineStationCraft,
   },
   {
     slug: "copper-station",
     name: "Copper Station",
-    // No block model exists for this station yet, so it gets an item sprite only.
-    // Copper Ingot is the material every recipe here is built from.
     blurb: "Every copper block variant: cut, chiselled, grates, bulbs, doors, and their waxed forms.",
     icon: V("copper_ingot.png"),
+    interaction: "Shift + Right click",
     fallbackTexture: V("copper_ingot.png"),
+    model: grindstoneModel,
+    vanillaBlock: {
+      name: "Grindstone",
+      recipe: vanillaStationRecipes.grindstone,
+    },
   },
   {
     slug: "forester-station",
     name: "Forester Station",
     blurb: "Logs, leaves, saplings, flowers, mushrooms, and every plant dye.",
     icon: V("oak_log.png"),
+    interaction: "Right click",
     fallbackTexture: V("oak_log.png"),
+    vanillaBlock: {
+      name: "Fletching Table",
+      recipe: vanillaStationRecipes.fletchingTable,
+    },
+    cubeFaces: {
+      up: V("fletching_table_top.png"),
+      down: V("birch_planks.png"),
+      north: V("fletching_table_front.png"),
+      south: V("fletching_table_front.png"),
+      east: V("fletching_table_side.png"),
+      west: V("fletching_table_side.png"),
+    },
   },
   {
     slug: "tool-station",
     name: "Tool Station",
     blurb: "Iron through Mythril tools, profession toolkits, mount gear, and lockpicks.",
     icon: V("iron_pickaxe.png"),
+    interaction: "Shift + Right click",
     fallbackTexture: V("iron_pickaxe.png"),
+    vanillaBlock: {
+      name: "Crafting Table",
+      recipe: vanillaStationRecipes.craftingTable,
+    },
+    cubeFaces: {
+      up: V("crafting_table_top.png"),
+      down: V("oak_planks.png"),
+      north: V("crafting_table_front.png"),
+      south: V("crafting_table_side.png"),
+      east: V("crafting_table_side.png"),
+      west: V("crafting_table_front.png"),
+    },
   },
   {
     slug: "research-station",
     name: "Research Station",
-    blurb: "Turns research papers into materials, currency, and runestones.",
+    blurb: "Combines materials into Research Papers used to begin research projects.",
     icon: V("book.png"),
+    interaction: "Shift + Right click",
     fallbackTexture: V("book.png"),
+    vanillaBlock: {
+      name: "Cartography Table",
+      recipe: vanillaStationRecipes.cartographyTable,
+    },
+    cubeFaces: {
+      up: V("cartography_table_top.png"),
+      down: V("dark_oak_planks.png"),
+      north: V("cartography_table_side3.png"),
+      south: V("cartography_table_side1.png"),
+      east: V("cartography_table_side3.png"),
+      west: V("cartography_table_side2.png"),
+    },
   },
   {
     slug: "bird-mailbox",
     name: "Bird Mailbox",
     blurb: "Right-click it to send a written Letter to another character: the block behind the Bird Mail system.",
     icon: T("bird-mail/mailbox.png"),
+    interaction: "Right click",
+    guide: { href: "/wiki/bird-mail", label: "Bird Mail guide" },
     model: birdMailboxModel,
   },
 ];
 
 export function getStationBySlug(slug: string): StationInfo | undefined {
   return stations.find((s) => s.slug === slug);
+}
+
+const stationAcquisitionVisuals = new Map(
+  stations.flatMap((station) => {
+    const recipe = station.craftRecipe ?? station.vanillaBlock?.recipe;
+    return recipe?.output.sourceId ? [[recipe.output.sourceId, {
+      slug: station.slug,
+      thumbnail: `/wiki/thumbnails/stations/${station.slug}.webp`,
+    }] as const] : [];
+  }),
+);
+export function getStationAcquisitionVisual(sourceId?: string) {
+  return sourceId ? stationAcquisitionVisuals.get(sourceId) : undefined;
 }
 
 export const stationsSection: WikiSection = {
@@ -354,12 +607,5 @@ export const stationsSection: WikiSection = {
     category: "reference",
     blurb: "Every crafting station, with an interactive 3D preview where a model exists.",
   },
-  // Station *craft* recipes (`StationInfo.craftRecipe`) intentionally stay out of
-  // the global recipe index: they are rendered on the station's own page only,
-  // as they always have been.
-  //
-  // What is registered here is every recipe read off the server's crafting-station
-  // configs. Registering them once, here, is what puts them on station pages and
-  // into the materials "used in" index.
-  recipes: stationRecipes,
+  recipes: [...stationRecipes, ...stationOwnedCraftRecipes],
 };

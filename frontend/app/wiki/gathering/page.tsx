@@ -1,4 +1,4 @@
-import { SeeAlso, StatGrid, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { SeeAlso, StatGrid, WikiItemLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 
 
 export default function GatheringPage() {
@@ -50,7 +50,7 @@ export default function GatheringPage() {
       </WikiSectionHeading>
       <p className="text-sm text-[var(--tfmc-mist)]">
         A forest-herbs spot gives 1–2 loot rolls, and every roll currently comes from the same
-        pool: 2–4 Stack of Gold Denars (worth 10 denars each, so 20–40 denars per roll).
+        pool: 2–4 <WikiItemLink name="Stack of Gold Denars" /> (worth 10 denars each, so 20–40 denars per roll).
       </p>
 
 

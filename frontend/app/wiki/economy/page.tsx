@@ -8,6 +8,7 @@ import {
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import { denarCoins, denarCommands } from "../data/economy";
+import { WikiItemLink } from "@/app/components/wiki";
 
 export default function EconomyPage() {
   return (
@@ -17,7 +18,7 @@ export default function EconomyPage() {
         <>
           Denars are the server&apos;s money. You carry them as a <strong>pouch</strong> balance or as
           physical gold and silver coin items, and you can also stash them safely in your
-          faction&apos;s <strong>bank</strong>. Every trade at a Market Block, every coin you find
+          faction&apos;s <strong>bank</strong>. Every trade at a <WikiItemLink name="Market Block" />, every coin you find
           mining or farming, and every faction wage or tax runs through this system.
         </>
       }
@@ -41,7 +42,7 @@ export default function EconomyPage() {
       <WikiSectionHeading id="coins" intro="Coins are real, tradeable items: picking one up credits your pouch automatically.">
         Currency denominations
       </WikiSectionHeading>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">1 Gold Denar = 100 Silver Denars.</p>
+      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">1 <WikiItemLink name="Gold Denar" /> = 100 <WikiItemLink name="Silver Denar">Silver Denars</WikiItemLink>.</p>
       <ItemGallery centeredSelectors items={denarCoins.map((coin) => ({
         name: coin.displayName,
         image: `/wiki/textures/currency/${coin.item.toLowerCase().replaceAll(" ", "-")}.png`,

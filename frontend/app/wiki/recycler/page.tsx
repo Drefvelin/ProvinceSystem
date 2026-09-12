@@ -1,4 +1,4 @@
-import { DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { DataTable, SeeAlso, StationLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
 import { recyclingStationRecipe } from "../data/recycler";
 
@@ -14,7 +14,7 @@ export default function RecyclerPage() {
       title="Recycler"
       intro={
         <>
-          The Recycling Station breaks a crafted item back down into a share of the materials it
+          The <StationLink name="Recycling Station" /> breaks a crafted item back down into a share of the materials it
           took to make it. A pristine item gives back the most; a worn-down one gives back less,
           and a fully broken item gives back nothing at all.
         </>
@@ -32,7 +32,7 @@ export default function RecyclerPage() {
         The loop
       </WikiSectionHeading>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Right-click the Recycling Station. A 3×9 GUI opens.</li>
+        <li>Right-click the <StationLink name="Recycling Station" />. A 3×9 GUI opens.</li>
         <li>
           Drop the item you want to break down into the input slot. An item that cannot be
           recycled at all is rejected with &quot;That item cannot be recycled here.&quot;
@@ -53,7 +53,7 @@ export default function RecyclerPage() {
         rows={providers}
       />
 
-      <SeeAlso hrefs={["/wiki/materials", /* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/commands", "/wiki/advanced-crafting"]} />
+      <SeeAlso hrefs={["/wiki/materials", "/wiki/stations", "/wiki/commands", "/wiki/advanced-crafting"]} />
     </WikiPage>
   );
 }

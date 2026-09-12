@@ -2,7 +2,9 @@ import {
   Callout,
   CommandTable,
   SeeAlso,
+  StationLink,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -27,14 +29,14 @@ export default function BirdMailPage() {
       </WikiSectionHeading>
       <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <ol className="list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-          <li>Get a Letter item and write your message in it, same as writing a normal book.</li>
+          <li>Get a <WikiItemLink name="Letter" /> item and write your message in it, same as writing a normal book.</li>
           <li>
-            Find a <strong>bird mailbox</strong> and right-click it: standing still, not
+            Find a <strong><StationLink name="Bird Mailbox">bird mailbox</StationLink></strong> and right-click it: standing still, not
             sneaking. Sneak-right-clicking does nothing.
           </li>
           <li>
             A small &quot;Bird Messenger&quot; window opens with one open slot. Place your letter
-            into it, or shift-click it in. Anything that isn&apos;t a Letter is rejected.
+            into it, or shift-click it in. Anything that isn&apos;t a <WikiItemLink name="Letter" /> is rejected.
           </li>
           <li>
             Closing that window with a valid letter in it opens a &quot;Send letter&quot; screen: a
@@ -51,8 +53,8 @@ export default function BirdMailPage() {
           <div className="h-72 w-full overflow-hidden rounded border border-[color-mix(in_srgb,var(--tfmc-cream)_18%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_70%,transparent)] sm:h-80" aria-label="Interactive 3D preview of Bird Mailbox">
             <StationModelViewer modelUrl="/wiki/models/bird-mailbox.json" textureUrl="/wiki/textures/bird-mail/mailbox.png" />
           </div>
-          <h3 className="mt-3 font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">Bird Mailbox</h3>
-          <p className="text-sm text-[var(--tfmc-mist)]">Right-click the mailbox to send a written Letter.</p>
+          <h3 className="mt-3 font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]"><StationLink name="Bird Mailbox" /></h3>
+          <p className="text-sm text-[var(--tfmc-mist)]">Right-click the mailbox to send a written <WikiItemLink name="Letter" />.</p>
         </aside>
       </div>
 

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WikiSearchEntry } from "@/lib/wikiSearch";
 
-import WikiSearch from "./WikiSearch";
+import WikiSearch, { highlightSearchText } from "./WikiSearch";
 
 const entries: WikiSearchEntry[] = [
   { href: "/wiki/materials#steel", pageTitle: "Materials", sectionTitle: "Steel Ingot", text: "A forged crafting material." },
@@ -86,5 +86,53 @@ describe("WikiSearch", () => {
     expect(await screen.findAllByRole("option")).toHaveLength(2);
     expect(consoleError.mock.calls.flat().join(" ")).not.toContain("same key");
     consoleError.mockRestore();
+  });
+
+  it("bolds each partial query token in result descriptions without changing their text", async () => {
+    successfulFetch([
+      {
+        href: "/wiki/items/mythril-pickaxe",
+        pageTitle: "Mythril Pickaxe",
+        text: "Mine MYTHRIL ore, then craft a Mythril Pickaxe safely.",
+      },
+    ]);
+    render(<WikiSearch />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "mythril pic" } });
+
+    const option = await screen.findByRole("option", { name: /Mythril Pickaxe/ });
+    const snippet = option.querySelector("span:last-child")!;
+    expect(snippet.textContent).toBe("Mine MYTHRIL ore, then craft a Mythril Pickaxe safely.");
+    expect([...snippet.querySelectorAll("strong")].map((match) => match.textContent)).toEqual([
+      "MYTHRIL",
+      "Mythril",
+      "Pic",
+    ]);
+  });
+
+  it("keeps unmatched descriptions and literal punctuation intact for special-character queries", async () => {
+    successfulFetch([
+      {
+        href: "/wiki/items/mythril-pickaxe",
+        pageTitle: "Mythril Pickaxe",
+        text: "Reliable tool: 100% safe [when repaired].",
+      },
+    ]);
+    render(<WikiSearch />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "[MYTHRIL]*" } });
+
+    const option = await screen.findByRole("option", { name: /Mythril Pickaxe/ });
+    const snippet = option.querySelector("span:last-child")!;
+    expect(snippet.textContent).toBe("Reliable tool: 100% safe [when repaired].");
+    expect(snippet.querySelector("strong")).toBeNull();
+  });
+
+  it("keeps decomposed accents attached and merges overlapping matches", () => {
+    const text = "Cafe\u0301s and banana.";
+    const { container } = render(<p>{highlightSearchText(text, "cafes ana")}</p>);
+    expect(container.textContent).toBe(text);
+    expect([...container.querySelectorAll("strong")].map((match) => match.textContent)).toEqual([
+      "Cafe\u0301s",
+      "anana",
+    ]);
   });
 });
