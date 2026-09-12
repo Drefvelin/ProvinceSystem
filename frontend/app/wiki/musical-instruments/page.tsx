@@ -3,7 +3,9 @@ import {
   CommandTable,
   DataTable,
   SeeAlso,
+  StationLink,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -18,7 +20,7 @@ export default function MusicalInstrumentsPage() {
           Instruments turn your hotbar into a keyboard. Hold one in your off-hand and press 1
           through 8. Hold Shift for a second layer of chords or higher notes. There are nine
           instruments, each with a completely different sound. Other players hear you from about 64
-          blocks away. All nine are crafted at the Instrument Station and crafting them requires the
+          blocks away. All nine are crafted at the <StationLink name="Instrument Station" /> and crafting them requires the
           Bard class, but <strong>anyone can play one</strong>, so an instrument you are given or
           buy works fine.
         </>
@@ -49,7 +51,7 @@ export default function MusicalInstrumentsPage() {
         stats={[
           { label: "Audible range", value: "64 blocks", note: "volume 4.0; 1 volume = 16 blocks" },
           { label: "Sound category", value: "Records", note: "the Jukebox / Note Blocks slider" },
-          { label: "Craft time", value: "10 seconds", note: "all nine, at the Instrument Station" },
+          { label: "Craft time", value: "10 seconds", note: <>all nine, at the <StationLink name="Instrument Station" /></> },
           { label: "Class needed to play", value: "None", note: "Bard is only a crafting gate" },
         ]}
       />
@@ -63,7 +65,7 @@ export default function MusicalInstrumentsPage() {
         </li>
         <li>
           Hold Shift and press 1 to 8 for the second layer. On most instruments that&apos;s a full
-          chord; on the Flute, Trumpet and Bagpipe it&apos;s the same scale an octave higher, giving
+          chord; on the <WikiItemLink name="Flute" />, <WikiItemLink name="Trumpet" /> and <WikiItemLink name="Bagpipe" /> it&apos;s the same scale an octave higher, giving
           sixteen notes total.
         </li>
         <li>
@@ -76,7 +78,7 @@ export default function MusicalInstrumentsPage() {
 
       <WikiSectionHeading
         id="lutes"
-        intro="The Instrument Station is shared with four Bard weapons. They are not instruments and cannot be played."
+        intro={<><StationLink name="Instrument Station" /> is shared with four Bard weapons. They are not instruments and cannot be played.</>}
       >
         The four Lutes that are not instruments
       </WikiSectionHeading>
@@ -86,7 +88,7 @@ export default function MusicalInstrumentsPage() {
           l.name,
           "Bard weapon: shares the station and the Bard gate, but has no note keyboard.",
         ])}
-        caption="A Bard browsing the Instrument Station sees 13+ entries, not 9."
+        caption={<>A Bard browsing the <StationLink name="Instrument Station" /> sees 13+ entries, not 9.</>}
         minWidth="40rem"
       />
 
@@ -133,7 +135,7 @@ export default function MusicalInstrumentsPage() {
         </div>
       </dl>
 
-      <SeeAlso hrefs={[/* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/materials", "/wiki/commands"]} />
+      <SeeAlso hrefs={["/wiki/stations", "/wiki/materials", "/wiki/commands"]} />
     </WikiPage>
   );
 }

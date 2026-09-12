@@ -11,10 +11,16 @@ export interface WikiPageProps {
   /** One or two sentences under the title. Inline markup (code, links) is fine. */
   intro?: ReactNode;
   /**
-   * When the content was last checked against the live server, e.g. `"2026-09-01"`
-   * or `"Season 5, week 3"`. Rendered as a quiet note under the intro.
+   * ISO calendar date for a page-specific content revision. Pages without an
+   * override use the maintained wiki-wide revision date below.
    */
-  lastVerified?: ReactNode;
+  lastModified?: string;
+  /** @deprecated Use `lastModified`. Kept while existing pages migrate. */
+  lastVerified?: string;
+  /** Optional visual shown beside the title, such as an item icon. */
+  titleVisual?: ReactNode;
+  /** Optional navigation or context shown immediately before the title. */
+  beforeTitle?: ReactNode;
   /** `sm` = 2xl, `md` = 3xl (default), `lg` = 4xl. */
   width?: WikiPageWidth;
   children?: ReactNode;
@@ -27,6 +33,18 @@ const WIDTHS: Record<WikiPageWidth, string> = {
 };
 
 /**
+ * Date of the latest wiki-wide content revision. This is deliberately
+ * maintained in source instead of being computed from the visitor's clock.
+ */
+export const WIKI_LAST_MODIFIED = "2026-09-12";
+
+function isIsoCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+/**
  * The standard wiki page frame: `<article>` + `<h1>` + optional intro and
  * "last modified" note. Every `/wiki/*` page body should start here so titles,
  * spacing and reading width stay identical across ~40 pages.
@@ -34,19 +52,31 @@ const WIDTHS: Record<WikiPageWidth, string> = {
 export default function WikiPage({
   title,
   intro,
+  lastModified,
   lastVerified,
+  titleVisual,
+  beforeTitle,
   width = "md",
   children,
 }: WikiPageProps) {
+  const requestedDate = lastModified ?? lastVerified;
+  const modifiedDate = requestedDate && isIsoCalendarDate(requestedDate)
+    ? requestedDate
+    : WIKI_LAST_MODIFIED;
+
   return (
     <article className={WIDTHS[width]}>
-      <h1 className={cx(wikiDisplayFont, "text-3xl text-[var(--tfmc-cream)] sm:text-4xl")}>
-        {title}
-      </h1>
+      {beforeTitle}
+      <div className={titleVisual ? "mt-3 flex items-center gap-4" : undefined}>
+        {titleVisual}
+        <h1 className={cx(wikiDisplayFont, "text-3xl text-[var(--tfmc-cream)] sm:text-4xl")}>
+          {title}
+        </h1>
+      </div>
       {intro ? <p className={cx("mt-2", wikiBodyText)}>{intro}</p>: null}
-      {lastVerified ? (
-        <p className="mt-2 text-xs text-[var(--tfmc-stone)]">Last modified: {lastVerified}</p>
-      ): null}
+      <p className="mt-2 text-xs text-[var(--tfmc-stone)]">
+        Last modified: <time dateTime={modifiedDate}>{modifiedDate}</time>
+      </p>
       {children}
     </article>
   );

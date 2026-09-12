@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CommandAccess, CommandRow } from "@/app/wiki/data";
 import DataTable from "./DataTable";
+import { WikiItemText } from "./WikiItemLink";
 
 export type { CommandAccess, CommandRow } from "@/app/wiki/data";
 
@@ -22,9 +23,9 @@ export default function CommandTable({ commands, showAliases = true, showNotes =
     if (showAliases) {
       cells.push(command.aliases?.length ? <span key="aliases" className="break-words font-mono text-[var(--tfmc-mist)] [overflow-wrap:anywhere]">{command.aliases.join(", ")}</span> : "None");
     }
-    cells.push(<span key="description" className="break-words [overflow-wrap:anywhere]">{command.description}</span>);
+    cells.push(<span key="description" className="break-words [overflow-wrap:anywhere]">{typeof command.description === "string" ? <WikiItemText text={command.description} /> : command.description}</span>);
     if (showNotes) {
-      cells.push(<span key="notes" className="break-words [overflow-wrap:anywhere]">{command.notes ?? "None"}</span>);
+      cells.push(<span key="notes" className="break-words [overflow-wrap:anywhere]">{typeof command.notes === "string" ? <WikiItemText text={command.notes} /> : command.notes ?? "None"}</span>);
     }
     return cells;
   });

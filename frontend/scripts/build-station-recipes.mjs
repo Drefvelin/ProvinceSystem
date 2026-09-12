@@ -32,6 +32,7 @@ const DEFAULT_SOURCE_DIR = "C:/Users/MSI/Desktop/plugins/MMOItems/crafting-stati
 const OUTPUT_FILE = path.join(FRONTEND_ROOT, "app", "wiki", "data", "generated", "stationRecipes.ts");
 const TEXTURE_ROOT = path.join(FRONTEND_ROOT, "public", "wiki", "textures");
 const ITEMSADDER_MANIFEST = path.join(FRONTEND_ROOT, "app", "wiki", "data", "generated", "itemsadderItems.json");
+const MMOITEMS_MANIFEST = path.join(FRONTEND_ROOT, "app", "wiki", "data", "generated", "mmoitemsItems.json");
 
 /**
  * Texture directories that hold real item sprites. Everything else under
@@ -75,6 +76,20 @@ const STATION_NAME_BY_FILE = {
 
 /** `class{list=Bard}` carries no `display`, so its player-facing label is written here. */
 const CLASS_REQUIREMENT_LABELS = { Bard: "Bard class" };
+
+/** Server-reference aliases/fallbacks whose source configs name a removed or mistyped id. */
+const ITEMSADDER_ID_ALIASES = {
+  // block-station.yml uses singular `marauder_goldbar`; the installed pack declares this plural id.
+  marauder_goldbar: "marauder_goldbars",
+};
+const MMOITEM_VANILLA_FALLBACKS = {
+  // These four generic research-station ingredient ids no longer exist. Every
+  // installed tiered runestone in MMOItems/item/loot.yml uses ECHO_SHARD.
+  ARMOR_RUNESTONE: "ECHO_SHARD",
+  STAFF_RUNESTONE: "ECHO_SHARD",
+  SWORD_RUNESTONE: "ECHO_SHARD",
+  WAND_RUNESTONE: "ECHO_SHARD",
+};
 
 // ---------------------------------------------------------------------------
 // YAML subset parser
@@ -233,7 +248,7 @@ export function buildItemIndex(itemDir) {
   for (const file of readdirSync(itemDir).filter((f) => f.endsWith(".yml")).sort()) {
     let id = null;
     for (const line of readFileSync(path.join(itemDir, file), "utf8").split(/\r?\n/)) {
-      const head = line.match(/^([A-Z0-9_]+):\s*$/);
+      const head = line.match(/^([A-Z0-9_]+):(?:\s*#.*)?\s*$/);
       if (head) { id = head[1]; continue; }
       if (!id) continue;
       const name = line.match(/^ {4}name:\s*(.+)$/);
@@ -247,6 +262,14 @@ export function buildItemIndex(itemDir) {
       if (material) {
         const entry = byId.get(id) ?? {};
         if (entry.material === undefined) byId.set(id, { ...entry, material: material[1] });
+        continue;
+      }
+      const customModelData = line.match(/^ {4}custom-model-data:\s*([0-9]+(?:\.[0-9]+)?)\s*$/);
+      if (customModelData) {
+        const entry = byId.get(id) ?? {};
+        if (entry.customModelData === undefined) {
+          byId.set(id, { ...entry, customModelData: Number(customModelData[1]) });
+        }
       }
     }
   }
@@ -357,6 +380,28 @@ export function buildItemsAdderIndex(manifestFile) {
     byId.set(id.toLowerCase(), {
       name: typeof record.name === "string" ? record.name : undefined,
       texture: typeof record.texture === "string" ? record.texture : undefined,
+      material: typeof record.material === "string" ? record.material : undefined,
+    });
+  }
+  return byId;
+}
+
+/** Exact custom-model sprites extracted from the server resource pack, by MMOItems id. */
+export function buildMmoItemsTextureIndex(manifestFile) {
+  const byId = new Map();
+  if (!existsSync(manifestFile)) return byId;
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(manifestFile, "utf8"));
+  } catch {
+    return byId;
+  }
+  for (const [id, record] of Object.entries(parsed)) {
+    if (!record || typeof record !== "object") continue;
+    byId.set(id, {
+      texture: typeof record.texture === "string" ? record.texture : undefined,
+      sourceModel: typeof record.sourceModel === "string" ? record.sourceModel : undefined,
+      sourceTexture: typeof record.sourceTexture === "string" ? record.sourceTexture : undefined,
     });
   }
   return byId;
@@ -365,7 +410,8 @@ export function buildItemsAdderIndex(manifestFile) {
 /** `tfmc_blocks:mythril_block3` and `mythril_block3` are the same item. */
 function bareItemsAdderId(ref) {
   const id = (ref.attrs.id ?? "").toLowerCase();
-  return id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
+  const bare = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
+  return ITEMSADDER_ID_ALIASES[bare] ?? bare;
 }
 
 // ---------------------------------------------------------------------------
@@ -511,6 +557,7 @@ export function build({
   items = new Map(),
   nameTextureIndex = new Map(),
   itemsAdder = new Map(),
+  mmoItemsTextures = new Map(),
 }) {
   const files = readdirSync(sourceDir).filter((f) => f.endsWith(".yml")).sort();
   const parsed = [];
@@ -586,21 +633,29 @@ export function build({
   // found above.
   const textureFor = (ref, name) => {
     if (ref.kind === "vanilla") return vanillaTexture(ref.attrs.type);
+    // MMOItems custom-model-data is authoritative. The base material is only a
+    // carrier for that model and must not masquerade as the item's real icon.
+    if (ref.kind === "mmoitem") {
+      const exact = mmoItemsTextures.get(ref.attrs.id)?.texture;
+      if (exact && existsSync(path.join(TEXTURE_ROOT, exact))) return `/wiki/textures/${exact}`;
+    }
+    if (ref.kind === "itemsadder") {
+      const item = itemsAdder.get(bareItemsAdderId(ref));
+      const extracted = item?.texture;
+      if (extracted && existsSync(path.join(TEXTURE_ROOT, extracted))) return `/wiki/textures/${extracted}`;
+      // Blockbench furniture models expose UV atlases rather than inventory
+      // sprites. In that case the configured carrier material is the truthful
+      // lightweight fallback; presenting the atlas as an icon is misleading.
+      const carrier = vanillaTexture(item?.material);
+      if (carrier) return carrier;
+    }
     const own = textureIndex.byName.get(`${(ref.attrs.id ?? "").toLowerCase()}.png`);
     if (own) return own;
-    if (ref.kind === "mmoitem") {
-      const material = vanillaTexture(items.get(ref.attrs.id)?.material);
-      if (material) return material;
-    }
     const byName = nameTextureIndex.get(name);
     if (byName) return byName;
-    // Last resort, and last on purpose: the sprite extracted from the server's
-    // ItemsAdder packs. Sitting after every lookup above, it can only fill a
-    // slot that had no texture at all -- it can never displace one the hand-
-    // written catalogue or an existing sprite file already resolved.
-    if (ref.kind === "itemsadder") {
-      const extracted = itemsAdder.get(bareItemsAdderId(ref))?.texture;
-      if (extracted && existsSync(path.join(TEXTURE_ROOT, extracted))) return `/wiki/textures/${extracted}`;
+    if (ref.kind === "mmoitem") {
+      const material = vanillaTexture(items.get(ref.attrs.id)?.material ?? MMOITEM_VANILLA_FALLBACKS[ref.attrs.id]);
+      if (material) return material;
     }
     return undefined;
   };
@@ -609,7 +664,7 @@ export function build({
     const name = nameFor(ref);
     const texture = textureFor(ref, name);
     const qty = Number(ref.attrs.amount ?? 1) || 1;
-    return { name, qty, ...(texture ? { texture } : {}) };
+    return { name, qty, sourceId: refIdentity(ref), ...(texture ? { texture } : {}) };
   };
 
   const recipes = [];
@@ -654,6 +709,7 @@ export function build({
 
 function serialiseSlot(s) {
   const parts = [`name: ${JSON.stringify(s.name)}`, `qty: ${s.qty}`];
+  if (s.sourceId) parts.push(`sourceId: ${JSON.stringify(s.sourceId)}`);
   if (s.texture) parts.push(`texture: ${JSON.stringify(s.texture)}`);
   return `{ ${parts.join(", ")} }`;
 }
@@ -744,12 +800,21 @@ if (isMain) {
         "Re-create it with scripts/extract-itemsadder-textures.mjs."
     );
   }
+  const mmoItemsTextures = buildMmoItemsTextureIndex(MMOITEMS_MANIFEST);
+  if (!mmoItemsTextures.size) {
+    console.warn(
+      `build-station-recipes: no MMOItems texture manifest at ${MMOITEMS_MANIFEST}; ` +
+        "custom-model-data items will fall back to their configured base material. " +
+        "Re-create it with scripts/extract-itemsadder-textures.mjs."
+    );
+  }
   const { recipes, unparsed, stats } = build({
     sourceDir,
     textureIndex,
     items,
     nameTextureIndex: nameTextureIndex.byName,
     itemsAdder,
+    mmoItemsTextures,
   });
 
   if (unparsed.length) {

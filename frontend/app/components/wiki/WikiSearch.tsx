@@ -1,10 +1,73 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { searchWikiIndex, type WikiSearchEntry } from "@/lib/wikiSearch";
+import { normalizeSearchText, searchWikiIndex, type WikiSearchEntry } from "@/lib/wikiSearch";
 
 type LoadState = "loading" | "ready" | "error";
+
+type NormalizedCharacter = { value: string; start: number; end: number };
+
+function normalizedCharacters(text: string): NormalizedCharacter[] {
+  const characters: NormalizedCharacter[] = [];
+  for (let start = 0; start < text.length;) {
+    const original = String.fromCodePoint(text.codePointAt(start)!);
+    const end = start + original.length;
+    if (/^[\u0300-\u036f]$/.test(original)) {
+      for (let index = characters.length - 1; index >= 0 && characters[index].end === start; index -= 1) {
+        characters[index].end = end;
+      }
+      start = end;
+      continue;
+    }
+    const normalized = normalizeSearchText(original);
+    if (normalized) {
+      for (const value of normalized) characters.push({ value, start, end });
+    } else if (characters.length && characters.at(-1)?.value !== " ") {
+      characters.push({ value: " ", start, end });
+    }
+    start = end;
+  }
+  return characters;
+}
+
+export function highlightSearchText(text: string, query: string): ReactNode {
+  const tokens = [...new Set(normalizeSearchText(query).split(" ").filter(Boolean))];
+  if (!tokens.length || !text) return text;
+
+  const characters = normalizedCharacters(text);
+  const normalizedText = characters.map(({ value }) => value).join("");
+  const matches: Array<{ start: number; end: number }> = [];
+  for (const token of tokens) {
+    let matchAt = normalizedText.indexOf(token);
+    while (matchAt >= 0) {
+      matches.push({
+        start: characters[matchAt].start,
+        end: characters[matchAt + token.length - 1].end,
+      });
+      matchAt = normalizedText.indexOf(token, matchAt + 1);
+    }
+  }
+  if (!matches.length) return text;
+
+  matches.sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged = matches.reduce<Array<{ start: number; end: number }>>((ranges, match) => {
+    const previous = ranges.at(-1);
+    if (previous && match.start <= previous.end) previous.end = Math.max(previous.end, match.end);
+    else ranges.push({ ...match });
+    return ranges;
+  }, []);
+
+  const parts: ReactNode[] = [];
+  let cursor = 0;
+  for (const match of merged) {
+    if (match.start > cursor) parts.push(text.slice(cursor, match.start));
+    parts.push(<strong key={`${match.start}:${match.end}`} className="font-bold text-[var(--tfmc-cream)]">{text.slice(match.start, match.end)}</strong>);
+    cursor = match.end;
+  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return parts;
+}
 
 export default function WikiSearch() {
   const [entries, setEntries] = useState<WikiSearchEntry[]>([]);
@@ -106,7 +169,7 @@ export default function WikiSearch() {
                   >
                     <span className="block text-sm text-[var(--tfmc-cream)]">{result.sectionTitle ?? result.pageTitle}</span>
                     {result.sectionTitle ? <span className="block text-xs text-[var(--tfmc-mist)]">{result.pageTitle}</span> : null}
-                    <span className="mt-0.5 block line-clamp-2 text-xs leading-relaxed text-[var(--tfmc-stone)]">{result.snippet}</span>
+                    <span className="mt-0.5 block line-clamp-2 text-xs leading-relaxed text-[var(--tfmc-stone)]">{highlightSearchText(result.snippet, query)}</span>
                   </a>
                 </li>
               ))}

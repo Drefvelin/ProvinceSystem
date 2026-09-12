@@ -8,6 +8,7 @@ import {
   WikiSectionHeading,
 } from "@/app/components/wiki";
 import StationModelViewer from "@/app/components/wiki/StationModelViewer";
+import { WikiItemLink } from "@/app/components/wiki";
 import { cropPlantModels } from "../data/crop-plant-models";
 
 const crops = [
@@ -38,9 +39,9 @@ export default function FarmingPage() {
       width="lg"
       intro={
         <>
-          CustomCrops replaces vanilla farming with 30 custom crops planted in watered pots.
-          Nothing here is a vanilla crop block: every crop is a small model sitting in a pot, and
-          it only grows while that pot is watered. This is where almost every fruit, vegetable and
+          CustomCrops replaces vanilla farming with 30 custom crops planted in watered <WikiItemLink name="Pot">pots</WikiItemLink>.
+          Nothing here is a vanilla crop block: every crop is a small model sitting in a <WikiItemLink name="Pot">pot</WikiItemLink>, and
+          it only grows while that <WikiItemLink name="Pot">pot</WikiItemLink> is watered. This is where almost every fruit, vegetable and
           spice used by <Link href="/wiki/cooking" className="underline decoration-dotted">Cooking</Link>{" "}
           and <Link href="/wiki/drink-builder" className="underline decoration-dotted">DrinkBuilder</Link>{" "}
           comes from.
@@ -52,10 +53,10 @@ export default function FarmingPage() {
       </WikiSectionHeading>
       <ol className="mt-4 flex flex-col gap-2 text-sm text-[var(--tfmc-mist)]">
         <li>1. Till ground into farmland as normal: pots sit on top of vanilla farmland.</li>
-        <li>2. Water the pot: right-click it with a water bottle/potion, or fill a Watering Can at water and right-click pots to soak a 3×3 area. Pots also absorb rain and adjacent water on their own.</li>
-        <li>3. Right-click the watered pot holding the crop&apos;s seed item. You need that crop&apos;s profession permission, or you&apos;re told you can&apos;t plant it.</li>
-        <li>4. Wait. The crop advances a growth stage only while the pot&apos;s water is above a threshold.</li>
-        <li>5. Optionally speed things up with Bone Meal or a fertiliser.</li>
+        <li>2. Water the <WikiItemLink name="Pot">pot</WikiItemLink>: right-click it with a water bottle/potion, or fill a Watering Can at water and right-click <WikiItemLink name="Pot">pots</WikiItemLink> to soak a 3×3 area. <WikiItemLink name="Pot">Pots</WikiItemLink> also absorb rain and adjacent water on their own.</li>
+        <li>3. Right-click the watered <WikiItemLink name="Pot">pot</WikiItemLink> holding the crop&apos;s seed item. You need that crop&apos;s profession permission, or you&apos;re told you can&apos;t plant it.</li>
+        <li>4. Wait. The crop advances a growth stage only while the <WikiItemLink name="Pot">pot</WikiItemLink>&apos;s water is above a threshold.</li>
+        <li>5. Optionally speed things up with Bone Meal or a <WikiItemLink name="Fertilizer">fertiliser</WikiItemLink>.</li>
         <li>6. Right-click the fully grown crop with an empty hand (or break it) to harvest: you get 2–4 produce plus a seed back.</li>
       </ol>
 

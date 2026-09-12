@@ -1,26 +1,23 @@
 import CraftingGrid from "../../components/wiki/CraftingGrid";
+import { StationLink, WikiItemLink, WikiPage } from "@/app/components/wiki";
 import { detectorRecipes, signalTable } from "../data/detector";
 
 export default function ArcaneTraceDetectorPage() {
   return (
-    <article className="max-w-3xl">
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-        Arcane Trace Detector
-      </h1>
-      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+    <WikiPage title="Arcane Trace Detector" intro={<>
         In-game item id: <code className="text-[var(--tfmc-accent)]">GEIGER_COUNTER</code>. Somewhere in the
         world, at all times, there is a single hidden source of Arcane Radiation. The Arcane Trace
         Detector senses where it is: hold it and it shows glowing particle rings and starts clicking,
         faster and faster as you get closer. The moment you claim it, the source vanishes and reappears
         somewhere else entirely. It is a serverwide loot race: there is only ever one source, and
         whoever reaches it first gets to collect it.
-      </p>
+      </>}>
 
       <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         Step 1: Get a detector
       </h2>
       <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-        Everything here is crafted at the Engineer Station. Every craft also gives Engineer
+        Everything here is crafted at the <StationLink name="Engineer Station" />. Every craft also gives Engineer
         profession XP. The recharging step needs no profession, so you can trade or buy the
         detector and fuel from other players and keep recharging it yourself.
       </p>
@@ -67,12 +64,12 @@ export default function ArcaneTraceDetectorPage() {
         Step 4: Recharge and go again
       </h2>
       <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-        Claiming the source turns your detector into an Unpowered Trace Detector:
+        Claiming the source turns your detector into an <WikiItemLink name="Unpowered Trace Detector" />:
         <br />
         <code className="text-[var(--tfmc-accent)]">&quot;Your Trace Detector has run out of fuel...&quot;</code>
         <br />
-        You do not need to re-craft the detector: combine it with a single Arcane Fuel at the
-        Engineer Station to power it back up. You can collect 1 source per rolling 24 hours.
+        You do not need to re-craft the detector: combine it with a single <WikiItemLink name="Arcane Fuel" /> at the
+        <StationLink name="Engineer Station" /> to power it back up. You can collect 1 source per rolling 24 hours.
       </p>
 
       <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">FAQ</h2>
@@ -80,8 +77,8 @@ export default function ArcaneTraceDetectorPage() {
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;My detector shows nothing.&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            Check that it&apos;s the Arcane Trace Detector and not the greyed-out Unpowered version.
-            If unpowered, recharge it with one Arcane Fuel at the Engineer Station.
+            Check that it&apos;s the Arcane Trace Detector and not the greyed-out <WikiItemLink name="Unpowered Trace Detector">Unpowered version</WikiItemLink>.
+            If unpowered, recharge it with one <WikiItemLink name="Arcane Fuel" /> at the <StationLink name="Engineer Station" />.
           </dd>
         </div>
         <div>
@@ -101,11 +98,11 @@ export default function ArcaneTraceDetectorPage() {
         <div>
           <dt className="text-[var(--tfmc-cream)]">&quot;Can I keep my detector after claiming?&quot;</dt>
           <dd className="text-[var(--tfmc-mist)]">
-            Yes. It just runs out of charge. One Arcane Fuel at the Engineer Station recharges it
+            Yes. It just runs out of charge. One <WikiItemLink name="Arcane Fuel" /> at the <StationLink name="Engineer Station" /> recharges it
             to full power, so carry spare fuel.
           </dd>
         </div>
       </dl>
-    </article>
+    </WikiPage>
   );
 }

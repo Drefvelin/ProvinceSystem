@@ -10,6 +10,8 @@ import type { ReactNode } from "react";
 // ---------- Recipes ----------
 
 export type Slot = {
+  /** Stable server reference, including explicit vanilla references. */
+  sourceId?: string;
   name: string;
   qty: number;
   texture?: string;
@@ -184,9 +186,19 @@ export type CatalogMaterial = {
   name: string;
   texture?: string;
   lore?: string;
+  acquisition?: MaterialAcquisition[];
+  /** Existing-stock conversions, not a source of new material. */
+  unpackingRecipeKeys?: string[];
 };
 
-/** A `CatalogMaterial` that deliberately has no recipe: loot, mining, or mobs. */
+export type MaterialAcquisition = {
+  method: string;
+  detail: string;
+  /** Only verified probabilities; unknown weighted rewards say so explicitly. */
+  chance: string;
+};
+
+/** A gathered material may also have a block-unpacking recipe. */
 export type DropOnlyMaterial = CatalogMaterial;
 
 export type MaterialCatalogEntry = {
@@ -195,6 +207,9 @@ export type MaterialCatalogEntry = {
   texture?: string;
   lore?: string;
   recipe?: Recipe;
+  recipes: Recipe[];
+  acquisition?: MaterialAcquisition[];
+  unpackingRecipes: Recipe[];
   usedIn: Recipe[];
 };
 
@@ -205,17 +220,16 @@ export type StationInfo = {
   name: string;
   blurb: string;
   icon: string;
-    model?: { url: string; texture?: string; textures?: Record<string, string>; textureAnimationUrl?: string };
+  /** The verified input that opens or operates this station. */
+  interaction: "Right click" | "Shift + Right click";
+  /** A registered guide that explains non-grid recipes or the station's wider workflow. */
+  guide?: { href: string; label: string };
+  model?: { url: string; texture?: string; textures?: Record<string, string>; textureAnimationUrl?: string };
   fallbackTexture?: string;
   /** How to craft the physical station block/furniture itself, if it has one. */
   craftRecipe?: Recipe;
-  /** Set when the station has no placeable block (opened via NPC/command instead). */
-  noPlaceableBlock?: boolean;
-  /**
-   * Set when this "station" is really a re-skinned vanilla block. Name it, and note how to
-   * open its custom menu (usually shift+right-click instead of a plain right-click).
-   */
-  vanillaBlock?: { name: string; accessNote: string };
+  /** Set when this station uses an ordinary vanilla block. */
+  vanillaBlock?: { name: string; recipe: Recipe };
   /** Per-face textures for a plain vanilla cube block, rendered with SimpleCubeViewer. */
   cubeFaces?: { up: string; down: string; north: string; south: string; east: string; west: string };
 };

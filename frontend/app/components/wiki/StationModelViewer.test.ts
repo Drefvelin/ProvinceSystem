@@ -6,6 +6,7 @@ import {
   faceUvCoordinates,
   loadTextureBindings,
   textureMaterialIndices,
+  visibleFaceMaterialGroups,
 } from "./StationModelViewer";
 
 describe("StationModelViewer multi-texture models", () => {
@@ -16,6 +17,10 @@ describe("StationModelViewer multi-texture models", () => {
     };
 
     expect(textureMaterialIndices(faces, ["wood", "coin"])).toEqual([1, 0, -1, -1, -1, -1]);
+    expect(visibleFaceMaterialGroups(faces, ["wood", "coin"])).toEqual([
+      { faceIndex: 0, materialIndex: 1 },
+      { faceIndex: 1, materialIndex: 0 },
+    ]);
   });
 
   it("settles a failed texture binding without rejecting the model load", async () => {

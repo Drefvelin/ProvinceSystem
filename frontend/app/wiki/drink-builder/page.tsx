@@ -5,6 +5,7 @@ import {
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
+import { WikiItemLink } from "@/app/components/wiki";
 export default function DrinkBuilderPage() {
   return (
     <WikiPage
@@ -21,7 +22,7 @@ export default function DrinkBuilderPage() {
       </ol>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         A real example already merged this way: &quot;Big Gulp&quot;, a Milk Bucket + Rabbit Foot +
-        Bark recipe with 4 minutes cooking time, no distilling, oak wood, no ageing, difficulty 3
+        <WikiItemLink name="Bark" /> recipe with 4 minutes cooking time, no distilling, oak wood, no ageing, difficulty 3
         and 0 alcohol.
       </p>
 

@@ -13,7 +13,7 @@ export default function MarketBlocksPage() {
         <li>Click a trade to sell a full bundle of that item for denars, paid straight into your pouch.</li>
       </ol>
       <div className="mt-4"><CraftingGrid recipe={marketBlockRecipe} /></div>
-      <SeeAlso hrefs={["/wiki/economy", "/wiki/materials", /* TEMPORARILY DISABLED: Stations section - re-enable by uncommenting. "/wiki/stations", */ "/wiki/commands"]} />
+      <SeeAlso hrefs={["/wiki/economy", "/wiki/materials", "/wiki/stations", "/wiki/commands"]} />
     </WikiPage>
   );
 }

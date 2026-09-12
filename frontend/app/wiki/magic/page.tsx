@@ -3,7 +3,9 @@ import {
   CommandTable,
   DataTable,
   SeeAlso,
+  StationLink,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -20,7 +22,7 @@ export default function MagicPage() {
       width="lg"
       intro={
         <>
-          Magic is the mage path. You build a staff, wand or blade out of parts at a Magic Station,
+          Magic is the mage path. You build a staff, wand or blade out of parts at a <StationLink name="Magic Station" />,
           slot <strong>spell runes</strong> into it, and then <strong>attune</strong> it to one of ten
           elements by feeding it magical energy you gathered from a shrine. Your character also
           carries a personal <strong>Resonance</strong> score in every element, and a weapon will
@@ -78,7 +80,7 @@ export default function MagicPage() {
           start. Stronger at depth.&quot;). Flow is the default.
         </li>
         <li>
-          <strong>Craft and place a Magic Station</strong>, then interact with it to open the
+          <strong>Craft and place a <StationLink name="Magic Station" /></strong>, then interact with it to open the
           assembly menu and build a weapon out of parts.
         </li>
         <li>
@@ -86,10 +88,10 @@ export default function MagicPage() {
           from; a weapon with no runes casts nothing.
         </li>
         <li>
-          <strong>Build a shrine</strong> and put an artifact on a pedestal in it to soak up aura.
+          <strong>Build a shrine</strong> and put an artifact on a <WikiItemLink name="Pedestal">pedestal</WikiItemLink> in it to soak up aura.
         </li>
         <li>
-          <strong>Imprint and fill a charge</strong> on that same pedestal.
+          <strong>Imprint and fill a charge</strong> on that same <WikiItemLink name="Pedestal">pedestal</WikiItemLink>.
         </li>
         <li>
           <strong>Spend the charge on the weapon at the station</strong>, which starts the orb
@@ -101,7 +103,7 @@ export default function MagicPage() {
       </ol>
 
       <WikiSectionHeading id="station" intro="A plain vanilla 3x3 craft. Anyone can make one.">
-        The Magic Station
+        The <StationLink name="Magic Station" />
       </WikiSectionHeading>
       <div className="mt-4">
         <CraftingGrid recipe={magicStationRecipe} />
@@ -197,7 +199,7 @@ export default function MagicPage() {
         A refusal explains itself in chat: <em>&quot;The weapon asks for {"{element} {need}"}. You
         carry {"{have}"}.&quot;</em>, but only once every 30 seconds per weapon and element, so do not
         expect a message on every click. To fix a <em>Damaged</em> weapon, right-click an{" "}
-        <strong>empty</strong> Magic Station: it works the loose runes free and hands them back.
+        <strong>empty</strong> <StationLink name="Magic Station" />: it works the loose runes free and hands them back.
       </p>
 
       <WikiSectionHeading
@@ -228,7 +230,7 @@ export default function MagicPage() {
         one artifact, the yield is <em>divided</em> between them.
         <br />
         <strong>Storing an artifact in a chest raises its muffle, silently.</strong> Safe places are
-        your own inventory, a pedestal, an artifact display, or an item frame.
+        your own inventory, a <WikiItemLink name="Pedestal">pedestal</WikiItemLink>, an <WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, or an item frame.
       </Callout>
 
       <WikiSectionHeading id="commands" intro="One command. Everything else is done by touching the world.">
@@ -245,8 +247,7 @@ export default function MagicPage() {
           "/wiki/codex",
           "/wiki/gem-infusion",
           "/wiki/materials",
-          // TEMPORARILY DISABLED: Stations section - re-enable by uncommenting.
-          // "/wiki/stations",
+          "/wiki/stations",
           "/wiki/commands",
         ]}
       />

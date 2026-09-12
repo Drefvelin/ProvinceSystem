@@ -6,7 +6,8 @@ import {
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
-import { gamesCommands } from "../data/games";
+import { cardBackTexture, cardSuits, gamesCommands, playingCards } from "../data/games";
+import { WikiItemLink } from "@/app/components/wiki";
 
 export default function GamesPage() {
   return (
@@ -27,14 +28,14 @@ export default function GamesPage() {
         Placing a table
       </WikiSectionHeading>
       <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Hold a Deck of Cards.</li>
+        <li>Hold a <WikiItemLink name="Deck of Cards" />.</li>
         <li>Right-click a block. A game-select GUI opens with four icons.</li>
         <li>
           Pick a game. Blackjack opens a table-options GUI (min bet, max bet, house settings) first;
           Poker, Five-Draw and Free play arm placement immediately.
         </li>
         <li>Click the spot to place the table. Sneaking cancels an armed placement.</li>
-        <li>Picking the table back up drops the Deck of Cards item again at the table&apos;s origin.</li>
+        <li>Picking the table back up drops the <WikiItemLink name="Deck of Cards" /> item again at the table&apos;s origin.</li>
       </ol>
       <WikiSectionHeading id="playing" intro="Rules shared by every table, whichever game you pick.">
         Playing at a table
@@ -57,6 +58,41 @@ export default function GamesPage() {
         </li>
         <li>Winnings are subject to the usual citizen tax, same as any other income.</li>
       </ul>
+
+      <WikiSectionHeading id="card-catalogue" intro="The full 52-card deck, using familiar rank names.">
+        Cards
+      </WikiSectionHeading>
+      <div className="mt-4 flex items-center gap-3 rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] p-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={cardBackTexture} alt="Card back" width={16} height={16} className="h-20 w-20 object-contain [image-rendering:pixelated]" />
+        <span className="text-sm font-semibold text-[var(--tfmc-cream)]">Card back</span>
+      </div>
+      <div className="mt-5 space-y-6">
+        {cardSuits.map((suit) => (
+          <section key={suit} aria-labelledby={`cards-${suit.toLowerCase()}`}>
+            <h3 id={`cards-${suit.toLowerCase()}`} className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{suit}</h3>
+            <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
+              {playingCards.filter((card) => card.suit === suit).map((card) => (
+                <figure key={card.id} className="flex min-w-0 flex-col items-center rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_45%,transparent)] p-2 text-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={card.texture}
+                    alt={`${card.rankLabel} of ${card.suit}`}
+                    width={16}
+                    height={16}
+                    loading="lazy"
+                    className="h-24 w-24 max-w-full object-contain [image-rendering:pixelated]"
+                  />
+                  <figcaption className="mt-1 leading-tight">
+                    <span className="block text-sm font-semibold text-[var(--tfmc-cream)]">{card.rankLabel}</span>
+                    <span className="block text-xs text-[var(--tfmc-stone)]">{card.suit}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       <WikiSectionHeading id="blackjack" intro="The only game with a table actually standing on the server today.">
         Blackjack
@@ -135,7 +171,7 @@ export default function GamesPage() {
       </p>
 
       <Callout variant="note" className="mt-4">
-        Place a Deck of Cards to set up a table and choose a game.
+        Place a <WikiItemLink name="Deck of Cards" /> to set up a table and choose a game.
       </Callout>
       <Callout variant="note">
         The deck is themed to server lore: the four suits are cerrith, mitlan, oseni and seithr,

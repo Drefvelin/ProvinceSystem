@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import SimpleCubeViewer from "../../components/wiki/SimpleCubeViewer";
 import StationModelViewer from "../../components/wiki/StationModelViewer";
 import { wikiBlockPreviewHeight } from "../../components/wiki/wikiStyles";
 import type { StationInfo } from "../data/types";
 
-export default function StationGallery({ stations }: { stations: StationInfo[] }) {
+export default function StationGallery({ stations, blurbs }: { stations: StationInfo[]; blurbs?: Record<string, ReactNode> }) {
   const [selectedSlug, setSelectedSlug] = useState(stations[0]?.slug ?? "");
 
   useEffect(() => {
@@ -50,8 +50,8 @@ export default function StationGallery({ stations }: { stations: StationInfo[] }
       {/* Name and blurb sit directly above the 3D preview, so any height change
           here shoves the preview (and the link under it) up or down when you
           pick a different station. Both reserve a fixed height instead, so the
-          column is the same height for all 18 stations. Nothing is clamped —
-          a short blurb just leaves the spare lines blank.
+          column is the same height for every station. Short blurbs leave the
+          spare lines blank.
 
           Name: `text-xl` is a 1.75rem line box. The widest name at the 18rem
           minimum column width ("Ingredient Converter") still fits one line, so
@@ -62,14 +62,16 @@ export default function StationGallery({ stations }: { stations: StationInfo[] }
       <div className="min-h-7 leading-7">
         <Link href={`/wiki/stations/${selected.slug}`} className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-accent)] underline underline-offset-2">{selected.name}</Link>
       </div>
-      <p className="mb-3 mt-1 min-h-[3.75rem] text-sm leading-5 text-[var(--tfmc-mist)]">{selected.blurb}</p>
-      {selected.model
-        ? <StationModelViewer key={selected.slug} modelUrl={selected.model.url} textureUrl={selected.model.texture} textureUrls={selected.model.textures} textureAnimationUrl={selected.model.textureAnimationUrl} />
-        : selected.cubeFaces
-          ? <SimpleCubeViewer key={selected.slug} faces={selected.cubeFaces} />
-          // Same reserved height as the two viewers, via the shared constant, so
-          // a station without a model does not resize the column either.
-          : <div className={`flex flex-col items-center justify-center gap-3 rounded-md border border-[var(--tfmc-border)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-5 text-center ${wikiBlockPreviewHeight}`}><img src={selected.fallbackTexture ?? selected.icon} alt="" className="h-20 w-20 [image-rendering:pixelated]"/><p className="text-sm text-[var(--tfmc-mist)]">This station uses a standard block appearance.</p></div>}
+      <p className="mb-3 mt-1 min-h-[3.75rem] text-sm leading-5 text-[var(--tfmc-mist)]">{blurbs?.[selected.slug] ?? selected.blurb}</p>
+      <div aria-label={`3D preview of ${selected.name}`}>
+        {selected.model
+          ? <StationModelViewer key={selected.slug} modelUrl={selected.model.url} textureUrl={selected.model.texture} textureUrls={selected.model.textures} textureAnimationUrl={selected.model.textureAnimationUrl} />
+          : selected.cubeFaces
+            ? <SimpleCubeViewer key={selected.slug} faces={selected.cubeFaces} />
+            // Same reserved height as the two viewers, via the shared constant, so
+            // a station without a model does not resize the column either.
+            : <div className={`flex items-center justify-center rounded-md border border-[var(--tfmc-border)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] p-5 ${wikiBlockPreviewHeight}`}><img src={selected.fallbackTexture ?? selected.icon} alt="" className="h-20 w-20 [image-rendering:pixelated]"/></div>}
+      </div>
       <Link href={`/wiki/stations/${selected.slug}`} className="mt-3 inline-block text-sm text-[var(--tfmc-accent)] underline underline-offset-2">View station details</Link>
     </div>
   </div>;

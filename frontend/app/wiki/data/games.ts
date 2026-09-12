@@ -1,3 +1,4 @@
+import { T } from "./helpers";
 import type { WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Games (table card games) ----------
@@ -28,6 +29,30 @@ export const gamesCatalog = [
     rules: "no rules; anyone can sneak-take the pot",
   },
 ];
+
+export const cardSuits = ["Cerrith", "Mitlan", "Oseni", "Seithr"] as const;
+export const cardRankLabels = [
+  "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King",
+] as const;
+
+export type PlayingCard = {
+  id: string;
+  suit: (typeof cardSuits)[number];
+  rank: number;
+  rankLabel: (typeof cardRankLabels)[number];
+  texture: string;
+};
+
+/** Exact 52-card set from Games/cards.yml and ItemsAdder tfmc_games/contents/items.yml. */
+export const playingCards: PlayingCard[] = cardSuits.flatMap((suit) =>
+  cardRankLabels.map((rankLabel, index) => {
+    const rank = index + 1;
+    const id = `${suit.toLowerCase()}_${rank}`;
+    return { id, suit, rank, rankLabel, texture: T(`cards/${id}.png`) };
+  }),
+);
+
+export const cardBackTexture = T("cards/card_back.png");
 
 /** "Numbers that matter to players", pulled verbatim from the plugin config. */
 export const gamesStats = [

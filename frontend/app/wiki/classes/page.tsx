@@ -1,4 +1,4 @@
-import { Callout, CommandTable, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
+import { Callout, CommandTable, DataTable, SeeAlso, WikiItemText, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 import { classSkills, classes, classesCommands, professions } from "../data/classes";
 
 const skillName = (id: string) => id
@@ -21,16 +21,16 @@ export default function ClassesPage() {
       <Callout variant="note" className="mt-4">Musketeer and Mage do not have class-skills.</Callout>
 
       <WikiSectionHeading id="classes" intro="Seven selectable classes cover different equipment and play styles.">Classes</WikiSectionHeading>
-      <DataTable columns={[{header:"Class"},{header:"Equipment"},{header:"Class skills",align:"right"},{header:"Play style"}]} rows={classes.map(c=>[c.name,c.equipment,c.skillCount,c.lore])} />
+      <DataTable columns={[{header:"Class"},{header:"Equipment"},{header:"Class skills",align:"right"},{header:"Play style"}]} rows={classes.map(c=>[c.name,<WikiItemText key={`${c.id}-equipment`} text={c.equipment} />,c.skillCount,<WikiItemText key={`${c.id}-lore`} text={c.lore} />])} />
 
       <WikiSectionHeading id="acts" intro="The active story act sets the highest class level you can reach.">Acts and level caps</WikiSectionHeading>
       <DataTable columns={[{header:"Act"},{header:"Class level cap",align:"right"}]} rows={[["Prologue",6],["Act 1",11],["Act 2",16],["Act 3",21]]} />
       <p className="mt-4 text-sm text-[var(--tfmc-mist)]">When the server advances to a new act, the class level cap rises. Some item drops are also limited by act, so later materials may become available as the story progresses.</p>
 
       <WikiSectionHeading id="skills" intro="Listed class skills unlock at class level 2 and can reach skill level 4.">Skill reference</WikiSectionHeading>
-      {Object.entries(classSkills).map(([classId, skills]) => skills.length > 0 && <div key={classId} className="mt-5"><h3 className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{classes.find(c=>c.id===classId)?.name??classId}</h3><DataTable className="mt-2" columns={[{header:"Skill"},{header:"What it does"}]} rows={skills.map(s=>[s.displayName ?? skillName(s.id),s.description ?? ""])} /></div>)}
+      {Object.entries(classSkills).map(([classId, skills]) => skills.length > 0 && <div key={classId} className="mt-5"><h3 className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{classes.find(c=>c.id===classId)?.name??classId}</h3><DataTable className="mt-2" columns={[{header:"Skill"},{header:"What it does"}]} rows={skills.map(s=>[s.displayName ?? skillName(s.id),<WikiItemText key={`${classId}-${s.id}`} text={s.description ?? ""} />])} /></div>)}
       <WikiSectionHeading id="professions" intro="Professions level separately through their listed activities.">Professions</WikiSectionHeading>
-      <DataTable columns={[{header:"Profession"},{header:"How to level it"}]} rows={professions.map(p=>[p.displayName,p.howItLevels])} />
+      <DataTable columns={[{header:"Profession"},{header:"How to level it"}]} rows={professions.map(p=>[p.displayName,<WikiItemText key={p.id} text={p.howItLevels} />])} />
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
       <CommandTable commands={classesCommands.commands} />
       <SeeAlso hrefs={["/wiki/characters","/wiki/advanced-crafting","/wiki/equipment-slots","/wiki/gathering","/wiki/commands"]} />

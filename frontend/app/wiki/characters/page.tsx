@@ -5,6 +5,7 @@ import {
   RankName,
   SeeAlso,
   StatGrid,
+  WikiItemLink,
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
@@ -52,7 +53,7 @@ export default function CharactersPage() {
         Once you have a character, <code className="text-[var(--tfmc-accent)]">/rpcharacter menu</code>{" "}
         opens a menu of your characters so you can switch between them (on a cooldown: see
         below), and <code className="text-[var(--tfmc-accent)]">/rpcharacter kit starter</code>{" "}
-        claims your starting supplies: an iron hunting knife, 32 gold coins, 256 bread, a
+        claims your starting supplies: an <WikiItemLink name="Iron Hunting Knife">iron hunting knife</WikiItemLink>, 32 gold coins, 256 bread, a
         writable book, a bundle and a brown bed. The starter kit can only be claimed once per
         character, with a 48-hour cooldown.
       </p>
