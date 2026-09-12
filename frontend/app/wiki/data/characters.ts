@@ -38,6 +38,10 @@ export const charactersCommands: WikiCommandSet = {
       description: "Opens the wardrobe GUI, or equips a slot directly (base, extra_1, extra_2, or a saved name).",
     },
     {
+      command: "/rpcharacter party create <name> | invite <player> | join | leave | kick <player> | info",
+      description: "Temporary RP party chat groups. Not the dungeon /party command.",
+    },
+    {
       command: "/rpcharacter injure <player>",
       description: "Starts a consensual roleplay injury on another player. They must confirm it.",
       notes: "10-block range, 30-second confirmation timeout.",
