@@ -23,7 +23,7 @@ const engineerModel = { url: M("vehicles/ammunition_station.json"), textures: {
   particle: vehicleStationTexture("ammunition_station", "bullet"),
 } };
 const animalModel = { url: M("animal-station.json"), texture: T("stations/animal-station.png") };
-const alchemyModel = { url: M("alchemy-station.json"), texture: T("stations/alchemy-station.png") };
+const medicineModel = { url: M("medicine-station.json"), texture: T("stations/medicine-station.png") };
 const birdMailboxModel = { url: M("bird-mailbox.json"), texture: T("bird-mail/mailbox.png") };
 const magicModel = { url: M("magic-station.json"), texture: T("stations/magic-station.png") };
 const weaponModel = { url: M("weapon-station.json"), texture: T("stations/weapon-station.png") };
@@ -185,7 +185,7 @@ const medicineStationCraft: Recipe = {
     { name: "Stone", qty: 1, texture: V("stone.png") },
     { name: "Stone", qty: 1, texture: V("stone.png") },
   ],
-  output: { name: "Medicine Station", qty: 1, sourceId: "itemsadder:medicine_station", model: alchemyModel },
+  output: { name: "Medicine Station", qty: 1, sourceId: "itemsadder:medicine_station", model: medicineModel },
 };
 
 const engineerStationCraft: Recipe = {
@@ -496,7 +496,7 @@ export const stations: StationInfo[] = [
     blurb: "Detoxed Leather, medicines, surgical supplies, and diagnostic tools.",
     icon: T("materials/detoxed_leather.png"),
     interaction: "Right click",
-    model: alchemyModel,
+    model: medicineModel,
     craftRecipe: medicineStationCraft,
   },
   {
