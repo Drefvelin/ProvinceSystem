@@ -1,15 +1,64 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
 import { marketBlockRecipe } from "../../wiki/data/market-blocks";
 import {
   faceUvCoordinates,
+  buildGeometryForElement,
   loadTextureBindings,
   textureMaterialIndices,
   visibleFaceMaterialGroups,
 } from "./StationModelViewer";
 
 describe("StationModelViewer multi-texture models", () => {
+  it("draws exactly one side of each fishing-station sheet from either direction", () => {
+    const model = JSON.parse(readFileSync(
+      join(process.cwd(), "public/wiki/models/stations/fishing-station.json"), "utf8",
+    )) as { elements: Array<Parameters<typeof buildGeometryForElement>[0]> };
+    const sheets = model.elements.filter((el) => el.from[1] === el.to[1]);
+    expect(sheets).toHaveLength(5); // String, two body fins, two tail fins.
+    const materials = [
+      new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ side: THREE.FrontSide }),
+      new THREE.MeshBasicMaterial({ side: THREE.FrontSide }),
+    ];
+    for (const el of sheets) {
+      const { geo } = buildGeometryForElement(el, ["2"]);
+      const mesh = new THREE.Mesh(geo, materials);
+      for (const side of [-1, 1]) {
+        // Off the diagonal to avoid hitting both triangles within one face.
+        const ray = new THREE.Raycaster(
+          new THREE.Vector3((el.to[0] - el.from[0]) / 160, side, 0),
+          new THREE.Vector3(0, -side, 0),
+        );
+        const hits = ray.intersectObject(mesh);
+        expect(hits).toHaveLength(1);
+        expect(hits[0].face!.normal.y).toBe(side);
+      }
+      geo.dispose();
+    }
+    materials.forEach((material) => material.dispose());
+  });
+
+  it("keeps lone sheets double-sided and honors missing faces with a single texture", () => {
+    const face = { uv: [0, 0, 16, 16] as [number, number, number, number], texture: "#0" };
+    const { geo } = buildGeometryForElement({
+      from: [0, 0, 0], to: [16, 0, 16], faces: { up: face },
+    }, []);
+    expect(geo.groups).toEqual([{ start: 12, count: 6, materialIndex: 0 }]);
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, [material]);
+    for (const side of [-1, 1]) {
+      expect(new THREE.Raycaster(
+        new THREE.Vector3(0.1, side, 0), new THREE.Vector3(0, -side, 0),
+      ).intersectObject(mesh)).toHaveLength(1);
+    }
+    geo.dispose();
+    material.dispose();
+  });
+
   it("assigns each box face to the material named by its texture reference", () => {
     const faces = {
       east: { uv: [0, 0, 1, 1] as [number, number, number, number], texture: "#coin" },

@@ -80,7 +80,7 @@ export function faceUvCoordinates(face: Face): Array<[number, number]> {
   }
 }
 
-function buildGeometryForElement(el: Element, textureKeys: string[]) {
+export function buildGeometryForElement(el: Element, textureKeys: string[]) {
   const [x1, y1, z1] = el.from;
   const [x2, y2, z2] = el.to;
   const sizeX = (x2 - x1) / 16;
@@ -108,8 +108,15 @@ function buildGeometryForElement(el: Element, textureKeys: string[]) {
 
   geo.clearGroups();
   visibleFaceMaterialGroups(el.faces, textureKeys).forEach(({ materialIndex, faceIndex }) => {
+    // A zero-thickness box has coincident opposing faces (fish fins, string).
+    // Rendering both DoubleSide makes their different UVs fight for the same
+    // depth. Use FrontSide for that pair; lone sheets remain DoubleSide.
+    const axis = Math.floor(faceIndex / 2);
+    const opposite = faceOrder[faceIndex ^ 1];
+    const pairedPlane = el.from[axis] === el.to[axis] && !!el.faces[opposite];
+    const slot = materialIndex >= 0 ? materialIndex : textureKeys.length;
     // BoxGeometry emits two triangles (six indices) for every visible face.
-    geo.addGroup(faceIndex * 6, 6, materialIndex >= 0 ? materialIndex : textureKeys.length);
+    geo.addGroup(faceIndex * 6, 6, slot + (pairedPlane ? textureKeys.length + 1 : 0));
   });
 
   const cx = (x1 + x2) / 2 / 16;
@@ -240,7 +247,16 @@ export default function StationModelViewer({
       };
       const fallbackMaterial = makeMaterial(texture);
       const keyedMaterials = keyedTextures.map((value) => value ? makeMaterial(value) : fallbackMaterial);
-      const meshMaterials = textureKeys.length ? [...keyedMaterials, fallbackMaterial] : fallbackMaterial;
+      const doubleSidedMaterials = [...keyedMaterials, fallbackMaterial];
+      const frontSidedMaterials = doubleSidedMaterials.map((source) => {
+        const value = source.clone();
+        value.side = THREE.FrontSide;
+        materials.add(value);
+        return value;
+      });
+      // Always use the groups, including for single-texture models: a scalar
+      // material draws the entire box, including faces absent from the model.
+      const meshMaterials = [...doubleSidedMaterials, ...frontSidedMaterials];
 
       const group = new THREE.Group();
 
