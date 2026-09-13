@@ -485,7 +485,7 @@ export function optionModifierPreview(
     if (!attrKeys.has(type)) continue;
     lines.push({
       label: capitalizeLabel(type),
-      current: totals.attributes[type] || 0,
+      current: Math.max(0, totals.attributes[type] || 0),
       delta: deltaAttr[type] || 0,
       kind: "attribute",
     });
@@ -514,7 +514,7 @@ export function optionModifierPreview(
       label: capitalizeLabel(
         current?.alias || delta?.alias || profession
       ),
-      current: current?.amount || 0,
+      current: Math.max(0, current?.amount || 0),
       delta: delta?.amount || 0,
       kind: "experience",
     });
