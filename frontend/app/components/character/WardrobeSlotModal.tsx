@@ -49,6 +49,8 @@ type Props = {
 };
 
 const NAME_MAX = 24;
+
+export default function WardrobeSlotModal({
   open,
   slotLabel,
   slotId,
