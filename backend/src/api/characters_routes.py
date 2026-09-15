@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -65,6 +66,8 @@ from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
 from src.skins.codes import CodeError, get_session, revoke_session
 
 characters_router = APIRouter(prefix="/characters", tags=["characters"])
+
+_wardrobe_log = logging.getLogger("characters.wardrobe")
 
 
 class AppliedResultsBody(BaseModel):
@@ -626,6 +629,11 @@ async def post_character_wardrobe_slot(
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
+        _wardrobe_log.warning(
+            "[wardrobe] upload missing file character_id=%s slot=%s",
+            character_id,
+            slot,
+        )
         raise HTTPException(
             status_code=400,
             detail="Missing multipart file field 'texture' (or 'file')",
@@ -747,6 +755,11 @@ async def post_pending_create_wardrobe(
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
+        _wardrobe_log.warning(
+            "[wardrobe] upload missing file create_id=%s slot=%s",
+            create_id,
+            slot,
+        )
         raise HTTPException(
             status_code=400,
             detail="Missing multipart file field 'texture' (or 'file')",

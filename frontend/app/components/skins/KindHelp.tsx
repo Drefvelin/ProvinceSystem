@@ -20,7 +20,7 @@ const GUIDES: Record<SkinKind, KindGuide> = {
       "Alias is optional if you want a custom name instead of the default tier label.",
       "Per tier, upload helmet, chestplate, leggings, and boots icons (16×16 PNG).",
       "Upload layer_1 and layer_2 body textures (64×32 PNG) for that tier.",
-      "Optional: tick 3D Helmet and upload a Blockbench JSON + PNG instead of the flat helmet icon.",
+      "Optional: tick 3D Helmet and upload a Java Block/Item JSON + PNG instead of the flat helmet icon (File → Export → Export Block/Item Model; one-axis 22.5°/45° rotations only).",
       "Set the item name and colours/styles if you want, then submit.",
     ],
     notes: [
@@ -79,7 +79,9 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     summary: "A custom Blockbench model used as a 3D item skin.",
     steps: [
       "Choose the base set.",
-      "Upload the model JSON (Blockbench) and its texture PNG.",
+      "In Blockbench: File → Export → Export Block/Item Model as Java Block/Item (not Java Item, not a project file).",
+      "Cubes may only rotate on one axis by 22.5° or 45°.",
+      "Upload that model JSON and its texture PNG.",
       "Display transforms are filled in if missing.",
       "Set the item name / colours, then submit.",
     ],
@@ -89,7 +91,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     summary: "3D shield model plus texture.",
     steps: [
       "Choose the shield base set.",
-      "Upload Blockbench JSON + texture PNG.",
+      "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
+      "Upload that JSON + texture PNG.",
       "Preview Idle / Blocking on Right and Left hands.",
       "Set the item name / colours, then submit.",
     ],
@@ -99,7 +102,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     summary: "Standalone 3D helmet (model + texture), not a full armor set.",
     steps: [
       "Choose the helmet base set.",
-      "Upload Blockbench JSON + texture PNG.",
+      "Export as Java Block/Item JSON (File → Export → Export Block/Item Model; one-axis 22.5°/45° only).",
+      "Upload that JSON + texture PNG.",
       "Set the item name / colours, then submit.",
     ],
   },
@@ -109,7 +113,8 @@ const GUIDES: Record<SkinKind, KindGuide> = {
     steps: [
       "Choose the gun base set.",
       "Upload one texture PNG used by all poses.",
-      "Upload carry_model, reload_model, and aim_model as Blockbench JSON.",
+      "Export carry, reload, and aim as Java Block/Item JSON (not Java Item; one-axis 22.5°/45° only).",
+      "Upload carry_model, reload_model, and aim_model.",
       "Set the item name / colours, then submit.",
     ],
   },

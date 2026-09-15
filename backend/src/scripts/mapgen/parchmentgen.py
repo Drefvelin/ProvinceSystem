@@ -9,6 +9,10 @@ from ..util.dirs import (
     validate_map,
 )
 
+# Shelved: the live map serves map.png (satellite), not parchment_base.png.
+# Flip to True when the parchment terrain layer is a map thing again.
+PARCHMENT_BASE_ENABLED = False
+
 # Step 39.02 ink cartography — tune in visual pass if needed.
 PAPER_HIGH = (240, 230, 210)  # #f0e6d2
 PAPER_MID = (212, 196, 168)  # #d4c4a8
@@ -168,6 +172,11 @@ def _grade_parchment(img: Image.Image) -> Image.Image:
 
 def create_parchment_base(map_name: str) -> bool:
     """Grade map.png into parchment_base.png. Returns True when output was written."""
+    if not PARCHMENT_BASE_ENABLED:
+        print(f"⏭️ [{map_name}] Skipping parchment (PARCHMENT_BASE_ENABLED=False)")
+        _remove_stale_parchment(map_name)
+        return False
+
     validate_map(map_name)
 
     reason = _validate_map_background(map_name)

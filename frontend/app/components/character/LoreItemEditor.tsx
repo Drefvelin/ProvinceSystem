@@ -45,6 +45,7 @@ import {
   pairBudgetHint,
   type SkinKind,
 } from "../../../lib/skins/sizes";
+import { assertVanillaJavaBlockModelFile } from "../../../lib/skins/javaModel";
 
 const DISPLAY_NAME_MAX = 80;
 
@@ -646,6 +647,7 @@ export default function LoreItemEditor({
           { texture: textureFile, model: modelFile },
           resolvedPairBytes
         );
+        await assertVanillaJavaBlockModelFile(modelFile);
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : "Invalid 3D files");
         return;

@@ -48,6 +48,7 @@ import {
   GRIP_Y_MAX,
   GRIP_Y_MIN,
 } from "../../../lib/skins/flatItemDisplay";
+import { assertVanillaJavaBlockModelFile } from "../../../lib/skins/javaModel";
 
 const MAX_TIERS = ARMOR_TIERS.length;
 
@@ -494,6 +495,9 @@ export default function UploadForm({
             if (expected) {
               await assertFileSize(file, expected, `${tierLabel} ${label}`);
             }
+            if (field === "helmet_model") {
+              await assertVanillaJavaBlockModelFile(file);
+            }
             uploadFiles[`${entry.tier}_${field}`] = file;
           }
         }
@@ -513,6 +517,9 @@ export default function UploadForm({
           const expected = expectedSizeForField(kind, field);
           if (expected) {
             await assertFileSize(file, expected, fieldLabel[field] || field);
+          }
+          if (field === "model" || field.endsWith("_model")) {
+            await assertVanillaJavaBlockModelFile(file);
           }
           uploadFiles[field] = file;
         }
