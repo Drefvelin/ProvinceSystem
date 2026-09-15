@@ -98,7 +98,7 @@ export default function MagicPage() {
           minigame that decides how much of the charge actually sticks.
         </li>
         <li>
-          <strong>Hold the weapon and right-click</strong> to cast.
+          <strong>Hold the weapon and use the rune&apos;s casting key</strong> to cast. The default is right-click.
         </li>
       </ol>
 
@@ -168,9 +168,13 @@ export default function MagicPage() {
         only on a <em>later</em> successful charge.
       </Callout>
 
-      <WikiSectionHeading id="casting" intro="Hold the weapon, right-click. Three different ways it can go wrong.">
+      <WikiSectionHeading id="casting" intro="Hold the weapon and use the rune's casting key. The default is right-click.">
         Casting
       </WikiSectionHeading>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        To change a rune&apos;s casting key, hold the rune and use{" "}
+        <code className="text-[var(--tfmc-accent)]">/magic rune keybind</code>.
+      </p>
       <DataTable
         columns={[
           { header: "What you see", nowrap: true },
@@ -233,7 +237,7 @@ export default function MagicPage() {
         your own inventory, a <WikiItemLink name="Pedestal">pedestal</WikiItemLink>, an <WikiItemLink name="Artifact Display">artifact display</WikiItemLink>, or an item frame.
       </Callout>
 
-      <WikiSectionHeading id="commands" intro="One command. Everything else is done by touching the world.">
+      <WikiSectionHeading id="commands" intro="View your Resonance profile and change a rune's casting key.">
         Commands
       </WikiSectionHeading>
       <CommandTable

@@ -294,6 +294,14 @@ describe("buildStepPath", () => {
 });
 
 describe("formatLedgerFactionLabel", () => {
+  it.each([
+    ["§x§a§3§a§1§8§4Prospero", "Prospero"],
+    ["§cAzur §lClan§r", "Azur Clan"],
+    ["§x§a§3§a§1§8§44123", "4123"],
+  ])("removes Minecraft formatting from %s", (name, label) => {
+    expect(formatLedgerFactionLabel(faction({ key: "formatted", name }))).toBe(label);
+  });
+
   it("is the bare nation name, with no date span or ended marker", () => {
     const f = faction({
       key: "brume-1",
@@ -314,6 +322,19 @@ describe("formatLedgerFactionLabel", () => {
 });
 
 describe("buildLedgerFactionOptions", () => {
+  it("cleans and sorts visible labels while preserving selection names and faction keys", () => {
+    const azur = "§cAzur Clan";
+    const prospero = "§aProspero";
+    const options = buildLedgerFactionOptions([
+      faction({ key: "prospero", name: prospero }),
+      faction({ key: "azur", name: azur }),
+    ]);
+    expect(options.map(({ name, label, keys }) => ({ name, label, keys }))).toEqual([
+      { name: azur, label: "Azur Clan", keys: ["azur"] },
+      { name: prospero, label: "Prospero", keys: ["prospero"] },
+    ]);
+  });
+
   it("emits one option per distinct name, deleted rows included", () => {
     const rows = [
       faction({

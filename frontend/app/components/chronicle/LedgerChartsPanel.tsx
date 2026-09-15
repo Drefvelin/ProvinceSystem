@@ -15,7 +15,8 @@ import {
 } from "../../lib/map/ledgerSeries";
 import type { LedgerFactionOption, MergedLedgerFaction } from "../../lib/map/ledgerSeries";
 import type { LedgerSeries } from "../../lib/map/ledgerData";
-import { chroniclePanelClass, selectClass } from "./ChroniclePanels";
+import { chroniclePanelClass } from "./ChroniclePanels";
+import LedgerFactionSelect from "./LedgerFactionSelect";
 import { factionForKey, type LedgerChartsResult } from "./useLedgerSeries";
 
 /**
@@ -74,10 +75,8 @@ function SectionHeading({ title }: { title: string }) {
  * lifetimes already merged into a single entry under their shared name (see
  * `buildLedgerFactionOptions`). Stacked under the title rather than beside it
  * so a long nation name never pushes the card wider than the rail it lives in
- * (`w-72`, matching the left rail) — `selectClass` is already `w-full`, so
- * the dropdown fills the card instead of overflowing it, and the browser's
- * own `<option>` rendering wraps/truncates long labels rather than this
- * component measuring text.
+ * (`w-72`, matching the left rail). The custom selector renders Minecraft
+ * formatting in both the selected name and the scrollable option list.
  */
 function CardHeader({
   title,
@@ -93,18 +92,7 @@ function CardHeader({
   return (
     <div>
       <SectionHeading title={title} />
-      <select
-        className={`${selectClass} mt-1`}
-        value={selectedKey}
-        onChange={(event) => onSelect(event.target.value)}
-        aria-label={`${title} nation`}
-      >
-        {options.map((option) => (
-          <option key={option.name} value={option.name} title={option.label}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <LedgerFactionSelect options={options} selectedKey={selectedKey} onSelect={onSelect} label={`${title} nation`} />
     </div>
   );
 }

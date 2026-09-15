@@ -324,6 +324,10 @@ export const magicCommands: WikiCommandSet = {
   href: "/wiki/magic",
   commands: [
     {
+      command: "/magic rune keybind",
+      description: "While holding a rune, use this command to change its casting key.",
+    },
+    {
       command: "/resonance",
       aliases: ["/res"],
       description:

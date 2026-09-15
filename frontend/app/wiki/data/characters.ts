@@ -104,7 +104,7 @@ export const charactersCommands: WikiCommandSet = {
     },
     {
       command: "/profession",
-      description: "Opens the profession menu GUI (crafter, forager, herborist).",
+      description: "Opens the profession menu (Crafter, Forager, Herborist).",
     },
     {
       command: "/profession top <profession>",

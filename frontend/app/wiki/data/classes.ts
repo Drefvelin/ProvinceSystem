@@ -191,7 +191,7 @@ export const professions: ProfessionInfo[] = [
   },
   {
     id: "forager",
-    displayName: "Agriculturist",
+    displayName: "Forager",
     howItLevels: "Raise farm animals and harvest crops that you grow.",
   },
   {

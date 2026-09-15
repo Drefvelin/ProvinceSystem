@@ -39,7 +39,7 @@ export default function GatheringPage() {
           { label: "Detection range", value: "6 blocks" },
           { label: "Wisdom bonus", value: "+2%", note: "per point of Wisdom" },
           { label: "Intelligence bonus", value: "+1.5%", note: "per point of Intelligence" },
-          { label: "Herbalism bonus", value: "+1%", note: "per level of the Herbalism profession" },
+          { label: "Herborist bonus", value: "+1%", note: "per level of the Herborist profession" },
         ]}
         columns={3}
       />
