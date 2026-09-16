@@ -289,7 +289,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   }, [settlements, installations, wars, mapType, mapObjects]);
 
   const labelGeometry = useMemo(() => {
-    if (mapId !== "main" || !LABEL_MAP_MODES.has(mapType)) return null;
+    if (!LABEL_MAP_MODES.has(mapType)) return null;
     if (!regionData || !neighbors || !centroids) return null;
     const needsTitleLayers =
       mapType === "duchy" ||
@@ -311,7 +311,6 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
       }
     );
   }, [
-    mapId,
     mapType,
     regionData,
     titleLayers,
