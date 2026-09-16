@@ -698,7 +698,8 @@ export function setTraitsForKey(
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
   let traitIds = [...kept, ...selected];
-  if (key.trim().toLowerCase() === "prosthetic") {
+  const normalizedKey = key.trim().toLowerCase();
+  if (normalizedKey === "prosthetic" || normalizedKey === "injury") {
     traitIds = stripInjuriesReplacedByProsthetics(traitIds, catalog);
   }
   return { ...draft, traitIds };
