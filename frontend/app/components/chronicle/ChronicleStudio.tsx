@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
-import { useMapGeometry } from "../../hooks/useMapGeometry";
+import { useMapGeometry, chronicleNamesSupported } from "../../hooks/useMapGeometry";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { computeVisibleNationLabels } from "../../lib/mapLabels";
 import type { NationLabelSpec } from "../../lib/mapLabels";
@@ -76,13 +77,13 @@ import MapViewport from "../map/MapViewport";
 import LabelLayer from "../map/LabelLayer";
 import WarCampaignLineLayer from "../map/WarCampaignLineLayer";
 import {
-  MAP_BOUNDS,
-  MAP_DISPLAY_NAMES,
+  mapDisplayName,
+  mapFallbackSize,
   type MapId,
   type MapMarkersResponse,
   type RegionRecord,
 } from "../map/types";
-import { chronicleDayHref } from "../../lib/map/chronicleDayRoute";
+import { chronicleDayHref, liveMapHref } from "../../lib/map/chronicleDayRoute";
 import {
   DEFAULT_CHRONICLE_GIF_SIZE,
   chronicleGifDelayMs,
@@ -174,8 +175,9 @@ type SourceCost = { bytes: number; ms: number };
 
 export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const sessionToken = useCharacterSessionToken();
-  const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
-  const mapDisplayName = MAP_DISPLAY_NAMES[mapId];
+  const { maps } = useAccessibleMaps();
+  const authToken = mapRequiresAuth(mapId, maps) ? sessionToken : null;
+  const displayName = mapDisplayName(mapId, maps);
 
   const [index, setIndex] = useState<ChronicleIndex | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
@@ -260,8 +262,8 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   const [baseCorsFailed, setBaseCorsFailed] = useState(false);
 
   const [mapSize, setMapSize] = useState({
-    w: MAP_BOUNDS[mapId],
-    h: MAP_BOUNDS[mapId],
+    w: mapFallbackSize(mapId),
+    h: mapFallbackSize(mapId),
   });
   // The three halves of a day's CPU cost, each measured on the compose preview
   // and each only required when the toggle that pays for it is on.
@@ -335,9 +337,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
 
   const viewport = useMapViewport({ mapSize, fitMode: "contain" });
   const geometry = useMapGeometry(mapId, authToken);
-  // `useMapGeometry` only serves the main map, so nation names cannot be drawn
-  // anywhere else. The toggle says so rather than rendering an empty layer.
-  const namesSupported = mapId === "main";
+  // Names need neighbor + centroid files. Missing files leave names off rather
+  // than drawing an empty layer; loading still reports supported so the build
+  // waits instead of claiming the map has no geometry.
+  const namesSupported = chronicleNamesSupported(geometry);
 
   const days = useMemo(() => index?.days ?? [], [index]);
   const incompleteSet = useMemo(
@@ -1621,7 +1624,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
       downloadGif(
         bytes,
         chronicleGifFilename(
-          mapDisplayName,
+          displayName,
           built[0]!.day,
           built[built.length - 1]!.day
         )
@@ -1649,7 +1652,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
     speed,
     loop,
     geometry.centroids,
-    mapDisplayName,
+    displayName,
   ]);
 
   const focusOptions = useMemo(
@@ -1663,7 +1666,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
   }, []);
 
   if (gateReason) {
-    return <MapAccessGate reason={gateReason} mapDisplayName={mapDisplayName} />;
+    return <MapAccessGate reason={gateReason} mapDisplayName={displayName} />;
   }
 
   const disabledReasons: Partial<Record<ChronicleToggleKey, string>> =
@@ -1690,7 +1693,7 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
               mapId={mapId}
               path={`/${mapId}/map`}
               sessionToken={authToken}
-              alt={`${mapDisplayName} base map`}
+              alt={`${displayName} base map`}
               className="pointer-events-none block h-full w-full"
               // The GIF export composites this exact decoded image, and a
               // canvas it taints can never be read back. Asking for it with
@@ -1781,10 +1784,10 @@ export default function ChronicleStudio({ mapId }: { mapId: MapId }) {
                 Map chronicle
               </p>
               <h1 className="font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
-                {mapDisplayName} timelapse
+                {displayName} timelapse
               </h1>
               <Link
-                href={mapId === "main" ? "/map/main" : "/map/r3b1rth"}
+                href={liveMapHref(mapId)}
                 className="mt-2 inline-flex text-xs text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)]"
               >
                 Back to the live map

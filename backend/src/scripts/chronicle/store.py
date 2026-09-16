@@ -27,6 +27,9 @@ CHRONICLE_FILES: tuple[str, ...] = (
     "zoc_overlays",
     "empire",
     "infestation_data",
+    "county",
+    "duchy",
+    "kingdom",
 )
 
 # Sources a map may legitimately never have. `empire.json` only exists once
@@ -37,8 +40,9 @@ CHRONICLE_FILES: tuple[str, ...] = (
 # and does not show up as a problem in verify. A file in this set that is
 # *present but torn* is still `invalid`: that is a real fault, not an absence.
 #
-# The other de jure tiers (county/duchy/kingdom) are fixed geography, not day-to-
-# day state, so they are deliberately NOT captured — the viewer reads them live.
+# County, duchy and kingdom *are* captured (appended above). Players found titles
+# in-game, so those files are required day state, not live geography. Terrain /
+# fertility / the province outline stay uncaptured.
 OPTIONAL_CHRONICLE_FILES: frozenset[str] = frozenset(
     {
         "empire",

@@ -257,7 +257,7 @@ export function chronicleBuildBlockReason(options: {
   if (options.dayCount <= 0) return "Pick a range with at least one stored day.";
   if (options.nationNames) {
     if (!options.namesSupported) {
-      return "Nation names need label geometry, which only the live map has.";
+      return "Nation names need label geometry, which this map does not have.";
     }
     if (!options.geometryReady) {
       // Without this the label pass returns [] in microseconds: the estimate

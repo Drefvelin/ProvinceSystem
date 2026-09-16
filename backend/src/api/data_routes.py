@@ -13,7 +13,14 @@ from .internal_access import require_localhost
 from .map_access import ensure_map_access
 from .map_registry import get_map_entry
 from .request_body import read_json_body
-from .editor_validation import TITLE_TIERS, TitleValidationError, validate_title_tier
+from .editor_validation import (
+    TITLE_TIERS,
+    RegionsValidationError,
+    TitleValidationError,
+    validate_regions_payload,
+    validate_title_tier,
+)
+from ..scripts.chronicle.chapter_identity import write_chapter_identity
 from ..scripts.util.dirs import input_file, defines_file, validate_map
 # Imported at module scope on purpose, unlike capture_if_due below. A lazy
 # `from ... import` inside the handler re-runs the import machinery per request,
@@ -453,6 +460,10 @@ async def upload_region_data(
                 ),
                 headers={"Retry-After": str(LEDGER_LOCK_RETRY_AFTER_SECONDS)},
             ) from exc
+        # Last-seen chapter label for this live socket. After store_raw so a
+        # 400/409/503 never stamps identity. URL registry id, not payload
+        # map_id or chapter_id — those never route.
+        write_chapter_identity(map_id, payload)
         background_tasks.add_task(_run_promote_ledger_day, map_id, snapshot["day"])
 
         # ORDER MATTERS - keep capture_if_due last, for the same reason as the
@@ -493,6 +504,17 @@ async def upload_region_data(
             payload = validate_title_tier(mode_norm, payload, map_name)
         except TitleValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+    elif mode_norm == "regions":
+        # Gameplay zones (permadeath etc.), not a de jure title and not a map
+        # overlay. Empty {} still writes so a wipe can clear the file.
+        if not isinstance(payload, dict):
+            raise HTTPException(
+                status_code=400, detail="Regions data must be a JSON object"
+            )
+        try:
+            payload = validate_regions_payload(payload)
+        except RegionsValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     path = (
         input_file(map_name, f"{mode}.json")
@@ -503,6 +525,15 @@ async def upload_region_data(
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    if mode_norm == "map_markers":
+        # Same stamp as the ledger branch. Nation, titles, and other modes
+        # must not create or overwrite this file.
+        stamp_map = map_name
+        entry = get_map_entry(map_name)
+        if entry is not None:
+            stamp_map = entry.id
+        write_chapter_identity(stamp_map, payload)
 
     _province_cache.pop(map_name, None)
 

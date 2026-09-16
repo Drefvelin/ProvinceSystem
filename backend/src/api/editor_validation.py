@@ -22,6 +22,61 @@ class TitleValidationError(ValueError):
     """Invalid title tier payload."""
 
 
+class RegionsValidationError(ValueError):
+    """Invalid gameplay regions payload (not a title tier)."""
+
+
+def validate_regions_payload(body: dict) -> dict:
+    """Sanitize regions.json: object of id -> {name?, provinces[], rgb?}."""
+    if not isinstance(body, dict):
+        raise RegionsValidationError("Regions data must be a JSON object")
+
+    province_owner: dict[int, str] = {}
+    clean: dict[str, dict] = {}
+
+    for raw_id, raw_entry in body.items():
+        region_id = str(raw_id).strip()
+        if not region_id:
+            raise RegionsValidationError("Region ids must be non-empty strings")
+        if not isinstance(raw_entry, dict):
+            raise RegionsValidationError(f"Region '{region_id}' must be a JSON object")
+
+        provinces_raw = raw_entry.get("provinces", [])
+        if not isinstance(provinces_raw, list):
+            raise RegionsValidationError(
+                f"Region '{region_id}' provinces must be a list of integers"
+            )
+
+        provinces: list[int] = []
+        for item in provinces_raw:
+            try:
+                pid = int(item)
+            except (TypeError, ValueError) as exc:
+                raise RegionsValidationError(
+                    f"Region '{region_id}' has a non-integer province id"
+                ) from exc
+            if pid in province_owner:
+                other = province_owner[pid]
+                raise RegionsValidationError(
+                    f"Province {pid} is assigned to both '{other}' and '{region_id}'"
+                )
+            province_owner[pid] = region_id
+            provinces.append(pid)
+
+        entry: dict = {"provinces": provinces}
+        name = raw_entry.get("name")
+        if isinstance(name, str) and name.strip():
+            entry["name"] = name.strip()
+        else:
+            entry["name"] = region_id
+        rgb = raw_entry.get("rgb")
+        if isinstance(rgb, str) and rgb.strip():
+            entry["rgb"] = rgb.strip()
+        clean[region_id] = entry
+
+    return clean
+
+
 def _load_child_tier(map_name: str, child_tier: str) -> dict:
     path = defines_file(map_name, f"{child_tier}.json")
     if not os.path.exists(path):

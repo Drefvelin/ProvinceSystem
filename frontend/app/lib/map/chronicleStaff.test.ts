@@ -5,8 +5,10 @@ import {
   buildChronicleRestoreRequest,
   buildChronicleWipeRequest,
   canRestoreBackup,
+  canSubmitChronicleArchive,
   canSubmitChronicleRestore,
   canSubmitChronicleWipe,
+  chronicleArchivePath,
   chronicleBackupsPath,
   chronicleConfirmMatches,
   chronicleReasonIsValid,
@@ -119,13 +121,65 @@ describe("request bodies", () => {
   });
 });
 
+describe("canSubmitChronicleArchive", () => {
+  const ready = {
+    destId: "ch01",
+    confirm: "ch01",
+    displayName: "Chapter One",
+    reason: "close season",
+    allowUnknown: false,
+    replace: false,
+    destExists: false,
+  };
+
+  it("accepts a new dest that was typed exactly", () => {
+    expect(canSubmitChronicleArchive(ready)).toBe(true);
+  });
+
+  it("never submits dest main or dest dev", () => {
+    expect(canSubmitChronicleArchive({ ...ready, destId: "main", confirm: "main" })).toBe(
+      false
+    );
+    expect(canSubmitChronicleArchive({ ...ready, destId: "dev", confirm: "dev" })).toBe(
+      false
+    );
+  });
+
+  it("requires extra confirm for unknown and for an existing dest", () => {
+    expect(
+      canSubmitChronicleArchive({
+        ...ready,
+        destId: "unknown",
+        confirm: "unknown",
+        allowUnknown: false,
+      })
+    ).toBe(false);
+    expect(
+      canSubmitChronicleArchive({
+        ...ready,
+        destId: "unknown",
+        confirm: "unknown",
+        allowUnknown: true,
+      })
+    ).toBe(true);
+    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: false })).toBe(
+      false
+    );
+    expect(canSubmitChronicleArchive({ ...ready, destExists: true, replace: true })).toBe(
+      true
+    );
+  });
+});
+
 describe("paths", () => {
   it("addresses the API by map id and the page by route segment", () => {
     expect(chronicleWipePath("dev")).toBe("/dev/chronicle/wipe");
+    expect(chronicleArchivePath("chsrc")).toBe("/chsrc/chronicle/archive");
     expect(chronicleBackupsPath("main")).toBe("/main/chronicle/backups");
     expect(chronicleRestorePath("dev")).toBe("/dev/chronicle/restore");
     expect(chronicleStaffHref("dev")).toBe("/map/r3b1rth/chronicle/staff");
     expect(chronicleStaffHref("main")).toBe("/map/main/chronicle/staff");
+    expect(chronicleStaffHref("calavorn")).toBe("/map/calavorn/chronicle/staff");
   });
 });
 

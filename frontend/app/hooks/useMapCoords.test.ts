@@ -71,6 +71,22 @@ describe("getMapCoords legacy path", () => {
 
     expect(getMapCoords(mockMouseEvent(50, 550), canvas, "main")).toBeNull();
   });
+
+  it("uses the 6400 fallback for an unknown map when the canvas has no bitmap", () => {
+    const canvas = mockCanvas(
+      { left: 0, top: 0, width: 1000, height: 1000 },
+      { width: 0, height: 0 }
+    );
+
+    const coords = getMapCoords(mockMouseEvent(500, 500), canvas, "calavorn");
+
+    expect(coords).toEqual({
+      x: 3200,
+      y: 3200,
+      screenX: 500,
+      screenY: 500,
+    });
+  });
 });
 
 describe("getMapCoords viewport path", () => {

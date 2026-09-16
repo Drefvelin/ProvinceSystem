@@ -2,40 +2,54 @@ import { useEffect, useState } from "react";
 
 import type { MapId, MapMode } from "../components/map/types";
 import type { TitleEntity, TitleLayers } from "../lib/titleProvinces";
-import { fetchMapJson } from "@/lib/map/api";
-import { isChronicleStaticMode } from "../lib/map/chronicleDayModes";
+import { isChronicleDayFileMissing } from "../lib/map/chronicleData";
+import {
+  fetchMapModeRegionData,
+  mapModeDataSource,
+} from "../lib/map/dataSource";
 
 const tierCache = new Map<string, Record<string, TitleEntity>>();
 
 /**
- * The day is part of the key even though every tier `fetchTier` fetches is live.
+ * Nested title extras (`county` / `duchy` / `kingdom`) are day-varying: they
+ * are captured with the rest of the chronicle. This cache is module-level and
+ * survives client-side navigation from the live map onto a stored day, so the
+ * day is part of the key. Serving a live extra under a date banner would be
+ * fabricated history; serving one day's extra to another day would mix two
+ * captures. Keying on the day costs one template literal and makes both
+ * classes of bug impossible.
  *
- * `/{mapId}/data/{tier}` is **live** data and this cache is module-level, so it
- * survives client-side navigation from the live map onto a stored day. That is
- * safe today, and the reason is a product fact rather than an accident: the
- * only tiers `EXTRA_FETCHES` ever asks for are `county`, `duchy` and `kingdom`,
- * and all three are *static* — de jure structure that does not change day to
- * day, so their live answer is also their historical one. See
- * `CHRONICLE_STATIC_MODES` in `app/lib/map/chronicleDayModes`.
- *
- * `empire` is the one title tier that *is* game state, and it never reaches
- * this function: it is the active tier, resolved from the day's own captured
- * `empire.json` through `CHRONICLE_MODE_SOURCE` and handed in as `regionData`.
- * So an empire map on a stored day draws that day's empires over live
- * county/duchy/kingdom boundaries, which is correct.
- *
- * The day stays in the key anyway. If a tier that *does* vary is ever added to
- * `EXTRA_FETCHES`, a shared cache entry would serve one day's fetch to another
- * under a date banner; keying on the day costs one template literal and makes
- * that class of bug impossible.
+ * The active tier never goes through `fetchTier`: it arrives as `regionData`
+ * from `useMapModeData` / `CHRONICLE_MODE_SOURCE`. Extras are the lower tiers
+ * `EXTRA_FETCHES` asks for so rollup can walk titles → provinces.
  */
 function cacheKey(mapId: MapId, tier: string, day: string | null): string {
   return `${mapId}:${day ?? "live"}:${tier}`;
 }
 
-async function fetchTier(
+/**
+ * Live-leak tripwire for nested extras. On the live map any extra may use the
+ * live endpoint. Under a stored day the extra must resolve to a chronicle
+ * day file — never `live`, even if someone later classifies that tier static.
+ * Throwing is a missing nested layer, not today's titles under a past date.
+ */
+export function assertDayScopedTitleExtra(
   mapId: MapId,
   tier: string,
+  day: string | null
+): void {
+  if (day === null) return;
+  const source = mapModeDataSource(mapId, tier as MapMode, day);
+  if (source.kind !== "day") {
+    throw new Error(
+      `useTitleLayerData refuses to fetch live "${tier}" under chronicle day ${day}`
+    );
+  }
+}
+
+async function fetchTier(
+  mapId: MapId,
+  tier: MapMode,
   sessionToken?: string | null,
   day: string | null = null
 ): Promise<Record<string, TitleEntity>> {
@@ -43,33 +57,19 @@ async function fetchTier(
   const cached = tierCache.get(key);
   if (cached) return cached;
 
-  // Deliberately live even under a day: `assertStaticTier` is the guard that
-  // this stays true, and it throws rather than silently fetching today's data
-  // for a tier someone has since made day-varying.
-  assertStaticTier(tier, day);
-  const data = await fetchMapJson<Record<string, TitleEntity>>(
-    `/${mapId}/data/${tier}`,
-    { sessionToken }
-  );
+  assertDayScopedTitleExtra(mapId, tier, day);
+  const data = (await fetchMapModeRegionData({
+    mapId,
+    mapType: tier,
+    day,
+    sessionToken,
+  })) as Record<string, TitleEntity>;
   tierCache.set(key, data);
   return data;
 }
 
-/**
- * The live-leak tripwire. Every tier this hook fetches directly must be one the
- * chronicle classifies as static; anything else would render today's boundaries
- * under a past date. Throwing lands in the effect's `.catch`, which logs and
- * clears the layers — a missing tier layer, not fabricated history.
- */
-function assertStaticTier(tier: string, day: string | null): void {
-  if (day === null) return;
-  if (isChronicleStaticMode(tier)) return;
-  throw new Error(
-    `useTitleLayerData refuses to fetch live "${tier}" under chronicle day ${day}`
-  );
-}
-
-const EXTRA_FETCHES: Partial<Record<MapMode, string[]>> = {
+/** Lower title tiers loaded so the active mode can roll up nested provinces. */
+export const EXTRA_FETCHES: Partial<Record<MapMode, MapMode[]>> = {
   duchy: ["county"],
   kingdom: ["duchy", "county"],
   empire: ["kingdom", "duchy", "county"],
@@ -82,6 +82,17 @@ const ACTIVE_TIER: Partial<Record<MapMode, keyof TitleLayers>> = {
   empire: "empire",
   trade: "trade",
 };
+
+function layersWithActive(
+  activeTier: keyof TitleLayers,
+  regionData: Record<string, TitleEntity>
+): TitleLayers {
+  const next: TitleLayers = { county: {} };
+  if (activeTier === "duchy") next.duchy = regionData;
+  else if (activeTier === "kingdom") next.kingdom = regionData;
+  else if (activeTier === "empire") next.empire = regionData;
+  return next;
+}
 
 export function useTitleLayerData(
   mapId: MapId,
@@ -116,22 +127,25 @@ export function useTitleLayerData(
     setLoading(true);
 
     Promise.all(
-      extra.map((tier) => fetchTier(mapId, tier, sessionToken, day))
+      extra.map((tier) =>
+        fetchTier(mapId, tier, sessionToken, day).catch((err: unknown) => {
+          if (isChronicleDayFileMissing(err)) {
+            return {} as Record<string, TitleEntity>;
+          }
+          throw err;
+        })
+      )
     )
       .then((fetched) => {
         if (cancelled) return;
 
-        const next: TitleLayers = { county: {} };
+        const next = layersWithActive(activeTier, regionData);
         extra.forEach((tier, index) => {
           const data = fetched[index];
-          if (tier === "county") next.county = data;
+          if (tier === "county") next.county = data ?? {};
           else if (tier === "duchy") next.duchy = data;
           else if (tier === "kingdom") next.kingdom = data;
         });
-
-        if (activeTier === "duchy") next.duchy = regionData;
-        else if (activeTier === "kingdom") next.kingdom = regionData;
-        else if (activeTier === "empire") next.empire = regionData;
 
         setLayers(next);
       })

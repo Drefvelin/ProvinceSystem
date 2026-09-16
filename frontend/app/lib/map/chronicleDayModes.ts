@@ -11,15 +11,15 @@ import { buildProsperityColorLut } from "./chronicleProsperity";
  * There are three answers, and the whole day page hangs off telling them apart:
  *
  *  - **Day-varying** — `nation`, `trade`, `prosperity`, `empire`,
- *    `infestation`. These are game state. They must come out of that day's
- *    capture, and rendering the live version of any of them under a past date
- *    would be fabricated history.
+ *    `infestation`, plus the title tiers `county`, `duchy`, `kingdom`. These
+ *    are game state. They must come out of that day's capture, and rendering
+ *    the live version of any of them under a past date would be fabricated
+ *    history.
  *
- *  - **Static** - `terrain`, `fertility`, `province`, `county`, `duchy`,
- *    `kingdom`. These are geography and de jure structure, not state: they are
- *    the same on every day, so the live source *is* the historical answer.
- *    Serving them live is correct, not a leak, and it is why they are not
- *    captured.
+ *  - **Static** - `terrain`, `fertility`, `province`. These are province
+ *    geometry, not state: they are the same on every day, so the live source
+ *    *is* the historical answer. Serving them live is correct, not a leak, and
+ *    it is why they are not captured.
  *
  *  - Region-record vs province-quantity, which cuts across the first split and
  *    is what `CHRONICLE_PROVINCE_PAINT_SOURCE` below is about.
@@ -31,9 +31,6 @@ export const CHRONICLE_STATIC_MODES: ReadonlySet<MapMode> = new Set<MapMode>([
   "terrain",
   "fertility",
   "province",
-  "county",
-  "duchy",
-  "kingdom",
 ]);
 
 /**

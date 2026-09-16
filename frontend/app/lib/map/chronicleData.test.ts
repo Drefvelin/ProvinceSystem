@@ -43,7 +43,7 @@ describe("chronicle data", () => {
     vi.restoreAllMocks();
   });
 
-  it("exposes exactly the six backend sources", () => {
+  it("exposes exactly the backend chronicle file names", () => {
     expect(CHRONICLE_FILE_NAMES).toEqual([
       "nation",
       "province_data",
@@ -53,6 +53,9 @@ describe("chronicle data", () => {
       "zoc_overlays",
       "empire",
       "infestation_data",
+      "county",
+      "duchy",
+      "kingdom",
     ]);
   });
 

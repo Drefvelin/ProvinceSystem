@@ -6,7 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import MapViewer from "../MapViewer";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
-import { MAP_DISPLAY_NAMES, type MapId } from "../map/types";
+import { mapDisplayName, type MapId } from "../map/types";
+import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../../hooks/useCharacterSessionToken";
 import {
   MapAccessError,
@@ -223,8 +224,9 @@ export default function ChronicleDayViewer({
   day: string;
 }) {
   const sessionToken = useCharacterSessionToken();
-  const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
-  const mapDisplayName = MAP_DISPLAY_NAMES[mapId];
+  const { maps } = useAccessibleMaps();
+  const authToken = mapRequiresAuth(mapId, maps) ? sessionToken : null;
+  const displayName = mapDisplayName(mapId, maps);
 
   const contextDay = useChronicleDay();
   const activeDay = contextDay ?? day;
@@ -291,7 +293,7 @@ export default function ChronicleDayViewer({
 
   if (status.kind === "gated") {
     return (
-      <MapAccessGate reason={status.reason} mapDisplayName={mapDisplayName} />
+      <MapAccessGate reason={status.reason} mapDisplayName={displayName} />
     );
   }
 
@@ -323,7 +325,7 @@ export default function ChronicleDayViewer({
     return (
       <div className={shellClass}>
         <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-          {mapDisplayName} chronicle
+          {displayName} chronicle
         </p>
         <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
           No record of {activeDay}

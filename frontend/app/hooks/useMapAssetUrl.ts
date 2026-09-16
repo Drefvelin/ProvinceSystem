@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { MapId } from "@/app/components/map/types";
+import { useAccessibleMaps } from "./useAccessibleMaps";
 import {
   fetchMapBlobUrl,
   mapApiUrl,
@@ -26,6 +27,8 @@ export function useMapAssetUrl(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { maps } = useAccessibleMaps();
+
   useEffect(() => {
     if (!enabled || !path) {
       setUrl(null);
@@ -35,7 +38,7 @@ export function useMapAssetUrl(
     }
 
     const directUrl = mapApiUrl(path);
-    const needsAuth = mapRequiresAuth(mapId);
+    const needsAuth = mapRequiresAuth(mapId, maps);
     const token = (sessionToken || "").trim();
 
     if (!needsAuth) {
@@ -82,7 +85,7 @@ export function useMapAssetUrl(
       cancelled = true;
       revokeMapBlobUrl(blobUrl);
     };
-  }, [mapId, path, sessionToken, enabled]);
+  }, [mapId, path, sessionToken, enabled, maps]);
 
   return { url, loading, error };
 }

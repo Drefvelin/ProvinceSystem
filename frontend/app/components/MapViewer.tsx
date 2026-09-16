@@ -53,7 +53,8 @@ import type {
   MapMode,
   RegionInfo,
 } from "./map/types";
-import { MAP_BOUNDS, MAP_DISPLAY_NAMES } from "./map/types";
+import { mapFallbackSize, mapDisplayName } from "./map/types";
+import { useAccessibleMaps } from "../hooks/useAccessibleMaps";
 import { useCharacterSessionToken } from "../hooks/useCharacterSessionToken";
 import { useCanEditMap } from "../hooks/useCanEditMap";
 import {
@@ -66,7 +67,9 @@ import {
   staffMapAccessReason,
 } from "@/lib/map/api";
 import { editorUrl } from "@/lib/map/editorAccess";
-import { chronicleStudioHref } from "@/app/lib/map/chronicleDayRoute";
+import { chronicleStudioHref, liveMapHref } from "@/app/lib/map/chronicleDayRoute";
+import { isArchivedMap, showReviewHistory } from "@/app/lib/map/archiveMaps";
+import MapArchiveMenu from "./map/MapArchiveMenu";
 import ChronicleOwnershipLayer from "./chronicle/ChronicleOwnershipLayer";
 import { fetchProvinceIdGridQ4 } from "@/app/lib/map/chronicleData";
 import { directOwnership } from "@/app/lib/map/chronicleOwnership";
@@ -90,6 +93,28 @@ const editTitlesLinkClass =
  */
 const reviewHistoryLinkClass =
   "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_60%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-accent)_16%,transparent)] px-2.5 py-1.5 text-xs font-medium text-[var(--tfmc-cream)] no-underline transition hover:border-[var(--tfmc-accent)] hover:bg-[color-mix(in_srgb,var(--tfmc-accent)_28%,transparent)]";
+
+function ReviewHistoryLink({ mapId }: { mapId: MapId }) {
+  return (
+    <Link href={chronicleStudioHref(mapId)} className={reviewHistoryLinkClass}>
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        aria-hidden
+        className="h-3.5 w-3.5 shrink-0 text-[var(--tfmc-accent)]"
+      >
+        <path
+          d="M10 5.5V10l2.75 1.75M3 10a7 7 0 1 0 2.2-5.1M3 3.5V7h3.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      Review History
+    </Link>
+  );
+}
 
 const fitModeLabelClass = (active: boolean) =>
   `text-xs transition ${active ? "text-[var(--tfmc-cream)]" : "text-[var(--tfmc-stone)]"}`;
@@ -115,9 +140,10 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * A stored day offers the *same* mode list as the live map, with no
    * filtering. Every mode now has an honest day answer: the day-varying ones
    * (`nation`, `trade`, `empire`, `prosperity`, `infestation`) come out of that
-   * day's capture, and the static ones (`terrain`, `fertility`, `county`,
-   * `duchy`, `kingdom`) are geography and de jure structure that do not change
-   * day to day, so their live source *is* their historical answer.
+   * day's capture, and the static ones (`terrain`, `fertility`, `province`)
+   * are province geometry that does not change day to day, so their live
+   * source *is* their historical answer. Title modes (`county`, `duchy`,
+   * `kingdom`, `empire`) come from that day's capture.
    *
    * A mode with nothing stored for a particular day still falls through to the
    * "missing from this capture" panel below rather than being hidden — the
@@ -125,8 +151,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
    * harder to reason about than one that says what it does not have.
    */
   const sessionToken = useCharacterSessionToken();
+  const { maps } = useAccessibleMaps();
   const { canEdit, loading: canEditLoading } = useCanEditMap(mapId, sessionToken);
-  const authToken = mapRequiresAuth(mapId) ? sessionToken : null;
+  const authToken = mapRequiresAuth(mapId, maps) ? sessionToken : null;
   const [gateReason, setGateReason] = useState<MapAccessGateReason | null>(
     null
   );
@@ -157,10 +184,10 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   const viewportCoordsRef = useRef<MapPickViewport | null>(null);
   const lastProvinceIdRef = useRef<number | null>(null);
 
-  const mapDisplayName = MAP_DISPLAY_NAMES[mapId];
+  const displayName = mapDisplayName(mapId, maps);
 
   useEffect(() => {
-    if (mapId !== "dev") {
+    if (!mapRequiresAuth(mapId, maps)) {
       setGateReason(null);
       setAccessChecked(true);
       return;
@@ -187,7 +214,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     return () => {
       cancelled = true;
     };
-  }, [mapId, authToken]);
+  }, [mapId, authToken, maps]);
 
   const guildNameCacheRef = useGuildCache(mapId, authToken, day);
   const paint = useMapPaint({ mapId, viewportCoordsRef });
@@ -356,7 +383,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   }, [mapId, authToken, day]);
 
   const mapCanvasMounted =
-    !loading && !(mapId === "main" && !geometryReady);
+    !loading && geometryReady;
 
   // Pick pixels are read from the hidden canvas inside MapCanvas. That node
   // does not exist until loading/geometry finish, so this effect must wait
@@ -386,7 +413,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
 
       const path = `/${mapId}/mapdata/${mapType}`;
       let src = mapApiUrl(path);
-      if (mapRequiresAuth(mapId) && authToken) {
+      if (mapRequiresAuth(mapId, maps) && authToken) {
         try {
           src = await fetchMapBlobUrl(path, authToken);
           blobUrl = src;
@@ -443,6 +470,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     accessChecked,
     gateReason,
     authToken,
+    maps,
     mapCanvasMounted,
     day,
   ]);
@@ -536,7 +564,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
     setRegionInfo,
     setSelectedRegionId,
     getHoverRegion,
-    mapDisplayName,
+    mapDisplayName: displayName,
     mapObjects,
     markers: mapMarkers,
     forts,
@@ -650,7 +678,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         regionId,
         region,
         mapType,
-        mapDisplayName,
+        displayName,
         regionData
       )
     );
@@ -684,7 +712,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         reason={
           gateReason ?? accessError ?? provincePaint.accessError ?? "unknown"
         }
-        mapDisplayName={mapDisplayName}
+        mapDisplayName={displayName}
       />
     );
   }
@@ -774,34 +802,29 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
   return (
     <>
       <MapPageLayout
-        mapDisplayName={mapDisplayName}
+        mapDisplayName={displayName}
         headerAction={
           chronicle ? null : (
             <div className="flex shrink-0 flex-col items-end gap-2">
-              {/* Shown to everyone, and shown even when this map has captured
-                  no days yet — the studio says so itself, which is a better
-                  answer than an entry point that silently is not there. Costs
-                  no request: the live map must not pay for the chronicle. */}
-              <Link
-                href={chronicleStudioHref(mapId)}
-                className={reviewHistoryLinkClass}
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  aria-hidden
-                  className="h-3.5 w-3.5 shrink-0 text-[var(--tfmc-accent)]"
-                >
-                  <path
-                    d="M10 5.5V10l2.75 1.75M3 10a7 7 0 1 0 2.2-5.1M3 3.5V7h3.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Review History
-              </Link>
+              {isArchivedMap(mapId, maps) ? (
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <Link href={liveMapHref("main")} className={reviewHistoryLinkClass}>
+                    Live map
+                  </Link>
+                  {showReviewHistory(mapId, maps) ? (
+                    <ReviewHistoryLink mapId={mapId} />
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {/* Shown to everyone, and shown even when this map has captured
+                      no days yet — the studio says so itself, which is a better
+                      answer than an entry point that silently is not there. Costs
+                      no request: the live map must not pay for the chronicle. */}
+                  <ReviewHistoryLink mapId={mapId} />
+                  <MapArchiveMenu maps={maps} linkClass={reviewHistoryLinkClass} />
+                </div>
+              )}
               {/* The editor writes to the *live* map. Reaching it from a stored
                   day would invite editing today's titles while looking at last
                   year's — hence the whole block being hidden in chronicle mode. */}
@@ -914,8 +937,8 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
                 // is set from the same resolution, so it is the honest gate for
                 // "is something hovered right now".
                 hoveredRegionId={hoveredOverlay ? selectedRegionId : null}
-                mapW={MAP_BOUNDS[mapId]}
-                mapH={MAP_BOUNDS[mapId]}
+                mapW={mapFallbackSize(mapId)}
+                mapH={mapFallbackSize(mapId)}
               />
             ) : undefined
           }

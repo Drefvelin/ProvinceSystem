@@ -43,12 +43,9 @@ describe("mode classification", () => {
     }
   });
 
-  it("classifies the six modes the user says never change as static", () => {
+  it("classifies the three modes the user says never change as static", () => {
     expect([...CHRONICLE_STATIC_MODES].sort()).toEqual([
-      "county",
-      "duchy",
       "fertility",
-      "kingdom",
       "province",
       "terrain",
     ]);

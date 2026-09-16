@@ -373,6 +373,35 @@ class EditorRoutesApiTest(unittest.TestCase):
         written = json.loads((self.map_dir / "county.json").read_text(encoding="utf-8"))
         self.assertEqual(written["COUNTY_1"]["name"], "A")
 
+    def test_upload_regions_no_auth_403(self) -> None:
+        r = self.client.post(
+            "/main/data/upload/regions",
+            json={"REGION_1": {"name": "A", "provinces": [1]}},
+        )
+        self.assertEqual(r.status_code, 403)
+
+    def test_upload_regions_internal_peer_writes_file(self) -> None:
+        payload = {
+            "REGION_1": {"name": "Highlands", "provinces": [1, 2], "rgb": "1,2,3"},
+        }
+        with mock.patch("src.api.data_routes.require_localhost"):
+            r = self.client.post("/main/data/upload/regions", json=payload)
+        self.assertEqual(r.status_code, 200)
+        written = json.loads((self.map_dir / "regions.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["REGION_1"]["name"], "Highlands")
+        self.assertEqual(written["REGION_1"]["provinces"], [1, 2])
+
+    def test_upload_empty_regions_overwrites_file(self) -> None:
+        (self.map_dir / "regions.json").write_text(
+            '{"REGION_1": {"name": "keep", "provinces": [1]}}',
+            encoding="utf-8",
+        )
+        with mock.patch("src.api.data_routes.require_localhost"):
+            r = self.client.post("/main/data/upload/regions", json={})
+        self.assertEqual(r.status_code, 200)
+        written = json.loads((self.map_dir / "regions.json").read_text(encoding="utf-8"))
+        self.assertEqual(written, {})
+
     def test_get_editor_provinces_staff(self) -> None:
         staff_session_patch, staff_access_patch = self._staff_patches()
         with staff_session_patch, staff_access_patch:

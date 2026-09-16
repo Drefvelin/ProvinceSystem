@@ -12,16 +12,21 @@ import {
   staffMapAccessReason,
 } from "@/lib/map/api";
 import MapAccessGate, { type MapAccessGateReason } from "../map/MapAccessGate";
-import { MAP_DISPLAY_NAMES, type MapId } from "../map/types";
+import { mapDisplayName, type MapId } from "../map/types";
+import { isArchivedMap } from "@/app/lib/map/archiveMaps";
+import { useAccessibleMaps } from "../../hooks/useAccessibleMaps";
 import { chronicleStudioHref } from "../../lib/map/chronicleDayRoute";
 import {
   CHRONICLE_WIPE_REASON_MAX_LENGTH,
+  backupFileName,
+  buildChronicleArchiveRequest,
   buildChronicleRestoreRequest,
   buildChronicleWipeRequest,
-  backupFileName,
   canRestoreBackup,
+  canSubmitChronicleArchive,
   canSubmitChronicleRestore,
   canSubmitChronicleWipe,
+  chronicleArchivePath,
   chronicleBackupsPath,
   chronicleConfirmMatches,
   chronicleRestorePath,
@@ -32,6 +37,7 @@ import {
   formatDayCount,
   formatUnixSeconds,
   isNothingToWipe,
+  type ChronicleArchiveResponse,
   type ChronicleBackupRow,
   type ChronicleBackupsResponse,
   type ChronicleRestoreResponse,
@@ -119,7 +125,7 @@ async function postStaffJson<T>(
 
 function asFailure(
   err: unknown,
-  action: "wipe" | "restore" | "load"
+  action: "wipe" | "restore" | "load" | "archive"
 ): ChronicleStaffFailure {
   if (err instanceof MapAccessError) {
     return chronicleStaffFailure(err.status, err.detail, null, action);
@@ -167,7 +173,8 @@ function Notice({ tone, children }: { tone: "ok" | "info"; children: ReactNode }
 
 export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
   const sessionToken = useCharacterSessionToken();
-  const mapDisplayName = MAP_DISPLAY_NAMES[mapId];
+  const { maps } = useAccessibleMaps();
+  const displayName = mapDisplayName(mapId, maps);
 
   // `useCharacterSessionToken` starts at null and fills in from an effect, so
   // "no token yet" and "signed out" look identical on the first paint. Without
@@ -186,6 +193,20 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
   const [wipeBusy, setWipeBusy] = useState(false);
   const [wipeFailure, setWipeFailure] = useState<ChronicleStaffFailure | null>(null);
   const [wipeResult, setWipeResult] = useState<ChronicleWipeResponse | null>(null);
+
+  const [archiveDest, setArchiveDest] = useState("");
+  const [archiveName, setArchiveName] = useState("");
+  const [archiveConfirm, setArchiveConfirm] = useState("");
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveAllowUnknown, setArchiveAllowUnknown] = useState(false);
+  const [archiveReplace, setArchiveReplace] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveFailure, setArchiveFailure] = useState<ChronicleStaffFailure | null>(
+    null
+  );
+  const [archiveResult, setArchiveResult] = useState<ChronicleArchiveResponse | null>(
+    null
+  );
 
   // Restore form — one row at a time, opened from the table.
   const [restoreId, setRestoreId] = useState<number | null>(null);
@@ -232,6 +253,26 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
   }, [loadBackups, sessionToken]);
 
   const wipeReady = canSubmitChronicleWipe(wipeConfirm, wipeReason, mapId);
+  const archived = isArchivedMap(mapId, maps);
+  const destExists = maps.some(
+    (entry) => entry.id === archiveDest && entry.id !== mapId
+  );
+  const archiveReady = canSubmitChronicleArchive({
+    destId: archiveDest,
+    confirm: archiveConfirm,
+    displayName: archiveName,
+    reason: archiveReason,
+    allowUnknown: archiveAllowUnknown,
+    replace: archiveReplace,
+    destExists,
+  });
+
+  useEffect(() => {
+    const live = maps.find((entry) => entry.id === mapId);
+    if (!live) return;
+    setArchiveDest((current) => current || live.chapter_id || "");
+    setArchiveName((current) => current || live.chapter_name || "");
+  }, [mapId, maps]);
 
   const runWipe = useCallback(async () => {
     if (!sessionToken || !wipeReady || wipeBusy) return;
@@ -255,6 +296,46 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
       setWipeBusy(false);
     }
   }, [loadBackups, mapId, sessionToken, wipeBusy, wipeReady, wipeReason]);
+
+  const runArchive = useCallback(async () => {
+    if (!sessionToken || !archiveReady || archiveBusy || archived) return;
+    setArchiveBusy(true);
+    setArchiveFailure(null);
+    setArchiveResult(null);
+    try {
+      const result = await postStaffJson<ChronicleArchiveResponse>(
+        chronicleArchivePath(mapId),
+        buildChronicleArchiveRequest({
+          destId: archiveDest,
+          displayName: archiveName,
+          reason: archiveReason,
+          replace: archiveReplace,
+          allowUnknown: archiveAllowUnknown,
+        }),
+        sessionToken
+      );
+      setArchiveResult(result);
+      setArchiveConfirm("");
+      setArchiveReason("");
+      setArchiveReplace(false);
+      setArchiveAllowUnknown(false);
+    } catch (err) {
+      setArchiveFailure(asFailure(err, "archive"));
+    } finally {
+      setArchiveBusy(false);
+    }
+  }, [
+    archiveAllowUnknown,
+    archiveBusy,
+    archiveDest,
+    archiveName,
+    archiveReady,
+    archiveReason,
+    archiveReplace,
+    archived,
+    mapId,
+    sessionToken,
+  ]);
 
   const openRestore = useCallback(
     (row: ChronicleBackupRow) => {
@@ -302,10 +383,10 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
     );
   }
   if (!sessionToken) {
-    return <MapAccessGate reason="login" mapDisplayName={mapDisplayName} />;
+    return <MapAccessGate reason="login" mapDisplayName={displayName} />;
   }
   if (gateReason) {
-    return <MapAccessGate reason={gateReason} mapDisplayName={mapDisplayName} />;
+    return <MapAccessGate reason={gateReason} mapDisplayName={displayName} />;
   }
 
   return (
@@ -313,7 +394,7 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
       <div className="mx-auto flex max-w-4xl flex-col gap-5">
         <header>
           <p className="text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
-            Staff operations · {mapId}
+            Staff operations · {displayName}
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-fraunces)] text-2xl font-medium text-[var(--tfmc-cream)]">
             Chronicle wipe and restore
@@ -411,6 +492,115 @@ export default function ChronicleStaffConsole({ mapId }: { mapId: MapId }) {
             </div>
           )}
         </section>
+
+        {!archived && (
+        <section className={`${chroniclePanelClass} p-4`}>
+          <SectionHeading title="Archive as…" />
+          <p className="mt-2 text-sm leading-relaxed text-[var(--tfmc-stone)]">
+            Copy this live map onto a frozen chapter id. The live socket stays
+            running. Type the dest id exactly. Extra confirm if the dest already
+            exists or is unknown. Do not use this on production this season.
+          </p>
+
+          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+            Dest id
+            <input
+              className={`${inputClass} mt-1`}
+              value={archiveDest}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setArchiveDest(event.target.value)}
+            />
+          </label>
+          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+            Display name
+            <input
+              className={`${inputClass} mt-1`}
+              value={archiveName}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setArchiveName(event.target.value)}
+            />
+          </label>
+          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+            Type the dest id to confirm
+            <input
+              className={`${inputClass} mt-1`}
+              value={archiveConfirm}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="type the dest id"
+              onChange={(event) => setArchiveConfirm(event.target.value)}
+            />
+          </label>
+          {archiveConfirm.length > 0 &&
+            !chronicleConfirmMatches(archiveConfirm, archiveDest) && (
+              <p className="mt-1 text-xs text-[color-mix(in_srgb,#fca5a5_85%,transparent)]">
+                Does not match “{archiveDest}” exactly.
+              </p>
+            )}
+
+          <label className="mt-3 block text-xs uppercase tracking-widest text-[var(--tfmc-mist)]">
+            Reason (required, up to {CHRONICLE_WIPE_REASON_MAX_LENGTH} characters)
+            <textarea
+              className={`${inputClass} mt-1 h-20 resize-y`}
+              value={archiveReason}
+              maxLength={CHRONICLE_WIPE_REASON_MAX_LENGTH}
+              placeholder="why this live map is being copied to a frozen id"
+              onChange={(event) => setArchiveReason(event.target.value)}
+            />
+          </label>
+
+          {archiveDest === "unknown" && (
+            <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={archiveAllowUnknown}
+                onChange={(event) => setArchiveAllowUnknown(event.target.checked)}
+              />
+              Dest is unknown — extra confirm (overwrite hazard)
+            </label>
+          )}
+          {destExists && (
+            <label className="mt-3 flex items-start gap-2 text-sm text-[var(--tfmc-cream)]">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={archiveReplace}
+                onChange={(event) => setArchiveReplace(event.target.checked)}
+              />
+              Dest already exists — replace that chapter
+            </label>
+          )}
+
+          <button
+            type="button"
+            className={`${dangerButtonClass} mt-3`}
+            disabled={!archiveReady || archiveBusy}
+            onClick={() => void runArchive()}
+          >
+            {archiveBusy ? "Archiving…" : `Archive as ${archiveDest || "…"}`}
+          </button>
+
+          {archiveResult && (
+            <div className="mt-3">
+              <Notice tone="ok">
+                <span className="font-medium">
+                  Copied {mapId} → {archiveResult.dest}.
+                </span>{" "}
+                {formatDayCount(archiveResult.days.length)} indexed. Source was
+                not wiped.
+              </Notice>
+            </div>
+          )}
+          {archiveFailure && (
+            <div className="mt-3">
+              <FailureNotice failure={archiveFailure} />
+            </div>
+          )}
+        </section>
+        )}
 
         {/* ------------------------------------------------------------- */}
         <section className={`${chroniclePanelClass} p-4`}>

@@ -15,7 +15,7 @@ import type {
   MapObject,
   WarExport,
 } from "./types";
-import { MAP_BOUNDS } from "./types";
+import { mapFallbackSize } from "./types";
 import type { MapMarker } from "../../lib/mapMarkers";
 import { isMarkerMapMode } from "../../lib/mapMarkers";
 import {
@@ -227,8 +227,8 @@ export default function MapCanvas({
   provinceOverlay,
 }: MapCanvasProps) {
   const [mapSize, setMapSize] = useState({
-    w: MAP_BOUNDS[mapId],
-    h: MAP_BOUNDS[mapId],
+    w: mapFallbackSize(mapId),
+    h: mapFallbackSize(mapId),
   });
 
   const viewport = useMapViewport({ mapSize, fitMode });
@@ -258,7 +258,7 @@ export default function MapCanvas({
 
   useEffect(() => {
     appliedNaturalSizeRef.current = null;
-    setMapSize({ w: MAP_BOUNDS[mapId], h: MAP_BOUNDS[mapId] });
+    setMapSize({ w: mapFallbackSize(mapId), h: mapFallbackSize(mapId) });
   }, [mapId]);
 
   useEffect(() => {

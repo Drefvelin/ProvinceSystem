@@ -1,3 +1,4 @@
+import { liveMapHref } from "./chronicleDayRoute";
 import type { MapId } from "@/app/components/map/types";
 
 /**
@@ -93,6 +94,23 @@ export type ChronicleRestoreRequest = {
   merge: boolean;
 };
 
+export type ChronicleArchiveRequest = {
+  dest_id: string;
+  display_name: string;
+  confirm: string;
+  reason: string;
+  replace: boolean;
+  allow_unknown: boolean;
+};
+
+export type ChronicleArchiveResponse = {
+  ok: true;
+  source: string;
+  dest: string;
+  display_name: string;
+  days: string[];
+};
+
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
@@ -109,9 +127,13 @@ export function chronicleRestorePath(mapId: MapId): string {
   return `/${mapId}/chronicle/restore`;
 }
 
+export function chronicleArchivePath(mapId: MapId): string {
+  return `/${mapId}/chronicle/archive`;
+}
+
 /** `/map/{map}/chronicle/staff` — the page these helpers back. */
 export function chronicleStaffHref(mapId: MapId): string {
-  return `/map/${mapId === "dev" ? "r3b1rth" : "main"}/chronicle/staff`;
+  return `${liveMapHref(mapId)}/chronicle/staff`;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +169,32 @@ export function canSubmitChronicleWipe(
   mapId: MapId | string
 ): boolean {
   return chronicleConfirmMatches(typed, mapId) && chronicleReasonIsValid(reason);
+}
+
+const LIVE_ARCHIVE_DEST = new Set(["main", "dev"]);
+
+export type ChronicleArchiveSubmitInput = {
+  destId: string;
+  confirm: string;
+  displayName: string;
+  reason: string;
+  allowUnknown: boolean;
+  replace: boolean;
+  destExists: boolean;
+};
+
+/** Dest confirm (not source), extra flags for unknown / existing dest. */
+export function canSubmitChronicleArchive(
+  input: ChronicleArchiveSubmitInput
+): boolean {
+  const dest = input.destId;
+  if (!dest || LIVE_ARCHIVE_DEST.has(dest)) return false;
+  if (!chronicleConfirmMatches(input.confirm, dest)) return false;
+  if (!input.displayName.trim()) return false;
+  if (!chronicleReasonIsValid(input.reason)) return false;
+  if (dest === "unknown" && !input.allowUnknown) return false;
+  if (input.destExists && !input.replace) return false;
+  return true;
 }
 
 /**
@@ -202,6 +250,23 @@ export function buildChronicleRestoreRequest(
   merge: boolean
 ): ChronicleRestoreRequest {
   return { confirm: mapId, backup_id: backupId, merge };
+}
+
+export function buildChronicleArchiveRequest(input: {
+  destId: string;
+  displayName: string;
+  reason: string;
+  replace: boolean;
+  allowUnknown: boolean;
+}): ChronicleArchiveRequest {
+  return {
+    dest_id: input.destId,
+    display_name: input.displayName.trim(),
+    confirm: input.destId,
+    reason: input.reason.trim(),
+    replace: input.replace,
+    allow_unknown: input.allowUnknown,
+  };
 }
 
 /** The `performed: false` 200 — "there was no chronicle here to begin with". */
@@ -278,11 +343,34 @@ export function chronicleStaffFailure(
   status: number,
   detail: string,
   code?: string | null,
-  action: "wipe" | "restore" | "load" = "load"
+  action: "wipe" | "restore" | "load" | "archive" = "load"
 ): ChronicleStaffFailure {
   const fallback = detail?.trim() || "The request failed.";
 
   switch (code) {
+    case "dest_live_socket":
+      return {
+        title: "Archive dest cannot be the live socket",
+        message:
+          "Dest main and dest dev are refused. Archive copies onto a frozen chapter id, not onto the live upload folder.",
+      };
+    case "dest_unknown":
+      return {
+        title: "Archive dest is unknown",
+        message:
+          "The chapter slug is unknown. Tick the extra confirm if you really mean to archive as unknown — that dest is easy to overwrite later.",
+      };
+    case "dest_exists":
+      return {
+        title: "That dest already exists",
+        message:
+          "Archiving again replaces the frozen chapter. Tick replace and type the dest id if that is what you intend.",
+      };
+    case "source_archived":
+      return {
+        title: "This map is already archived",
+        message: "Archive copies a live map. Frozen chapters cannot be forked from this form.",
+      };
     case "live_data":
       return {
         title: "Restore refused — this map already has chronicle data",
@@ -339,7 +427,14 @@ export function chronicleStaffFailure(
       };
     default:
       return {
-        title: action === "wipe" ? "Wipe failed" : action === "restore" ? "Restore failed" : "Could not load backups",
+        title:
+          action === "wipe"
+            ? "Wipe failed"
+            : action === "restore"
+              ? "Restore failed"
+              : action === "archive"
+                ? "Archive failed"
+                : "Could not load backups",
         message: fallback,
       };
   }

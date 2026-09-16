@@ -1,0 +1,23 @@
+{
+  "EMPIRE_1": {
+    "name": "Three Kingdoms",
+    "titles": [
+      "KINGDOM_1",
+      "KINGDOM_2",
+      "KINGDOM_3"
+    ],
+    "rgb": "203,195,214",
+    "title-complete": "true"
+  },
+  "The_North": {
+    "name": "The North",
+    "rgb": "4,78,8",
+    "title-complete": "false",
+    "titles": [
+      "Mizea",
+      "Sudbaum",
+      "Nordbaum",
+      "The_Kingdom_of_the_Burning_Eye"
+    ]
+  }
+}

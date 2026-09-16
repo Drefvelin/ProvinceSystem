@@ -9,6 +9,7 @@ import {
   fetchMapJson,
   fetchMapMarkers,
   isAbortError,
+  mapRequiresAuth,
   postEditorTitles,
   staffMapAccessReason,
 } from "@/lib/map/api";
@@ -112,7 +113,14 @@ describe("map api", () => {
       vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
-            maps: [{ id: "main", display_name: "Adavaar", public: true }],
+            maps: [
+              {
+                id: "main",
+                display_name: "Adavaar",
+                public: true,
+                archived: false,
+              },
+            ],
           }),
           { status: 200 }
         )
@@ -168,5 +176,30 @@ describe("map api", () => {
         },
       })
     );
+  });
+
+  it("mapRequiresAuth uses public from the accessible list when present", () => {
+    expect(mapRequiresAuth("main")).toBe(false);
+    expect(mapRequiresAuth("calavorn")).toBe(true);
+    expect(
+      mapRequiresAuth("calavorn", [
+        {
+          id: "calavorn",
+          display_name: "Calavorn",
+          public: true,
+          archived: true,
+        },
+      ])
+    ).toBe(false);
+    expect(
+      mapRequiresAuth("dev", [
+        {
+          id: "dev",
+          display_name: "Adavaar",
+          public: false,
+          archived: false,
+        },
+      ])
+    ).toBe(true);
   });
 });

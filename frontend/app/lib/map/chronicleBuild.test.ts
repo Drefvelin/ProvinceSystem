@@ -527,7 +527,14 @@ describe("chronicleBuildBlockReason", () => {
         nationNames: true,
         namesSupported: false,
       })
-    ).toMatch(/only the live map/i);
+    ).toMatch(/this map does not have/i);
+    expect(
+      chronicleBuildBlockReason({
+        ...buildable,
+        nationNames: true,
+        namesSupported: false,
+      })
+    ).not.toMatch(/only the live map/i);
   });
 
   it("re-asserts the memory ceiling and the range errors", () => {

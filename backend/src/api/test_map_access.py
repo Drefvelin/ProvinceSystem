@@ -30,12 +30,20 @@ from api.map_access import (
     STAFF_MAP_PERMISSION_DETAIL,
 )
 from api.map_registry import (
+    MapRegistryError,
     clear_map_registry_cache,
     get_map_entry,
     load_map_registry,
 )
+from src.api import map_registry as src_map_registry
 from fastapi import HTTPException
 from server import app
+
+
+def _clear_registry_caches() -> None:
+    """`api.*` and `src.api.*` are both importable; map_access uses the latter."""
+    clear_map_registry_cache()
+    src_map_registry.clear_map_registry_cache()
 
 
 TEST_REGISTRY = """
@@ -51,6 +59,24 @@ maps:
     staff_permission: tfmc.map.staff
 """
 
+REGISTRY_WITH_CALAVORN = """
+maps:
+  - id: main
+    public: true
+    display_name: Adavaar
+    realm_id: main
+  - id: dev
+    public: false
+    display_name: Adavaar
+    realm_id: dev
+    staff_permission: tfmc.map.staff
+  - id: calavorn
+    public: true
+    archived: true
+    display_name: Calavorn
+    realm_id: calavorn
+"""
+
 
 class MapRegistryTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -59,14 +85,14 @@ class MapRegistryTest(unittest.TestCase):
         self.registry_path.write_text(TEST_REGISTRY, encoding="utf-8")
         self._orig_path = os.environ.get("MAP_REGISTRY_PATH")
         os.environ["MAP_REGISTRY_PATH"] = str(self.registry_path)
-        clear_map_registry_cache()
+        _clear_registry_caches()
 
     def tearDown(self) -> None:
         if self._orig_path is None:
             os.environ.pop("MAP_REGISTRY_PATH", None)
         else:
             os.environ["MAP_REGISTRY_PATH"] = self._orig_path
-        clear_map_registry_cache()
+        _clear_registry_caches()
         self.tmp.cleanup()
 
     def test_loads_main_and_dev(self) -> None:
@@ -75,9 +101,49 @@ class MapRegistryTest(unittest.TestCase):
         self.assertTrue(entries["main"].public)
         self.assertFalse(entries["dev"].public)
         self.assertEqual(entries["dev"].staff_permission, "tfmc.map.staff")
+        self.assertFalse(entries["main"].archived)
+        self.assertFalse(entries["dev"].archived)
 
     def test_unknown_map_returns_none(self) -> None:
         self.assertIsNone(get_map_entry("notamap"))
+
+    def test_archived_true_is_parsed(self) -> None:
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+        entries = load_map_registry()
+        self.assertTrue(entries["calavorn"].archived)
+        self.assertTrue(entries["calavorn"].public)
+        self.assertFalse(entries["main"].archived)
+
+    def test_archived_non_bool_is_rejected(self) -> None:
+        self.registry_path.write_text(
+            """
+maps:
+  - id: main
+    public: true
+    display_name: Adavaar
+    archived: "yes"
+""",
+            encoding="utf-8",
+        )
+        _clear_registry_caches()
+        with self.assertRaises(MapRegistryError) as ctx:
+            load_map_registry()
+        self.assertIn("boolean archived", str(ctx.exception))
+
+    def test_committed_registry_includes_calavorn(self) -> None:
+        os.environ.pop("MAP_REGISTRY_PATH", None)
+        _clear_registry_caches()
+        entries = load_map_registry(force=True)
+        self.assertEqual(set(entries.keys()), {"main", "dev", "calavorn"})
+        calavorn = entries["calavorn"]
+        self.assertTrue(calavorn.public)
+        self.assertTrue(calavorn.archived)
+        self.assertEqual(calavorn.display_name, "Calavorn")
+        self.assertEqual(calavorn.realm_id, "calavorn")
+        self.assertIsNone(calavorn.staff_permission)
+        self.assertFalse(entries["main"].archived)
+        self.assertFalse(entries["dev"].archived)
 
 
 class MapAccessUnitTest(unittest.TestCase):
@@ -88,14 +154,14 @@ class MapAccessUnitTest(unittest.TestCase):
         self.registry_path.write_text(TEST_REGISTRY, encoding="utf-8")
         self._orig_path = os.environ.get("MAP_REGISTRY_PATH")
         os.environ["MAP_REGISTRY_PATH"] = str(self.registry_path)
-        clear_map_registry_cache()
+        _clear_registry_caches()
 
     def tearDown(self) -> None:
         if self._orig_path is None:
             os.environ.pop("MAP_REGISTRY_PATH", None)
         else:
             os.environ["MAP_REGISTRY_PATH"] = self._orig_path
-        clear_map_registry_cache()
+        _clear_registry_caches()
         self.tmp.cleanup()
 
     def test_public_map_allows_anonymous(self) -> None:
@@ -141,6 +207,15 @@ class MapAccessUnitTest(unittest.TestCase):
     def test_list_accessible_maps_anonymous(self) -> None:
         ids = [entry.id for entry in list_accessible_maps(None)]
         self.assertEqual(ids, ["main"])
+
+    def test_list_accessible_maps_anonymous_includes_archived_public(self) -> None:
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+        maps = list_accessible_maps(None)
+        by_id = {entry.id: entry for entry in maps}
+        self.assertEqual(set(by_id), {"main", "calavorn"})
+        self.assertFalse(by_id["main"].archived)
+        self.assertTrue(by_id["calavorn"].archived)
 
     def test_list_accessible_maps_staff(self) -> None:
         player = "00000000-0000-4000-8000-000000000088"
@@ -200,7 +275,7 @@ class MapAccessApiTest(unittest.TestCase):
         self.registry_path.write_text(TEST_REGISTRY, encoding="utf-8")
         self._orig_path = os.environ.get("MAP_REGISTRY_PATH")
         os.environ["MAP_REGISTRY_PATH"] = str(self.registry_path)
-        clear_map_registry_cache()
+        _clear_registry_caches()
         self.client = TestClient(app)
         self.player = f"00000000-0000-4000-8000-{uuid.uuid4().hex[:12]}"
 
@@ -210,7 +285,7 @@ class MapAccessApiTest(unittest.TestCase):
             os.environ.pop("MAP_REGISTRY_PATH", None)
         else:
             os.environ["MAP_REGISTRY_PATH"] = self._orig_path
-        clear_map_registry_cache()
+        _clear_registry_caches()
         self.tmp.cleanup()
 
     def test_unknown_map_data_route_404(self) -> None:
@@ -269,6 +344,23 @@ class MapAccessApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         ids = [item["id"] for item in r.json()["maps"]]
         self.assertEqual(ids, ["main"])
+        self.assertFalse(r.json()["maps"][0]["archived"])
+        self.assertNotIn("has_chronicle_days", r.json()["maps"][0])
+
+    def test_accessible_maps_anonymous_includes_archived_public(self) -> None:
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+        with mock.patch("src.api.maps_routes.list_days", return_value=[]):
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        by_id = {item["id"]: item for item in r.json()["maps"]}
+        self.assertEqual(set(by_id), {"main", "calavorn"})
+        self.assertFalse(by_id["main"]["archived"])
+        self.assertTrue(by_id["calavorn"]["archived"])
+        self.assertEqual(by_id["calavorn"]["display_name"], "Calavorn")
+        self.assertNotIn("dev", by_id)
+        self.assertNotIn("has_chronicle_days", by_id["main"])
+        self.assertFalse(by_id["calavorn"]["has_chronicle_days"])
 
     def test_accessible_maps_staff(self) -> None:
         session = {
@@ -290,6 +382,80 @@ class MapAccessApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         ids = [item["id"] for item in r.json()["maps"]]
         self.assertEqual(ids, ["main", "dev"])
+
+    def test_accessible_live_chapter_label_from_stamp(self) -> None:
+        from src.scripts.chronicle import chapter_identity as ident
+        from src.scripts.util import dirs
+
+        input_dir = Path(self.tmp.name) / "input"
+        with mock.patch.object(dirs, "INPUT_DIR", str(input_dir)):
+            ident.write_chapter_identity(
+                "main", {"chapter_id": "vardera", "chapter_name": "Vardera"}
+            )
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        main = r.json()["maps"][0]
+        self.assertEqual(main["id"], "main")
+        self.assertEqual(main["display_name"], "Vardera")
+        self.assertEqual(main["chapter_id"], "vardera")
+        self.assertEqual(main["chapter_name"], "Vardera")
+
+    def test_accessible_live_without_stamp_keeps_yaml_name(self) -> None:
+        from src.scripts.util import dirs
+
+        with mock.patch.object(dirs, "INPUT_DIR", str(Path(self.tmp.name) / "empty")):
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        main = r.json()["maps"][0]
+        self.assertEqual(main["display_name"], "Adavaar")
+        self.assertEqual(main["chapter_id"], "unknown")
+        self.assertEqual(main["chapter_name"], "Unknown")
+
+    def test_accessible_archived_keeps_yaml_name_despite_stamp(self) -> None:
+        from src.scripts.chronicle import chapter_identity as ident
+        from src.scripts.util import dirs
+
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+        input_dir = Path(self.tmp.name) / "input"
+        with mock.patch.object(dirs, "INPUT_DIR", str(input_dir)):
+            ident.write_chapter_identity(
+                "calavorn", {"chapter_id": "vardera", "chapter_name": "Vardera"}
+            )
+            ident.write_chapter_identity(
+                "main", {"chapter_id": "vardera", "chapter_name": "Vardera"}
+            )
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        by_id = {item["id"]: item for item in r.json()["maps"]}
+        self.assertEqual(by_id["calavorn"]["display_name"], "Calavorn")
+        self.assertNotIn("chapter_id", by_id["calavorn"])
+        self.assertNotIn("chapter_name", by_id["calavorn"])
+        self.assertEqual(by_id["main"]["display_name"], "Vardera")
+
+    def test_accessible_archived_without_days_flag_false(self) -> None:
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+        with mock.patch("src.api.maps_routes.list_days", return_value=[]):
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        by_id = {item["id"]: item for item in r.json()["maps"]}
+        self.assertNotIn("has_chronicle_days", by_id["main"])
+        self.assertFalse(by_id["calavorn"]["has_chronicle_days"])
+
+    def test_accessible_archived_with_days_flag_true(self) -> None:
+        self.registry_path.write_text(REGISTRY_WITH_CALAVORN, encoding="utf-8")
+        _clear_registry_caches()
+
+        def days_for(map_id: str):
+            return ["2026-09-01"] if map_id == "calavorn" else []
+
+        with mock.patch("src.api.maps_routes.list_days", side_effect=days_for):
+            r = self.client.get("/maps/accessible")
+        self.assertEqual(r.status_code, 200)
+        by_id = {item["id"]: item for item in r.json()["maps"]}
+        self.assertTrue(by_id["calavorn"]["has_chronicle_days"])
+        self.assertNotIn("has_chronicle_days", by_id["main"])
 
     def test_anonymous_main_markers_not_403(self) -> None:
         with mock.patch(
