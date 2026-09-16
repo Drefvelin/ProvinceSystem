@@ -804,9 +804,9 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
         mapDisplayName={displayName}
         headerAction={
           chronicle ? null : (
-            <div className="flex shrink-0 flex-col items-end gap-2">
+            <div className="flex shrink-0 flex-col items-start gap-2">
               {isArchivedMap(mapId, maps) ? (
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <div className="flex shrink-0 flex-wrap items-center justify-start gap-2">
                   <Link href={liveMapHref("main")} className={reviewHistoryLinkClass}>
                     Live map
                   </Link>
@@ -815,7 +815,7 @@ const MapViewer = ({ mapId, day = null }: MapViewerProps) => {
                   ) : null}
                 </div>
               ) : (
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <div className="flex shrink-0 flex-wrap items-center justify-start gap-2">
                   {/* Shown to everyone, and shown even when this map has captured
                       no days yet — the studio says so itself, which is a better
                       answer than an entry point that silently is not there. Costs

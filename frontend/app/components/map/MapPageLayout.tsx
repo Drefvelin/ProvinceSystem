@@ -49,8 +49,8 @@ export default function MapPageLayout({
     <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col bg-[var(--tfmc-forest-deep)] text-[var(--tfmc-cream)] md:h-[calc(100dvh-var(--tfmc-header-h))] md:overflow-hidden">
       {/* Mobile-only header + mode bar, normal document flow above the map. */}
       <div className="md:hidden">
-        <header className="flex flex-row items-center justify-between gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 py-4 sm:px-6">
-          <div className="min-w-0">
+        <header className="flex flex-col gap-3 border-b border-[color-mix(in_srgb,var(--tfmc-cream)_10%,transparent)] px-4 py-4 sm:px-6">
+          <div>
             <p className="text-sm font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
               World map
             </p>
@@ -81,15 +81,14 @@ export default function MapPageLayout({
             className="pointer-events-auto w-72"
           >
             <div className={`${overlayPanelClass} p-3`}>
-              {/* Title and action side by side: the action is the only pointer
-                  to the chronicle, so it reads as part of the map's identity
-                  rather than as something appended underneath it. */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
+              {/* Title, then chronicle/archive actions under it so the name
+                  is not truncated to make room for the buttons. */}
+              <div className="flex flex-col gap-2">
+                <div>
                   <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
                     World map
                   </p>
-                  <h1 className="truncate font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
+                  <h1 className="font-[family-name:var(--font-fraunces)] text-xl font-medium tracking-tight text-[var(--tfmc-cream)]">
                     {mapDisplayName}
                   </h1>
                 </div>
