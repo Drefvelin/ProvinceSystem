@@ -111,6 +111,14 @@ export default function SimpleCubeViewer({
 
       function animate() {
         frameId = requestAnimationFrame(animate);
+        if (renderer && mount && mount.clientWidth > 0 && mount.clientHeight > 0) {
+          const size = renderer.getSize(new THREE.Vector2());
+          if (size.x !== mount.clientWidth || size.y !== mount.clientHeight) {
+            camera.aspect = mount.clientWidth / mount.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(mount.clientWidth, mount.clientHeight, false);
+          }
+        }
         controls?.update();
         if (renderer) renderer.render(scene, camera);
       }
@@ -156,7 +164,7 @@ export default function SimpleCubeViewer({
     return (
       <div
         ref={mountRef}
-        className="pointer-events-none relative h-8 w-8 shrink-0 overflow-hidden sm:h-10 sm:w-10"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-[var(--tfmc-forest)] shadow-none transition-[width,height,background-color,box-shadow] duration-200 [&>canvas]:!h-full [&>canvas]:!w-full group-hover:h-44 group-hover:w-44 group-hover:rounded-md group-hover:border group-hover:border-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)] group-hover:shadow-2xl group-focus:h-44 group-focus:w-44 group-focus:rounded-md group-focus:border group-focus:border-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)] group-focus:shadow-2xl motion-reduce:transition-none sm:h-10 sm:w-10"
       >
         {error ? (
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">

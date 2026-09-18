@@ -14,6 +14,7 @@ export const furniture: FurnitureRow[] = [
   cooking("Milling Stone","milling_stone"), cooking("Oven Bottom","oven_bottom",false,true),
   cooking("Bread Tray","bread_tray",true), cooking("Oven Top","oven_top"),
   cooking("Liquid Container","liquid_container",false,true), cooking("Sausage Maker","sausage_maker"),
+  cooking("Trough","trough",true,true,"4 display-only feed slots; fill it with any vegetable mix to make Universal Feed"),
   {name:"Tool Shelf",id:"tfmc_cooking:tool_shelf",surface:"Wall",rotate:false,pickup:true,carry:false,solid:false,slots:"3: cutting knife, ladle or masher only"},
   {name:"Pedestal",id:"tfmc:pedestal",surface:"Floor",rotate:true,pickup:true,carry:false,solid:true,slots:"1; any item"},
   {name:"Artifact Display",id:"tfmc:artifact_display",surface:"Floor",rotate:true,pickup:true,carry:false,solid:true,slots:"1; any item"},
@@ -21,7 +22,9 @@ export const furniture: FurnitureRow[] = [
 ];
 
 export const furnitureRecipes = [
-  {pieces:"Frying Pan, Saucepan, Pot",station:"Meal Prep Station",cost:"1 Iron Ingot each",time:"2 s"},
+  {pieces:"Frying Pan, Saucepan, Pot, Meat Hook, Sausage Maker, Liquid Container",station:"Meal Prep Station",cost:"1 Iron Ingot each",time:"2 s"},
+  {pieces:"Milling Stone",station:"Meal Prep Station",cost:"1 Stone",time:"2 s"},
+  {pieces:"Trough",station:"Animal Station",cost:"1 Oak Planks",time:"2 s"},
   {pieces:"Cutting Board, Butter Churn, Butter Plate, Plate, Bowl, Tool Shelf",station:"Meal Prep Station",cost:"1 Oak Planks each",time:"2 s"},
   {pieces:"Pedestal, Artifact Display",station:"Block Station",cost:"2 Cobblestone each",time:"5 s"},
   {pieces:"Lure",station:"Block Station",cost:"2 Oak Planks",time:"2 s"},

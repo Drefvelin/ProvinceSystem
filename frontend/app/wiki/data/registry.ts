@@ -16,7 +16,9 @@ import { factionsSection } from "./factions";
 import { farmingSection } from "./farming";
 import { fishingSection } from "./fishing";
 import { furnitureSection } from "./furniture";
+import { woodworkingSection } from "./woodworking";
 import { gamesSection } from "./games";
+import { dowsingSection } from "./dowsing";
 import { gatheringSection } from "./gathering";
 import { gemInfusionSection } from "./gem-infusion";
 import { gettingStartedSection } from "./getting-started";
@@ -63,7 +65,9 @@ export const wikiSections: readonly WikiSection[] = [
   sittingSection,
   advancedCraftingSection,
   furnitureSection,
+  woodworkingSection,
   gatheringSection,
+  dowsingSection,
   harvestingSection,
   farmingSection,
   fishingSection,

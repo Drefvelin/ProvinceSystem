@@ -71,6 +71,7 @@ const STATION_NAME_BY_FILE = {
   "meal-prep-station.yml": "Meal Prep Station",
   "medicine-station.yml": "Medicine Station",
   "research-station.yml": "Research Station",
+  "rune-station.yml": "Rune Station",
   "tool-station.yml": "Tool Station",
 };
 
@@ -89,6 +90,9 @@ const MMOITEM_VANILLA_FALLBACKS = {
   STAFF_RUNESTONE: "ECHO_SHARD",
   SWORD_RUNESTONE: "ECHO_SHARD",
   WAND_RUNESTONE: "ECHO_SHARD",
+  // Newer than the installed MMOItems/item/pets.yml, and the pack ships no sprite for it yet.
+  // The pet-care tools in that file (glove, whistle, feed, reports) are RABBIT_HIDE items.
+  NEUTERING_ITEM: "RABBIT_HIDE",
 };
 
 // ---------------------------------------------------------------------------
@@ -179,7 +183,8 @@ function stripComment(value) {
 function unquote(value) {
   const v = value.trim();
   if (v.length >= 2 && ((v[0] === "'" && v.at(-1) === "'") || (v[0] === '"' && v.at(-1) === '"'))) {
-    return v.slice(1, -1);
+    // Inside a YAML single-quoted scalar, '' is an escaped apostrophe.
+    return v[0] === "'" ? v.slice(1, -1).replaceAll("''", "'") : v.slice(1, -1);
   }
   return v;
 }

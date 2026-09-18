@@ -11,8 +11,12 @@ import {
 } from "@/app/components/wiki";
 import CraftingGrid from "@/app/components/wiki/CraftingGrid";
 import {
+  armorRunestoneRecipes,
+  enchantedChargeRecipes,
   magicCommands,
   magicStationRecipe,
+  runeStationRecipe,
+  runestoneRecipes,
 } from "../data/magic";
 
 export default function MagicPage() {
@@ -108,6 +112,29 @@ export default function MagicPage() {
       <div className="mt-4">
         <CraftingGrid recipe={magicStationRecipe} />
       </div>
+      <WikiSectionHeading id="rune-station" intro="A second vanilla 3x3 craft: the Magic Station pattern without the Amethyst Shard. Anyone can make one.">
+        The <StationLink name="Rune Station" />
+      </WikiSectionHeading>
+      <div className="mt-4">
+        <CraftingGrid recipe={runeStationRecipe} />
+      </div>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        The Rune Station turns <WikiItemLink name="Enchanted Dust">Enchanted Dust</WikiItemLink> into blank runestones,
+        armor runestones and Enchanted Charges. Every recipe takes 10 seconds and needs nothing but dust.
+      </p>
+      <DataTable
+        columns={[{ header: "Tier" }, { header: "Runestone", align: "right" }, { header: "Armor Runestone", align: "right" }, { header: "Enchanted Charge", align: "right" }]}
+        rows={["Minor", "Lesser", "Greater", "Ascendant"].map((tier, i) => [
+          tier,
+          `${runestoneRecipes[i].ingredients[0].qty}x Enchanted Dust`,
+          `${armorRunestoneRecipes[i].ingredients[0].qty}x Enchanted Dust`,
+          `${enchantedChargeRecipes[i].ingredients[0].qty}x Enchanted Dust`,
+        ])}
+      />
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {[...runestoneRecipes, ...armorRunestoneRecipes].map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+      </div>
+
       <WikiSectionHeading id="archetypes" intro="Three weapon shapes, each wanting a different set of parts.">
         Archetypes
       </WikiSectionHeading>
@@ -131,6 +158,12 @@ export default function MagicPage() {
       >
         Enchanted Charges
       </WikiSectionHeading>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Charges are crafted at the <StationLink name="Rune Station" /> from Enchanted Dust: 4, 8, 12 and 16 dust for tiers I to IV.
+      </p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {enchantedChargeRecipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+      </div>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
         A weak shrine cannot fill a high-tier charge. That is the tier gate. The band printed on a
         charge (&quot;Cerrith II&quot;) is just a readout of how much aura it holds: under 10 shows

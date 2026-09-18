@@ -1,0 +1,1034 @@
+{
+  "categories": [
+    {
+      "id": "market",
+      "name": "Market"
+    },
+    {
+      "id": "royal",
+      "name": "Royal"
+    },
+    {
+      "id": "marauder",
+      "name": "Marauder"
+    },
+    {
+      "id": "cozy",
+      "name": "Cozy"
+    },
+    {
+      "id": "witch",
+      "name": "Witch"
+    }
+  ],
+  "projects": [
+    {
+      "id": "cozy_armchair",
+      "name": "Cozy Armchair",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_armchair",
+      "modelUrl": "/wiki/models/woodworking/cozy_armchair.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_armchair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_armchair.png"
+      }
+    },
+    {
+      "id": "cozy_carpet",
+      "name": "Cozy Carpet",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_carpet",
+      "modelUrl": "/wiki/models/woodworking/cozy_carpet.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_rug.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_rug.png"
+      }
+    },
+    {
+      "id": "cozy_chair",
+      "name": "Cozy Chair",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_chair",
+      "modelUrl": "/wiki/models/woodworking/cozy_chair.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_chair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_chair.png"
+      }
+    },
+    {
+      "id": "cozy_book",
+      "name": "Cozy Book",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_book",
+      "modelUrl": "/wiki/models/woodworking/cozy_book.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_book.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_book.png"
+      }
+    },
+    {
+      "id": "cozy_fireplace",
+      "name": "Cozy Fireplace",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_fireplace",
+      "modelUrl": "/wiki/models/woodworking/cozy_fireplace.json",
+      "textureUrls": {},
+      "textureUrl": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_fireplace.png",
+      "textureAnimationUrl": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_fireplace.png.mcmeta"
+    },
+    {
+      "id": "cozy_grandfatherclock",
+      "name": "Cozy Grandfather Clock",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_grandfatherclock",
+      "modelUrl": "/wiki/models/woodworking/cozy_grandfatherclock.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_grandfatherclock.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_grandfatherclock.png"
+      }
+    },
+    {
+      "id": "cozy_painting",
+      "name": "Cozy Painting",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_painting",
+      "modelUrl": "/wiki/models/woodworking/cozy_painting.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_painting.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_painting.png"
+      }
+    },
+    {
+      "id": "cozy_piano",
+      "name": "Cozy Piano",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_piano",
+      "modelUrl": "/wiki/models/woodworking/cozy_piano.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_piano.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_piano.png"
+      }
+    },
+    {
+      "id": "cozy_sideboard",
+      "name": "Cozy Sideboard",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_sideboard",
+      "modelUrl": "/wiki/models/woodworking/cozy_sideboard.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sideboard.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sideboard.png"
+      }
+    },
+    {
+      "id": "cozy_sofa",
+      "name": "Cozy Sofa",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_sofa",
+      "modelUrl": "/wiki/models/woodworking/cozy_sofa.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sofa.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sofa.png"
+      }
+    },
+    {
+      "id": "cozy_bench",
+      "name": "Cozy Bench",
+      "category": "cozy",
+      "itemId": "lzfurniture:cozy_bench",
+      "modelUrl": "/wiki/models/woodworking/cozy_bench.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_bench.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_bench.png"
+      }
+    },
+    {
+      "id": "marauder_desk",
+      "name": "Marauder Desk",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_desk",
+      "modelUrl": "/wiki/models/woodworking/marauder_desk.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_desk.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_desk.png"
+      }
+    },
+    {
+      "id": "marauder_globe",
+      "name": "Marauder Globe",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_globe",
+      "modelUrl": "/wiki/models/woodworking/marauder_globe.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_globe.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_globe.png"
+      }
+    },
+    {
+      "id": "marauder_map",
+      "name": "Marauder Map",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_map",
+      "modelUrl": "/wiki/models/woodworking/marauder_map.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_map.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_map.png"
+      }
+    },
+    {
+      "id": "marauder_paperrolls",
+      "name": "Marauder Paperrolls",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_paperrolls",
+      "modelUrl": "/wiki/models/woodworking/marauder_paperrolls.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_paperrolls.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_paperrolls.png"
+      }
+    },
+    {
+      "id": "marauder_planks",
+      "name": "Marauder Planks",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_planks",
+      "modelUrl": "/wiki/models/woodworking/marauder_planks.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_planks.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_planks.png"
+      }
+    },
+    {
+      "id": "marauder_rum_bottles",
+      "name": "Marauder Rum Bottles",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_rum_bottles",
+      "modelUrl": "/wiki/models/woodworking/marauder_rum_bottles.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_rum_bottles.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_rum_bottles.png"
+      }
+    },
+    {
+      "id": "marauder_sideboard",
+      "name": "Marauder Sideboard",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_sideboard",
+      "modelUrl": "/wiki/models/woodworking/marauder_sideboard.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_sideboard.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_sideboard.png"
+      }
+    },
+    {
+      "id": "marauder_telescope",
+      "name": "Marauder Telescope",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_telescope",
+      "modelUrl": "/wiki/models/woodworking/marauder_telescope.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_telescope.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_telescope.png"
+      }
+    },
+    {
+      "id": "marauder_vase",
+      "name": "Marauder Vase",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_vase",
+      "modelUrl": "/wiki/models/woodworking/marauder_vase.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_vase.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_vase.png"
+      }
+    },
+    {
+      "id": "marauder_bar",
+      "name": "Marauder Bar",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_bar",
+      "modelUrl": "/wiki/models/woodworking/marauder_bar.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar.png"
+      }
+    },
+    {
+      "id": "marauder_bar_rope",
+      "name": "Marauder Bar Rope",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_bar_rope",
+      "modelUrl": "/wiki/models/woodworking/marauder_bar_rope.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_rope.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_rope.png"
+      }
+    },
+    {
+      "id": "marauder_bar_curtain_left",
+      "name": "Marauder Bar Curtain Left",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_bar_curtain_left",
+      "modelUrl": "/wiki/models/woodworking/marauder_bar_curtain_left.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png"
+      }
+    },
+    {
+      "id": "marauder_bar_curtain_right",
+      "name": "Marauder Bar Curtain Right",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_bar_curtain_right",
+      "modelUrl": "/wiki/models/woodworking/marauder_bar_curtain_right.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png"
+      }
+    },
+    {
+      "id": "marauder_books",
+      "name": "Marauder Books",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_books",
+      "modelUrl": "/wiki/models/woodworking/marauder_books.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_books.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_books.png"
+      }
+    },
+    {
+      "id": "marauder_canon",
+      "name": "Marauder Cannon",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_canon",
+      "modelUrl": "/wiki/models/woodworking/marauder_canon.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_canon.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_canon.png"
+      }
+    },
+    {
+      "id": "marauder_chest_closed",
+      "name": "Marauder Chest Closed",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_chest_closed",
+      "modelUrl": "/wiki/models/woodworking/marauder_chest_closed.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png"
+      }
+    },
+    {
+      "id": "marauder_chest_open",
+      "name": "Marauder Chest Open",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_chest_open",
+      "modelUrl": "/wiki/models/woodworking/marauder_chest_open.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png"
+      }
+    },
+    {
+      "id": "marauder_captain_chair",
+      "name": "Marauder Captain Chair",
+      "category": "marauder",
+      "itemId": "lzfurniture:marauder_captain_chair",
+      "modelUrl": "/wiki/models/woodworking/marauder_captain_chair.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_captain_chair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_captain_chair.png"
+      }
+    },
+    {
+      "id": "medieval_market_chair",
+      "name": "Market Chair",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_chair",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_chair.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chair.png"
+      }
+    },
+    {
+      "id": "medieval_market_bench",
+      "name": "Market Bench",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_bench",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_bench.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bench.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bench.png"
+      }
+    },
+    {
+      "id": "medieval_market_bed",
+      "name": "Market Bed",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_bed",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_bed.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bed.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bed.png"
+      }
+    },
+    {
+      "id": "medieval_market_stalltable",
+      "name": "Market Stall Table",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_stalltable",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_stalltable.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stalltable.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stalltable.png"
+      }
+    },
+    {
+      "id": "medieval_market_scarecrow",
+      "name": "Market Scarecrow",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_scarecrow",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_scarecrow.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_scarecrow.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_scarecrow.png"
+      }
+    },
+    {
+      "id": "medieval_market_campfire",
+      "name": "Market Campfire",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_campfire",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_campfire.json",
+      "textureUrls": {},
+      "textureUrl": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_campfire.png",
+      "textureAnimationUrl": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_campfire.png.mcmeta"
+    },
+    {
+      "id": "medieval_market_chest",
+      "name": "Market Chest",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_chest",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_chest.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chest.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chest.png"
+      }
+    },
+    {
+      "id": "medieval_market_direction_sign",
+      "name": "Market Sign",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_direction_sign",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_direction_sign.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_direction_sign.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_direction_sign.png"
+      }
+    },
+    {
+      "id": "medieval_market_hangingpot",
+      "name": "Market Hanging Pot",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_hangingpot",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_hangingpot.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_hangingpot.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_hangingpot.png"
+      }
+    },
+    {
+      "id": "medieval_market_haybales",
+      "name": "Market Haybales",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_haybales",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_haybales.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_haybales.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_haybales.png"
+      }
+    },
+    {
+      "id": "medieval_market_lantern",
+      "name": "Market Lantern",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_lantern",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_lantern.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_lantern.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_lantern.png"
+      }
+    },
+    {
+      "id": "medieval_market_marketstall_red",
+      "name": "Market Stall Red",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_marketstall_red",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_marketstall_red.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_marketstall_red.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_marketstall_red.png"
+      }
+    },
+    {
+      "id": "medieval_market_marketstall_purple",
+      "name": "Market Stall Purple",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_marketstall_purple",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_marketstall_purple.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stall_purple.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stall_purple.png"
+      }
+    },
+    {
+      "id": "medieval_market_open_chest",
+      "name": "Market Chest Open",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_open_chest",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_open_chest.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_open_chest.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_open_chest.png"
+      }
+    },
+    {
+      "id": "medieval_market_pot",
+      "name": "Market Pot",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_pot",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_pot.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_pot.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_pot.png"
+      }
+    },
+    {
+      "id": "medieval_market_box",
+      "name": "Market Box",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_box",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_box.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box.png"
+      }
+    },
+    {
+      "id": "medieval_market_box_apples",
+      "name": "Market Box with Apples",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_box_apples",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_box_apples.json",
+      "textureUrls": {
+        "2": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_apples.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_apples.png"
+      }
+    },
+    {
+      "id": "medieval_market_box_bread",
+      "name": "Market Box with Bread",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_box_bread",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_box_bread.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_bread.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_bread.png"
+      }
+    },
+    {
+      "id": "medieval_market_barell",
+      "name": "Market Barrel",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_barell",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_barell.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_barrel.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_barrel.png"
+      }
+    },
+    {
+      "id": "medieval_market_bath",
+      "name": "Market Bath",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_bath",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_bath.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bath.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bath.png"
+      }
+    },
+    {
+      "id": "medieval_market_bag",
+      "name": "Market Bag",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_bag",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_bag.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bag.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bag.png"
+      }
+    },
+    {
+      "id": "medieval_market_stool",
+      "name": "Market Stool",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_stool",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_stool.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stool.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stool.png"
+      }
+    },
+    {
+      "id": "medieval_market_table",
+      "name": "Market Table",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_table",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_table.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_table.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_table.png"
+      }
+    },
+    {
+      "id": "medieval_market_wagon_red",
+      "name": "Market Wagon Red",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_wagon_red",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_wagon_red.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_red.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_red.png"
+      }
+    },
+    {
+      "id": "medieval_market_wagon_purple",
+      "name": "Market Wagon Purple",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_wagon_purple",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_wagon_purple.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_purple.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_purple.png"
+      }
+    },
+    {
+      "id": "medieval_market_wagon2",
+      "name": "Market Hay Wagon",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_wagon2",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_wagon2.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon2.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon2.png"
+      }
+    },
+    {
+      "id": "medieval_market_wall_lantern",
+      "name": "Market Wall Lantern",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_wall_lantern",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_wall_lantern.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wall_lantern.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wall_lantern.png"
+      }
+    },
+    {
+      "id": "medieval_market_well",
+      "name": "Market Well",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_well",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_well.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_well.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_well.png"
+      }
+    },
+    {
+      "id": "medieval_market_wood_pile",
+      "name": "Market Wood Pile",
+      "category": "market",
+      "itemId": "lzfurniture:medieval_market_wood_pile",
+      "modelUrl": "/wiki/models/woodworking/medieval_market_wood_pile.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wood_pile.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wood_pile.png"
+      }
+    },
+    {
+      "id": "medievalroyal_chair",
+      "name": "Royal Chair",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_chair",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_chair.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_chair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_chair.png"
+      }
+    },
+    {
+      "id": "medievalroyal_banner",
+      "name": "Royal Banner",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_banner",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_banner.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_banner.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_banner.png"
+      }
+    },
+    {
+      "id": "medievalroyal_dish_fruits",
+      "name": "Royal Fruit Bowl",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_dish_fruits",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_dish_fruits.json",
+      "textureUrls": {
+        "2": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish_fruits.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish_fruits.png"
+      }
+    },
+    {
+      "id": "medievalroyal_dish",
+      "name": "Royal Bowl",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_dish",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_dish.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish.png"
+      }
+    },
+    {
+      "id": "medievalroyal_books",
+      "name": "Royal Books",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_books",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_books.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_books.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_books.png"
+      }
+    },
+    {
+      "id": "medievalroyal_bookshelf",
+      "name": "Royal Bookshelf",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_bookshelf",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_bookshelf.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_bookshelf.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_bookshelf.png"
+      }
+    },
+    {
+      "id": "medievalroyal_shelf",
+      "name": "Royal Shelf",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_shelf",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_shelf.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_shelf_small.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_shelf_small.png"
+      }
+    },
+    {
+      "id": "medievalroyal_stool",
+      "name": "Royal Stool",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_stool",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_stool.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_stool.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_stool.png"
+      }
+    },
+    {
+      "id": "medievalroyal_candleholder",
+      "name": "Royal Candleholder",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_candleholder",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_candleholder.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candleholder.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candleholder.png"
+      }
+    },
+    {
+      "id": "medievalroyal_candle",
+      "name": "Royal Candle",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_candle",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_candle.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candle.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candle.png"
+      }
+    },
+    {
+      "id": "medievalroyal_sofa",
+      "name": "Royal Sofa",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_sofa",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_sofa.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa.png"
+      }
+    },
+    {
+      "id": "medievalroyal_sofa_big",
+      "name": "Royal Large Sofa",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_sofa_big",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_sofa_big.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa_big.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa_big.png"
+      }
+    },
+    {
+      "id": "medievalroyal_table",
+      "name": "Royal Table",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_table",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_table.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_table.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_table.png"
+      }
+    },
+    {
+      "id": "medieval_carpet",
+      "name": "Medieval Carpet",
+      "category": "royal",
+      "itemId": "lzfurniture:medieval_carpet",
+      "modelUrl": "/wiki/models/woodworking/medieval_carpet.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medieval_carpet.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medieval_carpet.png"
+      }
+    },
+    {
+      "id": "medieval_carpet_royal",
+      "name": "Medieval Royal Carpet",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_carpet",
+      "modelUrl": "/wiki/models/woodworking/medieval_carpet_royal.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_carpet.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_carpet.png"
+      }
+    },
+    {
+      "id": "medievalroyal_throne",
+      "name": "Royal Throne",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_throne",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_throne.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_throne.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_throne.png"
+      }
+    },
+    {
+      "id": "medievalroyal_bed",
+      "name": "Royal Bed",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_bed",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_bed.json",
+      "textureUrls": {
+        "2": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_bed.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_bed.png"
+      }
+    },
+    {
+      "id": "medievalroyal_painting_2x1",
+      "name": "Royal Painting",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_painting_2x1",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_painting_2x1.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_2x1.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_2x1.png"
+      }
+    },
+    {
+      "id": "medievalroyal_painting_3x2",
+      "name": "Big Royal Painting",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_painting_3x2",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_painting_3x2.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_3x2.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_3x2.png"
+      }
+    },
+    {
+      "id": "medievalroyal_mirror",
+      "name": "Royal Mirror",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_mirror",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_mirror.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_mirror.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_mirror.png"
+      }
+    },
+    {
+      "id": "medievalroyal_chandelier",
+      "name": "Royal Chandelier",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_chandelier",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_chandelier.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_chandelier.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_chandelier.png"
+      }
+    },
+    {
+      "id": "medievalroyal_pillow",
+      "name": "Royal Pillow",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_pillow",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_pillow.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_pillow.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_pillow.png"
+      }
+    },
+    {
+      "id": "medievalroyal_tablecandleholder",
+      "name": "Royal Candle Holder",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_tablecandleholder",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_tablecandleholder.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_tablecandleholder.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_tablecandleholder.png"
+      }
+    },
+    {
+      "id": "medievalroyal_torch",
+      "name": "Royal Torch",
+      "category": "royal",
+      "itemId": "lzfurniture:medievalroyal_torch",
+      "modelUrl": "/wiki/models/woodworking/medievalroyal_torch.json",
+      "textureUrls": {},
+      "textureUrl": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_torch.png",
+      "textureAnimationUrl": "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_torch.png.mcmeta"
+    },
+    {
+      "id": "witch_armchair",
+      "name": "Witch Armchair",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_armchair",
+      "modelUrl": "/wiki/models/woodworking/witch_armchair.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_armchair.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_armchair.png"
+      }
+    },
+    {
+      "id": "witch_cabin_full",
+      "name": "Witch Cabinet Full",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_cabin_full",
+      "modelUrl": "/wiki/models/woodworking/witch_cabin_full.json",
+      "textureUrls": {
+        "1": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_full.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_full.png"
+      }
+    },
+    {
+      "id": "witch_cabin_empty",
+      "name": "Witch Cabinet Empty",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_cabin_empty",
+      "modelUrl": "/wiki/models/woodworking/witch_cabin_empty.json",
+      "textureUrls": {
+        "2": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_empty.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_empty.png"
+      }
+    },
+    {
+      "id": "witch_candles",
+      "name": "Witch Candles",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_candles",
+      "modelUrl": "/wiki/models/woodworking/witch_candles.json",
+      "textureUrls": {},
+      "textureUrl": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_candles.png",
+      "textureAnimationUrl": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_candles.png.mcmeta"
+    },
+    {
+      "id": "witch_carpet",
+      "name": "Witch Carpet",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_carpet",
+      "modelUrl": "/wiki/models/woodworking/witch_carpet.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_carpet.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_carpet.png"
+      }
+    },
+    {
+      "id": "witch_cauldron",
+      "name": "Witch Cauldron",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_cauldron",
+      "modelUrl": "/wiki/models/woodworking/witch_cauldron.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cauldron.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cauldron.png"
+      }
+    },
+    {
+      "id": "witch_desk",
+      "name": "Witch Desk",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_desk",
+      "modelUrl": "/wiki/models/woodworking/witch_desk.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_desk.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_desk.png"
+      }
+    },
+    {
+      "id": "witch_glass_1",
+      "name": "Witch Glass",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_glass_1",
+      "modelUrl": "/wiki/models/woodworking/witch_glass_1.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_1.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_1.png"
+      }
+    },
+    {
+      "id": "witch_glass_2",
+      "name": "Small Witch Glass",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_glass_2",
+      "modelUrl": "/wiki/models/woodworking/witch_glass_2.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_2.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_2.png"
+      }
+    },
+    {
+      "id": "witch_scry_ball",
+      "name": "Witch Scry Ball",
+      "category": "witch",
+      "itemId": "lzfurniture:witch_scry_ball",
+      "modelUrl": "/wiki/models/woodworking/witch_scry_ball.json",
+      "textureUrls": {
+        "0": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_scry_ball.png",
+        "particle": "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_scry_ball.png"
+      }
+    }
+  ]
+}

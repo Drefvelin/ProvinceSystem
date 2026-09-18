@@ -1,7 +1,7 @@
 import { M, T, V, empty } from "./helpers";
 import { alloyForgeRecipe, ingredientConverterRecipe, weaponStationRecipe } from "./advanced-crafting";
 import { archeologyTableRecipe } from "./archaeology";
-import { magicStationRecipe } from "./magic";
+import { magicStationRecipe, runeStationRecipe } from "./magic";
 import { recyclingStationRecipe } from "./recycler";
 import { stationRecipes } from "./station-recipes";
 import { constructionStations } from "./vehicle-construction";
@@ -480,6 +480,15 @@ export const stations: StationInfo[] = [
       recipe: vanillaStationRecipes.brewingStand,
     },
     model: brewingStandModel,
+  },
+  {
+    slug: "rune-station",
+    name: "Rune Station",
+    blurb: "Turns Enchanted Dust into blank runestones, armor runestones, and Enchanted Charges.",
+    icon: T("mmoitems/minor_runestone.png"),
+    interaction: "Right click",
+    model: runeStationRecipe.output.model,
+    craftRecipe: runeStationRecipe,
   },
   {
     slug: "magic-station",

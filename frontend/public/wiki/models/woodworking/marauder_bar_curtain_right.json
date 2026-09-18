@@ -1,0 +1,74 @@
+{
+	"credit": "Made by LZLeon with Blockbench, Contact - Discord: LZBlocks#0261 - E-Mail: lzblocks@outlook.com",
+	"texture_size": [128, 128],
+	"textures": {
+		"1": "lzfurniture:furniture/marauder/marauder_bar_curtain",
+		"particle": "lzfurniture:furniture/marauder/marauder_bar_curtain"
+	},
+	"elements": [
+		{
+			"from": [-16, -16, 13],
+			"to": [16, 11, 13],
+			"faces": {
+				"north": {"uv": [4, 0, 0, 3.375], "texture": "#1"},
+				"east": {"uv": [4, 0, 4, 3.375], "texture": "#1"},
+				"south": {"uv": [8, 0, 4, 3.375], "texture": "#1"},
+				"west": {"uv": [0, 0, 0, 3.375], "texture": "#1"},
+				"up": {"uv": [0, 0, 4, 0], "texture": "#1"},
+				"down": {"uv": [4, 0, 8, 0], "texture": "#1"}
+			}
+		},
+		{
+			"from": [-16, 11, 11],
+			"to": [16, 15, 15],
+			"faces": {
+				"north": {"uv": [0.5, 3.875, 4.5, 4.375], "texture": "#1"},
+				"east": {"uv": [0, 3.875, 0.5, 4.375], "texture": "#1"},
+				"south": {"uv": [5, 3.875, 9, 4.375], "texture": "#1"},
+				"west": {"uv": [4.5, 3.875, 5, 4.375], "texture": "#1"},
+				"up": {"uv": [4.5, 3.875, 0.5, 3.375], "texture": "#1"},
+				"down": {"uv": [8.5, 3.375, 4.5, 3.875], "texture": "#1"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [60, 20, 0],
+			"translation": [5, 5.5, -2],
+			"scale": [0.6, 0.6, 0.6]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [60, 20, 0],
+			"translation": [-5.75, 1.5, -2],
+			"scale": [0.6, 0.6, 0.6]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, 125, 6],
+			"translation": [-0.5, 2, -6.75],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, 125, 6],
+			"translation": [-0.5, 2, 4],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"ground": {
+			"translation": [3, 4.5, -2.25],
+			"scale": [0.3, 0.3, 0.3]
+		},
+		"gui": {
+			"rotation": [30, -40, 0],
+			"translation": [-4, 3, 0],
+			"scale": [-0.4, 0.4, -0.4]
+		},
+		"head": {
+			"rotation": [0, -180, 0],
+			"translation": [0, -30.4, 0],
+			"scale": [1.6, 1.6, 1.6]
+		},
+		"fixed": {
+			"translation": [0, 0, -16],
+			"scale": [2, 2, 2]
+		}
+	}
+}

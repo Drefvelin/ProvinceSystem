@@ -18,7 +18,6 @@ describe("Alchemist Collector herb acquisition", () => {
       expect(herb.acquisition).toHaveLength(1);
       expect(source?.detail).toBe("Gather this herb with an Alchemist Collector.");
       expect(source?.detail).not.toMatch(/break|leaves|logs|grass|pumpkin|kelp/i);
-      expect(source?.chance).toBe("");
     }
   });
 
@@ -28,12 +27,12 @@ describe("Alchemist Collector herb acquisition", () => {
     }
   });
 
-  it("does not attach collector instructions to legacy herbs absent from the active rules", () => {
+  it("gives every other herb the same generic collector source", () => {
     for (const slug of [
       "nightshade", "grapeberries", "arcane-leaf", "fiery-fruit", "barkshroom",
       "caveshroom", "flatshroom", "death-fruit", "blazed-root", "serpent-root",
     ]) {
-      expect(getMaterialBySlug(slug)?.acquisition).toBeUndefined();
+      expect(getMaterialBySlug(slug)?.acquisition).toEqual(collectorHerbMaterials[0].acquisition);
     }
   });
 

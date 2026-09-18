@@ -26,6 +26,7 @@ const textureById: Record<string, string> = {
   liquid_container: "liquid_container",
   sausage_maker: "sausage_maker",
   tool_shelf: "tool_shelf",
+  trough: "trough",
   pedestal: "pedestal",
   artifact_display: "artifact_display",
   lure: "lure",

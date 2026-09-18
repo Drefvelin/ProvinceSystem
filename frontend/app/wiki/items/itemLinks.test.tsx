@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import CraftingGrid from "../../components/wiki/CraftingGrid";
-import { getItemBySlug, getRecipeItemHref, itemDetails, itemRecipes, itemSlugAliases } from "../data/items";
+import { getItemBySlug, getRecipeItemHref, itemDetails, itemRecipes, itemSlugAliases, stationItemRedirects } from "../data/items";
 import { customItemIdentity, itemIdentity } from "../data/item-identity";
 import ItemDetailPage, { generateStaticParams } from "./[slug]/page";
 
@@ -75,12 +75,15 @@ describe("generated item detail routes", () => {
     const params = generateStaticParams();
     expect(params).toHaveLength(itemDetails.length + Object.keys(itemSlugAliases).length);
     expect(new Set(params.map(({ slug }) => slug)).size).toBe(params.length);
-    expect(params.every(({ slug }) => getItemBySlug(slug))).toBe(true);
+    // An alias may point at a station item, which redirects to its station page instead of rendering.
+    expect(params.every(({ slug }) => getItemBySlug(slug) || stationItemRedirects[itemSlugAliases[slug] ?? slug])).toBe(true);
   });
 
-  it("keeps the former Weapon Station item slug as an alias", () => {
-    expect(getItemBySlug("weapon-station")).toBe(getItemBySlug("forging-station"));
-    expect(getItemBySlug("weapon-station")?.name).toBe("Forging Station");
+  it("sends station items, including the former Weapon Station slug, to their station page", () => {
+    expect(itemSlugAliases["weapon-station"]).toBe("forging-station");
+    expect(stationItemRedirects["forging-station"]).toBe("/wiki/stations/weapon-station");
+    expect(stationItemRedirects["rune-station"]).toBe("/wiki/stations/rune-station");
+    expect(getItemBySlug("rune-station")).toBeUndefined();
     expect(generateStaticParams()).toContainEqual({ slug: "weapon-station" });
   });
 

@@ -13,8 +13,8 @@ import StationGallery from "./StationGallery";
 const publicPath = (url: string) => join(process.cwd(), "public", url);
 
 describe("station registry and source coverage", () => {
-  it("registers 23 unique station routes, including both engineering stations", () => {
-    expect(stations).toHaveLength(23);
+  it("registers 24 unique station routes, including both engineering stations", () => {
+    expect(stations).toHaveLength(24);
     expect(new Set(stations.map((station) => station.slug)).size).toBe(stations.length);
     expect(stations.map((station) => station.slug)).toContain("engineer-station");
     expect(stations.map((station) => station.slug)).toContain("engineering-table");
@@ -36,11 +36,11 @@ describe("station registry and source coverage", () => {
 
   it("assigns each recipe source to its correct station detail page", () => {
     const expectedCounts: Record<string, number> = {
-      "alchemy-station": 36, "animal-station": 32, "archeology-station": 12,
+      "alchemy-station": 36, "animal-station": 28, "archeology-station": 12,
       "block-station": 129, "copper-station": 118, "engineer-station": 12,
       "engineering-table": 16, "fishing-station": 8, "forester-station": 117,
       "gunsmithing-station": 21, "ingot-station": 61, "instrument-station": 16,
-      "magic-station": 10, "meal-prep-station": 9, "medicine-station": 35,
+      "magic-station": 10, "meal-prep-station": 16, "medicine-station": 35,
       dockyard: 5, "research-station": 28, "tool-station": 48,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {
@@ -230,10 +230,10 @@ describe("station routes", () => {
 
   it("resolves every station acquisition output by source identity to a static 3D thumbnail", () => {
     const acquisitionStations = stations.filter((station) => station.craftRecipe || station.vanillaBlock?.recipe);
-    expect(acquisitionStations).toHaveLength(22);
+    expect(acquisitionStations).toHaveLength(23);
     const sourceIds = acquisitionStations.map((station) => (station.craftRecipe ?? station.vanillaBlock!.recipe).output.sourceId);
     expect(sourceIds.every(Boolean)).toBe(true);
-    expect(new Set(sourceIds).size).toBe(22);
+    expect(new Set(sourceIds).size).toBe(23);
 
     for (const station of acquisitionStations) {
       const recipe = station.craftRecipe ?? station.vanillaBlock!.recipe;
@@ -247,7 +247,7 @@ describe("station routes", () => {
       const html = renderToStaticMarkup(<CraftingGrid recipe={recipe} />);
       expect(html, station.slug).toContain(`src="${visual!.thumbnail}"`);
       if (!recipe.output.sourceId!.startsWith("vanilla:")) {
-        expect(getRecipeItemHref(recipe.output), station.slug).toMatch(/^\/wiki\/(?:items|materials)\//);
+        expect(getRecipeItemHref(recipe.output), station.slug).toBe(`/wiki/stations/${station.slug}`);
         expect(html, station.slug).toContain(`aria-label="View ${recipe.output.name}"`);
       }
     }

@@ -31,6 +31,25 @@ export default function ClassesPage() {
       {Object.entries(classSkills).map(([classId, skills]) => skills.length > 0 && <div key={classId} className="mt-5"><h3 className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{classes.find(c=>c.id===classId)?.name??classId}</h3><DataTable className="mt-2" columns={[{header:"Skill"},{header:"What it does"}]} rows={skills.map(s=>[s.displayName ?? skillName(s.id),<WikiItemText key={`${classId}-${s.id}`} text={s.description ?? ""} />])} /></div>)}
       <WikiSectionHeading id="professions" intro="Professions level separately through their listed activities.">Professions</WikiSectionHeading>
       <DataTable columns={[{header:"Profession"},{header:"How to level it"}]} rows={professions.map(p=>[p.displayName,<WikiItemText key={p.id} text={p.howItLevels} />])} />
+      <h3 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">How to earn EXP</h3>
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        {professions.map(p=>(
+          <section key={p.id} id={`profession-${p.id}`} className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_55%,transparent)] p-4">
+            <h4 className="font-[family-name:var(--font-fraunces)] text-lg text-[var(--tfmc-cream)]">{p.displayName}</h4>
+            {p.activities.map(group=>(
+              <div key={group.label} className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--tfmc-stone)]">{group.label}</p>
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {group.items.map(item=>(
+                    <li key={item} className="rounded border border-[color-mix(in_srgb,var(--tfmc-accent)_30%,transparent)] px-2 py-0.5 text-xs text-[var(--tfmc-mist)]">{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+
       <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
       <CommandTable commands={classesCommands.commands} />
       <SeeAlso hrefs={["/wiki/characters","/wiki/advanced-crafting","/wiki/equipment-slots","/wiki/gathering","/wiki/commands"]} />

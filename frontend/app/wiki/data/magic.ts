@@ -1,4 +1,5 @@
-import { M, T, V } from "./helpers";
+import { M, T, V, empty } from "./helpers";
+import { stationRecipe } from "./station-recipes";
 import type { Recipe, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Magic (elements, shrines, spell runes, attunement) ----------
@@ -33,7 +34,42 @@ export const magicStationRecipe: Recipe = {
   note: "Place it, then interact to open the weapon assembly menu.",
 };
 
-export const magicRecipes: Recipe[] = [magicStationRecipe];
+/** ItemsAdder `tfmc:rune_crafting_station`: the Magic Station pattern without the Amethyst Shard. */
+export const runeStationRecipe: Recipe = {
+  key: "rune-station",
+  title: "Rune Station",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    { name: "Gold Ingot", qty: 1, texture: V("gold_ingot.png") },
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+    empty,
+    { name: "Blackstone", qty: 1, texture: V("blackstone.png") },
+  ],
+  output: {
+    name: "Rune Station",
+    qty: 1,
+    sourceId: "itemsadder:rune_crafting_station",
+    model: { url: M("stations/rune-station.json"), textures: { "1": T("stations/rune-station.png") } },
+  },
+  note: "Place it, then interact to craft blank runestones and Enchanted Charges from Enchanted Dust.",
+};
+
+/** Everything the Rune Station crafts, from `MMOItems/crafting-stations/rune-station.yml`. Each takes 10 s. */
+export const runestoneRecipes: Recipe[] = ["minor-runestone", "lesser-runestone", "greater-runestone", "ascendant-runestone"]
+  .map(key => stationRecipe(`gen-rune-station-${key}`));
+// `lesser-armor-` is the recipe key as written in the server config.
+export const armorRunestoneRecipes: Recipe[] = ["minor-armor-runestone", "lesser-armor-", "greater-armor-runestone", "ascendant-armor-runestone"]
+  .map(key => stationRecipe(`gen-rune-station-${key}`));
+export const enchantedChargeRecipes: Recipe[] = ["minor", "lesser", "greater", "ascendant"]
+  .map(key => stationRecipe(`gen-rune-station-enchanted-charge-${key}`));
+
+export const magicRecipes: Recipe[] = [magicStationRecipe, runeStationRecipe];
 
 // ---------- Elements ----------
 

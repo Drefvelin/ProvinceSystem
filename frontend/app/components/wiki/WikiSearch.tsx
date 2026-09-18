@@ -78,7 +78,22 @@ export default function WikiSearch() {
   const resultRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const listId = useId();
   const results = useMemo(() => searchWikiIndex(entries, query), [entries, query]);
-  const isOpen = query.trim().length > 0;
+  const [dismissed, setDismissed] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const isOpen = query.trim().length > 0 && !dismissed;
+
+  // Clicking or tabbing anywhere outside closes the results but keeps the typed query.
+  useEffect(() => {
+    const onOutside = (event: Event) => {
+      if (!rootRef.current?.contains(event.target as Node)) setDismissed(true);
+    };
+    document.addEventListener("pointerdown", onOutside);
+    document.addEventListener("focusin", onOutside);
+    return () => {
+      document.removeEventListener("pointerdown", onOutside);
+      document.removeEventListener("focusin", onOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -131,7 +146,7 @@ export default function WikiSearch() {
   }
 
   return (
-    <div className="relative mt-3" role="search">
+    <div ref={rootRef} className="relative mt-3" role="search">
       <label className="sr-only" htmlFor={`${listId}-input`}>Search the gameplay guide</label>
       <input
         ref={inputRef}
@@ -145,7 +160,8 @@ export default function WikiSearch() {
         aria-expanded={isOpen}
         aria-controls={isOpen ? listId : undefined}
         aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => { setQuery(event.target.value); setDismissed(false); }}
+        onFocus={() => setDismissed(false)}
         onKeyDown={onKeyDown}
         className="w-full rounded-md border border-[color-mix(in_srgb,var(--tfmc-stone)_45%,transparent)] bg-[var(--tfmc-forest-deep)] px-3 py-2 text-sm text-[var(--tfmc-cream)] outline-none placeholder:text-[var(--tfmc-stone)] focus:border-[var(--tfmc-mist)]"
       />

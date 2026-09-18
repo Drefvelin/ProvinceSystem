@@ -43,9 +43,6 @@ export default async function MaterialDetailPage({
             <section key={source.method} className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-4">
               <h3 className="font-semibold text-[var(--tfmc-cream)]"><WikiItemText text={source.method} excludeHref={`/wiki/materials/${material.slug}`} /></h3>
               <p className="mt-1 text-sm text-[var(--tfmc-mist)]"><WikiItemText text={source.detail} excludeHref={`/wiki/materials/${material.slug}`} /></p>
-              {source.chance ? (
-                <p className="mt-2 text-sm text-[var(--tfmc-stone)]">Chance: <WikiItemText text={source.chance} excludeHref={`/wiki/materials/${material.slug}`} /></p>
-              ) : null}
             </section>
           ))}
         </div>

@@ -176,10 +176,14 @@ export const attributes: AttributeInfo[] = [
   { name: "Nutrition", perPoint: "+0.5 Physical/Projectile/Magic Damage, +0.2 Max Health, +0.5 Max Mana, +0.01 Mana Regen, +0.5 Cooldown Reduction, +0.125 Crit Chance" },
 ];
 
+export type ProfessionActivityGroup = { label: string; items: string[] };
+
 export type ProfessionInfo = {
   id: string;
   displayName: string;
   howItLevels: string;
+  /** What counts towards the profession, from `plugins/MMOCore/professions/<id>.yml`. */
+  activities: ProfessionActivityGroup[];
 };
 
 /** Three gathering professions, all sharing the `profession` EXP curve. */
@@ -188,16 +192,30 @@ export const professions: ProfessionInfo[] = [
     id: "crafter",
     displayName: "Crafter",
     howItLevels: "Smelt stone, metals, glass and other materials; mine ores and stone; repair tools.",
+    activities: [
+      { label: "Smelting", items: ["Stone", "Deepslate", "Smooth Stone", "Charcoal", "Terracotta", "Smooth Sandstone", "Smooth Red Sandstone", "Smooth Basalt", "Smooth Quartz", "Sponge", "Brick", "Nether Brick", "Glass", "Copper Ingot", "Iron Ingot", "Gold Ingot"] },
+      { label: "Mining", items: ["Stone", "Andesite", "Granite", "Diorite", "Deepslate", "Coal Ore", "Iron Ore", "Copper Ore", "Redstone Ore", "Gold Ore", "Lapis Ore", "Diamond Ore", "Emerald Ore"] },
+      { label: "Repairing", items: ["Swords", "Pickaxes"] },
+    ],
   },
   {
     id: "forager",
     displayName: "Forager",
-    howItLevels: "Raise farm animals and harvest crops that you grow.",
+    howItLevels: "Kill farm animals and harvest crops that you grow.",
+    activities: [
+      { label: "Animals", items: ["Cow", "Chicken", "Pig", "Sheep", "Rabbit"] },
+      { label: "Crops", items: ["Wheat", "Beetroots", "Carrots", "Potatoes", "Cocoa", "Melon", "Pumpkin", "Sugar Cane", "Cactus"] },
+      { label: "Mushrooms", items: ["Red Mushroom", "Brown Mushroom"] },
+    ],
   },
   {
     id: "herborist",
     displayName: "Herborist",
     howItLevels: "Gather Nether fungi and chop logs, wood and mangrove roots.",
+    activities: [
+      { label: "Nether plants", items: ["Nether Wart", "Crimson Fungus", "Warped Fungus"] },
+      { label: "Logs and wood", items: ["Oak", "Spruce", "Birch", "Jungle", "Acacia", "Dark Oak", "Cherry", "Mangrove", "Pale Oak", "Mangrove Roots"] },
+    ],
   },
 ];
 

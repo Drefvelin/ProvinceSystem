@@ -89,7 +89,7 @@ describe("vehicle catalogue and actual assets", () => {
 });
 
 describe("vehicle page rendering", () => {
-  it("publishes every vehicle detail with one model renderer and every configured skin option", async () => {
+  it("publishes every vehicle detail with one model renderer and every previewable skin option", async () => {
     expect(generateStaticParams()).toEqual(vehicles.map(({ slug }) => ({ slug })));
 
     for (const vehicle of vehicles) {
@@ -97,9 +97,12 @@ describe("vehicle page rendering", () => {
         await VehicleDetail({ params: Promise.resolve({ slug: vehicle.slug }) })
       );
       expect(html.match(/Loading /g) ?? [], vehicle.slug).toHaveLength(1);
-      for (const skin of vehicle.skins) {
-        expect(html, `${vehicle.slug} omits configured skin ${skin.name}`).toContain(skin.name);
+      // Skins with no model are not offered, unless the vehicle has no previewable skin at all.
+      const previewable = vehicle.skins.filter((skin) => skin.modelUrl);
+      for (const skin of previewable.length ? previewable : vehicle.skins) {
+        expect(html, `${vehicle.slug} omits previewable skin ${skin.name}`).toContain(skin.name);
       }
+      expect(html, vehicle.slug).not.toContain("preview unavailable)");
     }
   });
 

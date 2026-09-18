@@ -59,13 +59,16 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
         &larr; Back to Stations
       </Link>
 
-      <div className="mt-6">
+      {/* Recipe and rotating model side by side, as on the Resource Nodes page. */}
+      <WikiSectionHeading id="obtaining">{acquisitionRecipe ? "How to obtain it" : "Preview"}</WikiSectionHeading>
+      <div className={`mt-4 grid gap-4 ${acquisitionRecipe ? "lg:grid-cols-[minmax(0,1fr)_22rem]" : "max-w-sm"}`}>
+        {acquisitionRecipe ? <CraftingGrid recipe={acquisitionRecipe} /> : null}
         <div aria-label={`3D preview of ${station.name}`}>
           {station.model ? (
             <StationModelViewer modelUrl={station.model.url} textureUrl={station.model.texture} textureUrls={station.model.textures} textureAnimationUrl={station.model.textureAnimationUrl} />
-          ): station.cubeFaces ? (
+          ) : station.cubeFaces ? (
             <SimpleCubeViewer faces={station.cubeFaces} />
-          ): (
+          ) : (
             <div className="flex h-40 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={station.fallbackTexture ?? station.icon} alt="" className="h-16 w-16 object-contain [image-rendering:pixelated]" />
@@ -76,13 +79,6 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
 
       <WikiSectionHeading id="using">How to use it</WikiSectionHeading>
       <p className="mt-3 text-sm text-[var(--tfmc-mist)]">{station.interaction}</p>
-
-      {acquisitionRecipe ? (
-        <>
-          <WikiSectionHeading id="obtaining">How to obtain it</WikiSectionHeading>
-          <div className="mt-4 max-w-sm"><CraftingGrid recipe={acquisitionRecipe} /></div>
-        </>
-      ) : null}
 
       <WikiSectionHeading id="recipes" intro={recipes.length ? `${recipes.length} recipes use this station.` : "This station uses a different crafting or interaction flow."}>
         Recipes crafted here

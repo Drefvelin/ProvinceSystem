@@ -482,7 +482,19 @@ function resolveMmoItemTexture(contentsDir, item) {
 const NAMED_MMOITEM_MODELS = new Map([
   "ABYSSALITE_AXE", "ABYSSALITE_HOE", "ABYSSALITE_PICKAXE", "ABYSSALITE_SHOVEL",
   "MYTHRIL_AXE", "MYTHRIL_HOE", "MYTHRIL_PICKAXE", "MYTHRIL_SHOVEL",
-].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]));
+].map((id) => [id, `minecraft:item/tools/${id.toLowerCase()}`]).concat([
+  ["HAND_PICK", "minecraft:item/tools/archeology_handpick"],
+  ["POINTING_TROWEL", "minecraft:item/tools/archeology_trowel"],
+  // Artisan tools: the pack's current sprites are the `forging_*` set (BREEZE_ROD CMD 24-30); the item config still names the older CMD 2-8.
+  ["HAMMER_TOOL", "minecraft:item/tools/forging_hammer"],
+  ["SMALL_HAMMER_TOOL", "minecraft:item/tools/forging_small_hammer"],
+  ["ENGRAVING_TOOL", "minecraft:item/tools/forging_engraving_tool"],
+  ["WHITTLING_TOOL", "minecraft:item/tools/forging_whittling_tool"],
+  ["ETCHING_TOOL", "minecraft:item/tools/forging_etching_tool"],
+  ["SEWING_NEEDLE", "minecraft:item/tools/forging_sewing_needle"],
+  // The pack ships the charges on ECHO_SHARD CMD 79-82; the item config still names a CMD that resolves to the pearl.
+  ...[1, 2, 3, 4].map((tier) => [`ENCHANTED_CHARGE_${tier}`, `minecraft:item/magic_runes/enchanted_charge_tier_${tier}`]),
+]));
 
 function resolveNamedMmoItemTexture(contentsDir, id) {
   const modelRef = NAMED_MMOITEM_MODELS.get(id);
@@ -520,7 +532,7 @@ async function extractMmoItemsTextures(contentsDir, stationsDir, itemDir) {
       ...(item.material ? { material: item.material } : {}),
       ...(Number.isFinite(item.customModelData) ? { customModelData: item.customModelData } : {}),
     };
-    if (Number.isFinite(item.customModelData)) {
+    if (Number.isFinite(item.customModelData) && !NAMED_MMOITEM_MODELS.has(id)) {
       customConfigured += 1;
       const { matches } = resolveMmoItemTexture(contentsDir, item);
       const hashes = new Set(matches.map((match) => match.hash));

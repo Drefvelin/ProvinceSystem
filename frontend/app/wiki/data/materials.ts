@@ -1,5 +1,5 @@
 import { T } from "./helpers";
-import { collectorHerbMaterials } from "./herb-acquisition";
+import { collectorHerbMaterials, collectorSource } from "./herb-acquisition";
 import type { CatalogMaterial, DropOnlyMaterial, Recipe, WikiSection } from "./types";
 
 // ---------- Materials ----------
@@ -169,21 +169,15 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
     name: "Ignitium", texture: T("materials/ignitium.png"), lore: "Uncommon crystal: catalyst in Coke production.",
     unpackingRecipeKeys: ["gen-ingot-station-ignitium-block2"],
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Ignitium.", chance: "0.2% per eligible ore block before Fortune." },
-      { method: "Logging with Tree Gatherer IV", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV. Drops 1 Ignitium.", chance: "0.01% per eligible log before Fortune." },
-      { method: "Detector rewards", detail: "Find a source with the detector. The current Prologue reward pool includes 2, 4, 8 or 16 Ignitium, depending on the reward tier.", chance: "Exact item chance unverified; rewards use weighted tiers." },
-      { method: "Pouch of Rare Materials", detail: "Right-click a Pouch of Rare Materials to receive Ignitium. Its configured rewards are 3, 6, 9 or 12 Ignitium.", chance: "Exact amount chances unverified." },
-      { method: "Voting Crate rewards", detail: "Ignitium is included in configured Voting Crate reward pools. Availability and amount depend on the crate variant offered in game.", chance: "Exact item chance unverified; crate rewards use weights." },
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
+      { method: "Logging with Tree Gatherer IV", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer IV." },
+      { method: "Detector rewards", detail: "Find a source with the detector." },
+      { method: "Pouch of Rare Materials", detail: "Right-click a Pouch of Rare Materials to receive Ignitium." },
     ],
   },
   {
     name: "Tin", texture: T("materials/raw_tin.png"), lore: "Malleable metal used to produce alloys like Bronze.",
     unpackingRecipeKeys: ["gen-ingot-station-tin-block2"],
-    acquisition: [
-      { method: "Voting Crate rewards", detail: "Tin is included in configured Voting Crate variants. Check the available crate preview in game for its rewards.", chance: "Exact item chance unverified; crate rewards use weights." },
-      { method: "Detector rewards (other reward pools)", detail: "Tin rewards of 4, 8 or 12 exist in the Default and Event pools. The current Prologue pool does not include Tin, so this detector route is currently unavailable.", chance: "Unavailable in the current Prologue pool; other pool chances unverified." },
-      { method: "Mining", detail: "Tin is not enabled as a Lucky Miner drop in the current configuration.", chance: "No active Lucky Miner Tin drop." },
-    ],
   },
   {
     name: "Abyssalite Fragment",
@@ -205,11 +199,26 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
   { name: "Necromancy Essence", texture: T("magic_crafting/necromancy_essence.png") },
   { name: "Wood Core", texture: T("materials/wood_core.png") },
   { name: "Flower Core", texture: T("materials/flower_core.png") },
-  { name: "Valewood", texture: T("materials/valewood.png") },
-  { name: "Runebark", texture: T("materials/runebark.png") },
-  { name: "Amberpine", texture: T("materials/amberpine.png") },
-  { name: "Goldmaple", texture: T("materials/goldmaple.png") },
-  { name: "Silk", texture: T("materials/silk.png") },
+  { name: "Valewood", texture: T("materials/valewood.png"), acquisition: [
+    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
+    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Valewood in its output pool." },
+  ] },
+  { name: "Runebark", texture: T("materials/runebark.png"), acquisition: [
+    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
+    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Runebark in its output pool." },
+  ] },
+  { name: "Amberpine", texture: T("materials/amberpine.png"), acquisition: [
+    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
+    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Amberpine in its output pool." },
+  ] },
+  { name: "Goldmaple", texture: T("materials/goldmaple.png"), acquisition: [
+    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
+    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Goldmaple in its output pool." },
+  ] },
+  { name: "Silk", texture: T("materials/silk.png"), acquisition: [
+    { method: "Logging with Tree Gatherer III", detail: "Break spruce, oak, birch, jungle, dark oak, acacia, cherry, mangrove or pale oak logs. Requires the Herborist profession perk Tree Gatherer III." },
+    { method: "Rare Wood Forestry production", detail: "Select the Rare Wood Forestry production focus on a Forestry resource node to include Silk in its output pool." },
+  ] },
   {
     name: "Moldable Gold",
     texture: T("materials/moldable_gold.png"),
@@ -228,16 +237,16 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
   {
     name: "Arcane Crystal", texture: T("materials/arcane_crystal.png"), lore: "Found deep below the earth: not of this Plane.",
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Arcane Crystal.", chance: "0.05% per eligible ore block before Fortune." },
-      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus for a Dowsing mine to include Arcane Crystal in its output pool.", chance: "Exact output chance unverified; production uses weighted drops and other method modifiers." },
-      { method: "War Crate rewards", detail: "The configured War Crate reward pool includes 32 Arcane Crystals. Check crate availability in game.", chance: "Exact item chance unverified; crate rewards use weights." },
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
+      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Arcane Crystal in its output pool." },
+      { method: "War Crate rewards", detail: "Arcane Crystals are in the War Crate reward pool. Check crate availability in game." },
     ],
   },
   {
     name: "Niter", texture: T("materials/niter.png"),
     acquisition: [
-      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I. Drops 1 Niter.", chance: "0.05% per eligible ore block before Fortune." },
-      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus for a Dowsing mine to include Niter in its output pool.", chance: "Exact output chance unverified; production uses weighted drops and other method modifiers." },
+      { method: "Mining with Lucky Miner I", detail: "Mine iron, gold, diamond, redstone, lapis, emerald or copper ore, including their deepslate variants. Requires the Crafter profession perk Lucky Miner I." },
+      { method: "Rare Ore Mine production", detail: "Select the Rare Ore Mine production focus on an Ore Mine resource node to include Niter in its output pool." },
     ],
   },
   { name: "Smokeless Powder", texture: T("materials/smokeless_powder.png") },
@@ -255,17 +264,23 @@ export const dropOnlyMaterials: DropOnlyMaterial[] = [
   { name: "Great Quality Wool", texture: T("pets/epicwool.png"), lore: "Used to make weapons and armor on the Anvil." },
   { name: "Perfect Quality Wool", texture: T("pets/legendarywool.png"), lore: "Used to make weapons and armor on the Anvil." },
   // Alchemy herbs: gathered from the world, used as Alchemy Station reagents.
-  { name: "Nightshade", texture: T("herbs/icon36.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Grapeberries", texture: T("herbs/icon33.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Arcane Leaf", texture: T("herbs/icon5.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Fiery Fruit", texture: T("herbs/icon20.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Barkshroom", texture: T("herbs/icon24.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Caveshroom", texture: T("herbs/icon21.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Flatshroom", texture: T("herbs/icon45.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Death Fruit", texture: T("herbs/icon42.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Blazed Root", texture: T("herbs/icon44.png"), lore: "Herbal reagent gathered from the world." },
-  { name: "Serpent Root", texture: T("herbs/icon18.png"), lore: "Herbal reagent gathered from the world." },
+  { name: "Nightshade", texture: T("herbs/icon36.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Grapeberries", texture: T("herbs/icon33.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Arcane Leaf", texture: T("herbs/icon5.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Fiery Fruit", texture: T("herbs/icon20.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Barkshroom", texture: T("herbs/icon24.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Caveshroom", texture: T("herbs/icon21.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Flatshroom", texture: T("herbs/icon45.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Death Fruit", texture: T("herbs/icon42.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Blazed Root", texture: T("herbs/icon44.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
+  { name: "Serpent Root", texture: T("herbs/icon18.png"), lore: "Herbal reagent gathered from the world.", acquisition: [collectorSource()] },
   ...collectorHerbMaterials,
+  {
+    name: "Universal Feed", texture: T("mmoitems/universal_feed.png"), lore: "Used daily to feed your animals.",
+    acquisition: [
+      { method: "Made in a Trough", detail: "Craft a Trough at the Animal Station, place it, and fill it with any vegetable mix to make Universal Feed." },
+    ],
+  },
 ];
 
 export const materialsSection: WikiSection = {

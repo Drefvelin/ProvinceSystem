@@ -1,11 +1,10 @@
 import { T } from "./helpers";
 import type { DropOnlyMaterial, MaterialAcquisition } from "./types";
 
-function collectorSource(): MaterialAcquisition {
+export function collectorSource(): MaterialAcquisition {
   return {
     method: "Harvest with an Alchemist Collector",
     detail: "Gather this herb with an Alchemist Collector.",
-    chance: "",
   };
 }
 

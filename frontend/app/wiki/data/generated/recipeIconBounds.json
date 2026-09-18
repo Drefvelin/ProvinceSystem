@@ -559,6 +559,38 @@
     16,
     28
   ],
+  "/wiki/textures/furniture/marauder/marauder_coins.png": [
+    32,
+    32,
+    0,
+    0,
+    32,
+    31
+  ],
+  "/wiki/textures/furniture/marauder/marauder_coins_small.png": [
+    32,
+    32,
+    0,
+    0,
+    28,
+    14
+  ],
+  "/wiki/textures/furniture/marauder/marauder_goldbag.png": [
+    64,
+    64,
+    0,
+    0,
+    62,
+    31
+  ],
+  "/wiki/textures/furniture/marauder/marauder_goldbars.png": [
+    64,
+    64,
+    0,
+    0,
+    26,
+    19
+  ],
   "/wiki/textures/furniture/meat_hook.png": [
     16,
     16,
@@ -614,6 +646,22 @@
     0,
     16,
     15
+  ],
+  "/wiki/textures/furniture/trough.png": [
+    16,
+    16,
+    0,
+    1,
+    16,
+    16
+  ],
+  "/wiki/textures/furniture/voting_booth.png": [
+    32,
+    32,
+    0,
+    0,
+    32,
+    16
   ],
   "/wiki/textures/gems/agate.png": [
     16,
@@ -1143,109 +1191,21 @@
     16,
     14
   ],
-  "/wiki/textures/itemsadder/archeology_cabinet.png": [
-    64,
-    64,
-    0,
-    0,
-    48,
-    48
-  ],
-  "/wiki/textures/itemsadder/artifact_display.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    25
-  ],
-  "/wiki/textures/itemsadder/butter_churn.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    25
-  ],
-  "/wiki/textures/itemsadder/cutting_board.png": [
-    32,
-    32,
-    0,
-    0,
-    13,
+  "/wiki/textures/itemsadder/cutting_knife.png": [
+    16,
+    16,
+    2,
+    1,
+    15,
     15
   ],
-  "/wiki/textures/itemsadder/frying_pan.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    21
-  ],
-  "/wiki/textures/itemsadder/lure.png": [
-    32,
-    32,
-    0,
-    0,
+  "/wiki/textures/itemsadder/ladle.png": [
     16,
-    28
-  ],
-  "/wiki/textures/itemsadder/marauder_coins.png": [
-    32,
-    32,
+    16,
     0,
     0,
-    32,
-    31
-  ],
-  "/wiki/textures/itemsadder/marauder_coins_small.png": [
-    32,
-    32,
-    0,
-    0,
-    28,
+    15,
     14
-  ],
-  "/wiki/textures/itemsadder/marauder_goldbag.png": [
-    64,
-    64,
-    0,
-    0,
-    62,
-    31
-  ],
-  "/wiki/textures/itemsadder/marauder_goldbars.png": [
-    64,
-    64,
-    0,
-    0,
-    26,
-    19
-  ],
-  "/wiki/textures/itemsadder/pedestal.png": [
-    32,
-    32,
-    0,
-    0,
-    16,
-    16
-  ],
-  "/wiki/textures/itemsadder/saucepan.png": [
-    32,
-    32,
-    0,
-    0,
-    25,
-    21
-  ],
-  "/wiki/textures/itemsadder/voting_booth.png": [
-    32,
-    32,
-    0,
-    0,
-    32,
-    16
   ],
   "/wiki/textures/jewellery/blue_medal.png": [
     16,
@@ -1719,6 +1679,14 @@
     30,
     27
   ],
+  "/wiki/textures/mmoitems/ascendant_runestone.png": [
+    16,
+    16,
+    0,
+    0,
+    15,
+    16
+  ],
   "/wiki/textures/mmoitems/autumn_leaf.png": [
     32,
     32,
@@ -1903,6 +1871,14 @@
     16,
     16
   ],
+  "/wiki/textures/mmoitems/enchanted_charge_1.png": [
+    16,
+    16,
+    4,
+    3,
+    12,
+    12
+  ],
   "/wiki/textures/mmoitems/enchanted_dust.png": [
     16,
     16,
@@ -2071,6 +2047,14 @@
     30,
     29
   ],
+  "/wiki/textures/mmoitems/greater_runestone.png": [
+    16,
+    16,
+    2,
+    1,
+    13,
+    15
+  ],
   "/wiki/textures/mmoitems/green_concoction.png": [
     160,
     160,
@@ -2086,6 +2070,14 @@
     2,
     14,
     15
+  ],
+  "/wiki/textures/mmoitems/hand_pick.png": [
+    16,
+    16,
+    3,
+    2,
+    14,
+    14
   ],
   "/wiki/textures/mmoitems/handful_of_coins.png": [
     16,
@@ -2159,6 +2151,22 @@
     16,
     14
   ],
+  "/wiki/textures/mmoitems/lesser_armor_runestone.png": [
+    16,
+    16,
+    2,
+    1,
+    15,
+    16
+  ],
+  "/wiki/textures/mmoitems/lesser_runestone.png": [
+    16,
+    16,
+    4,
+    2,
+    13,
+    15
+  ],
   "/wiki/textures/mmoitems/lockpick.png": [
     16,
     16,
@@ -2190,6 +2198,22 @@
     30,
     140,
     140
+  ],
+  "/wiki/textures/mmoitems/minor_armor_runestone.png": [
+    16,
+    16,
+    4,
+    5,
+    12,
+    14
+  ],
+  "/wiki/textures/mmoitems/minor_runestone.png": [
+    16,
+    16,
+    4,
+    5,
+    12,
+    14
   ],
   "/wiki/textures/mmoitems/mythril_axe.png": [
     16,
@@ -2254,6 +2278,14 @@
     1,
     16,
     13
+  ],
+  "/wiki/textures/mmoitems/pointing_trowel.png": [
+    16,
+    16,
+    3,
+    4,
+    13,
+    14
   ],
   "/wiki/textures/mmoitems/poison_leaf.png": [
     32,
@@ -2911,6 +2943,22 @@
     64,
     41
   ],
+  "/wiki/textures/stations/medicine-garbage-reference.png": [
+    256,
+    256,
+    0,
+    0,
+    143,
+    99
+  ],
+  "/wiki/textures/stations/medicine-station.png": [
+    64,
+    64,
+    0,
+    0,
+    64,
+    48
+  ],
   "/wiki/textures/stations/recycling-station.png": [
     64,
     64,
@@ -2918,6 +2966,14 @@
     0,
     64,
     51
+  ],
+  "/wiki/textures/stations/rune-station.png": [
+    64,
+    64,
+    0,
+    0,
+    64,
+    46
   ],
   "/wiki/textures/stations/weapon-station.png": [
     128,
@@ -3077,6 +3133,22 @@
     0,
     5,
     16,
+    16
+  ],
+  "/wiki/textures/vanilla/brewing_stand.png": [
+    16,
+    16,
+    2,
+    3,
+    14,
+    14
+  ],
+  "/wiki/textures/vanilla/brewing_stand_model.png": [
+    16,
+    16,
+    0,
+    0,
+    14,
     16
   ],
   "/wiki/textures/vanilla/brown_dye.png": [
@@ -3438,6 +3510,30 @@
     1,
     16,
     16
+  ],
+  "/wiki/textures/vanilla/grindstone_pivot.png": [
+    16,
+    16,
+    0,
+    0,
+    10,
+    6
+  ],
+  "/wiki/textures/vanilla/grindstone_round.png": [
+    16,
+    16,
+    0,
+    0,
+    8,
+    12
+  ],
+  "/wiki/textures/vanilla/grindstone_side.png": [
+    16,
+    16,
+    0,
+    0,
+    12,
+    12
   ],
   "/wiki/textures/vanilla/gunpowder.png": [
     16,
@@ -4031,6 +4127,22 @@
     15,
     15
   ],
+  "/wiki/textures/vanilla/stonecutter_saw.png": [
+    16,
+    16,
+    1,
+    9,
+    15,
+    16
+  ],
+  "/wiki/textures/vanilla/stonecutter_side.png": [
+    16,
+    16,
+    0,
+    7,
+    16,
+    16
+  ],
   "/wiki/textures/vanilla/string.png": [
     16,
     16,
@@ -4382,5 +4494,725 @@
     0,
     30,
     30
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_armchair.png": [
+    64,
+    64,
+    0,
+    0,
+    64,
+    57
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_bench.png": [
+    128,
+    128,
+    0,
+    0,
+    88,
+    17
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_book.png": [
+    64,
+    64,
+    0,
+    0,
+    49,
+    36
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_chair.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    35
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_fireplace.png": [
+    128,
+    512,
+    0,
+    0,
+    78,
+    444
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_grandfatherclock.png": [
+    64,
+    64,
+    0,
+    0,
+    59,
+    44
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_painting.png": [
+    128,
+    128,
+    0,
+    1,
+    70,
+    97
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_piano.png": [
+    128,
+    128,
+    0,
+    0,
+    98,
+    74
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_rug.png": [
+    256,
+    256,
+    48,
+    0,
+    144,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sideboard.png": [
+    128,
+    128,
+    0,
+    0,
+    96,
+    62
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__cozy__cozy_sofa.png": [
+    128,
+    128,
+    0,
+    0,
+    96,
+    60
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar.png": [
+    64,
+    64,
+    0,
+    0,
+    40,
+    8
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_curtain.png": [
+    128,
+    128,
+    0,
+    0,
+    72,
+    35
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_bar_rope.png": [
+    64,
+    64,
+    0,
+    0,
+    40,
+    32
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_books.png": [
+    64,
+    64,
+    0,
+    0,
+    61,
+    52
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_canon.png": [
+    64,
+    64,
+    0,
+    0,
+    54,
+    53
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_captain_chair.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    51
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_chest.png": [
+    128,
+    128,
+    0,
+    0,
+    68,
+    40
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_desk.png": [
+    128,
+    128,
+    0,
+    0,
+    128,
+    52
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_globe.png": [
+    64,
+    64,
+    0,
+    0,
+    44,
+    35
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_map.png": [
+    128,
+    128,
+    14,
+    0,
+    54,
+    14
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_paperrolls.png": [
+    64,
+    64,
+    0,
+    0,
+    30,
+    30
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_planks.png": [
+    64,
+    64,
+    0,
+    0,
+    32,
+    47
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_rum_bottles.png": [
+    64,
+    64,
+    0,
+    0,
+    34,
+    41
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_sideboard.png": [
+    128,
+    128,
+    0,
+    0,
+    96,
+    44
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_telescope.png": [
+    64,
+    64,
+    0,
+    0,
+    38,
+    37
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__marauder__marauder_vase.png": [
+    64,
+    64,
+    0,
+    0,
+    51,
+    37
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bag.png": [
+    128,
+    128,
+    0,
+    0,
+    67,
+    40
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_barrel.png": [
+    64,
+    64,
+    0,
+    0,
+    48,
+    28
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bath.png": [
+    128,
+    128,
+    0,
+    0,
+    80,
+    64
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bed.png": [
+    128,
+    128,
+    0,
+    0,
+    81,
+    70
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_bench.png": [
+    128,
+    128,
+    0,
+    0,
+    96,
+    56
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box.png": [
+    64,
+    64,
+    0,
+    0,
+    52,
+    21
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_apples.png": [
+    64,
+    64,
+    0,
+    0,
+    52,
+    21
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_box_bread.png": [
+    64,
+    64,
+    0,
+    0,
+    52,
+    21
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_campfire.png": [
+    128,
+    768,
+    0,
+    0,
+    97,
+    698
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chair.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    47
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_chest.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    28
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_direction_sign.png": [
+    64,
+    64,
+    0,
+    0,
+    61,
+    61
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_hangingpot.png": [
+    64,
+    64,
+    0,
+    0,
+    48,
+    35
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_haybales.png": [
+    128,
+    128,
+    0,
+    0,
+    92,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_lantern.png": [
+    64,
+    64,
+    0,
+    0,
+    52,
+    61
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_marketstall_red.png": [
+    256,
+    256,
+    0,
+    0,
+    123,
+    131
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_open_chest.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    53
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_pot.png": [
+    128,
+    128,
+    0,
+    0,
+    78,
+    55
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_scarecrow.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    50
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stall_purple.png": [
+    256,
+    256,
+    0,
+    0,
+    123,
+    131
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stalltable.png": [
+    128,
+    128,
+    0,
+    0,
+    118,
+    40
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_stool.png": [
+    64,
+    64,
+    0,
+    0,
+    56,
+    16
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_table.png": [
+    128,
+    128,
+    0,
+    0,
+    118,
+    32
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon2.png": [
+    128,
+    128,
+    0,
+    0,
+    120,
+    80
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_purple.png": [
+    128,
+    128,
+    0,
+    0,
+    104,
+    103
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wagon_red.png": [
+    128,
+    128,
+    0,
+    0,
+    104,
+    103
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wall_lantern.png": [
+    64,
+    64,
+    0,
+    0,
+    48,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_well.png": [
+    128,
+    128,
+    0,
+    0,
+    128,
+    97
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medieval_market__medieval_market_wood_pile.png": [
+    128,
+    128,
+    0,
+    0,
+    50,
+    25
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medieval_carpet.png": [
+    256,
+    256,
+    48,
+    0,
+    144,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_bed.png": [
+    256,
+    256,
+    0,
+    0,
+    168,
+    147
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_carpet.png": [
+    256,
+    256,
+    48,
+    0,
+    144,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_chandelier.png": [
+    64,
+    64,
+    0,
+    0,
+    43,
+    36
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_mirror.png": [
+    64,
+    64,
+    0,
+    0,
+    58,
+    56
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_2x1.png": [
+    128,
+    128,
+    0,
+    0,
+    68,
+    35
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_painting_3x2.png": [
+    128,
+    128,
+    0,
+    0,
+    100,
+    67
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_pillow.png": [
+    128,
+    128,
+    0,
+    0,
+    56,
+    36
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_tablecandleholder.png": [
+    64,
+    64,
+    0,
+    0,
+    39,
+    28
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_throne.png": [
+    128,
+    128,
+    0,
+    0,
+    74,
+    60
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal2__medievalroyal_torch.png": [
+    32,
+    96,
+    0,
+    0,
+    32,
+    95
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_banner.png": [
+    64,
+    64,
+    0,
+    0,
+    44,
+    33
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_books.png": [
+    64,
+    64,
+    0,
+    0,
+    52,
+    49
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_bookshelf.png": [
+    128,
+    128,
+    0,
+    0,
+    101,
+    97
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candle.png": [
+    64,
+    64,
+    0,
+    0,
+    50,
+    45
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_candleholder.png": [
+    64,
+    64,
+    0,
+    0,
+    50,
+    45
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_chair.png": [
+    64,
+    64,
+    0,
+    0,
+    61,
+    51
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish.png": [
+    64,
+    64,
+    0,
+    0,
+    33,
+    25
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_dish_fruits.png": [
+    64,
+    64,
+    0,
+    0,
+    37,
+    25
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_shelf_small.png": [
+    128,
+    128,
+    0,
+    0,
+    101,
+    97
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa.png": [
+    128,
+    128,
+    0,
+    0,
+    73,
+    59
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_sofa_big.png": [
+    128,
+    128,
+    0,
+    0,
+    88,
+    67
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_stool.png": [
+    64,
+    64,
+    0,
+    0,
+    61,
+    51
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__medievalroyal__medievalroyal_table.png": [
+    128,
+    128,
+    0,
+    0,
+    118,
+    62
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_armchair.png": [
+    128,
+    128,
+    0,
+    0,
+    79,
+    65
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_empty.png": [
+    128,
+    128,
+    0,
+    0,
+    110,
+    112
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cabin_full.png": [
+    128,
+    128,
+    0,
+    0,
+    123,
+    112
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_candles.png": [
+    64,
+    192,
+    0,
+    0,
+    32,
+    152
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_carpet.png": [
+    256,
+    256,
+    48,
+    0,
+    144,
+    48
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_cauldron.png": [
+    128,
+    128,
+    0,
+    0,
+    104,
+    66
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_desk.png": [
+    128,
+    128,
+    0,
+    0,
+    100,
+    98
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_1.png": [
+    32,
+    32,
+    0,
+    0,
+    25,
+    14
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_glass_2.png": [
+    16,
+    16,
+    0,
+    0,
+    16,
+    12
+  ],
+  "/wiki/textures/woodworking/lzfurniture__furniture__witch__witch_scry_ball.png": [
+    64,
+    64,
+    0,
+    0,
+    42,
+    34
   ]
 }

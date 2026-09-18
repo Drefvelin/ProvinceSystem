@@ -54,6 +54,14 @@
     "name": "Cutting Board",
     "material": "PAPER"
   },
+  "cutting_knife": {
+    "name": "Cutting Knife",
+    "material": "PAPER",
+    "texture": "itemsadder/cutting_knife.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/cutting_knife.png"
+  },
   "deck": {
     "name": "Deck of Cards",
     "material": "PAPER",
@@ -106,6 +114,18 @@
     "sourceConfig": "tfmc_blocks/configs/blocks.yml",
     "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/ignitium_block.png"
   },
+  "ladle": {
+    "name": "Ladle",
+    "material": "PAPER",
+    "texture": "itemsadder/ladle.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/ladle.png"
+  },
+  "liquid_container": {
+    "name": "Liquid Container",
+    "material": "PAPER"
+  },
   "lure": {
     "name": "Lure",
     "material": "PAPER"
@@ -140,6 +160,22 @@
   },
   "marauder_goldbars": {
     "name": "Marauder Goldbars",
+    "material": "PAPER"
+  },
+  "masher": {
+    "name": "Masher",
+    "material": "PAPER",
+    "texture": "itemsadder/masher.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/masher.png"
+  },
+  "meat_hook": {
+    "name": "Meat Hook",
+    "material": "PAPER"
+  },
+  "milling_stone": {
+    "name": "Milling Stone",
     "material": "PAPER"
   },
   "mythril_block1": {
@@ -190,6 +226,10 @@
     "name": "Saucepan",
     "material": "PAPER"
   },
+  "sausage_maker": {
+    "name": "Sausage Maker",
+    "material": "PAPER"
+  },
   "steel_block": {
     "name": "Block of Steel",
     "material": "PAPER",
@@ -217,6 +257,10 @@
     "sourceKind": "flat-sprite",
     "sourceConfig": "ia_tfmc/contents/base.yml",
     "sourceTexture": "ia_tfmc/resourcepack/assets/tfmc/textures/item/train_track.png"
+  },
+  "trough": {
+    "name": "Trough",
+    "material": "PAPER"
   },
   "voting_booth": {
     "name": "Voting Booth",

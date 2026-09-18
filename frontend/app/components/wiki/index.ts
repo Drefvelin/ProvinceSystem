@@ -20,6 +20,7 @@ export { default as DataTable } from "./DataTable";
 export type { DataTableAlign, DataTableCell, DataTableColumn, DataTableProps } from "./DataTable";
 
 export { default as FurnitureGallery } from "./FurnitureGallery";
+export { default as WoodworkingGallery } from "./WoodworkingGallery";
 
 export { default as ItemChip } from "./ItemChip";
 export type { ItemChipProps } from "./ItemChip";

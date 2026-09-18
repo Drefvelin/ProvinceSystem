@@ -8,6 +8,7 @@ import {
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
+import Link from "next/link";
 import { factionRanks, factionTiers, factionsCommands, installations } from "../data/factions";
 
 export default function FactionsPage() {
@@ -79,6 +80,18 @@ export default function FactionsPage() {
         government, laws, taxes, council and elections: under a democracy the leader can&apos;t be
         set directly; players vote at <WikiItemLink name="Voting Booth">voting booths</WikiItemLink> instead.
       </p>
+      <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-[var(--tfmc-mist)]">Resource nodes</h3>
+      <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+        Guilds also own <Link href="/wiki/dowsing" className="text-[var(--tfmc-accent)] underline underline-offset-2">resource nodes</Link>:
+        production sites that turn out ores, crops, wood or stone on a repeating cycle. You must be in a guild to place one,
+        and a one-person guild is enough.
+      </p>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
+        <li>Craft a <WikiItemLink name="General Node">General Node</WikiItemLink> and place it; each chunk holds only one node.</li>
+        <li>Run it as an Ore Mine, Magical Mine, Farm, Plantation, Forestry or Quarry, then pick what it focuses on.</li>
+        <li>Upgrades from level 1 to 10 are paid from the guild bank, so the guild needs a bank with funds in it.</li>
+        <li>Only members of the owning guild can change a node. A guild leader can claim a node that another guild has marked for transfer.</li>
+      </ul>
 
       <WikiSectionHeading id="war" intro="Battles are scheduled events, not spontaneous fights.">
         War and battles

@@ -2,6 +2,7 @@ import { materialCatalog } from "./catalog";
 import { slugify } from "./helpers";
 import { customItemIdentity } from "./item-identity";
 import { allRecipes } from "./registry";
+import { stations } from "./stations";
 import { vehicles } from "./vehicles";
 import type { Recipe, Slot } from "./types";
 import descriptions from "./generated/itemDescriptions.json";
@@ -21,6 +22,12 @@ export type ItemDetail = {
 export const itemRecipes = [...new Map(allRecipes.map(recipe => [recipe.key, recipe])).values()];
 const byIdentity = new Map<string, ItemDetail>();
 const materialByIdentity = new Map([...materialCatalog.values()].map(material => [customItemIdentity(material), material]));
+/** A station's own item has no item page: its station page already holds the recipe and model. */
+const stationHrefByIdentity = new Map(stations.flatMap(station => {
+  const output = (station.craftRecipe ?? station.vanillaBlock?.recipe)?.output;
+  const identity = output ? customItemIdentity(output) : undefined;
+  return identity ? [[identity, `/wiki/stations/${station.slug}`] as const] : [];
+}));
 
 for (const recipe of itemRecipes) {
   for (const slot of [recipe.output, ...recipe.ingredients]) {
@@ -29,7 +36,7 @@ for (const recipe of itemRecipes) {
     const material = materialByIdentity.get(identity);
     byIdentity.set(identity, {
       identity, name: material?.name ?? slot.name, slug: slugify(material?.name ?? slot.name),
-      href: material ? `/wiki/materials/${material.slug}` : "",
+      href: material ? `/wiki/materials/${material.slug}` : stationHrefByIdentity.get(identity) ?? "",
       texture: material?.texture ?? slot.texture, model: slot.model, recipes: [], usedIn: [],
       description: (descriptions as Record<string, string[]>)[identity]?.join(" "),
     });
@@ -48,6 +55,10 @@ for (const item of byIdentity.values()) {
 
 /** Only items occurring in the site's recipe data create detail routes. */
 export const itemDetails = [...byIdentity.values()].filter(item => item.href.startsWith("/wiki/items/"));
+/** Old `/wiki/items/<slug>` addresses of station items, kept so existing links redirect. */
+export const stationItemRedirects: Record<string, string> = Object.fromEntries(
+  [...byIdentity.values()].filter(item => item.href.startsWith("/wiki/stations/")).map(item => [item.slug, item.href]),
+);
 export const itemSlugAliases: Record<string, string> = {
   "weapon-station": "forging-station",
 };

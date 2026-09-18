@@ -194,8 +194,6 @@ export type CatalogMaterial = {
 export type MaterialAcquisition = {
   method: string;
   detail: string;
-  /** Only verified probabilities; unknown weighted rewards say so explicitly. */
-  chance: string;
 };
 
 /** A gathered material may also have a block-unpacking recipe. */

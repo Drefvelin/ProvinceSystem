@@ -264,6 +264,10 @@ export default function StationModelViewer({
         const { geo, center } = buildGeometryForElement(el, textureKeys);
         geometries.add(geo);
         const mesh = new THREE.Mesh(geo, meshMaterials);
+        // An inverted box (from > to) is the Blockbench trick for interior faces, e.g. the inside of
+        // an open crate, and usually coincides exactly with its outer box. Pull it in a hair so the
+        // outer faces win from outside and the two shells do not z-fight.
+        if (el.from.some((value, axis) => value > el.to[axis])) mesh.scale.setScalar(0.995);
 
         if (el.rotation && el.rotation.angle) {
           const origin = new THREE.Vector3(...el.rotation.origin).multiplyScalar(1 / 16);

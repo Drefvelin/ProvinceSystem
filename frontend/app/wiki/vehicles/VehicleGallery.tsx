@@ -24,8 +24,10 @@ export default function VehicleGallery({ vehicles }: { vehicles: VehicleInfo[] }
   }, [vehicles]);
 
   if (!selected) return null;
-  const skin = selected.skins.find(item => item.id === skinId) ?? selected.skins[0];
-  const availableSkins = selected.skins;
+  // Skins without a model are not offered; a vehicle with no previewable skin keeps its fallback note.
+  const previewable = selected.skins.filter(item => item.modelUrl);
+  const availableSkins = previewable.length ? previewable : selected.skins;
+  const skin = availableSkins.find(item => item.id === skinId) ?? availableSkins[0];
 
   return <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">{vehicles.map(vehicle => <li key={vehicle.id}><button type="button" aria-pressed={vehicle.id === selected.id} onClick={()=>{
@@ -58,7 +60,7 @@ export default function VehicleGallery({ vehicles }: { vehicles: VehicleInfo[] }
             onChange={event => setSkinId(event.target.value)}
             className="absolute left-2 top-2 z-10 rounded border border-[var(--tfmc-border)] bg-[var(--tfmc-forest-deep)] px-1 py-0.5 text-xs text-[var(--tfmc-cream)] shadow-sm"
           >
-            {availableSkins.map(item => <option key={item.id} value={item.id}>{item.name}{item.modelUrl ? "": " (preview unavailable)"}</option>)}
+            {availableSkins.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         ): null}
       </div>
