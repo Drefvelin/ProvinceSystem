@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 
 logger = logging.getLogger("skins.auth")
 
@@ -57,10 +58,33 @@ def get_staff_key() -> str:
     raise RuntimeError("STAFF_KEY is not set (set SKINS_DEV=1 for local defaults)")
 
 
+def get_secondary_plugin_keys() -> list[str]:
+    """Keys for non-primary servers (dev, tutorial). Comma-separated PLUGIN_KEYS_SECONDARY."""
+    raw = os.environ.get("PLUGIN_KEYS_SECONDARY", "")
+    return [k.strip() for k in raw.split(",") if k.strip()]
+
+
+def _key_matches(provided: str, expected: str) -> bool:
+    return secrets.compare_digest(provided.encode(), expected.encode())
+
+
+def is_secondary_plugin_key(provided: str | None) -> bool:
+    """True when the caller is a non-primary server.
+
+    Those servers may use every plugin route, but must not replace data the whole site
+    shares (creation catalog, kit skins, masked template): the primary server owns it.
+    """
+    if not provided or _key_matches(provided, get_plugin_key()):
+        return False
+    return any(_key_matches(provided, k) for k in get_secondary_plugin_keys())
+
+
 def require_plugin_key(provided: str | None) -> None:
-    expected = get_plugin_key()
-    if not provided or provided != expected:
+    if not provided:
         raise AuthError("Invalid or missing plugin key")
+    if _key_matches(provided, get_plugin_key()) or is_secondary_plugin_key(provided):
+        return
+    raise AuthError("Invalid or missing plugin key")
 
 
 def require_staff_key(provided: str | None) -> None:

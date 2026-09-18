@@ -62,12 +62,18 @@ from src.characters.wardrobe import (
     upload_pending_create_wardrobe,
     upload_slot,
 )
-from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
+from src.skins.auth import (
+    HEADER_PLUGIN_KEY,
+    AuthError,
+    is_secondary_plugin_key,
+    require_plugin_key,
+)
 from src.skins.codes import CodeError, get_session, revoke_session
 
 characters_router = APIRouter(prefix="/characters", tags=["characters"])
 
 _wardrobe_log = logging.getLogger("characters.wardrobe")
+_catalog_log = logging.getLogger("characters.creation_catalog")
 
 
 class AppliedResultsBody(BaseModel):
@@ -192,6 +198,19 @@ async def plugin_put_creation_catalog(
 ):
     """RPCharacters full-replace creation catalog snapshot."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        # Dev/tutorial servers push on every start; only the primary server's copy is kept.
+        current = get_catalog()
+        _catalog_log.info("creation catalog push ignored (secondary plugin key)")
+        return {
+            "ok": True,
+            "ignored": True,
+            "stages": len(current["stages"]),
+            "races": len(current["races"]),
+            "traits": len(current["traits"]),
+            "classes": len(current["classes"]),
+            "updated_at": current["updated_at"],
+        }
     try:
         body = await request.json()
     except Exception as e:
@@ -220,6 +239,8 @@ async def plugin_put_kit_skin(
 ):
     """RPCharacters uploads default editable-kit PNG (assets/{name}.png)."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        return {"ok": True, "ignored": True, "name": name}
     data = await request.body()
     try:
         return store_plugin_kit_skin(name, data)
@@ -234,6 +255,8 @@ async def plugin_put_wardrobe_masked_template(
 ):
     """RPCharacters uploads assets/masked.png for auto-masked compose."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        return {"ok": True, "ignored": True}
     data = await request.body()
     try:
         return store_masked_template(data)

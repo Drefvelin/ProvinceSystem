@@ -13,6 +13,7 @@ from src.skins.auth import (
     AuthError,
     HEADER_PLUGIN_KEY,
     HEADER_STAFF_KEY,
+    is_secondary_plugin_key,
     require_plugin_key,
     require_staff_key,
 )
@@ -293,6 +294,9 @@ def plugin_put_catalog(
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        # Dev/tutorial servers push on every start; only the primary server's copy is kept.
+        return {**get_drink_catalog(), "ignored": True}
     try:
         return replace_drink_catalog(body)
     except DrinkError as e:
@@ -325,6 +329,8 @@ async def plugin_put_asset(
 ):
     """DrinkBuilder uploads glass_bottle.png / potion_overlay.png (raw PNG body)."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        return {"ok": True, "ignored": True, "filename": filename}
     data = await request.body()
     try:
         return save_drink_asset(filename, data)

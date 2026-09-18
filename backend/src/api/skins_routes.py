@@ -14,6 +14,7 @@ from src.skins.auth import (
     AuthError,
     HEADER_PLUGIN_KEY,
     HEADER_STAFF_KEY,
+    is_secondary_plugin_key,
     require_plugin_key,
     require_staff_key,
 )
@@ -902,6 +903,21 @@ def plugin_put_catalog(
 ):
     """ArmourShop full-replace catalog snapshot (categories + scrolls)."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        # Dev/tutorial servers push on every start; only the primary server's copy is kept.
+        current = get_catalog()
+        return {
+            "ok": True,
+            "ignored": True,
+            "categories": len(current["categories"]),
+            "skin_sets": sum(
+                len(c.get("skin_sets") or [])
+                for c in current["categories"]
+                if isinstance(c, dict)
+            ),
+            "scrolls": len(current["scrolls"]),
+            "updated_at": current["updated_at"],
+        }
     try:
         result = replace_catalog(body.model_dump())
     except CatalogError as e:
