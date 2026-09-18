@@ -3,7 +3,8 @@
 For each app/wiki/**/page.tsx this collects the page's own folder plus every wiki data file it
 imports (followed recursively, including generated JSON), asks git for the newest commit that
 touched any of them, and writes that date as the page's `lastModified` prop. Files with
-uncommitted changes count as modified today.
+uncommitted changes count as modified today. Commits and edits that only moved the date stamp
+itself are ignored, so committing the stamps does not mark every page as changed.
 
 Shared plumbing (data/index.ts, registry.ts, types.ts, helpers.ts) is skipped, otherwise one
 edit there would mark the whole wiki as changed. The recipe database (station-recipes.ts,
@@ -124,7 +125,24 @@ def last_changed(files: set[Path]) -> str:
     # git prints paths relative to the repo root; ours are relative to frontend/.
     if any(really_changed(d.removeprefix("frontend/")) for d in dirty):
         return date.today().isoformat()
-    return git("log", "-1", "--format=%ad", "--date=short", "--", *rel).strip()
+    return max((last_commit_date(r) for r in rel), default="")
+
+
+def last_commit_date(rel: str) -> str:
+    """Date of the newest commit that changed the file by more than this script's date stamp."""
+    log = git("log", "--format=%H %ad", "--date=short", "--", rel).splitlines()
+    for line in filter(None, log):
+        commit, day = line.split()
+        if not rel.endswith("page.tsx"):
+            return day  # only pages carry a stamp
+        after = git("show", f"{commit}:frontend/{rel}")
+        try:
+            before = git("show", f"{commit}^:frontend/{rel}")
+        except subprocess.CalledProcessError:
+            return day  # the commit that added the file
+        if without_stamp(before) != without_stamp(after):
+            return day
+    return ""
 
 
 def main() -> int:

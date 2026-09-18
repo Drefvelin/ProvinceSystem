@@ -24,7 +24,7 @@ const stoneRecipes = [
 export default function ServerFeaturesPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-18"
       title="Server Features & Website Link"
     >
       <WikiSectionHeading id="sealed-letters" intro="Not to be confused with BirdMessenger's mail: see below.">
@@ -68,6 +68,15 @@ export default function ServerFeaturesPage() {
           { label: "Max lore lines per item", value: "10" },
         ]}
       />
+
+      <WikiSectionHeading id="animal-limit" intro="There is a cap on how many animals one player can keep.">
+        Animal limit
+      </WikiSectionHeading>
+      <p className="text-sm text-[var(--tfmc-mist)]">
+        Each player can own at most <strong>15 animals</strong>. Every animal counts towards it, horses and other
+        mounts included, so you cannot keep a large flock of one kind, such as 50 chickens for eggs. Plan your
+        livestock around the 15 slots.
+      </p>
 
       <WikiSectionHeading id="whistle" intro="Right-click it to find your mount.">
         <WikiItemLink name="Mount Whistle">Animal whistle</WikiItemLink>
