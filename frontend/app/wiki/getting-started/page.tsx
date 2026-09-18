@@ -11,7 +11,7 @@ const steps = [
 
 export default function GettingStartedPage() {
   return (
-    <WikiPage title={gettingStartedSection.nav.label} intro="Create your character, then follow the guides for the activity you want to play.">
+    <WikiPage lastModified="2026-09-12" title={gettingStartedSection.nav.label} intro="Create your character, then follow the guides for the activity you want to play.">
       <WikiSectionHeading id="first-steps" intro="Follow these in order on a new account.">Your first steps</WikiSectionHeading>
       <DataTable columns={[{header:"Step"},{header:"Goal"},{header:"What to do"},{header:"Guide"}]} rows={steps.map(([n,goal,action,href])=>[n,goal,<code key={`${n}-action`} className="text-[var(--tfmc-accent)]">{action}</code>,<Link key={href} href={href} className="text-[var(--tfmc-accent)] hover:underline">Read guide</Link>])}/>
 

@@ -4,6 +4,7 @@ import { thieveryCommandSet, thieveryKeyCopies } from "../data/thievery";
 export default function ThieveryPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Thievery"
       intro={
         <>

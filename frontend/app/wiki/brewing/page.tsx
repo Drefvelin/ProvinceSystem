@@ -15,6 +15,7 @@ import { brewingCommands } from "../data/brewing";
 export default function BrewingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-11"
       title="Brewing"
       width="lg"
     >

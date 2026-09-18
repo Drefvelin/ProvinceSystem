@@ -12,6 +12,7 @@ import { WikiItemLink } from "@/app/components/wiki";
 export default function GamesPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Games"
       intro={
         <>

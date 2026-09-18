@@ -9,6 +9,7 @@ import { WikiItemLink } from "@/app/components/wiki";
 export default function DrinkBuilderPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="DrinkBuilder"
     >
       <WikiSectionHeading id="how" intro="There is no in-game command for any of this.">

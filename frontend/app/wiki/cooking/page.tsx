@@ -15,6 +15,7 @@ const itemLink = (name: string) => <WikiItemLink name={name}>{name}</WikiItemLin
 export default function CookingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Cooking"
       width="lg"
       intro={

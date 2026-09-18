@@ -24,8 +24,8 @@ const stoneRecipes = [
 export default function ServerFeaturesPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Server Features & Website Link"
-      lastVerified="2026-09-11"
     >
       <WikiSectionHeading id="sealed-letters" intro="Not to be confused with BirdMessenger's mail: see below.">
         Sealed letters

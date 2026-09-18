@@ -14,8 +14,8 @@ import { factionRanks, factionTiers, factionsCommands, installations } from "../
 export default function FactionsPage() {
   return (
     <WikiPage
+      lastModified="2026-09-18"
       title="Factions"
-      lastVerified="2026-09-11"
       width="lg"
     >
       <WikiSectionHeading id="getting-started" intro="The first few steps every faction goes through.">

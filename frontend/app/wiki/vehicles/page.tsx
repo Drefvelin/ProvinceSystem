@@ -23,7 +23,7 @@ const ammunitionName = (name: string) => {
 
 export default function VehiclesPage() {
   return (
-    <WikiPage title="Vehicles & Construction" width="lg" intro="Build a cart, crew a ship or fly an airship. Choose a vehicle below for its materials, build time, fuel and 3D preview.">
+    <WikiPage lastModified="2026-09-18" title="Vehicles & Construction" width="lg" intro="Build a cart, crew a ship or fly an airship. Choose a vehicle below for its materials, build time, fuel and 3D preview.">
       <StatGrid stats={[{ label: "Vehicles", value: 21 }, { label: "Construction", value: "6 to 96 minutes" }, { label: "Air vehicle unlock", value: "6 Crafter points total" }]} />
       <WikiSectionHeading id="catalogue">Choose a vehicle</WikiSectionHeading>
       <VehicleGallery vehicles={vehicles} />

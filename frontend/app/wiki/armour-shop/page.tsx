@@ -17,6 +17,7 @@ import {
 export default function ArmourShopPage() {
   return (
     <WikiPage
+      lastModified="2026-09-11"
       title="Armour Shop"
       intro={
         <>
@@ -25,7 +26,6 @@ export default function ArmourShopPage() {
           sometimes the item&apos;s display name).
         </>
       }
-      lastVerified="2026-09-11"
       width="lg"
     >
       <WikiSectionHeading id="how-to" intro="One command opens the whole shop.">

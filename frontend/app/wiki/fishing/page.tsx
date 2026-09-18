@@ -7,6 +7,7 @@ import { rodRecipes } from "../data/fishing";
 export default function FishingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Fishing"
       width="lg"
       intro={

@@ -54,7 +54,7 @@ export default async function StationDetailPage({ params }: { params: Promise<{ 
   const acquisitionRecipe = station.craftRecipe ?? station.vanillaBlock?.recipe;
 
   return (
-    <WikiPage title={station.name} intro={<WikiItemText text={station.blurb} excludeHref={`/wiki/stations/${station.slug}`} />} lastVerified="2026-09-12" width="lg">
+    <WikiPage lastModified="2026-09-18" title={station.name} intro={<WikiItemText text={station.blurb} excludeHref={`/wiki/stations/${station.slug}`} />} width="lg">
       <Link href="/wiki/stations" className="mt-3 inline-block text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
         &larr; Back to Stations
       </Link>

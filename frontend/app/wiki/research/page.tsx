@@ -1,7 +1,7 @@
 import { Callout, DataTable, SeeAlso, StationLink, StatGrid, WikiItemLink, WikiPage, WikiSectionHeading } from "@/app/components/wiki";
 
 export default function ResearchPage() {
-  return <WikiPage title="Research" width="lg" intro="Research is an item-based deduction puzzle. Make a research paper at a Cartography Table, study it at a Lectern, and test materials to uncover and fill its hidden aspects.">
+  return <WikiPage lastModified="2026-09-12" title="Research" width="lg" intro="Research is an item-based deduction puzzle. Make a research paper at a Cartography Table, study it at a Lectern, and test materials to uncover and fill its hidden aspects.">
     <WikiSectionHeading id="start">Make a paper and start a project</WikiSectionHeading>
     <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
       <li>Sneak-right-click a Cartography Table to open the <StationLink name="Research Station" />. Combine one vanilla Paper and one <WikiItemLink name="Alchemy Powder" /> for one <WikiItemLink name="Parchment Paper" />. It takes 5 seconds.</li>

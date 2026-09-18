@@ -19,6 +19,7 @@ export default async function MaterialDetailPage({
 
   return (
     <WikiPage
+      lastModified="2026-09-18"
       title={material.name}
       beforeTitle={<Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
         &larr; Back to Materials

@@ -5,7 +5,7 @@ import { allCommandRows, getNavItemByHref } from "../data";
 export default function CommandIndexPage() {
   const commands = allCommandRows.filter((entry) => (entry.row.access ?? "player") === "player");
   return (
-    <WikiPage title="Command Index" width="lg" intro="Every ordinary player command documented in the guide, sorted alphabetically.">
+    <WikiPage lastModified="2026-09-12" title="Command Index" width="lg" intro="Every ordinary player command documented in the guide, sorted alphabetically.">
       <WikiSectionHeading id="commands" intro="Open the linked page for arguments, cooldowns, costs, and the steps around each command.">
         Player commands
       </WikiSectionHeading>

@@ -11,6 +11,7 @@ const providers = [
 export default function RecyclerPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Recycler"
       intro={
         <>

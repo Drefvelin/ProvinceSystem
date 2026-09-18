@@ -14,6 +14,7 @@ import { bardWeaponLutes, instrumentCommands, instruments } from "../data/instru
 export default function MusicalInstrumentsPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Musical Instruments"
       intro={
         <>

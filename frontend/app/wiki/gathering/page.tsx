@@ -4,6 +4,7 @@ import { SeeAlso, StatGrid, WikiItemLink, WikiPage, WikiSectionHeading } from "@
 export default function GatheringPage() {
   return (
     <WikiPage
+      lastModified="2026-09-15"
       title="Gathering"
       intro={
         <>

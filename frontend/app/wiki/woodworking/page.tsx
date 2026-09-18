@@ -4,6 +4,7 @@ import { woodworkingActions, woodworkingCategories, woodworkingMaterials, woodwo
 export default function WoodworkingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-18"
       title="Woodworking Furniture"
       intro={`Woodworkers build decorative furniture at the Woodworking Station. There are ${woodworkingProjects.length} pieces across ${woodworkingCategories.length} styles; pick one below to see its model.`}
       width="lg"

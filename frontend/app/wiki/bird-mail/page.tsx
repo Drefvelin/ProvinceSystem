@@ -14,6 +14,7 @@ import StationModelViewer from "@/app/components/wiki/StationModelViewer";
 export default function BirdMailPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Bird Mail"
       intro={
         <>
@@ -22,7 +23,6 @@ export default function BirdMailPage() {
           use.
         </>
       }
-      lastVerified="2026-09-11"
     >
       <WikiSectionHeading id="how-it-works" intro="Everything here is block and GUI interaction: there is no /mail command.">
         Sending a letter

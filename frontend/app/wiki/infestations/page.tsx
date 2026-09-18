@@ -2,6 +2,7 @@ import { Callout, SeeAlso, WikiItemLink, WikiPage, WikiSectionHeading } from "@/
 export default function InfestationsPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Infestations"
       intro={
         <>

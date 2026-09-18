@@ -4,7 +4,7 @@ import { detectorRecipes, signalTable } from "../data/detector";
 
 export default function ArcaneTraceDetectorPage() {
   return (
-    <WikiPage title="Arcane Trace Detector" intro={<>
+    <WikiPage lastModified="2026-09-12" title="Arcane Trace Detector" intro={<>
         In-game item id: <code className="text-[var(--tfmc-accent)]">GEIGER_COUNTER</code>. Somewhere in the
         world, at all times, there is a single hidden source of Arcane Radiation. The Arcane Trace
         Detector senses where it is: hold it and it shows glowing particle rings and starts clicking,

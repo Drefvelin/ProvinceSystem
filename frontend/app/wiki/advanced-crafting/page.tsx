@@ -208,6 +208,7 @@ const clothTextures: Record<string, string> = {
 export default function AdvancedCraftingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="AdvancedCrafting"
       intro={
         <>

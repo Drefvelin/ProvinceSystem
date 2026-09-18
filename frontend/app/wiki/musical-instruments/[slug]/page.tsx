@@ -22,6 +22,7 @@ export default async function InstrumentDetailPage({
 
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title={instrument.name}
       beforeTitle={<Link
         href="/wiki/musical-instruments"

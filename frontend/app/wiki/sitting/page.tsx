@@ -11,6 +11,7 @@ import { sittingCommands } from "../data/sitting";
 export default function SittingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-11"
       title="Sitting, Crawling & Posing"
       intro={
         <>
@@ -18,7 +19,6 @@ export default function SittingPage() {
           scene feel real. It&apos;s free for every player; nothing here needs a rank.
         </>
       }
-      lastVerified="2026-09-11"
     >
       <WikiSectionHeading id="sitting" intro="The easiest way in: just right-click.">
         Sitting

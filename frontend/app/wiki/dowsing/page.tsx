@@ -6,6 +6,7 @@ import { generalNodeModel, generalNodeRecipe, nodeLevels, nodeTypes } from "../d
 export default function DowsingPage() {
   return (
     <WikiPage
+      lastModified="2026-09-18"
       title="Resource Nodes"
       intro="A node is a guild-owned production site. Place one in a chunk, choose what kind of operation it is, fit it out, feed it materials, and it produces resources on a repeating cycle."
       width="lg"

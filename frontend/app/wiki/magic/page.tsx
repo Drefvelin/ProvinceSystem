@@ -22,6 +22,7 @@ import {
 export default function MagicPage() {
   return (
     <WikiPage
+      lastModified="2026-09-18"
       title="Magic"
       width="lg"
       intro={

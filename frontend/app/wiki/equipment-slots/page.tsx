@@ -3,7 +3,7 @@ import { equipmentSlots } from "../data/equipment-slots";
 
 export default function EquipmentSlotsPage() {
   return (
-    <WikiPage title="Equipment Slots" intro="Equip one Ring, one Amulet and two Artifacts in the extra slots inside your normal inventory." lastVerified="2026-09-11">
+    <WikiPage lastModified="2026-09-11" title="Equipment Slots" intro="Equip one Ring, one Amulet and two Artifacts in the extra slots inside your normal inventory.">
       <WikiSectionHeading id="equip" intro="Match each accessory to the slot with the same item type.">Equip an accessory</WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]"><li>Press E to open your normal inventory.</li><li>Drag and click a matching MMOItems accessory into the matching accessory slot.</li><li>Keep accessories unstacked; stacked items cannot be equipped.</li></ol>
       <DataTable className="mt-4" columns={[{header:"Slot"}]} rows={equipmentSlots.map(x=>[x.slot])} />

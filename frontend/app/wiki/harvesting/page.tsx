@@ -7,7 +7,7 @@ import {
 
 export default function HarvestingPage() {
   return (
-    <WikiPage title="Crop Harvesting">
+    <WikiPage lastModified="2026-09-11" title="Crop Harvesting">
       <WikiSectionHeading id="loop" intro="Right-click to harvest; some hoes can also plant.">
         How it works
       </WikiSectionHeading>

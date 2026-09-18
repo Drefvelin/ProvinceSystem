@@ -14,6 +14,7 @@ import { charactersCommands } from "../data/characters";
 export default function CharactersPage() {
   return (
     <WikiPage
+      lastModified="2026-09-15"
       title="RPCharacters"
       intro={
         <>
@@ -22,7 +23,6 @@ export default function CharactersPage() {
           account directly. In Survival, you cannot do much of anything until you have one.
         </>
       }
-      lastVerified="2026-09-11"
     >
       <Callout variant="warning">
         With no active character, almost every command is blocked: you can still run{" "}

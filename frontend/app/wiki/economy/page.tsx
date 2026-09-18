@@ -13,6 +13,7 @@ import { WikiItemLink } from "@/app/components/wiki";
 export default function EconomyPage() {
   return (
     <WikiPage
+      lastModified="2026-09-12"
       title="Denar Economy"
       intro={
         <>
@@ -22,7 +23,6 @@ export default function EconomyPage() {
           mining or farming, and every faction wage or tax runs through this system.
         </>
       }
-      lastVerified="2026-09-11"
     >
       <WikiSectionHeading id="accounts" intro="Every player has two separate balances.">
         Pouch and bank

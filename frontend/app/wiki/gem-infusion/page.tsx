@@ -18,7 +18,7 @@ const goldsmithToolTextures: Record<string, string> = {
   "Goldsmith Tinker Tool": "smith_tinker_tool",
 };
 export default function GemInfusionPage() {
-  return <WikiPage title="Gem Infusion" width="lg" intro="Turn blank gemstones into stat-bearing Infused Gemstones at an Enchanting Table. Goldsmiths can then build jewellery around one infused gem at a Smithing Table.">
+  return <WikiPage lastModified="2026-09-12" title="Gem Infusion" width="lg" intro="Turn blank gemstones into stat-bearing Infused Gemstones at an Enchanting Table. Goldsmiths can then build jewellery around one infused gem at a Smithing Table.">
     <WikiSectionHeading id="infusion">Infuse a batch</WikiSectionHeading>
     <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
       <li>Bring a Blank Gemstone from the 40-entry catalogue and an <WikiItemLink name="Infusion Ticket" /> to any Enchanting Table. An ordinary vanilla jewel will not work.</li>

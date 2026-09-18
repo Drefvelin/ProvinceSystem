@@ -2,7 +2,7 @@ import { CommandTable, DataTable, SeeAlso, WikiPage, WikiSectionHeading } from "
 import { codexCommands } from "../data/codex";
 
 export default function CodexPage() {
-  return <WikiPage title="Codex" width="lg" intro="The Codex is your in-game discovery journal. Open it to browse lore, character entries, special discoveries, and achievements you have unlocked.">
+  return <WikiPage lastModified="2026-09-11" title="Codex" width="lg" intro="The Codex is your in-game discovery journal. Open it to browse lore, character entries, special discoveries, and achievements you have unlocked.">
     <WikiSectionHeading id="browse">Open and read your journal</WikiSectionHeading>
     <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[var(--tfmc-mist)]">
       <li>Type <code>/codex</code>. The main menu shows the journal categories and your discovery progress.</li>

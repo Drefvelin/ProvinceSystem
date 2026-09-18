@@ -9,7 +9,7 @@ const skillName = (id: string) => id
 
 export default function ClassesPage() {
   return (
-    <WikiPage title="Classes and Character" intro="Choose one of seven combat classes, gain class levels, improve attributes, and level three gathering professions." lastVerified="2026-09-11" width="lg">
+    <WikiPage lastModified="2026-09-18" title="Classes and Character" intro="Choose one of seven combat classes, gain class levels, improve attributes, and level three gathering professions." width="lg">
       <WikiSectionHeading id="start" intro="New characters are taken to class selection during creation.">Choose and play a class</WikiSectionHeading>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Read each class description and choose the equipment style you want to use.</li>
