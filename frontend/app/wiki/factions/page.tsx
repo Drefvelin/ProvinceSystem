@@ -63,7 +63,7 @@ export default function FactionsPage() {
       </p>
       <StatGrid
         stats={[
-          { label: "Province cost", value: "50 denars" },
+          { label: "Province cost", value: "50 prestige" },
           { label: "Max members", value: "64 per faction" },
           { label: "Untitled province cap", value: "5" },
         ]}
