@@ -87,7 +87,7 @@ export default function FactionsPage() {
         and a one-person guild is enough.
       </p>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
-        <li>Craft a <WikiItemLink name="General Node">General Node</WikiItemLink> and place it; each chunk holds only one node.</li>
+        <li>Craft a <WikiItemLink name="General Node">General Node</WikiItemLink> and place it. A guild can own only one node, and each chunk holds only one.</li>
         <li>Run it as an Ore Mine, Magical Mine, Farm, Plantation, Forestry or Quarry, then pick what it focuses on.</li>
         <li>Upgrades from level 1 to 10 are paid from the guild bank, so the guild needs a bank with funds in it.</li>
         <li>Only members of the owning guild can change a node. A guild leader can claim a node that another guild has marked for transfer.</li>

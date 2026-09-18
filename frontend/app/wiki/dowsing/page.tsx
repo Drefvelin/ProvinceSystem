@@ -18,6 +18,9 @@ export default function DowsingPage() {
       </div>
 
       <WikiSectionHeading id="setup" intro="You must belong to a guild; a one-person guild is enough.">Set up a node</WikiSectionHeading>
+      <Callout variant="note" className="mt-4">
+        Each guild can own only one node.
+      </Callout>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
         <li>Place the General Node on the floor. Each chunk can hold only one node.</li>
         <li>Right-click the node to open its menu, then pick a node type.</li>
@@ -40,7 +43,22 @@ export default function DowsingPage() {
       </p>
 
       <WikiSectionHeading id="levels" intro="Upgrades are paid from the guild bank and are the same for every node type.">Node levels</WikiSectionHeading>
-      <DataTable columns={[{ header: "Level" }, { header: "Upgrade cost", align: "right" }]} rows={nodeLevels.map((row) => [row.level, row.cost])} />
+      <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {nodeLevels.map((row) => (
+          <li
+            key={row.level}
+            className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_55%,transparent)] px-3 py-2.5 text-center"
+          >
+            <p className="text-xs uppercase tracking-wide text-[var(--tfmc-mist)]">Level {row.level}</p>
+            <p className="mt-1 text-base font-semibold tabular-nums text-[var(--tfmc-cream)]">
+              {row.level === 1 ? "Starting level" : row.cost}
+            </p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Each figure is the cost of upgrading to that level from the one before it.
+      </p>
 
       <WikiSectionHeading id="manage">Transfer or remove a node</WikiSectionHeading>
       <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">

@@ -24,16 +24,20 @@ export default function SiteHeader() {
     >
       <Link
         href="/"
-        className="font-[family-name:var(--font-fraunces)] text-lg tracking-wide text-[var(--tfmc-cream)] transition-opacity hover:opacity-80"
+        className="mr-4 shrink-0 font-[family-name:var(--font-fraunces)] text-lg tracking-wide text-[var(--tfmc-cream)] transition-opacity hover:opacity-80"
       >
         TFMC
       </Link>
-      <nav className="ml-auto flex items-center gap-5 sm:gap-8" aria-label="Main">
+      <nav
+        className="ml-auto flex min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] min-[400px]:gap-5 sm:gap-8 [&::-webkit-scrollbar]:hidden"
+        aria-label="Main"
+      >
         {staticLinks.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
-            className="text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)]"
+            // The logo already links home, so this link only shows once there is room for it.
+            className={`text-sm font-medium text-[var(--tfmc-stone)] transition-colors hover:text-[var(--tfmc-cream)] ${href === "/" ? "hidden sm:inline" : ""}`}
           >
             {label}
           </Link>

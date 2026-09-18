@@ -136,6 +136,33 @@ export default function MagicPage() {
         {[...runestoneRecipes, ...armorRunestoneRecipes].map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
       </div>
 
+      <WikiSectionHeading id="rune-fit" intro="The tier of a rune is a size, not a power level you can put anywhere. It has to match the socket exactly.">
+        Which rune fits which gear
+      </WikiSectionHeading>
+      <DataTable
+        columns={[{ header: "Craft quality of the gear" }, { header: "Socket it gets" }, { header: "Rune that fits" }]}
+        rows={[
+          ["Rusted", "None", "Nothing"],
+          ["Tempered", "Minor", "Minor only"],
+          ["Polished", "Lesser", "Lesser only"],
+          ["Gleaming", "Greater", "Greater only"],
+          ["Masterwork", "Ascendant", "Ascendant only"],
+        ]}
+      />
+      <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
+        <li>
+          <strong>The socket comes from how well the piece was crafted, not from its material.</strong> Iron Mage armor
+          can take an Ascendant Armor Rune, but only if that piece came out Masterwork. A Tempered iron piece has a Minor
+          socket and takes a Minor Armor Rune, nothing bigger and nothing smaller.
+        </li>
+        <li>Armor runes go on Mage armor only. Every other armor piece has a Gemstone socket instead, and an armor rune will not fit it.</li>
+        <li>Armor runes and weapon runes are separate: an armor rune never fits a staff, wand or blade, and a spell rune never fits armor.</li>
+        <li>Check the socket line in the item&apos;s lore before you spend the dust. It names the exact size the piece accepts.</li>
+      </ul>
+      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
+        Quality is decided while smithing, see <a href="/wiki/advanced-crafting#quality" className="text-[var(--tfmc-accent)] underline underline-offset-2">Advanced Crafting</a>.
+      </p>
+
       <WikiSectionHeading id="archetypes" intro="Three weapon shapes, each wanting a different set of parts.">
         Archetypes
       </WikiSectionHeading>
