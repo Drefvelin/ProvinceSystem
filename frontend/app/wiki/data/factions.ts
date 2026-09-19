@@ -57,7 +57,7 @@ export const factionsCommands: WikiCommandSet = {
     { command: "/faction join <name>", description: "Joins a faction that invited you." },
     { command: "/faction leave", description: "Leaves your faction.", notes: "The leader must /faction delete instead; guild members use /guild leave." },
     { command: "/faction kick <player>", description: "Removes a member.", notes: "Faction leader only. Cannot kick the leader or a guild member." },
-    { command: "/faction accept", description: "Accepts a pending diplomacy or transfer request.", notes: "Faction leader only." },
+    { command: "/faction accept", description: "Accepts a pending diplomacy or transfer request.", notes: "Requires a pending request. Diplomacy and war prompts go to the faction leader; guild elevate, movement join, wanted-leader, and vehicle consent go to whoever received the prompt." },
     { command: "/faction setleader <player>", description: "Hands leadership to another member.", notes: "Faction leader only. Blocked under a democracy government." },
     { command: "/faction rename <name>", description: "Renames the faction.", notes: "Faction leader only." },
     { command: "/faction setcapital <name>", description: "Founds or moves the capital in your current province.", notes: "Faction leader only." },
