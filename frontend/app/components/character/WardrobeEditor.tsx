@@ -334,6 +334,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
           slot: id,
           unlocked: slotUnlocked(id, swappable),
           filled: Boolean(file),
+          model: armModelToWardrobeModel(props.draftModels[id] ?? "default"),
           display_name: wardrobeSlotLabel(id, name),
           custom_name: Boolean(String(name || "").trim()),
           apply_pending: false,
@@ -360,6 +361,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     isDraft,
     isDraft ? props.draftFiles : null,
     isDraft ? props.draftNames : null,
+    isDraft ? props.draftModels : null,
     wardrobe,
     swappable,
     liveSwappable,
@@ -431,7 +433,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         delete nextNames[modalSlot as keyof WardrobeDraftNames];
       }
       props.onDraftNamesChange(nextNames);
-      if (input.file) {
+      if (nextFiles[modalSlot as keyof WardrobeDraftFiles]) {
         const nextModels = { ...props.draftModels };
         nextModels[modalSlot as keyof WardrobeDraftModels] = input.armModel;
         props.onDraftModelsChange(nextModels);
@@ -455,13 +457,25 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
     setSaving(true);
     setModalError(null);
     try {
+      let uploadFile = input.file;
+      if (!uploadFile && input.armModel !== wardrobeSlotToArmModel(modalData?.model)) {
+        // Changing arm geometry requires a newly signed texture, even for the same PNG.
+        const url = await fetchWardrobeTextureBlob(sessionToken, characterId, modalSlot);
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("Could not load existing skin");
+          uploadFile = new File([await response.blob()], "skin.png", { type: "image/png" });
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      }
       let w: WardrobeResponse;
-      if (input.file) {
+      if (uploadFile) {
         w = await uploadWardrobeSlot(
           sessionToken,
           characterId,
           modalSlot,
-          input.file,
+          uploadFile,
           input.displayName,
           {
             createMasked: input.createMasked,
@@ -480,7 +494,7 @@ export default function WardrobeEditor(props: WardrobeEditorProps) {
         );
       }
       setWardrobe(w);
-      if (input.file) {
+      if (uploadFile) {
         await loadTextures(sessionToken, characterId, w);
       }
       setModalSlot(null);
