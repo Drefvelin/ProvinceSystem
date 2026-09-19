@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { LoreRun } from "../../../lib/characters/lorePreview";
 import type { WardrobeSlot } from "../../../lib/characters/api";
+import { wardrobeSlotToArmModel } from "../../../lib/characters/wardrobeRanks";
 import FormattedMcRuns from "../shared/FormattedMcRuns";
 import SkinMannequinPreview from "./SkinMannequinPreview";
 
@@ -96,6 +97,7 @@ export default function WardrobeSlotFrame({
             {slot.filled && textureSrc ? (
               <SkinMannequinPreview
                 source={textureSrc}
+                armModel={wardrobeSlotToArmModel(slot.model)}
                 className="absolute inset-0 h-full w-full pointer-events-none"
               />
             ) : (

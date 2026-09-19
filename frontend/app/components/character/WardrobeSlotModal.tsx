@@ -187,7 +187,7 @@ export default function WardrobeSlotModal({
   const canSave =
     !localErr &&
     !saving &&
-    (Boolean(file) || (filled && nameChanged));
+    (Boolean(file) || (filled && (nameChanged || armModel !== defaultArmModel)));
 
   async function onPick(f: File | null) {
     setLocalErr(null);
@@ -204,6 +204,7 @@ export default function WardrobeSlotModal({
       return;
     }
     setFile(f);
+    // Detect once for a new upload; preview reloads must preserve manual choices.
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => {
@@ -254,9 +255,6 @@ export default function WardrobeSlotModal({
               source={previewSource}
               armModel={armModel}
               className="h-full w-full"
-              onModelDetected={(detected) => {
-                if (file) setArmModel(detected);
-              }}
               downloadFilename={
                 previewSource
                   ? showMaskedToggle && previewMode === "masked"
