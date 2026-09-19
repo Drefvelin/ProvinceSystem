@@ -86,6 +86,8 @@ function hasCustomise(item: CharacterKitItem): boolean {
 function itemLabel(item: CharacterKitItem): string {
   const custom = String(item.customise?.display_name || "").trim();
   if (custom) return custom;
+  const override = String(item.display_name || "").trim();
+  if (override) return override;
   if (item.preview?.display_name) return item.preview.display_name;
   const path = item.path || "";
   const seg = path.includes(".") ? path.slice(path.lastIndexOf(".") + 1) : path;

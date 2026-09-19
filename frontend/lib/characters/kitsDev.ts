@@ -68,9 +68,10 @@ export function uiDevCharacterKits(
             editable: false,
           },
           {
-            path: "m.foods.CHURRO",
-            amount: 256,
+            path: "c.dry_ration(type=dry_ration;quality=1)",
+            amount: 32,
             editable: false,
+            display_name: "Dry Ration",
           },
         ],
       },

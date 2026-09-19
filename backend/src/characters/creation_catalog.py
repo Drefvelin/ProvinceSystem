@@ -256,6 +256,9 @@ def _normalize_kits(raw: list) -> list[dict[str, Any]]:
             }
             if item.get("editable"):
                 entry["editable"] = True
+            display_name = str(item.get("display_name") or "").strip()
+            if display_name:
+                entry["display_name"] = display_name
             items.append(entry)
         out.append(
             {

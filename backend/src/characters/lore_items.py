@@ -1126,6 +1126,9 @@ def list_character_kits(player_uuid: str, character_id: str | None) -> dict[str,
                 "amount": amount,
                 "editable": editable,
             }
+            display_name = str(item.get("display_name") or "").strip()
+            if display_name:
+                entry["display_name"] = display_name
             if editable:
                 kit_key = _kit_key_from_path(path)
                 entry["kit_key"] = kit_key

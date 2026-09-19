@@ -146,6 +146,7 @@ export type CatalogKitItem = {
   path: string;
   amount: number;
   editable?: boolean;
+  display_name?: string;
 };
 
 export type CatalogKit = {
@@ -556,6 +557,7 @@ export type CharacterKitItem = {
   path: string;
   amount: number;
   editable: boolean;
+  display_name?: string;
   kit_key?: string;
   preview?: EditableKitPreview;
   skin_png?: string;
