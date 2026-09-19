@@ -1,5 +1,6 @@
 import { advancedCraftingSection } from "./advanced-crafting";
 import { archaeologySection } from "./archaeology";
+import { armorStatuesSection } from "./armor-statues";
 import { armourShopSection } from "./armour-shop";
 import { birdMailSection } from "./bird-mail";
 import { brewingSection } from "./brewing";
@@ -63,6 +64,7 @@ export const wikiSections: readonly WikiSection[] = [
   equipmentSlotsSection,
   serverFeaturesSection,
   sittingSection,
+  armorStatuesSection,
   advancedCraftingSection,
   furnitureSection,
   woodworkingSection,

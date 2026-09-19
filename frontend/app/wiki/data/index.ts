@@ -16,6 +16,7 @@ export * from "./catalog";
 export * from "./command-index";
 export * from "./advanced-crafting";
 export * from "./archaeology";
+export * from "./armor-statues";
 export * from "./armour-shop";
 export * from "./bird-mail";
 export * from "./brewing";
