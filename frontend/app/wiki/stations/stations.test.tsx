@@ -230,10 +230,10 @@ describe("station routes", () => {
 
   it("resolves every station acquisition output by source identity to a static 3D thumbnail", () => {
     const acquisitionStations = stations.filter((station) => station.craftRecipe || station.vanillaBlock?.recipe);
-    expect(acquisitionStations).toHaveLength(23);
+    expect(acquisitionStations).toHaveLength(24);
     const sourceIds = acquisitionStations.map((station) => (station.craftRecipe ?? station.vanillaBlock!.recipe).output.sourceId);
     expect(sourceIds.every(Boolean)).toBe(true);
-    expect(new Set(sourceIds).size).toBe(23);
+    expect(new Set(sourceIds).size).toBe(24);
 
     for (const station of acquisitionStations) {
       const recipe = station.craftRecipe ?? station.vanillaBlock!.recipe;

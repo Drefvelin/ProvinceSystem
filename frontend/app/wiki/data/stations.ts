@@ -188,6 +188,21 @@ const medicineStationCraft: Recipe = {
   output: { name: "Medicine Station", qty: 1, sourceId: "itemsadder:medicine_station", model: medicineModel },
 };
 
+const birdMailboxCraft: Recipe = {
+  key: "craft-bird-mailbox",
+  title: "Bird Mailbox",
+  station: "Crafting Table",
+  requirement: "None",
+  ingredients: [
+    empty, { name: "Oak Log", qty: 1, sourceId: "vanilla:oak_log", texture: V("oak_log.png") }, empty,
+    empty, { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") }, empty,
+    { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
+    { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
+    { name: "Stick", qty: 1, sourceId: "vanilla:stick", texture: V("stick.png") },
+  ],
+  output: { name: "Bird Mailbox", qty: 1, sourceId: "itemsadder:bird_mailbox", model: birdMailboxModel },
+};
+
 const engineerStationCraft: Recipe = {
   key: "craft-engineer-station",
   title: "Engineer Station",
@@ -290,6 +305,7 @@ const stationOwnedCraftRecipes = [
   medicineStationCraft,
   fishingStationCraft,
   animalStationCraft,
+  birdMailboxCraft,
 ];
 
 const [engineeringTableCraft, dockyardCraft] = constructionStations;
@@ -589,6 +605,7 @@ export const stations: StationInfo[] = [
     interaction: "Right click",
     guide: { href: "/wiki/bird-mail", label: "Bird Mail guide" },
     model: birdMailboxModel,
+    craftRecipe: birdMailboxCraft,
   },
 ];
 
