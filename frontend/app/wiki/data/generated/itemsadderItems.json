@@ -1,0 +1,269 @@
+{
+  "abyssalite_block": {
+    "name": "Block of Abyssalite",
+    "material": "PAPER",
+    "texture": "itemsadder/abyssalite_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/abyssalite_block.png"
+  },
+  "archeology_cabinet": {
+    "name": "Archeology Cabinet",
+    "material": "PAPER"
+  },
+  "artifact_display": {
+    "name": "Artifact Display",
+    "material": "PAPER"
+  },
+  "blindfold_helmet": {
+    "name": "Blindfold",
+    "texture": "itemsadder/blindfold_helmet.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_armor/configs/special_armor.yml",
+    "sourceTexture": "tfmc_armor/resourcepack/assets/tfmc_armor/textures/armor_icons/special/blindfold_helmet.png"
+  },
+  "bowl": {
+    "name": "Bowl",
+    "material": "PAPER"
+  },
+  "bronze_block": {
+    "name": "Block of Bronze",
+    "material": "PAPER",
+    "texture": "itemsadder/bronze_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/bronze_block.png"
+  },
+  "butter_churn": {
+    "name": "Butter Churn",
+    "material": "PAPER"
+  },
+  "butter_plate": {
+    "name": "Butter Plate",
+    "material": "PAPER"
+  },
+  "coke_block": {
+    "name": "Block of Coke",
+    "material": "PAPER",
+    "texture": "itemsadder/coke_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/coke_block.png"
+  },
+  "cutting_board": {
+    "name": "Cutting Board",
+    "material": "PAPER"
+  },
+  "cutting_knife": {
+    "name": "Cutting Knife",
+    "material": "PAPER",
+    "texture": "itemsadder/cutting_knife.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/cutting_knife.png"
+  },
+  "deck": {
+    "name": "Deck of Cards",
+    "material": "PAPER",
+    "texture": "itemsadder/deck.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_games/contents/items.yml",
+    "sourceTexture": "tfmc_games/resourcepack/assets/tfmc_games/textures/item/cards/deck.png"
+  },
+  "demonwood_log": {
+    "name": "Demonwood Log",
+    "material": "PAPER",
+    "texture": "itemsadder/demonwood_log.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/demonwood_log_east.png"
+  },
+  "demonwood_plank": {
+    "name": "Demonwood Plank",
+    "material": "PAPER",
+    "texture": "itemsadder/demonwood_plank.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/demonwood_plank.png"
+  },
+  "elderwood_log": {
+    "name": "Elderwood Log",
+    "material": "PAPER",
+    "texture": "itemsadder/elderwood_log.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/elderwood_log_east.png"
+  },
+  "elderwood_plank": {
+    "name": "Elderwood Plank",
+    "material": "PAPER",
+    "texture": "itemsadder/elderwood_plank.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/elderwood_plank.png"
+  },
+  "frying_pan": {
+    "name": "Frying Pan",
+    "material": "PAPER"
+  },
+  "ignitium_block": {
+    "name": "Block of Ignitium",
+    "material": "PAPER",
+    "texture": "itemsadder/ignitium_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/ignitium_block.png"
+  },
+  "ladle": {
+    "name": "Ladle",
+    "material": "PAPER",
+    "texture": "itemsadder/ladle.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/ladle.png"
+  },
+  "liquid_container": {
+    "name": "Liquid Container",
+    "material": "PAPER"
+  },
+  "lure": {
+    "name": "Lure",
+    "material": "PAPER"
+  },
+  "maplewood_log": {
+    "name": "Maplewood Log",
+    "material": "PAPER",
+    "texture": "itemsadder/maplewood_log.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/maplewood_log_east.png"
+  },
+  "maplewood_plank": {
+    "name": "Maplewood Plank",
+    "material": "PAPER",
+    "texture": "itemsadder/maplewood_plank.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/maplewood_plank.png"
+  },
+  "marauder_coins": {
+    "name": "Marauder Coins",
+    "material": "PAPER"
+  },
+  "marauder_coins_small": {
+    "name": "Marauder Coins Small",
+    "material": "PAPER"
+  },
+  "marauder_goldbag": {
+    "name": "Marauder Bag with Gold",
+    "material": "PAPER"
+  },
+  "marauder_goldbars": {
+    "name": "Marauder Goldbars",
+    "material": "PAPER"
+  },
+  "masher": {
+    "name": "Masher",
+    "material": "PAPER",
+    "texture": "itemsadder/masher.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/items.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/tools/masher.png"
+  },
+  "meat_hook": {
+    "name": "Meat Hook",
+    "material": "PAPER"
+  },
+  "milling_stone": {
+    "name": "Milling Stone",
+    "material": "PAPER"
+  },
+  "mythril_block1": {
+    "name": "Block of Mythril",
+    "material": "PAPER",
+    "texture": "itemsadder/mythril_block1.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/mythril_block.png"
+  },
+  "mythril_block2": {
+    "name": "Exposed Mythril",
+    "material": "PAPER",
+    "texture": "itemsadder/mythril_block2.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/exposed_mythril.png"
+  },
+  "mythril_block3": {
+    "name": "Weathered Mythril",
+    "material": "PAPER",
+    "texture": "itemsadder/mythril_block3.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/weathered_mythril.png"
+  },
+  "mythril_block4": {
+    "name": "Oxidized Mythril",
+    "material": "PAPER",
+    "texture": "itemsadder/mythril_block4.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/oxidized_mythril.png"
+  },
+  "pedestal": {
+    "name": "Pedestal",
+    "material": "PAPER"
+  },
+  "plate": {
+    "name": "Plate",
+    "material": "PAPER"
+  },
+  "pot": {
+    "name": "Pot",
+    "material": "PAPER"
+  },
+  "saucepan": {
+    "name": "Saucepan",
+    "material": "PAPER"
+  },
+  "sausage_maker": {
+    "name": "Sausage Maker",
+    "material": "PAPER"
+  },
+  "steel_block": {
+    "name": "Block of Steel",
+    "material": "PAPER",
+    "texture": "itemsadder/steel_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/steel_block.png"
+  },
+  "tin_block": {
+    "name": "Block of Tin",
+    "material": "PAPER",
+    "texture": "itemsadder/tin_block.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_blocks/configs/blocks.yml",
+    "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/tin_block.png"
+  },
+  "tool_shelf": {
+    "name": "Tool Shelf",
+    "material": "PAPER"
+  },
+  "train_track": {
+    "name": "Train Track",
+    "material": "PAPER",
+    "texture": "itemsadder/train_track.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "ia_tfmc/contents/base.yml",
+    "sourceTexture": "ia_tfmc/resourcepack/assets/tfmc/textures/item/train_track.png"
+  },
+  "trough": {
+    "name": "Trough",
+    "material": "PAPER"
+  },
+  "voting_booth": {
+    "name": "Voting Booth",
+    "material": "PAPER"
+  }
+}

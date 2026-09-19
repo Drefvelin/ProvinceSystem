@@ -295,6 +295,125 @@ export function buildJavaModelGroup(
   return root;
 }
 
+export const JAVA_MODEL_EXPORT_HINT =
+  "Export in Blockbench as Java Block/Item (not Java Item).";
+export const JAVA_MODEL_ROTATION_ERROR =
+  "Cubes may only rotate on one axis by 22.5° or 45°. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_NO_ELEMENTS_ERROR =
+  "Model has no elements. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_ITEM_WRAPPER_ERROR =
+  "This looks like a Minecraft item definition, not a Java Block/Item model. " +
+  JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_PROJECT_FILE_ERROR =
+  "This looks like a Blockbench project file. " + JAVA_MODEL_EXPORT_HINT;
+export const JAVA_MODEL_BOUNDS_ERROR =
+  "Cube coordinates must be between -16 and 32.";
+export const JAVA_MODEL_TEXTURES_ERROR =
+  "Model textures must be a map of texture ids to paths.";
+export const JAVA_MODEL_CUBE_ERROR =
+  "Each cube needs from and to as three numbers.";
+
+const ALLOWED_AXES = new Set(["x", "y", "z"]);
+const ALLOWED_ANGLES = [-45, -22.5, 0, 22.5, 45];
+const COORD_MIN = -16;
+const COORD_MAX = 32;
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function angleAllowed(value: unknown): boolean {
+  if (!isFiniteNumber(value)) return false;
+  return ALLOWED_ANGLES.some((allowed) => Math.abs(value - allowed) < 1e-6);
+}
+
+function isVec3(value: unknown): value is [number, number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every((n) => isFiniteNumber(n))
+  );
+}
+
+function coordsInBounds(vec: [number, number, number]): boolean {
+  return vec.every((n) => n >= COORD_MIN && n <= COORD_MAX);
+}
+
+/**
+ * Reject JSON Minecraft cannot load as a Java Block/Item model.
+ * Extra keys (format_version, groups, gui_light) are allowed.
+ */
+export function assertVanillaJavaBlockModel(data: unknown): void {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Invalid model JSON");
+  }
+  const model = data as Record<string, unknown>;
+  const nested = model.model;
+  if (
+    nested &&
+    typeof nested === "object" &&
+    !Array.isArray(nested) &&
+    "type" in nested
+  ) {
+    throw new Error(JAVA_MODEL_ITEM_WRAPPER_ERROR);
+  }
+  if ("meta" in model) {
+    throw new Error(JAVA_MODEL_PROJECT_FILE_ERROR);
+  }
+
+  const textures = model.textures;
+  if (textures !== undefined) {
+    if (Array.isArray(textures)) {
+      throw new Error(JAVA_MODEL_PROJECT_FILE_ERROR);
+    }
+    if (!textures || typeof textures !== "object") {
+      throw new Error(JAVA_MODEL_TEXTURES_ERROR);
+    }
+    for (const value of Object.values(textures as Record<string, unknown>)) {
+      if (typeof value !== "string") {
+        throw new Error(JAVA_MODEL_TEXTURES_ERROR);
+      }
+    }
+  }
+
+  const elements = model.elements;
+  if (!Array.isArray(elements) || elements.length === 0) {
+    throw new Error(JAVA_MODEL_NO_ELEMENTS_ERROR);
+  }
+
+  for (const el of elements) {
+    if (!el || typeof el !== "object" || Array.isArray(el)) {
+      throw new Error(JAVA_MODEL_CUBE_ERROR);
+    }
+    const cube = el as Record<string, unknown>;
+    if (!isVec3(cube.from) || !isVec3(cube.to)) {
+      throw new Error(JAVA_MODEL_CUBE_ERROR);
+    }
+    if (!coordsInBounds(cube.from) || !coordsInBounds(cube.to)) {
+      throw new Error(JAVA_MODEL_BOUNDS_ERROR);
+    }
+    const rot = cube.rotation;
+    if (rot === undefined || rot === null) continue;
+    if (Array.isArray(rot) || typeof rot !== "object") {
+      throw new Error(JAVA_MODEL_ROTATION_ERROR);
+    }
+    const rotation = rot as Record<string, unknown>;
+    if (
+      ("x" in rotation || "y" in rotation || "z" in rotation) &&
+      !("axis" in rotation)
+    ) {
+      throw new Error(JAVA_MODEL_ROTATION_ERROR);
+    }
+    if (
+      !ALLOWED_AXES.has(String(rotation.axis)) ||
+      !angleAllowed(rotation.angle) ||
+      !isVec3(rotation.origin)
+    ) {
+      throw new Error(JAVA_MODEL_ROTATION_ERROR);
+    }
+  }
+}
+
 export function parseJavaModelJson(text: string): JavaModelJson {
   let data: unknown;
   try {
@@ -302,10 +421,13 @@ export function parseJavaModelJson(text: string): JavaModelJson {
   } catch {
     throw new Error("Invalid model JSON");
   }
-  if (!data || typeof data !== "object") {
-    throw new Error("Invalid model JSON");
-  }
+  assertVanillaJavaBlockModel(data);
   return data as JavaModelJson;
+}
+
+export async function assertVanillaJavaBlockModelFile(file: File): Promise<void> {
+  const text = await file.text();
+  parseJavaModelJson(text);
 }
 
 export async function loadTextureFromFile(

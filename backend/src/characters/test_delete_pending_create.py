@@ -21,7 +21,10 @@ PNG = b"\x89PNG\r\n\x1a\n-not-a-real-png"
 PLAYER = "11111111-1111-4111-8111-111111111111"
 OTHER = "22222222-2222-4222-8222-222222222222"
 CREATE_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+OTHER_CREATE_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 REALM = "main"
+SUBMISSION_ID = "player-testknife"
+CODE_ID = 1
 
 
 class DeletePendingCreateTests(unittest.TestCase):
@@ -114,6 +117,159 @@ class DeletePendingCreateTests(unittest.TestCase):
         with connect() as conn:
             row = conn.execute(sql, tuple(where.values())).fetchone()
         return int(row["n"])
+
+    def _insert_code(self, code_id: int = CODE_ID, player_uuid: str = PLAYER) -> None:
+        from src.skins.db import connect
+
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO codes (
+                    id, code_hash, player_uuid, scope, realm_id,
+                    created_at, expires_at, redeemed_at, revoked
+                ) VALUES (?, ?, ?, 'profile', ?, ?, ?, ?, 0)
+                """,
+                (
+                    code_id,
+                    f"hash-{code_id}",
+                    player_uuid,
+                    REALM,
+                    NOW,
+                    "2099-01-01T00:00:00Z",
+                    NOW,
+                ),
+            )
+            conn.commit()
+
+    def _insert_submission(
+        self,
+        submission_id: str = SUBMISSION_ID,
+        *,
+        code_id: int = CODE_ID,
+        status: str = "pending",
+        player_uuid: str = PLAYER,
+    ) -> None:
+        from src.skins.db import connect
+
+        self._insert_code(code_id, player_uuid)
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO submissions (
+                    id, player_uuid, code_id, kind, slug, display_name,
+                    status, dir_path, created_at, discord_user_id, staff, realm_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    submission_id,
+                    player_uuid,
+                    code_id,
+                    "handheld",
+                    submission_id,
+                    "Test Knife",
+                    status,
+                    f"skins/{submission_id}",
+                    NOW,
+                    "discord-1",
+                    0,
+                    REALM,
+                ),
+            )
+            conn.commit()
+
+    def _set_lore_pending_skin(
+        self,
+        submission_id: str,
+        *,
+        character_id: str = CREATE_ID,
+        player_uuid: str = PLAYER,
+        kit_key: str = "kit_a",
+    ) -> None:
+        from src.skins.db import connect
+
+        with connect() as conn:
+            conn.execute(
+                """
+                UPDATE lore_item_customisations
+                SET submission_id = ?,
+                    state = 'pending_skin',
+                    updated_at = ?
+                WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+                """,
+                (submission_id, NOW, player_uuid, character_id, kit_key),
+            )
+            conn.commit()
+
+    def _submission_exists(self, submission_id: str) -> bool:
+        from src.skins.db import connect
+
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM submissions WHERE id = ?",
+                (submission_id,),
+            ).fetchone()
+        return row is not None
+
+    def _code_redeemed_at(self, code_id: int = CODE_ID) -> str | None:
+        from src.skins.db import connect
+
+        with connect() as conn:
+            row = conn.execute(
+                "SELECT redeemed_at FROM codes WHERE id = ?",
+                (code_id,),
+            ).fetchone()
+        return None if row is None else row["redeemed_at"]
+
+    def test_cancel_rolls_back_orphaned_pending_submission(self) -> None:
+        from src.characters.creates import delete_pending_create
+
+        self._insert_submission()
+        self._set_lore_pending_skin(SUBMISSION_ID)
+        self.assertTrue(self._submission_exists(SUBMISSION_ID))
+        self.assertIsNotNone(self._code_redeemed_at())
+
+        result = delete_pending_create(PLAYER, CREATE_ID)
+        self.assertEqual(result, {"ok": True, "deleted": CREATE_ID})
+        self.assertFalse(self._submission_exists(SUBMISSION_ID))
+        self.assertIsNone(self._code_redeemed_at())
+
+    def test_cancel_keeps_approved_submission(self) -> None:
+        from src.characters.creates import delete_pending_create
+
+        self._insert_submission(status="approved")
+        self._set_lore_pending_skin(SUBMISSION_ID)
+
+        delete_pending_create(PLAYER, CREATE_ID)
+        self.assertTrue(self._submission_exists(SUBMISSION_ID))
+
+    def test_cancel_keeps_submission_referenced_by_other_character(self) -> None:
+        from src.characters.creates import delete_pending_create
+        from src.skins.db import connect
+
+        self._insert_submission()
+        self._set_lore_pending_skin(SUBMISSION_ID)
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO character_creates (
+                    id, player_uuid, payload, status, created_at, realm_id
+                ) VALUES (?, ?, '{"name":"Other"}', 'pending', ?, ?)
+                """,
+                (OTHER_CREATE_ID, PLAYER, NOW, REALM),
+            )
+            conn.execute(
+                """
+                INSERT INTO lore_item_customisations (
+                    player_uuid, character_id, kit_key, submission_id,
+                    state, updated_at, realm_id
+                ) VALUES (?, ?, 'kit_b', ?, 'pending_skin', ?, ?)
+                """,
+                (PLAYER, OTHER_CREATE_ID, SUBMISSION_ID, NOW, REALM),
+            )
+            conn.commit()
+
+        delete_pending_create(PLAYER, CREATE_ID)
+        self.assertTrue(self._submission_exists(SUBMISSION_ID))
 
     def test_delete_pending_create_cleans_all(self) -> None:
         from src.characters.creates import delete_pending_create

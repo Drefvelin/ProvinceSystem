@@ -15,6 +15,7 @@ from .parchmentgen import (
     _grade_parchment,
     _remap_luminance_value,
     create_map_preview,
+    create_parchment_base,
     map_preview_path,
 )
 
@@ -46,6 +47,54 @@ class ParchmentgenTests(unittest.TestCase):
         low = _remap_luminance_value(32)
         high = _remap_luminance_value(224)
         self.assertLess(sum(low), sum(high))
+
+
+class CreateParchmentBaseTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = self._tmp.name
+
+        def parchment_image(map_name):
+            path = os.path.join(
+                self.root, "output", map_name, "maps", "parchment_base.png"
+            )
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            return path
+
+        patcher = patch.object(parchmentgen, "parchment_image", parchment_image)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.parchment_image = parchment_image
+
+    def test_disabled_skips_generation_and_removes_stale_output(self):
+        stale = self.parchment_image("testmap")
+        Image.new("RGBA", (8, 8), (100, 80, 60, 255)).save(stale)
+
+        with patch.object(parchmentgen, "PARCHMENT_BASE_ENABLED", False):
+            self.assertFalse(create_parchment_base("testmap"))
+
+        self.assertFalse(os.path.exists(stale))
+
+    def test_enabled_writes_parchment(self):
+        def input_file(map_name, filename):
+            path = os.path.join(self.root, "input", map_name, filename)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            return path
+
+        map_path = input_file("testmap", "map.png")
+        provinces_path = input_file("testmap", "provinces.png")
+        Image.new("RGB", (16, 16), (120, 140, 80)).save(map_path)
+        Image.new("RGB", (16, 16), (0, 0, 0)).save(provinces_path)
+
+        with (
+            patch.object(parchmentgen, "PARCHMENT_BASE_ENABLED", True),
+            patch.object(parchmentgen, "input_file", input_file),
+            patch.object(parchmentgen, "validate_map", lambda map_name: None),
+        ):
+            self.assertTrue(create_parchment_base("testmap"))
+
+        self.assertTrue(os.path.isfile(self.parchment_image("testmap")))
 
 
 class MapPreviewTests(unittest.TestCase):

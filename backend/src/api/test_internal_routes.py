@@ -212,6 +212,65 @@ class InternalRoutesTest(unittest.IsolatedAsyncioTestCase):
             with open(duchy_path, encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), '{"keep": true}')
 
+    async def test_upload_regions_rejects_remote(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        request = _request_with_host("8.8.8.8")
+        with self.assertRaises(HTTPException) as ctx:
+            await upload_region_data("main", "regions", request, BackgroundTasks())
+        self.assertEqual(403, ctx.exception.status_code)
+
+    async def test_upload_regions_allows_docker_bridge(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            regions_path = os.path.join(tmp, "regions.json")
+            request = _request_with_host("172.18.0.1")
+            _stub_json_body(
+                request,
+                {"REGION_1": {"name": "A", "provinces": [1], "rgb": "1,2,3"}},
+            )
+            with patch("src.api.data_routes.validate_map"), patch(
+                "src.api.data_routes.defines_file",
+                return_value=regions_path,
+            ):
+                response = await upload_region_data(
+                    "main",
+                    "regions",
+                    request,
+                    BackgroundTasks(),
+                )
+
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(os.path.isfile(regions_path))
+            written = json.loads(Path(regions_path).read_text(encoding="utf-8"))
+            self.assertEqual(written["REGION_1"]["provinces"], [1])
+
+    async def test_upload_empty_regions_overwrites(self) -> None:
+        from src.api.data_routes import upload_region_data
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            regions_path = os.path.join(tmp, "regions.json")
+            with open(regions_path, "w", encoding="utf-8") as handle:
+                handle.write('{"keep": true}')
+            request = _request_with_host("172.18.0.1")
+            _stub_json_body(request, {})
+            with patch("src.api.data_routes.validate_map"), patch(
+                "src.api.data_routes.defines_file",
+                return_value=regions_path,
+            ) as defines:
+                response = await upload_region_data(
+                    "main",
+                    "regions",
+                    request,
+                    BackgroundTasks(),
+                )
+
+            self.assertEqual(200, response.status_code)
+            defines.assert_called()
+            written = json.loads(Path(regions_path).read_text(encoding="utf-8"))
+            self.assertEqual(written, {})
+
 
 class ChronicleSnapshotTriggerTest(unittest.IsolatedAsyncioTestCase):
     """The LAN-reachable capture trigger: no `force`, one capture per map."""

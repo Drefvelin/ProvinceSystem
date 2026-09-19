@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { MAP_DISPLAY_NAMES, type MapId } from "../map/types";
+import { mapDisplayName, type MapId } from "../map/types";
 import {
   chronicleStudioHref,
   liveMapHref,
@@ -22,7 +22,7 @@ export default function InvalidChronicleDay({ mapId }: { mapId: MapId }) {
   return (
     <div className="flex min-h-[calc(100dvh-var(--tfmc-header-h))] flex-col items-center justify-center gap-3 bg-[var(--tfmc-forest-deep)] px-6 text-center">
       <p className="text-xs font-medium uppercase tracking-widest text-[var(--tfmc-mist)]">
-        {MAP_DISPLAY_NAMES[mapId]} chronicle
+        {mapDisplayName(mapId)} chronicle
       </p>
       <p className="font-[family-name:var(--font-fraunces)] text-2xl text-[var(--tfmc-cream)]">
         Not a valid date

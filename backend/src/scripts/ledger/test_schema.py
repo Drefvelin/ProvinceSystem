@@ -19,6 +19,7 @@ from src.scripts.ledger.schema import (
     faction_key,
     json_safe,
     normalize_snapshot,
+    parse_instant,
     snapshot_day,
 )
 
@@ -54,6 +55,25 @@ def test_day_partitions_on_captured_at_not_server_day() -> None:
 
     # An offset instant partitions by its UTC date, not its local one.
     assert snapshot_day("2026-09-01T23:00:00-05:00") == "2026-09-02"
+
+
+@pytest.mark.parametrize(
+    ("fraction", "microsecond"),
+    [("", 0), (".1", 100000), (".882", 882000), (".882157", 882157), (".882157766", 882157)],
+)
+def test_java_instant_timestamps_on_python310(fraction, microsecond) -> None:
+    stamp = f"2026-09-11T01:42:29{fraction}Z"
+    assert parse_instant(stamp) == datetime(
+        2026, 9, 11, 1, 42, 29, microsecond, tzinfo=timezone.utc
+    )
+    snapshot = normalize_snapshot(snapshot_payload(captured_at=stamp), MAP)
+    assert snapshot["day"] == "2026-09-11"
+
+
+def test_nanosecond_offset_timestamp_keeps_utc_day_boundary() -> None:
+    assert parse_instant("2026-09-11T23:59:59.999999999-01:00") == datetime(
+        2026, 9, 12, 0, 59, 59, 999999, tzinfo=timezone.utc
+    )
 
 
 def test_complete_is_only_true_for_a_literal_true() -> None:

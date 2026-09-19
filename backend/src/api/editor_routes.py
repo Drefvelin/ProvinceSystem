@@ -30,7 +30,7 @@ async def save_title_tier(
     request: Request,
     authorization: str | None = Header(default=None),
 ):
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     tier_norm = (tier or "").strip().lower()
     if tier_norm not in TITLE_TIERS:
@@ -67,7 +67,7 @@ async def editor_regenerate(
     background_tasks: BackgroundTasks,
     authorization: str | None = Header(default=None),
 ):
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     try:
         validate_map(map_name)
@@ -102,7 +102,7 @@ async def get_editor_provinces(
     map_name: str,
     authorization: str | None = Header(default=None),
 ):
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     try:
         provinces = load_province_catalog(map_name)
@@ -122,7 +122,7 @@ async def get_editor_province_pick(
     if_modified_since: str | None = Header(default=None),
 ):
     """Staff-only raw provinces.png for editor province RGB hit-testing."""
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     try:
         validate_map(map_name)
@@ -149,7 +149,7 @@ async def get_editor_province_index(
     if_modified_since: str | None = Header(default=None),
 ):
     """Staff-only province id grid for editor hit-testing (gzip province_id_grid bytes)."""
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     try:
         validate_map(map_name)
@@ -192,7 +192,7 @@ async def get_editor_province_runs(
     back to the grid whenever this 404s, so a map without the artifact keeps
     working.
     """
-    ensure_map_staff_write(map_name, authorization)
+    map_name = ensure_map_staff_write(map_name, authorization).id
 
     try:
         validate_map(map_name)

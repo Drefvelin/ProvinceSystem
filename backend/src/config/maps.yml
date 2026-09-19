@@ -8,3 +8,8 @@ maps:
     display_name: Adavaar
     realm_id: dev
     staff_permission: tfmc.map.staff
+  - id: calavorn
+    public: true
+    archived: true
+    display_name: Calavorn
+    realm_id: calavorn

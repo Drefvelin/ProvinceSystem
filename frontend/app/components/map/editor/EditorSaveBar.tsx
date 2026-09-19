@@ -1,7 +1,7 @@
 "use client";
 
 import type { MapId } from "@/app/components/map/types";
-import { STAFF_MAP_PAGE_ROUTES } from "@/lib/map/api";
+import { liveMapHref } from "@/app/lib/map/chronicleDayRoute";
 
 import type { ExportState } from "@/app/hooks/useEditorExport";
 import type { RegenState } from "@/app/hooks/useEditorRegen";
@@ -13,7 +13,7 @@ const linkClass =
   "rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_25%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest)_40%,transparent)] px-3 py-2 text-sm text-[var(--tfmc-cream)] no-underline transition hover:brightness-110 hover:border-[var(--tfmc-accent)]";
 
 function mapViewerPath(mapId: MapId): string {
-  return STAFF_MAP_PAGE_ROUTES[mapId] ?? `/map/${mapId}`;
+  return liveMapHref(mapId);
 }
 
 type EditorSaveBarProps = {

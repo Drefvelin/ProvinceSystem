@@ -4,6 +4,7 @@
  * is the only place this math gets covered by a test at all.
  */
 
+import { cleanRegionName } from "../mapLabels";
 import type {
   LedgerBreakdownSeries,
   LedgerFactionField,
@@ -417,7 +418,7 @@ export type LedgerFactionOption = {
 /** Bare nation name — every dropdown option's label is just the name it
  * represents, merged or not. */
 export function formatLedgerFactionLabel(faction: LedgerRegistryFaction): string {
-  return faction.name;
+  return cleanRegionName(faction.name);
 }
 
 /**
@@ -444,10 +445,10 @@ export function buildLedgerFactionOptions(
       name,
       keys: sorted.map((row) => row.key),
       foundedAt: sorted.map((row) => row.founded_at),
-      label: name,
+      label: formatLedgerFactionLabel(sorted[0]!),
     });
   }
-  return options.sort((a, b) => a.name.localeCompare(b.name));
+  return options.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /**

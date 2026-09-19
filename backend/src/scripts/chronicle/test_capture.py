@@ -467,6 +467,9 @@ def test_new_optional_sources_are_captured_when_present(env: Path) -> None:
         assert json.loads(gzip.decompress(resolved.read_bytes())) == {"n": name}
 
 
+_TITLE_FILES = ("county", "duchy", "kingdom")
+
+
 def test_empire_is_read_from_defines_not_input(env: Path) -> None:
     """The trap: omitting empire from _DEFINES_SOURCES makes capture look in
     input/, find nothing, and flag every day."""
@@ -474,14 +477,74 @@ def test_empire_is_read_from_defines_not_input(env: Path) -> None:
     assert capture_mod._source_path(MAP, "empire") == str(
         env / "defines" / MAP / "empire.json"
     )
-    # The fixed-geography tiers are deliberately not captured at all.
-    for name in ("county", "duchy", "kingdom"):
-        assert name not in store.CHRONICLE_FILES
+    for name in _TITLE_FILES:
+        assert name in store.CHRONICLE_FILES
+        assert name in capture_mod._DEFINES_SOURCES
+        assert capture_mod._source_path(MAP, name) == str(
+            env / "defines" / MAP / f"{name}.json"
+        )
+        assert name not in store.OPTIONAL_CHRONICLE_FILES
     # infestation_data is an upload, so it stays in input/.
     assert "infestation_data" not in capture_mod._DEFINES_SOURCES
     assert capture_mod._source_path(MAP, "infestation_data") == str(
         env / "input" / MAP / "infestation_data.json"
     )
+
+
+def test_title_tiers_are_captured_when_present(env: Path) -> None:
+    _write_all_sources(env)
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert manifest["missing"] == []
+    assert manifest["invalid"] == []
+    for name in _TITLE_FILES:
+        assert name in manifest["files"], name
+        resolved = Path(store.resolve_stored_file(MAP, "2026-01-01", name))
+        assert json.loads(gzip.decompress(resolved.read_bytes())) == {"n": name}
+
+
+def test_missing_title_tier_is_incomplete_not_absent(env: Path) -> None:
+    """County/duchy/kingdom are required; a map without county.json is degraded."""
+    for name in store.CHRONICLE_FILES:
+        if name == "county":
+            continue
+        _write_source(env, name, {"n": name})
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert "county" in manifest["missing"]
+    assert "county" not in manifest.get("absent", [])
+    assert "county" not in manifest["files"]
+    assert capture_mod._is_incomplete(manifest) is True
+
+
+def test_unchanged_title_tiers_dedup_via_same_as(env: Path) -> None:
+    _write_all_sources(env)
+    capture_mod.capture_snapshot(MAP, day="2026-01-01")
+    _write_source(env, "nation", {"n": "changed"})
+    second = capture_mod.capture_snapshot(MAP, day="2026-01-02")
+
+    for name in _TITLE_FILES:
+        assert second["files"][name]["same_as"] == "2026-01-01"
+        assert not os.path.exists(store.stored_file_path(MAP, "2026-01-02", name))
+        assert store.resolve_stored_file(
+            MAP, "2026-01-02", name
+        ) == store.stored_file_path(MAP, "2026-01-01", name)
+
+    third = capture_mod.capture_snapshot(MAP, day="2026-01-03")
+    assert third["files"]["county"]["same_as"] == "2026-01-01"
+
+
+def test_torn_county_json_is_invalid_not_stored(env: Path) -> None:
+    _write_all_sources(env)
+    (env / "defines" / MAP / "county.json").write_text('{"a": 1', encoding="utf-8")
+
+    manifest = capture_mod.capture_snapshot(MAP, day="2026-01-01")
+
+    assert "county" in manifest["invalid"]
+    assert "county" not in manifest["files"]
+    assert capture_mod._is_incomplete(manifest) is True
 
 
 def test_absent_optional_sources_do_not_degrade_the_day(env: Path) -> None:

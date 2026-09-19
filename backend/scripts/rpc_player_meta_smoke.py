@@ -77,16 +77,19 @@ def main() -> None:
             "wardrobe_skin_slots": 2,
             "max_3d_pair_bytes": 40960,
             "skin_token_cooldown_days": 21,
-            "skin_kinds": ["handheld", "armor_set"],
-            "allow_armor_3d_helmet": True,
-            "permission_flags": {"rulequiz.completed": True},
-        },
-    )
-    if put.status_code != 200:
-        fail(f"PUT meta: {put.status_code} {put.text}")
-    body = put.json()
-    if body.get("name_colour_stops") != 8:
-        fail(f"expected colour cap 8, got {body.get('name_colour_stops')}")
+                "skin_kinds": ["handheld", "armor_set"],
+                "allow_armor_3d_helmet": True,
+                "permission_flags": {"rulequiz.completed": True},
+                "donator_tier": 1,
+            },
+        )
+        if put.status_code != 200:
+            fail(f"PUT meta: {put.status_code} {put.text}")
+        body = put.json()
+        if body.get("name_colour_stops") != 8:
+            fail(f"expected colour cap 8, got {body.get('name_colour_stops')}")
+        if body.get("donator_tier") != 1:
+            fail(f"expected donator_tier 1, got {body.get('donator_tier')}")
 
     mint = client.post(
         "/skins/codes",

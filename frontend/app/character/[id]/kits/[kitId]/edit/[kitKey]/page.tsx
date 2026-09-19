@@ -20,8 +20,8 @@ import {
 } from "../../../../../../../lib/characters/loreItemsDev";
 import {
   clearSession,
-  getSession,
-  isSessionValid,
+  getSession as getCharacterSession,
+  isSessionValid as isCharacterSessionValid,
   type CharacterSession,
 } from "../../../../../../../lib/characters/session";
 import {
@@ -105,8 +105,8 @@ export default function CharacterKitEditPage() {
       void load(s.session_token).finally(() => setReady(true));
       return;
     }
-    const s = getSession();
-    if (!s || !isSessionValid(s) || s.scope !== "profile") {
+    const s = getCharacterSession();
+    if (!s || !isCharacterSessionValid(s) || s.scope !== "profile") {
       clearSession();
       router.replace("/character");
       return;

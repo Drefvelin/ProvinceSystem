@@ -237,6 +237,45 @@ Full checklist: [STAGING.md](./STAGING.md).
 
 ---
 
+## Web character creator gate (noble+) — post-deploy checks
+
+After deploying backend changes that persist `web_creator_access` and accept `donator_tier`:
+
+1. Rebuild/restart ProvinceSystem backend.
+2. **Restart the MC server** (or reload RPCharacters) so the creation catalog PUT runs again.
+3. Verify catalog policy in SQLite (expect `main` → `min_tier: 1`):
+
+```bash
+docker compose exec backend python3 -c "
+import sqlite3, json
+conn = sqlite3.connect('/app/src/data/province.db')
+data = json.loads(conn.execute('SELECT payload FROM creation_catalog WHERE id=1').fetchone()[0])
+print(data.get('web_creator_access'))
+conn.close()
+"
+```
+
+- If `None`: RPCharacters must include `web_creator_access` in the catalog PUT (wire existing `web-creator-access.yml`).
+
+4. Have a known **noble+** player relog; check tier histogram:
+
+```bash
+docker compose exec backend python3 -c "
+import sqlite3
+conn = sqlite3.connect('/app/src/data/province.db')
+print(conn.execute('SELECT donator_tier, COUNT(*) FROM rpc_player_meta GROUP BY donator_tier').fetchall())
+conn.close()
+"
+```
+
+- If still all `0` after noble relog: TFMCWeb must send `donator_tier` on `PUT /characters/plugin/rpc-player-meta` (from existing permission-group tiers).
+
+5. Smoke: non-donator `GET /api/characters` → `web_creator_allowed: false`; noble → `true` after tier sync.
+
+Existing characters and pending web creates are **not** purged; the gate applies only to **new** `POST /characters`.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause |

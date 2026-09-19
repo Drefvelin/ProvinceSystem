@@ -485,7 +485,7 @@ export function optionModifierPreview(
     if (!attrKeys.has(type)) continue;
     lines.push({
       label: capitalizeLabel(type),
-      current: totals.attributes[type] || 0,
+      current: Math.max(0, totals.attributes[type] || 0),
       delta: deltaAttr[type] || 0,
       kind: "attribute",
     });
@@ -514,7 +514,7 @@ export function optionModifierPreview(
       label: capitalizeLabel(
         current?.alias || delta?.alias || profession
       ),
-      current: current?.amount || 0,
+      current: Math.max(0, current?.amount || 0),
       delta: delta?.amount || 0,
       kind: "experience",
     });
@@ -698,7 +698,8 @@ export function setTraitsForKey(
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
   let traitIds = [...kept, ...selected];
-  if (key.trim().toLowerCase() === "prosthetic") {
+  const normalizedKey = key.trim().toLowerCase();
+  if (normalizedKey === "prosthetic" || normalizedKey === "injury") {
     traitIds = stripInjuriesReplacedByProsthetics(traitIds, catalog);
   }
   return { ...draft, traitIds };

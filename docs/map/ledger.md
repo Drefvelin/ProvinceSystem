@@ -38,6 +38,13 @@ Unknown extra keys are ignored (a plugin-side field addition should not 400 a wh
 season) and non-finite floats (`NaN`/`Infinity`) are normalised to `null`, mirroring
 `chronicle_routes._json_safe`.
 
+The backend image uses Python 3.10. Its `datetime.fromisoformat` does not directly
+accept Java `Instant.toString()` timestamps such as
+`2026-09-11T01:42:29.882157766Z`. `parse_instant` converts the trailing `Z` to
+`+00:00` and truncates/pads fractional seconds to six digits before parsing.
+Without this compatibility step, every SF snapshot is rejected with HTTP 400
+(`Unparsable captured_at`) and the ledger stays empty while map history continues.
+
 ## `map_id` reconciliation: the URL wins, loudly
 
 Every snapshot carries its own `map_id`, and it is **not** what the data is stored

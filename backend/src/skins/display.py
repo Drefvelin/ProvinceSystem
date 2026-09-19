@@ -95,6 +95,90 @@ class DisplayError(ValueError):
     """Invalid or incomplete model display after merge."""
 
 
+EXPORT_HINT = "Export in Blockbench as Java Block/Item (not Java Item)."
+ROTATION_ERROR = (
+    "Cubes may only rotate on one axis by 22.5° or 45°. " + EXPORT_HINT
+)
+NO_ELEMENTS_ERROR = "Model has no elements. " + EXPORT_HINT
+ITEM_WRAPPER_ERROR = (
+    "This looks like a Minecraft item definition, not a Java Block/Item model. "
+    + EXPORT_HINT
+)
+PROJECT_FILE_ERROR = "This looks like a Blockbench project file. " + EXPORT_HINT
+BOUNDS_ERROR = "Cube coordinates must be between -16 and 32."
+TEXTURES_ERROR = "Model textures must be a map of texture ids to paths."
+CUBE_ERROR = "Each cube needs from and to as three numbers."
+
+_ALLOWED_AXES = frozenset({"x", "y", "z"})
+_ALLOWED_ANGLES = (-45.0, -22.5, 0.0, 22.5, 45.0)
+_COORD_MIN = -16.0
+_COORD_MAX = 32.0
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _angle_allowed(value: Any) -> bool:
+    if not _is_number(value):
+        return False
+    return any(abs(float(value) - allowed) < 1e-6 for allowed in _ALLOWED_ANGLES)
+
+
+def _vec3(value: Any) -> bool:
+    if not isinstance(value, list) or len(value) != 3:
+        return False
+    return all(_is_number(n) for n in value)
+
+
+def _coords_in_bounds(vec: list) -> bool:
+    return all(_COORD_MIN <= float(n) <= _COORD_MAX for n in vec)
+
+
+def validate_java_block_model(model: dict[str, Any]) -> None:
+    """Reject JSON Minecraft cannot load as a Java Block/Item model."""
+    nested = model.get("model")
+    if isinstance(nested, dict) and "type" in nested:
+        raise DisplayError(ITEM_WRAPPER_ERROR)
+    if "meta" in model:
+        raise DisplayError(PROJECT_FILE_ERROR)
+
+    textures = model.get("textures")
+    if textures is not None:
+        if isinstance(textures, list):
+            raise DisplayError(PROJECT_FILE_ERROR)
+        if not isinstance(textures, dict):
+            raise DisplayError(TEXTURES_ERROR)
+        if any(not isinstance(v, str) for v in textures.values()):
+            raise DisplayError(TEXTURES_ERROR)
+
+    elements = model.get("elements")
+    if not isinstance(elements, list) or len(elements) == 0:
+        raise DisplayError(NO_ELEMENTS_ERROR)
+
+    for el in elements:
+        if not isinstance(el, dict):
+            raise DisplayError(CUBE_ERROR)
+        from_v = el.get("from")
+        to_v = el.get("to")
+        if not _vec3(from_v) or not _vec3(to_v):
+            raise DisplayError(CUBE_ERROR)
+        if not _coords_in_bounds(from_v) or not _coords_in_bounds(to_v):
+            raise DisplayError(BOUNDS_ERROR)
+        rot = el.get("rotation")
+        if rot is None:
+            continue
+        if isinstance(rot, list) or not isinstance(rot, dict):
+            raise DisplayError(ROTATION_ERROR)
+        if any(k in rot for k in ("x", "y", "z")) and "axis" not in rot:
+            raise DisplayError(ROTATION_ERROR)
+        axis = rot.get("axis")
+        if axis not in _ALLOWED_AXES or not _angle_allowed(rot.get("angle")):
+            raise DisplayError(ROTATION_ERROR)
+        if not _vec3(rot.get("origin")):
+            raise DisplayError(ROTATION_ERROR)
+
+
 def required_tabs(kind: str) -> tuple[str, ...]:
     if kind in ("shield", "helmet_3d", "armor_helmet_3d"):
         return COMMON_TABS + (HEAD_TAB,)
@@ -149,6 +233,7 @@ def parse_and_merge_model(raw: bytes, kind: str) -> dict[str, Any]:
         raise DisplayError(f"Invalid model JSON: {e}") from e
     if not isinstance(model, dict):
         raise DisplayError("Model JSON must be an object")
+    validate_java_block_model(model)
     submitted = model.get("display")
     if submitted is not None and not isinstance(submitted, dict):
         raise DisplayError("Model display must be an object")

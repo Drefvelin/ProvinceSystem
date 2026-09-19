@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import io
+import logging
+import struct
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -32,6 +34,8 @@ DISPLAY_NAME_MAX = 24
 MAX_TEMPLATE_BYTES = 2 * 1024 * 1024
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
+logger = logging.getLogger("characters.wardrobe")
+
 
 class WardrobeError(ValueError):
     """Business-rule failure for wardrobe routes."""
@@ -43,6 +47,53 @@ class WardrobeError(ValueError):
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _png_upload_diag(data: bytes) -> str:
+    if not data:
+        return "len=0 magic_ok=False ihdr=?"
+    magic_ok = data.startswith(PNG_MAGIC)
+    ihdr = "?"
+    if magic_ok and len(data) >= 24 and data[12:16] == b"IHDR":
+        try:
+            w, h = struct.unpack(">II", data[16:24])
+            ihdr = f"{w}x{h}"
+        except struct.error:
+            pass
+    return f"len={len(data)} magic_ok={magic_ok} ihdr={ihdr}"
+
+
+def _mask_player_uuid_for_log(player_uuid: str) -> str:
+    u = (player_uuid or "").strip()
+    if len(u) <= 4:
+        return "****"
+    return f"…{u[-4:]}"
+
+
+def _log_wardrobe_upload_failure(
+    exc: WardrobeError,
+    *,
+    kind: str,
+    target_id: str,
+    slot: str,
+    player_uuid: str,
+    png_bytes: bytes,
+    create_masked: bool = False,
+    model_override: str | None = None,
+) -> None:
+    logger.warning(
+        "[wardrobe] upload failed kind=%s target_id=%s slot=%s player=%s "
+        "create_masked=%s model=%s status=%s detail=%s diag=%s",
+        kind,
+        (target_id or "").strip() or "?",
+        (slot or "").strip() or "?",
+        _mask_player_uuid_for_log(player_uuid),
+        create_masked,
+        (model_override or "").strip() or "-",
+        exc.status_code,
+        str(exc),
+        _png_upload_diag(png_bytes),
+    )
 
 
 def swappable_slot_count(
@@ -930,6 +981,40 @@ def upload_slot(
     create_masked: bool = False,
     model_override: str | None = None,
 ) -> dict[str, Any]:
+    try:
+        return _upload_slot_impl(
+            player_uuid,
+            character_id,
+            slot,
+            png_bytes,
+            display_name=display_name,
+            create_masked=create_masked,
+            model_override=model_override,
+        )
+    except WardrobeError as exc:
+        _log_wardrobe_upload_failure(
+            exc,
+            kind="upload_slot",
+            target_id=character_id,
+            slot=slot,
+            player_uuid=player_uuid,
+            png_bytes=png_bytes,
+            create_masked=create_masked,
+            model_override=model_override,
+        )
+        raise
+
+
+def _upload_slot_impl(
+    player_uuid: str,
+    character_id: str,
+    slot: str,
+    png_bytes: bytes,
+    *,
+    display_name: str | None = None,
+    create_masked: bool = False,
+    model_override: str | None = None,
+) -> dict[str, Any]:
     access = _resolve_player_wardrobe_access(player_uuid, character_id)
     if access["kind"] == "pending":
         uuid = access["player_uuid"]
@@ -1368,6 +1453,40 @@ def upload_pending_create_wardrobe(
     model_override: str | None = None,
 ) -> dict[str, Any]:
     """Sign + store a wardrobe slot against a pending create (pre-roster)."""
+    try:
+        return _upload_pending_create_wardrobe_impl(
+            player_uuid,
+            create_id,
+            slot,
+            png_bytes,
+            display_name=display_name,
+            create_masked=create_masked,
+            model_override=model_override,
+        )
+    except WardrobeError as exc:
+        _log_wardrobe_upload_failure(
+            exc,
+            kind="pending_create",
+            target_id=create_id,
+            slot=slot,
+            player_uuid=player_uuid,
+            png_bytes=png_bytes,
+            create_masked=create_masked,
+            model_override=model_override,
+        )
+        raise
+
+
+def _upload_pending_create_wardrobe_impl(
+    player_uuid: str,
+    create_id: str,
+    slot: str,
+    png_bytes: bytes,
+    *,
+    display_name: str | None = None,
+    create_masked: bool = False,
+    model_override: str | None = None,
+) -> dict[str, Any]:
     create = _require_pending_create(player_uuid, create_id)
     uuid = str(create["player_uuid"])
     cid = str(create["id"])

@@ -71,6 +71,44 @@ describe("ChronicleStaffConsole", () => {
     await waitFor(() => expect(screen.getByText("Backups")).toBeDefined());
     expect(screen.getByText(/Wipe the main chronicle/)).toBeDefined();
     await waitFor(() => expect(screen.getByText("season reset")).toBeDefined());
+    expect(screen.getByText("Archive as…")).toBeDefined();
+  });
+
+  it("hides Archive as on an archived map", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CHARACTER_UI_DEV", "1");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://api.test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const href = String(url);
+        if (href.includes("/maps/accessible")) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            json: async () => ({
+              maps: [
+                {
+                  id: "calavorn",
+                  display_name: "Calavorn",
+                  public: true,
+                  archived: true,
+                },
+              ],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          json: async () => ({ backups: [] }),
+        };
+      })
+    );
+    render(<ChronicleStaffConsole mapId="calavorn" />);
+    await waitFor(() => expect(screen.getByText("Backups")).toBeDefined());
+    expect(screen.queryByText("Archive as…")).toBeNull();
   });
 });
 

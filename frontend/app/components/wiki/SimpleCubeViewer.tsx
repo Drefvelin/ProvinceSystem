@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { wikiBlockPreviewHeight } from "./wikiStyles";
 
 export type CubeFaces = {
   up: string;
@@ -79,7 +80,7 @@ export default function SimpleCubeViewer({
       if (disposed) return;
 
       const mkMat = (tex: THREE.Texture | null) =>
-        new THREE.MeshLambertMaterial({ map: tex ?? undefined, color: tex ? 0xffffff : 0x88a088 });
+        new THREE.MeshLambertMaterial({ map: tex ?? undefined, color: tex ? 0xffffff: 0x88a088 });
 
       const materials = [east, west, up, down, south, north].map(mkMat);
       const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -101,7 +102,7 @@ export default function SimpleCubeViewer({
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
       controls.autoRotate = true;
-      controls.autoRotateSpeed = variant === "thumb" ? 3 : 1.2;
+      controls.autoRotateSpeed = variant === "thumb" ? 3: 1.2;
       controls.minDistance = 0.8;
       controls.maxDistance = 4;
       if (variant === "thumb") {
@@ -110,6 +111,14 @@ export default function SimpleCubeViewer({
 
       function animate() {
         frameId = requestAnimationFrame(animate);
+        if (renderer && mount && mount.clientWidth > 0 && mount.clientHeight > 0) {
+          const size = renderer.getSize(new THREE.Vector2());
+          if (size.x !== mount.clientWidth || size.y !== mount.clientHeight) {
+            camera.aspect = mount.clientWidth / mount.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(mount.clientWidth, mount.clientHeight, false);
+          }
+        }
         controls?.update();
         if (renderer) renderer.render(scene, camera);
       }
@@ -155,13 +164,13 @@ export default function SimpleCubeViewer({
     return (
       <div
         ref={mountRef}
-        className="pointer-events-none relative h-8 w-8 shrink-0 overflow-hidden sm:h-10 sm:w-10"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-[var(--tfmc-forest)] shadow-none transition-[width,height,background-color,box-shadow] duration-200 [&>canvas]:!h-full [&>canvas]:!w-full group-hover:h-44 group-hover:w-44 group-hover:rounded-md group-hover:border group-hover:border-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)] group-hover:shadow-2xl group-focus:h-44 group-focus:w-44 group-focus:rounded-md group-focus:border group-focus:border-[color-mix(in_srgb,var(--tfmc-accent)_55%,transparent)] group-focus:shadow-2xl motion-reduce:transition-none sm:h-10 sm:w-10"
       >
         {error ? (
           <span className="absolute inset-0 flex items-center justify-center text-[8px] text-[var(--tfmc-mist)]">
-            ?
+            :
           </span>
-        ) : null}
+        ): null}
       </div>
     );
   }
@@ -169,13 +178,13 @@ export default function SimpleCubeViewer({
   return (
     <div
       ref={mountRef}
-      className="relative h-64 w-full overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] sm:h-80"
+      className={`relative w-full overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--tfmc-cream)_12%,transparent)] bg-[color-mix(in_srgb,var(--tfmc-forest-deep)_60%,transparent)] ${wikiBlockPreviewHeight}`}
     >
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center text-sm text-[var(--tfmc-mist)]">
           {error}
         </p>
-      ) : null}
+      ): null}
     </div>
   );
 }

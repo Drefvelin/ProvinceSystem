@@ -10,9 +10,14 @@ import {
   CharactersApiError,
   createCharacter,
   uploadPendingCreateWardrobe,
+  wardrobeSlotLabel,
   type CatalogStage,
   type CreationCatalog,
 } from "../../../lib/characters/api";
+import {
+  assertWardrobeSkinPng,
+  friendlyWardrobeUploadError,
+} from "../../../lib/characters/wardrobeSkin";
 import WardrobeEditor, {
   type WardrobeDraftFiles,
   type WardrobeDraftModels,
@@ -808,6 +813,19 @@ export default function CreationWizard({
           // Server composes masked from base when create_masked is set
           continue;
         }
+        try {
+          await assertWardrobeSkinPng(file);
+        } catch (err) {
+          const detail =
+            err instanceof Error ? err.message : "Invalid skin file";
+          throw new Error(`${wardrobeSlotLabel(slot)}: ${detail}`);
+        }
+      }
+      for (const [slot, file] of slots) {
+        if (slot === "masked" && wardrobeAutoMasked) {
+          // Server composes masked from base when create_masked is set
+          continue;
+        }
         setError(`Signing skin (${slot})…`);
         await uploadPendingCreateWardrobe(
           sessionToken,
@@ -827,13 +845,13 @@ export default function CreationWizard({
       setError(null);
       router.replace("/character");
     } catch (err) {
-      setError(
+      const raw =
         err instanceof CharactersApiError
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Create failed"
-      );
+            : "Create failed";
+      setError(friendlyWardrobeUploadError(raw));
     } finally {
       setSubmitting(false);
     }

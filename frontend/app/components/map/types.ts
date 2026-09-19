@@ -1,4 +1,5 @@
-export type MapId = "main" | "dev";
+/** Wire/API map id: alphanumeric, matching backend `validate_map`. */
+export type MapId = string;
 
 export type MapMode =
   | "nation"
@@ -193,15 +194,32 @@ export type MapMarkersResponse = {
   wars?: WarExport[];
 };
 
-export const MAP_BOUNDS: Record<MapId, number> = {
-  main: 6400,
-  dev: 6400,
+export const DEFAULT_MAP_BOUNDS = 6400;
+
+export const MAP_BOUNDS: Record<string, number> = {
+  main: DEFAULT_MAP_BOUNDS,
+  dev: DEFAULT_MAP_BOUNDS,
 };
 
-export const MAP_DISPLAY_NAMES: Record<MapId, string> = {
+/** Known maps keep their authored square; anything else waits for the image. */
+export function mapFallbackSize(mapId: MapId): number {
+  return MAP_BOUNDS[mapId] ?? DEFAULT_MAP_BOUNDS;
+}
+
+export const MAP_DISPLAY_NAMES: Record<string, string> = {
   main: "Adavaar",
   dev: "Adavaar",
 };
+
+/** Accessible-list name when known, then the static main/dev labels, else the id. */
+export function mapDisplayName(
+  mapId: MapId,
+  maps?: { id: string; display_name: string }[] | null
+): string {
+  const fromList = maps?.find((entry) => entry.id === mapId)?.display_name.trim();
+  if (fromList) return fromList;
+  return MAP_DISPLAY_NAMES[mapId] ?? mapId;
+}
 
 export function apiBase(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "";

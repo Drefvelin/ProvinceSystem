@@ -1,5 +1,5 @@
 import type { MapId } from "../components/map/types";
-import { MAP_BOUNDS } from "../components/map/types";
+import { mapFallbackSize } from "../components/map/types";
 import { screenToMap, type Size } from "../lib/mapViewportMath";
 
 export type MapPickViewport = {
@@ -48,7 +48,7 @@ function getLegacyMapCoords(
   const mapSize =
     canvas.width > 0 && canvas.height > 0
       ? Math.max(canvas.width, canvas.height)
-      : (MAP_BOUNDS[mapId] ?? 6400);
+      : mapFallbackSize(mapId);
 
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;

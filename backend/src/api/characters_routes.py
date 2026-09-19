@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -36,6 +37,7 @@ from src.characters.lore_items import (
     list_pending_for_plugin,
     mark_lore_items_applied,
     resolve_default_kit_texture,
+    resolve_pickable_model,
     resolve_pickable_texture,
     store_plugin_kit_skin,
 )
@@ -60,10 +62,18 @@ from src.characters.wardrobe import (
     upload_pending_create_wardrobe,
     upload_slot,
 )
-from src.skins.auth import HEADER_PLUGIN_KEY, AuthError, require_plugin_key
+from src.skins.auth import (
+    HEADER_PLUGIN_KEY,
+    AuthError,
+    is_secondary_plugin_key,
+    require_plugin_key,
+)
 from src.skins.codes import CodeError, get_session, revoke_session
 
 characters_router = APIRouter(prefix="/characters", tags=["characters"])
+
+_wardrobe_log = logging.getLogger("characters.wardrobe")
+_catalog_log = logging.getLogger("characters.creation_catalog")
 
 
 class AppliedResultsBody(BaseModel):
@@ -167,6 +177,7 @@ class RpcPlayerMetaBody(BaseModel):
     skin_kinds: list[str] = Field(default_factory=list)
     allow_armor_3d_helmet: bool = False
     permission_flags: dict[str, bool] = Field(default_factory=dict)
+    donator_tier: int = 0
 
 def _lore_http(exc: LoreItemError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=str(exc))
@@ -187,6 +198,19 @@ async def plugin_put_creation_catalog(
 ):
     """RPCharacters full-replace creation catalog snapshot."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        # Dev/tutorial servers push on every start; only the primary server's copy is kept.
+        current = get_catalog()
+        _catalog_log.info("creation catalog push ignored (secondary plugin key)")
+        return {
+            "ok": True,
+            "ignored": True,
+            "stages": len(current["stages"]),
+            "races": len(current["races"]),
+            "traits": len(current["traits"]),
+            "classes": len(current["classes"]),
+            "updated_at": current["updated_at"],
+        }
     try:
         body = await request.json()
     except Exception as e:
@@ -215,6 +239,8 @@ async def plugin_put_kit_skin(
 ):
     """RPCharacters uploads default editable-kit PNG (assets/{name}.png)."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        return {"ok": True, "ignored": True, "name": name}
     data = await request.body()
     try:
         return store_plugin_kit_skin(name, data)
@@ -229,6 +255,8 @@ async def plugin_put_wardrobe_masked_template(
 ):
     """RPCharacters uploads assets/masked.png for auto-masked compose."""
     _require_plugin(x_plugin_key)
+    if is_secondary_plugin_key(x_plugin_key):
+        return {"ok": True, "ignored": True}
     data = await request.body()
     try:
         return store_masked_template(data)
@@ -338,6 +366,30 @@ def get_lore_item_skin_texture(
         path,
         media_type="image/png",
         filename=filename,
+    )
+
+
+@characters_router.get("/lore-items/skins/{submission_id}/model")
+def get_lore_item_skin_model(
+    submission_id: str,
+    base_set: str | None = None,
+    authorization: str | None = Header(default=None),
+):
+    """Java model JSON preview for a pickable 3D skin."""
+    from fastapi.responses import FileResponse
+
+    session = _profile_session_from_auth(authorization)
+    try:
+        path = resolve_pickable_model(
+            session["player_uuid"], submission_id, base_set
+        )
+    except LoreItemError as e:
+        raise _lore_http(e) from e
+    sid = (submission_id or "").strip()
+    return FileResponse(
+        path,
+        media_type="application/json",
+        filename=f"{sid}.json",
     )
 
 
@@ -474,6 +526,13 @@ async def post_lore_item_customise(
         if isinstance(styles_body, list):
             name_styles = [str(x) for x in styles_body]
 
+    has_upload = (
+        texture_bytes is not None
+        or unsigned_bytes is not None
+        or signed_bytes is not None
+        or model_bytes is not None
+    )
+
     try:
         kwargs = dict(
             display_name=display_name,
@@ -593,6 +652,11 @@ async def post_character_wardrobe_slot(
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
+        _wardrobe_log.warning(
+            "[wardrobe] upload missing file character_id=%s slot=%s",
+            character_id,
+            slot,
+        )
         raise HTTPException(
             status_code=400,
             detail="Missing multipart file field 'texture' (or 'file')",
@@ -714,6 +778,11 @@ async def post_pending_create_wardrobe(
     form = await request.form()
     file = form.get("texture") or form.get("file")
     if file is None or not hasattr(file, "read"):
+        _wardrobe_log.warning(
+            "[wardrobe] upload missing file create_id=%s slot=%s",
+            create_id,
+            slot,
+        )
         raise HTTPException(
             status_code=400,
             detail="Missing multipart file field 'texture' (or 'file')",

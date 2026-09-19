@@ -8,6 +8,7 @@ import {
   isValidChronicleDay,
   liveMapHref,
   parseChronicleDayRange,
+  parseMapRouteSegment,
 } from "./chronicleDayRoute";
 
 describe("isValidChronicleDay", () => {
@@ -77,6 +78,20 @@ describe("chronicle route hrefs", () => {
     expect(liveMapHref("dev")).toBe("/map/r3b1rth");
     expect(chronicleStudioHref("main")).toBe("/map/main/chronicle");
     expect(chronicleStudioHref("dev")).toBe("/map/r3b1rth/chronicle");
+    expect(liveMapHref("calavorn")).toBe("/map/calavorn");
+    expect(chronicleStudioHref("calavorn")).toBe("/map/calavorn/chronicle");
+  });
+
+  it("parses public URL segments into wire map ids", () => {
+    expect(parseMapRouteSegment("r3b1rth")).toBe("dev");
+    expect(parseMapRouteSegment("R3B1RTH")).toBe("dev");
+    expect(parseMapRouteSegment("calavorn")).toBe("calavorn");
+    expect(parseMapRouteSegment("main")).toBe("main");
+    expect(parseMapRouteSegment("dev")).toBe("dev");
+    expect(parseMapRouteSegment("map_vardera")).toBeNull();
+    expect(parseMapRouteSegment("editor")).toBeNull();
+    expect(parseMapRouteSegment("")).toBeNull();
+    expect(parseMapRouteSegment("  ")).toBeNull();
   });
 
   it("builds a day href under the studio route", () => {

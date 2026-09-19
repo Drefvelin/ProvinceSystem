@@ -23,6 +23,10 @@ const EXTRA_MODE_OPTIONS: { value: MapMode; label: string }[] = [
   { value: "infestation", label: "Infestation" },
 ];
 
+export function mapToolbarModeOptions(): { value: MapMode; label: string }[] {
+  return [...BASE_MODE_OPTIONS, ...EXTRA_MODE_OPTIONS];
+}
+
 type MapToolbarProps = {
   mapId: MapId;
   mapType: MapMode;
@@ -31,7 +35,6 @@ type MapToolbarProps = {
 };
 
 export default function MapToolbar({
-  mapId,
   mapType,
   onMapTypeChange,
   variant = "sidebar",
@@ -41,17 +44,12 @@ export default function MapToolbar({
   const isSidebar = variant === "sidebar";
 
   /*
-   * One list, offered identically on the live map and on a stored day. The
-   * chronicle used to filter this down to the two modes it could answer for;
-   * it no longer needs to, because every mode now has an honest day answer —
-   * either that day's capture or a source that genuinely does not vary. A mode
-   * with nothing stored for a given day falls through to `MapViewer`'s
-   * missing-capture panel rather than vanishing from the menu.
+   * One list on every map, live or stored day. A mode with nothing stored for
+   * a given day (or a missing PNG on an archived chapter) falls through to
+   * MapViewer's missing-capture / empty panel rather than vanishing from the
+   * menu.
    */
-  const options = [
-    ...BASE_MODE_OPTIONS,
-    ...(mapId === "main" || mapId === "dev" ? EXTRA_MODE_OPTIONS : []),
-  ];
+  const options = mapToolbarModeOptions();
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);

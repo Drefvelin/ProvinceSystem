@@ -639,6 +639,19 @@ export function loreItemSkinTextureUrl(
   return `${getApiBase()}/characters/lore-items/skins/${id}/texture${qs ? `?${qs}` : ""}`;
 }
 
+export function loreItemSkinModelUrl(
+  submissionId: string,
+  baseSet?: string
+): string {
+  const id = encodeURIComponent(submissionId.trim());
+  const params = new URLSearchParams();
+  if (baseSet?.trim()) {
+    params.set("base_set", baseSet.trim());
+  }
+  const qs = params.toString();
+  return `${getApiBase()}/characters/lore-items/skins/${id}/model${qs ? `?${qs}` : ""}`;
+}
+
 export function loreItemDefaultTextureUrl(
   kitKey: string,
   variant?: "unsigned" | "signed"
@@ -721,9 +734,12 @@ export async function customiseLoreItem(
     if (input.existingSkinId) {
       form.append("existing_skin_id", input.existingSkinId);
     }
+    const uploadHeaders: HeadersInit = {
+      ...authHeaders(sessionToken),
+    };
     res = await apiFetch(url, {
       method: "POST",
-      headers: authHeaders(sessionToken),
+      headers: uploadHeaders,
       body: form,
     });
   } else {

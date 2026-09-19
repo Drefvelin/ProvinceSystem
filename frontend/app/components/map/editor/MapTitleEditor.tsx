@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import type { MapId } from "@/app/components/map/types";
-import { MAP_DISPLAY_NAMES } from "@/app/components/map/types";
+import { mapDisplayName } from "@/app/components/map/types";
 import type { MapAccessGateReason } from "@/app/components/map/MapAccessGate";
 import { useEditorLoadProgress } from "@/app/hooks/useEditorLoadProgress";
 import { useEditorProvinceIndex } from "@/app/hooks/useEditorProvinceIndex";
@@ -223,7 +223,7 @@ export default function MapTitleEditor({
             Map editor
           </h1>
           <p className="mt-1 text-sm text-[var(--tfmc-stone)]">
-            Editing: {MAP_DISPLAY_NAMES[mapId]}
+            Editing: {mapDisplayName(mapId)}
           </p>
         </header>
 

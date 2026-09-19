@@ -3,14 +3,17 @@ import type { MapId, MapMarkersResponse } from "@/app/components/map/types";
 export const STAFF_MAP_ACCESS_DETAIL = "Staff map access required";
 export const STAFF_MAP_PERMISSION_DETAIL = "Staff map permission required";
 
-export const STAFF_MAP_PAGE_ROUTES: Partial<Record<MapId, string>> = {
-  dev: "/map/r3b1rth",
-};
-
 export type AccessibleMapEntry = {
   id: string;
   display_name: string;
   public: boolean;
+  archived: boolean;
+  /** Last-seen SF chapter slug on live maps; omitted on archived chapters. */
+  chapter_id?: string;
+  /** Last-seen SF chapter display name on live maps; omitted when archived. */
+  chapter_name?: string;
+  /** Present on archived chapters only. True when the chronicle index has days. */
+  has_chronicle_days?: boolean;
 };
 
 export type AccessibleMapsResponse = {
@@ -211,7 +214,12 @@ export function mapApiPathFromUrl(urlOrPath: string): string {
   return urlOrPath;
 }
 
-export function mapRequiresAuth(mapId: MapId): boolean {
+export function mapRequiresAuth(
+  mapId: MapId,
+  maps?: AccessibleMapEntry[] | null
+): boolean {
+  const entry = maps?.find((item) => item.id === mapId);
+  if (entry) return !entry.public;
   return mapId !== "main";
 }
 

@@ -19,6 +19,7 @@ import {
   WOOD_OPTIONS,
   effectLabel,
 } from "../../../lib/drinks/constants";
+import RankName from "../wiki/RankName";
 import {
   setLastSubmissionId,
   setSession,
@@ -681,8 +682,11 @@ export default function BrewForm({ session }: Props) {
           locked={!allowDrinkMessage}
           label="Drink message"
           description="Show a short message when someone drinks your brew"
-          lockedDescription="Requires Ascended rank"
+          lockedDescription="Requires an eligible supporter rank"
         />
+        {!allowDrinkMessage ? (
+          <p className="text-xs text-[var(--tfmc-mist)]">Custom drink messages require <RankName rank="Ascended" /> rank.</p>
+        ) : null}
         {messageEnabled && allowDrinkMessage ? (
           <>
             <label className="flex flex-col gap-1.5">

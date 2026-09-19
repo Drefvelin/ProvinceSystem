@@ -219,6 +219,87 @@ class SkinsRoutesScopeTest(unittest.TestCase):
         self.assertEqual(400, res.status_code)
         self.assertIn("staff", res.json()["detail"].lower())
 
+    def test_review_sheet_staff_header_and_player_omits(self) -> None:
+        import importlib
+
+        from src.api.skins_routes import SHEET_RENDER_ERROR_HEADER, get_review_sheet
+        from src.skins.auth import get_staff_key
+        from src.skins.codes import issue_code, redeem_code
+
+        root = Path(self.tmp.name)
+        skins_dir = root / "skins"
+        db_mod = self._db_mod
+        db_mod.SKINS_DIR = skins_dir
+        skins_dir.mkdir(parents=True, exist_ok=True)
+
+        for name in ("skins.review_sheet", "src.skins.review_sheet", "src.api.skins_routes"):
+            if name in sys.modules:
+                importlib.reload(sys.modules[name])
+
+        self._link_player()
+        issued = issue_code("player-1", "skin")
+        session = redeem_code(issued["code"])
+
+        submission_id = "testplayer-test3d"
+        slug = "test3d"
+        out_dir = skins_dir / submission_id
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"{slug}.png").write_bytes(TINY_PNG)
+        (out_dir / f"{slug}.json").write_text("{}", encoding="utf-8")
+
+        from skins.db import connect
+
+        with connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO submissions (
+                    id, player_uuid, code_id, kind, slug, display_name,
+                    status, dir_path, created_at, discord_user_id, staff, realm_id,
+                    base_set
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    submission_id,
+                    "player-1",
+                    session["code_id"],
+                    "item_3d",
+                    slug,
+                    "Test 3D",
+                    "pending",
+                    str(out_dir),
+                    "2026-01-01T00:00:00Z",
+                    "discord-1",
+                    0,
+                    "main",
+                    "handhelds",
+                ),
+            )
+            conn.commit()
+
+        os.environ["SHEET_RENDER_DISABLE"] = "1"
+        try:
+            staff_resp = get_review_sheet(
+                submission_id,
+                authorization=None,
+                x_staff_key=get_staff_key(),
+            )
+            self.assertEqual(200, staff_resp.status_code)
+            self.assertIn(SHEET_RENDER_ERROR_HEADER, staff_resp.headers)
+            self.assertIn(
+                "SHEET_RENDER_DISABLE",
+                staff_resp.headers[SHEET_RENDER_ERROR_HEADER],
+            )
+
+            player_resp = get_review_sheet(
+                submission_id,
+                authorization=f"Bearer {session['session_token']}",
+                x_staff_key=None,
+            )
+            self.assertEqual(200, player_resp.status_code)
+            self.assertNotIn(SHEET_RENDER_ERROR_HEADER, player_resp.headers)
+        finally:
+            os.environ.pop("SHEET_RENDER_DISABLE", None)
+
 
 if __name__ == "__main__":
     unittest.main()

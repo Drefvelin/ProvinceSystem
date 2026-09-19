@@ -10,6 +10,7 @@ End-to-end design for donator texture submissions on **ProvinceSystem** (store +
 - No website logins; codes from TFMCWeb (`/token create skin` or **`/token create skin staff`**) bound to player UUID.
 - **Player:** staff approve/deny in Discord; ArmourShop writes **`tfmc_submissions`** + `ps_*` + LP.
 - **Staff curated:** auto-approve (no bot); category + scroll on upload; writes **`tfmc_armorshop`** into real ArmourShop categories.
+- **Kit item customise** (character creator) also creates `submissions` rows via an internal `lore_upload` code per player — not a donator mint token. Staff review and ArmourShop apply use the same pipeline as `/skins` uploads.
 
 ## Upload kinds
 
@@ -122,16 +123,17 @@ backend/src/data/skins/{submission_id}/
 - Id from IGN + item name per [naming.md](./naming.md)
 - PNG magic bytes; max bytes; **exact** pixel sizes
 - `base_set` required for non-armor kinds; `tiers` for armor
-- 3D kinds: JSON parseable; display autofill; pair byte caps
+- 3D kinds: vanilla Java Block/Item JSON (`elements` + single-axis 22.5°/45° rotation); display autofill; pair byte caps
 - Requires Discord link stamp at submit
 
 ## Review preview
 
 | Phase | What the API serves | Who consumes |
 |-------|---------------------|--------------|
-| Discord MVP | Individual on-disk PNGs via staff file download | Bot attaches to `#bot-feed` |
-| Contact sheet | `review-sheet` PNG composite | curl / later Discord |
-| Later (3D) | Multi-view bake | Discord + site viewer |
+| Contact sheet | Composite `review-sheet` PNG (2D textures + 3D tiles when renderer is available) | Website status page + Discord `#bot-feed` |
+| Render failure | `preview_render_error.txt` on disk; staff `X-Sheet-Render-Error` header; Discord **3D preview** embed field | Staff only (texture-only sheet still attached) |
+
+Deploy and verify the headless renderer: [ops/sheet-render.md](../ops/sheet-render.md).
 
 ## HTTP contracts
 

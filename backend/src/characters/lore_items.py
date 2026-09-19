@@ -671,6 +671,59 @@ def _submission_texture_path(submission_id: str, variant: str | None = None):
     return None
 
 
+def _submission_model_path(submission_id: str):
+    """Return Path to primary Java model JSON if present on website disk."""
+    from src.skins.db import SKINS_DIR
+
+    sid = (submission_id or "").strip()
+    if not sid or "/" in sid or "\\" in sid or ".." in sid:
+        return None
+    path = SKINS_DIR / sid / f"{sid}.json"
+    if path.is_file():
+        return path
+    return None
+
+
+def _assert_pickable_skin_access(
+    player_uuid: str,
+    submission_id: str,
+    base_set: str | None = None,
+) -> str:
+    """Verify pickable skin ACL. Returns submission id. Raises LoreItemError."""
+    from src.skins.db import connect
+
+    uuid = (player_uuid or "").strip()
+    sid = (submission_id or "").strip()
+    if not uuid or not sid:
+        raise LoreItemError("not found", status_code=404)
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id, base_set, status, staff, category, player_uuid
+            FROM submissions
+            WHERE id = ?
+            """,
+            (sid,),
+        ).fetchone()
+    if row is None:
+        raise LoreItemError("not found", status_code=404)
+    if str(row["status"] or "").strip().lower() != "applied":
+        raise LoreItemError("not found", status_code=404)
+    staff = bool(row["staff"]) if "staff" in row.keys() else False
+    cat = str(row["category"] or "").strip().lower()
+    owner = str(row["player_uuid"] or "").strip()
+    if staff:
+        if cat != "i_tools":
+            raise LoreItemError("not found", status_code=404)
+    elif owner.lower() != uuid.lower():
+        raise LoreItemError("not found", status_code=404)
+    if base_set:
+        row_base = str(row["base_set"] or "").strip().lower()
+        if row_base != base_set.strip().lower():
+            raise LoreItemError("not found", status_code=404)
+    return sid
+
+
 def _namespace_for_staff(staff: bool) -> str:
     from src.skins.catalog import IA_NAMESPACE_ARMOURSHOP
 
@@ -923,38 +976,21 @@ def resolve_pickable_texture(
     variant: str | None = None,
 ):
     """ACL + path for character-session texture preview. Raises LoreItemError."""
-    from src.skins.db import connect
-
-    uuid = (player_uuid or "").strip()
-    sid = (submission_id or "").strip()
-    if not uuid or not sid:
-        raise LoreItemError("not found", status_code=404)
-    with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT id, base_set, status, staff, category, player_uuid
-            FROM submissions
-            WHERE id = ?
-            """,
-            (sid,),
-        ).fetchone()
-    if row is None:
-        raise LoreItemError("not found", status_code=404)
-    if str(row["status"] or "").strip().lower() != "applied":
-        raise LoreItemError("not found", status_code=404)
-    staff = bool(row["staff"]) if "staff" in row.keys() else False
-    cat = str(row["category"] or "").strip().lower()
-    owner = str(row["player_uuid"] or "").strip()
-    if staff:
-        if cat != "i_tools":
-            raise LoreItemError("not found", status_code=404)
-    elif owner.lower() != uuid.lower():
-        raise LoreItemError("not found", status_code=404)
-    if base_set:
-        row_base = str(row["base_set"] or "").strip().lower()
-        if row_base != base_set.strip().lower():
-            raise LoreItemError("not found", status_code=404)
+    sid = _assert_pickable_skin_access(player_uuid, submission_id, base_set)
     path = _submission_texture_path(sid, variant)
+    if path is None:
+        raise LoreItemError("not found", status_code=404)
+    return path
+
+
+def resolve_pickable_model(
+    player_uuid: str,
+    submission_id: str,
+    base_set: str | None = None,
+):
+    """ACL + path for character-session model preview. Raises LoreItemError."""
+    sid = _assert_pickable_skin_access(player_uuid, submission_id, base_set)
+    path = _submission_model_path(sid)
     if path is None:
         raise LoreItemError("not found", status_code=404)
     return path
@@ -1218,6 +1254,14 @@ def customise_lore_item(
         or unsigned_bytes is not None
         or signed_bytes is not None
     )
+    if has_upload:
+        from src.skins.codes import ensure_lore_upload_code
+
+        lore_code_id = ensure_lore_upload_code(player_uuid, lore_realm)
+        submission_session = {**session_row, "code_id": lore_code_id, "staff": False}
+    else:
+        submission_session = session_row
+
     if has_upload and existing_skin_id is not _UNSET and existing_skin_id:
         raise LoreItemError(
             "Provide either texture upload or existing_skin_id, not both"
@@ -1279,7 +1323,7 @@ def customise_lore_item(
         }
         try:
             created = create_submission(
-                session_row,
+                submission_session,
                 kind="book",
                 display_name=name,
                 files_bytes=files,
@@ -1287,6 +1331,7 @@ def customise_lore_item(
                 add_name=True,
                 name_colours=colours or None,
                 name_styles=styles or None,
+                source="lore",
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e
@@ -1314,7 +1359,7 @@ def customise_lore_item(
             files["model"] = model_bytes  # type: ignore[assignment]
         try:
             created = create_submission(
-                session_row,
+                submission_session,
                 kind=kind,
                 display_name=name,
                 files_bytes=files,
@@ -1322,6 +1367,7 @@ def customise_lore_item(
                 add_name=True,
                 name_colours=colours or None,
                 name_styles=styles or None,
+                source="lore",
             )
         except (SubmissionError, StorageError) as e:
             raise LoreItemError(str(e)) from e
@@ -1545,7 +1591,10 @@ def delete_lore_item_customise(
     kit_key: str,
     kit_id: str | None = None,
 ) -> dict[str, Any]:
-    """Wipe one kit-item customise row (player). Does not delete skin submissions."""
+    """Wipe one kit-item customise row (player).
+
+    Releases orphaned pending skin uploads; does not delete applied player skins.
+    """
     from src.skins.db import connect
 
     uuid = (player_uuid or "").strip()
@@ -1573,7 +1622,25 @@ def delete_lore_item_customise(
             status_code=400,
         )
 
+    pending_submission_id: str | None = None
     with connect() as conn:
+        lore_row = conn.execute(
+            """
+            SELECT submission_id, LOWER(COALESCE(state, '')) AS state
+            FROM lore_item_customisations
+            WHERE player_uuid = ? AND character_id = ? AND kit_key = ?
+            """,
+            (uuid, cid, kit_key_norm),
+        ).fetchone()
+        if lore_row is not None:
+            state = str(lore_row["state"] or "").strip().lower()
+            raw_sid = lore_row["submission_id"]
+            if (
+                state == STATE_PENDING_SKIN
+                and raw_sid is not None
+                and str(raw_sid).strip()
+            ):
+                pending_submission_id = str(raw_sid).strip()
         cur = conn.execute(
             """
             DELETE FROM lore_item_customisations
@@ -1583,6 +1650,14 @@ def delete_lore_item_customise(
         )
         deleted = int(cur.rowcount or 0)
         conn.commit()
+
+    if pending_submission_id:
+        from src.skins.submissions import rollback_pending_submission_if_unreferenced
+
+        rollback_pending_submission_if_unreferenced(
+            pending_submission_id,
+            player_uuid=uuid,
+        )
 
     return {
         "ok": True,

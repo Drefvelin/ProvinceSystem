@@ -354,6 +354,7 @@ export type SubmissionPublic = {
   created_at: string;
   reviewed_at: string | null;
   applied_at: string | null;
+  upload_source?: "kit" | "skins";
   staff?: boolean;
   category?: string | null;
   scroll?: string | null;

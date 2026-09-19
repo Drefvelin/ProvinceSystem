@@ -28,6 +28,7 @@ from .map_access import (
     get_character_session,
     is_character_ui_dev,
 )
+from .map_registry import get_map_entry
 from .request_body import read_json_body
 from ..scripts.chronicle import audit
 from ..scripts.chronicle.restore import (
@@ -38,6 +39,7 @@ from ..scripts.chronicle.restore import (
 )
 from ..scripts.chronicle.store import chronicle_lock_path
 from ..scripts.chronicle.wipe import perform_wipe
+from ..scripts.maps.archive_copy import ArchiveCopyError, archive_map
 from ..scripts.util.maplock import MapLockBusy, map_lock
 
 chronicle_staff_router = APIRouter()
@@ -413,6 +415,87 @@ async def restore_chronicle(
                 "restored_rows": result.restored_rows,
                 "restored_at": restored_at,
                 "restored_by": actor,
+            }
+        )
+    )
+
+
+def _archive_error(code: str, detail: str, *, status: int = 400) -> JSONResponse:
+    return add_no_cache(
+        JSONResponse(
+            {"ok": False, "code": code, "detail": detail},
+            status_code=status,
+        )
+    )
+
+
+def _truthy_flag(payload: dict, key: str) -> bool:
+    return payload.get(key) is True
+
+
+@chronicle_staff_router.post("/{map_name}/chronicle/archive")
+async def archive_chronicle(
+    map_name: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    """Copy this live map onto a frozen dest id. Body: dest_id, display_name,
+    confirm (must equal dest_id), reason; replace / allow_unknown when needed.
+
+    Does not wipe the source. Dest main/dev is refused by the copy engine.
+    """
+    entry = ensure_map_staff_write(map_name, authorization)
+    map_id = entry.id
+
+    if entry.archived:
+        return _archive_error(
+            "source_archived",
+            f"Map '{map_id}' is already archived; refuse to fork it",
+        )
+
+    payload = await _json_body(request)
+    dest_id = payload.get("dest_id")
+    if not isinstance(dest_id, str) or not dest_id:
+        return _archive_error("dest_invalid", "dest_id is required")
+    display_name = payload.get("display_name")
+    if not isinstance(display_name, str):
+        display_name = ""
+    _require_confirmation(payload, dest_id)
+    _require_reason(payload)
+
+    existing = get_map_entry(dest_id)
+    if existing is not None and not _truthy_flag(payload, "replace"):
+        return _archive_error(
+            "dest_exists",
+            f"Dest '{dest_id}' already exists; send replace: true to overwrite it",
+        )
+
+    allow_unknown = _truthy_flag(payload, "allow_unknown")
+
+    try:
+        result = await run_in_threadpool(
+            archive_map,
+            map_id,
+            dest_id,
+            display_name,
+            allow_unknown=allow_unknown,
+        )
+    except MapLockBusy:
+        raise HTTPException(
+            status_code=429,
+            detail=f"An archive copy is already running for '{dest_id}'.",
+        ) from None
+    except ArchiveCopyError as exc:
+        return _archive_error(exc.code, str(exc))
+
+    return add_no_cache(
+        JSONResponse(
+            {
+                "ok": True,
+                "source": result.source_id,
+                "dest": result.dest_id,
+                "display_name": result.display_name,
+                "days": result.days,
             }
         )
     )

@@ -163,19 +163,16 @@ describe("LedgerChartsPanel", () => {
 
     render(<LedgerChartsPanel result={result} cursorDay={DAYS[0]!} />);
 
-    fireEvent.change(screen.getByLabelText("Wealth nation"), {
-      target: { value: "Second Realm" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: "Wealth nation" }));
+    fireEvent.click(screen.getByRole("option", { name: "Second Realm" }));
     expect(onSelect).toHaveBeenCalledWith("wealth", "Second Realm");
 
-    fireEvent.change(screen.getByLabelText("Prestige nation"), {
-      target: { value: "Second Realm" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: "Prestige nation" }));
+    fireEvent.click(screen.getByRole("option", { name: "Second Realm" }));
     expect(onSelect).toHaveBeenCalledWith("prestige", "Second Realm");
 
-    fireEvent.change(screen.getByLabelText("Income nation"), {
-      target: { value: "Second Realm" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: "Income nation" }));
+    fireEvent.click(screen.getByRole("option", { name: "Second Realm" }));
     expect(onSelect).toHaveBeenCalledWith("income", "Second Realm");
 
     expect(onSelect).toHaveBeenCalledTimes(3);

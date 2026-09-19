@@ -16,7 +16,8 @@ This `docs/` folder is the product and technical reference for the **ProvinceSys
    - [identity/tfmcweb.md](./identity/tfmcweb.md) - Discord link, tokens, gate
 4. [flows/journeys.md](./flows/journeys.md) - end-to-end player and staff journeys
 5. [ops/local-dev.md](./ops/local-dev.md) - run the site locally
-6. [ops/dev-config.md](./ops/dev-config.md) - dev-only flags and shortcuts
+6. [ops/sheet-render.md](./ops/sheet-render.md) - 3D review-sheet renderer (prod deploy + smoke)
+7. [ops/dev-config.md](./ops/dev-config.md) - dev-only flags and shortcuts
 
 Schema assets: [assets/map-export-schema.json](./assets/map-export-schema.json) (SF map export contract).
 

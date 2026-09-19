@@ -6,6 +6,10 @@ import {
   fetchMaskedTemplateBlob,
 } from "../../../lib/characters/api";
 import { composeMaskedFromBase } from "../../../lib/characters/maskedCompose";
+import {
+  assertWardrobeSkinPng,
+  WARDROBE_INVALID_PNG_MESSAGE,
+} from "../../../lib/characters/wardrobeSkin";
 import type { ArmModel } from "../../../lib/skins/steveMannequin";
 import { inferArmModel } from "../../../lib/skins/steveMannequin";
 import FancyCheckbox from "../skins/FancyCheckbox";
@@ -44,32 +48,7 @@ type Props = {
   onClear?: () => void;
 };
 
-const SIZE_ERR = "Skin must be exactly 64×64 pixels.";
 const NAME_MAX = 24;
-
-function validatePng64(file: File): Promise<string | null> {
-  return new Promise((resolve) => {
-    if (!file.type.includes("png") && !file.name.toLowerCase().endsWith(".png")) {
-      resolve("File must be a PNG.");
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      if (img.naturalWidth !== 64 || img.naturalHeight !== 64) {
-        resolve(SIZE_ERR);
-      } else {
-        resolve(null);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve("Could not read PNG.");
-    };
-    img.src = url;
-  });
-}
 
 export default function WardrobeSlotModal({
   open,
@@ -215,9 +194,13 @@ export default function WardrobeSlotModal({
     setFile(null);
     setPreviewMode("base");
     if (!f) return;
-    const err = await validatePng64(f);
-    if (err) {
-      setLocalErr(err);
+    try {
+      await assertWardrobeSkinPng(f);
+    } catch (err) {
+      setLocalErr(
+        err instanceof Error ? err.message : WARDROBE_INVALID_PNG_MESSAGE
+      );
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
     setFile(f);

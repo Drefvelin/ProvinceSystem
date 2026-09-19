@@ -6,13 +6,14 @@
     "dev": "next dev --turbopack",
     "prebuild": "node scripts/assert-prod-build-env.mjs",
     "build": "next build",
+    "postbuild": "node scripts/build-wiki-search-index.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run"
   },
   "dependencies": {
     "fflate": "^0.8.3",
-    "next": "^16.0.7",
+    "next": "^16.3.5",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "three": "^0.185.1"

@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Header, HTTPException
-import os
 from pathlib import Path
 
 from .http_headers import conditional_file_response
 from .map_access import ensure_map_access
+from .path_safety import is_safe_segment, resolve_within
 from .webp_cache import webp_variant
+from ..scripts.util import dirs
 from ..scripts.util.dirs import (
     map_image,
     region_image,
     banner_image,
+    zoc_dir,
     zoc_image,
     validate_map,
     input_file,
@@ -58,7 +60,9 @@ async def get_map_file(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
+    if not is_safe_segment(map_type):
+        raise HTTPException(status_code=404, detail="Map not found")
 
     # The province mode paints the source pick map itself, so there is
     # nothing to generate and nothing for a regen to keep in sync.
@@ -67,8 +71,10 @@ async def get_map_file(
             validate_map(map_name)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        root = Path(dirs.INPUT_DIR) / map_name
         file_path = Path(input_file(map_name, "provinces.png"))
     else:
+        root = OUTPUT_BASE / map_name
         file_path = (
             OUTPUT_BASE
             / map_name
@@ -76,7 +82,8 @@ async def get_map_file(
             / f"{map_type}_map.png"
         )
 
-    if not file_path.is_file():
+    file_path = resolve_within(root, file_path)
+    if file_path is None or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Map not found")
 
     # Deliberately NOT routed through webp_variant: this is the pick map. The
@@ -100,20 +107,17 @@ async def get_region_file(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     # Ensure .png extension
-    if not file_name.endswith(".png"):
-        file_name = f"{file_name}.png"
+    stem = file_name[:-4] if file_name.endswith(".png") else file_name
+    if not is_safe_segment(map_type) or not is_safe_segment(stem):
+        raise HTTPException(status_code=404, detail="Region overlay not found")
+    file_name = f"{stem}.png"
 
-    file_path = (
-        OUTPUT_BASE
-        / map_name
-        / "regions"
-        / map_type
-        / file_name
-    )
+    root = OUTPUT_BASE / map_name / "regions"
+    file_path = resolve_within(root, root / map_type / file_name)
 
-    if not file_path.is_file():
+    if file_path is None or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Region overlay not found")
 
     return _image_response(file_path, accept, if_none_match, if_modified_since)
@@ -129,10 +133,21 @@ async def get_banner_file(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
-    file_path = banner_image(map_name, mode, file_name)
+    map_name = ensure_map_access(map_name, authorization).id
+    # Banners are only ever PNGs, requested with the extension included.
+    if (
+        not is_safe_segment(mode)
+        or not file_name.endswith(".png")
+        or not is_safe_segment(file_name[:-4])
+    ):
+        raise HTTPException(status_code=404, detail="Banner not found")
 
-    if not os.path.exists(file_path):
+    file_path = resolve_within(
+        Path(dirs.OUTPUT_DIR) / map_name / "banners",
+        banner_image(map_name, mode, file_name),
+    )
+
+    if file_path is None or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Banner not found")
 
     return _image_response(file_path, accept, if_none_match, if_modified_since)
@@ -147,7 +162,7 @@ async def get_zoc_overlay(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     try:
         validate_map(map_name)
     except ValueError as exc:
@@ -160,8 +175,8 @@ async def get_zoc_overlay(
     if safe_id is None:
         raise HTTPException(status_code=400, detail="Invalid fort id")
 
-    file_path = Path(zoc_image(map_name, safe_id))
-    if not file_path.is_file():
+    file_path = resolve_within(zoc_dir(map_name), zoc_image(map_name, safe_id))
+    if file_path is None or not file_path.is_file():
         raise HTTPException(status_code=404, detail="ZOC overlay not found")
 
     return _image_response(file_path, accept, if_none_match, if_modified_since)

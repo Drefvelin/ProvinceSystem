@@ -33,9 +33,9 @@ from .store import (
 
 logger = logging.getLogger(__name__)
 
-# `nation`/`trade`/`zoc_overlays`/`empire` live in defines/ because they are the
-# *resolved* artifacts the map viewer reads; the rest are raw SF uploads that
-# data_routes writes into input/. This must stay in
+# `nation`/`trade`/`zoc_overlays`/`empire` and the de jure title tiers live in
+# defines/ because they are the *resolved* artifacts the map viewer reads; the
+# rest are raw SF uploads that data_routes writes into input/. This must stay in
 # sync with the input_file/defines_file split in data_routes.upload_data — a
 # name missing from here is looked for in input/ and is never found.
 _DEFINES_SOURCES = frozenset(
@@ -44,6 +44,9 @@ _DEFINES_SOURCES = frozenset(
         "trade",
         "zoc_overlays",
         "empire",
+        "county",
+        "duchy",
+        "kingdom",
     }
 )
 

@@ -7,6 +7,7 @@ import struct
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import replace
 from multiprocessing import get_context
 
 from ..compile.nation_compiler import process_nations
@@ -45,7 +46,9 @@ from .regen_types import MODES, RegenSpec, parse_regen_type, region_regen_queued
 from .dirs import (
     validate_map,
     input_file,
-    defines_file
+    defines_file,
+    map_image,
+    region_overlay_file,
 )
 from .task_lock import get_map_lock
 
@@ -138,14 +141,21 @@ def should_parallelize_modes(spec: RegenSpec) -> bool:
     )
 
 
-def modes_to_run(map_name: str, spec: RegenSpec) -> list[str]:
+def modes_to_run(
+    map_name: str, spec: RegenSpec, *, stale_nation: bool = False
+) -> list[str]:
     runnable: list[str] = []
     mode_list = spec.modes if spec.modes is not None else MODES
     for mode in mode_list:
         if mode not in MODES:
             raise ValueError(f"Unknown map mode '{mode}'")
         queue = load_queue(map_name, mode)
-        if not spec.full_regions and mode != "trade" and not queue:
+        if (
+            not spec.full_regions
+            and mode != "trade"
+            and not queue
+            and not (mode == "nation" and stale_nation)
+        ):
             print(f"⚠️ Skipping {mode}: Empty queue")
             continue
         runnable.append(mode)
@@ -253,6 +263,29 @@ def _save_stamp(map_name: str, key: str, fingerprint: dict[str, str]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(stamps, f, indent=2, sort_keys=True)
         f.write("\n")
+
+
+def nation_render_state(map_name: str) -> tuple[dict[str, str], bool]:
+    """Compare live images with their last successfully rendered source data.
+
+    Compilation also runs for textonly requests, so comparing against the
+    previous compiled JSON misses changes already published to the chronicle.
+    A render stamp survives those compiles and incomplete/empty upload queues.
+    Missing stamps deliberately trigger a first full rebuild on existing maps.
+    """
+    sources = [
+        defines_file(map_name, "nation.json"),
+        input_file(map_name, "province_data.json"),
+        input_file(map_name, "provinces.png"),
+    ]
+    fingerprint = {path: _file_digest(path) or "missing" for path in sources}
+    current = derived_is_current(
+        map_name,
+        "nation_render",
+        fingerprint,
+        [map_image(map_name, "nation"), region_overlay_file(map_name, "nation")],
+    )
+    return fingerprint, not current
 
 
 def derived_is_current(
@@ -518,7 +551,11 @@ def _sync_regeneration(map_name: str, regen_type: str):
         with timings.timed("map.parchment"):
             create_parchment_base(map_name)
 
-        runnable_modes = modes_to_run(map_name, spec)
+        nation_fingerprint = None
+        stale_nation = False
+        if spec.modes is None or "nation" in spec.modes:
+            nation_fingerprint, stale_nation = nation_render_state(map_name)
+        runnable_modes = modes_to_run(map_name, spec, stale_nation=stale_nation)
 
         if should_parallelize_modes(spec):
             _run_modes_parallel(map_name, spec, runnable_modes, timings)
@@ -530,7 +567,17 @@ def _sync_regeneration(map_name: str, regen_type: str):
                 cache = MapGeometryCache.load(map_name)
 
             for mode in runnable_modes:
-                _run_mode_serial(map_name, mode, spec, cache, timings)
+                # A queue is only a hint: it cannot prove all changed nations
+                # were included. Rebuild all nation shapes when sources differ.
+                mode_spec = (
+                    replace(spec, full_regions=True)
+                    if mode == "nation" and stale_nation
+                    else spec
+                )
+                _run_mode_serial(map_name, mode, mode_spec, cache, timings)
+
+        if nation_fingerprint is not None and "nation" in runnable_modes:
+            _save_stamp(map_name, "nation_render", nation_fingerprint)
 
         with timings.timed("zocgen"):
             generate_zoc_overlays(map_name, cache=cache)

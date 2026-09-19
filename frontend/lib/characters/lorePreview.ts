@@ -92,6 +92,17 @@ function parseInlineRuns(line: string, defaultColor: string): LoreRun[] {
   let i = 0;
   while (i < line.length) {
     const ch = line[i]!;
+    // Minecraft RGB colours encode all six digits as separate legacy tokens.
+    if ((ch === "§" || ch === "&") && line[i + 1]?.toLowerCase() === "x") {
+      const hex = line.slice(i, i + 14).match(/^[§&]x((?:[§&][0-9a-f]){6})$/i);
+      if (hex) {
+        flush();
+        color = `#${hex[1]!.replace(/[§&]/g, "").toLowerCase()}`;
+        bold = italic = underline = strike = false;
+        i += 14;
+        continue;
+      }
+    }
     // TLibs / permission-groups: &#RRGGBB before plain & codes
     if (ch === "&" && i + 7 < line.length && line[i + 1] === "#") {
       const hex = normalizeHex(line.slice(i + 1, i + 8));

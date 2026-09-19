@@ -31,14 +31,32 @@ export function isValidChronicleDay(value: unknown): value is string {
  * for the dev map. Kept in one place so no component has to remember that
  * `"dev"` lives at `/map/r3b1rth`.
  */
-const MAP_ROUTE_SEGMENT: Record<MapId, string> = {
-  main: "main",
-  dev: "r3b1rth",
-};
+const DEV_PUBLIC_SEGMENT = "r3b1rth";
+
+export function isMapId(value: string): value is MapId {
+  return value.length > 0 && /^[a-z0-9]+$/i.test(value);
+}
+
+/**
+ * URL segment → wire map id. `r3b1rth` is the public name for `dev`.
+ * `editor` is reserved for the title editor route, not a map.
+ */
+export function parseMapRouteSegment(value: unknown): MapId | null {
+  if (typeof value !== "string") return null;
+  const raw = value.trim().toLowerCase();
+  if (!raw || raw === "editor") return null;
+  if (raw === DEV_PUBLIC_SEGMENT) return "dev";
+  if (!isMapId(raw)) return null;
+  return raw;
+}
+
+export function mapRouteSegment(mapId: MapId): string {
+  return mapId === "dev" ? DEV_PUBLIC_SEGMENT : mapId;
+}
 
 /** `/map/main` or `/map/r3b1rth` — the live map. */
 export function liveMapHref(mapId: MapId): string {
-  return `/map/${MAP_ROUTE_SEGMENT[mapId]}`;
+  return `/map/${mapRouteSegment(mapId)}`;
 }
 
 /** `/map/{map}/chronicle` — the timelapse studio. */

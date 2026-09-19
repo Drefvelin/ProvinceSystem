@@ -163,6 +163,12 @@ Bot does **not** execute MC bans.
 
 Per-realm HTTP gateway, `rpc_player_meta` sync, realm-scoped token policy, and scoped data queues are **shipped**. Map staff permission `tfmc.map.staff` arrives via player meta for staff map and editor gates.
 
+### Site-wide snapshots are owned by the primary server
+
+The creation catalog, kit skins, masked template, ArmourShop catalog, DrinkBuilder catalog and drink assets are stored **once for the whole site**, and their push routes carry no `realm_id`. Every server pushes them on start, so a dev or tutorial restart used to replace the live copy.
+
+Non-primary servers therefore use their own key: list it in `PLUGIN_KEYS_SECONDARY` (comma-separated, `backend/.env`) and set it as `api.plugin-key` in that server's TFMCWeb config. A secondary key works on every plugin route, but pushes to the routes above answer `200` with `"ignored": true` and store nothing. Only the `PLUGIN_KEY` server decides what the website shows.
+
 ## Success criteria
 
 - Survival player without Discord link (or past leave grace) is frozen via RPCharacters; characters untouched.

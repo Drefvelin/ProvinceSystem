@@ -10,13 +10,12 @@ import type { ProvinceIdGrid } from "./chroniclePaint";
  * union below cannot drift away from the backend's list
  * (`CHRONICLE_FILES` in `backend/src/scripts/chronicle/store.py`).
  *
- * `empire` and `infestation_data` are the day-varying sources added for the day
- * page's full mode list. The other title tiers are deliberately absent: county,
- * duchy and kingdom are de jure structure that does not change day to day, so
- * they are served live on a stored day rather than captured — see
- * `CHRONICLE_STATIC_MODES` in `./chronicleDayModes`. `infestation_data` is
- * optional on the backend side and `main` has no such file at all today, so a
- * 404 from it is a normal state the missing-day-file panel already handles.
+ * Title tiers `county`/`duchy`/`kingdom` are captured: players found titles
+ * in-game, so a stored day must not paint today's de jure map. `empire` was
+ * already day-varying. `infestation_data` is optional on the backend and
+ * `main` has no such file at all today, so a 404 from it is a normal state
+ * the missing-day-file panel already handles. Days captured before those
+ * names existed simply have no entry; the read route 404s them.
  */
 export const CHRONICLE_FILE_NAMES = [
   "nation",
@@ -27,6 +26,9 @@ export const CHRONICLE_FILE_NAMES = [
   "zoc_overlays",
   "empire",
   "infestation_data",
+  "county",
+  "duchy",
+  "kingdom",
 ] as const;
 
 export type ChronicleFileName = (typeof CHRONICLE_FILE_NAMES)[number];

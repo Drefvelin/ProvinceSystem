@@ -29,12 +29,12 @@ import type { ChronicleFileName } from "./chronicleData";
  * `{ rgb, provinces, ... }` keyed by id, the shape `fetchMapModeRegionData`
  * returns and `filterMapModeRegions` filters.
  *
- * Three of the ten modes qualify. `nation` and `trade` are the obvious ones.
- * `empire` joins them because it is the one title tier that is game state: the
- * de jure tiers beneath it (`county`, `duchy`, `kingdom`) do not change day to
- * day, so they are *static* — served live under a stored day by the branch in
- * `mapModeDataSource`, which is the correct historical answer rather than a
- * leak. See `CHRONICLE_STATIC_MODES` in `./chronicleDayModes` for that split.
+ * Six of the ten modes qualify. `nation` and `trade` are the obvious ones.
+ * `empire`, `county`, `duchy` and `kingdom` are title tiers that change as
+ * players found titles, so a stored day must paint that day's files — serving
+ * live de jure under a date stamp would be a leak. See
+ * `CHRONICLE_STATIC_MODES` in `./chronicleDayModes` for the geography split
+ * (terrain / fertility / province) that still uses the live source.
  *
  * `prosperity` and `infestation` are day-varying too, and this list still
  * refuses them on purpose. Their captures (`province_data.json`,
@@ -55,6 +55,9 @@ export const CHRONICLE_MODE_SOURCE: Partial<Record<MapMode, ChronicleFileName>> 
     nation: "nation",
     trade: "trade",
     empire: "empire",
+    county: "county",
+    duchy: "duchy",
+    kingdom: "kingdom",
   };
 
 /**
@@ -108,11 +111,9 @@ export function mapModeDataSource(
     return { kind: "live", path: `/${mapId}/data/${mapType}` };
   }
   /**
-   * A static mode's live source *is* its historical answer: county, duchy and
-   * kingdom are de jure structure and terrain/fertility are province geometry,
-   * none of which change from day to day. Serving them live under a date stamp
-   * is therefore honest, and it is the reason the capture does not store them.
-   * The same live path the live map uses, so nothing new can drift.
+   * A static mode's live source *is* its historical answer: terrain, fertility
+   * and the province outline are geometry, which does not vary by day. Title
+   * tiers are not static — they fall through to `CHRONICLE_MODE_SOURCE`.
    */
   if (isChronicleStaticMode(mapType)) {
     return { kind: "live", path: `/${mapId}/data/${mapType}` };

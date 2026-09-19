@@ -523,3 +523,87 @@ def test_a_far_future_captured_at_is_refused_by_the_upload(client, upload_env):
 
     assert res.status_code == 400
     assert store.list_days("main") == []  # nothing indexed
+
+
+def _chapter_identity_path(upload_env) -> Path:
+    return upload_env["root"] / "input" / "main" / "chapter_identity.json"
+
+
+def test_chronicle_upload_stamps_chapter_identity(client, upload_env):
+    res = client.post(
+        "/main/data/upload/chronicle",
+        json=_snapshot(chapter_id="Vardera", chapter_name="  Vardera  "),
+    )
+    assert res.status_code == 200
+    assert res.json()["map"] == "main"
+    assert store.list_days("main")
+    assert json.loads(_chapter_identity_path(upload_env).read_text(encoding="utf-8")) == {
+        "chapter_id": "vardera",
+        "chapter_name": "Vardera",
+    }
+
+
+def test_chronicle_upload_without_chapter_keys_stamps_unknown(client, upload_env):
+    res = client.post("/main/data/upload/chronicle", json=_snapshot())
+    assert res.status_code == 200
+    assert json.loads(_chapter_identity_path(upload_env).read_text(encoding="utf-8")) == {
+        "chapter_id": "unknown",
+        "chapter_name": "Unknown",
+    }
+
+
+def test_chapter_id_naming_a_registered_map_is_not_409(client, upload_env):
+    res = client.post(
+        "/main/data/upload/chronicle",
+        json=_snapshot(chapter_id="dev", chapter_name="Dev"),
+    )
+    assert res.status_code == 200
+    assert res.json()["map"] == "main"
+    assert store.list_days("main")
+    assert json.loads(_chapter_identity_path(upload_env).read_text(encoding="utf-8")) == {
+        "chapter_id": "dev",
+        "chapter_name": "Dev",
+    }
+
+
+def test_map_id_naming_a_different_registered_map_still_409_and_does_not_stamp(
+    client, upload_env
+):
+    res = client.post("/main/data/upload/chronicle", json=_snapshot(map_id="dev"))
+    assert res.status_code == 409
+    assert not store.list_days("main")
+    assert not _chapter_identity_path(upload_env).exists()
+
+
+def test_map_markers_upload_stamps_chapter_identity(client, upload_env):
+    payload = {"markers": [], "chapter_id": "vardera", "chapter_name": "Vardera"}
+    res = client.post("/main/data/upload/map_markers", json=payload)
+    assert res.status_code == 200
+    markers_path = upload_env["root"] / "input" / "main" / "map_markers.json"
+    assert json.loads(markers_path.read_text(encoding="utf-8")) == payload
+    assert json.loads(_chapter_identity_path(upload_env).read_text(encoding="utf-8")) == {
+        "chapter_id": "vardera",
+        "chapter_name": "Vardera",
+    }
+
+
+def test_nation_upload_does_not_write_chapter_identity(client, upload_env):
+    payload = {
+        "nations": [{"id": "alba", "name": "Álba", "wealth": 1.5}],
+        "chapter_id": "vardera",
+        "chapter_name": "Vardera",
+    }
+    res = client.post("/main/data/upload/nation", json=payload)
+    assert res.status_code == 200
+    assert not _chapter_identity_path(upload_env).exists()
+    nation_path = upload_env["root"] / "input" / "main" / "nation.json"
+    assert json.loads(nation_path.read_text(encoding="utf-8")) == payload
+
+
+def test_title_upload_does_not_write_chapter_identity(client, upload_env):
+    # Empty titles skip the write entirely; a non-empty object still must not stamp.
+    payload = {"chapter_id": "vardera", "chapter_name": "Vardera"}
+    res = client.post("/main/data/upload/county", json=payload)
+    # May 400 on validation or skip-empty; either way identity must not appear.
+    assert not _chapter_identity_path(upload_env).exists()
+    assert res.status_code in (200, 400)

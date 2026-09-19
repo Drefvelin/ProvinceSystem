@@ -22,12 +22,14 @@ class MapEntry:
     display_name: str
     realm_id: str
     staff_permission: str | None = None
+    archived: bool = False
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "display_name": self.display_name,
             "public": self.public,
+            "archived": self.archived,
         }
 
 
@@ -79,12 +81,20 @@ def _parse_entry(raw: dict[str, Any]) -> MapEntry:
             f"Map '{map_id}' is not public and requires staff_permission"
         )
 
+    if "archived" not in raw:
+        archived = False
+    else:
+        archived = raw.get("archived")
+        if not isinstance(archived, bool):
+            raise MapRegistryError(f"Map '{map_id}' requires boolean archived")
+
     return MapEntry(
         id=map_id,
         public=public,
         display_name=display_name,
         realm_id=realm_id,
         staff_permission=staff_permission,
+        archived=archived,
     )
 
 

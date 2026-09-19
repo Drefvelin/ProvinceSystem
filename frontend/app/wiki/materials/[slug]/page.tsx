@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
+import { WikiItemText, WikiPage } from "@/app/components/wiki";
 import { getMaterialBySlug, materialCatalog } from "../../data";
 
 export function generateStaticParams() {
@@ -17,44 +18,60 @@ export default async function MaterialDetailPage({
   if (!material) notFound();
 
   return (
-    <article className="max-w-3xl">
-      <Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
+    <WikiPage
+      lastModified="2026-09-18"
+      title={material.name}
+      beforeTitle={<Link href="/wiki/materials" className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]">
         &larr; Back to Materials
-      </Link>
-
-      <div className="mt-3 flex items-center gap-4">
-        {material.texture ? (
+      </Link>}
+      titleVisual={material.texture ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={material.texture}
             alt={material.name}
             className="h-16 w-16 [image-rendering:pixelated]"
           />
-        ) : null}
-        <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-          {material.name}
-        </h1>
-      </div>
+        ): undefined}
+      intro={material.lore ? <em><WikiItemText text={material.lore} excludeHref={`/wiki/materials/${material.slug}`} /></em> : undefined}
+    >
 
-      {material.lore ? (
-        <p className="mt-3 text-sm italic text-[var(--tfmc-mist)]">{material.lore}</p>
-      ) : null}
-
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="acquisition" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         How to acquire
       </h2>
-      {material.recipe ? (
-        <div className="mt-4">
-          <CraftingGrid recipe={material.recipe} />
+      {material.acquisition?.length ? (
+        <div className="mt-4 space-y-4">
+          {material.acquisition.map((source) => (
+            <section key={source.method} className="rounded-md border border-[color-mix(in_srgb,var(--tfmc-accent)_35%,transparent)] p-4">
+              <h3 className="font-semibold text-[var(--tfmc-cream)]"><WikiItemText text={source.method} excludeHref={`/wiki/materials/${material.slug}`} /></h3>
+              <p className="mt-1 text-sm text-[var(--tfmc-mist)]"><WikiItemText text={source.detail} excludeHref={`/wiki/materials/${material.slug}`} /></p>
+            </section>
+          ))}
         </div>
-      ) : (
+      ) : null}
+      {material.recipes.length ? (
+        <div className="mt-4 space-y-4">
+          {material.recipes.map(recipe => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+        </div>
+      ): !material.acquisition?.length ? (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
-          No crafting recipe — this material comes from loot, mining, or mobs, not a crafting
-          station.
+          Acquisition details have not yet been verified for this material.
         </p>
-      )}
+      ) : null}
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      {material.unpackingRecipes.length ? (
+        <section className="mt-8">
+          <h2 className="font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">Block unpacking</h2>
+          <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
+            Recover material from a storage block you already own. Packing and unpacking
+            preserve the amount of material; you still need an acquisition source above.
+          </p>
+          <div className="mt-4 space-y-4">
+            {material.unpackingRecipes.map((recipe) => <CraftingGrid key={recipe.key} recipe={recipe} />)}
+          </div>
+        </section>
+      ) : null}
+
+      <h2 id="used-in" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         What can be crafted from it
       </h2>
       {material.usedIn.length ? (
@@ -63,11 +80,11 @@ export default async function MaterialDetailPage({
             <CraftingGrid key={r.key} recipe={r} />
           ))}
         </div>
-      ) : (
+      ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">
           Nothing on the Gameplay Guide currently lists this as an ingredient.
         </p>
       )}
-    </article>
+    </WikiPage>
   );
 }

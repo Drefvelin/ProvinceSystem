@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CraftingGrid from "../../../components/wiki/CraftingGrid";
 import InstrumentKeyboard from "../../../components/wiki/InstrumentKeyboard";
-import { getInstrumentBySlug, instrumentRecipes, instruments } from "../../data";
+import { WikiPage } from "@/app/components/wiki";
+import { getInstrumentBySlug, getInstrumentRecipe, instruments } from "../../data";
 
 export function generateStaticParams() {
   return instruments.map((i) => ({ slug: i.slug }));
@@ -17,52 +18,49 @@ export default async function InstrumentDetailPage({
   const instrument = getInstrumentBySlug(slug);
   if (!instrument) notFound();
 
-  const recipe = instrumentRecipes.find((r) => r.key === slug);
+  const recipe = getInstrumentRecipe(slug);
 
   return (
-    <article className="max-w-3xl">
-      <Link
+    <WikiPage
+      lastModified="2026-09-12"
+      title={instrument.name}
+      beforeTitle={<Link
         href="/wiki/musical-instruments"
         className="text-xs text-[var(--tfmc-mist)] hover:text-[var(--tfmc-cream)]"
       >
         &larr; Back to Musical Instruments
-      </Link>
-
-      <div className="mt-3 flex items-center gap-4">
+      </Link>}
+      titleVisual={<>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={instrument.icon}
           alt={instrument.name}
           className="h-16 w-16 [image-rendering:pixelated]"
         />
-        <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--tfmc-cream)] sm:text-4xl">
-          {instrument.name}
-        </h1>
-      </div>
-
-      <p className="mt-3 text-sm text-[var(--tfmc-mist)]">
-        {instrument.mode === "chord"
+      </>}
+      intro={instrument.mode === "chord"
           ? "Keys 1-8 play a single note; hold Shift for the same eight notes as full chords."
-          : "Keys 1-8 play the base octave; hold Shift for the same eight notes one octave higher — sixteen notes total."}
-      </p>
+         : "Keys 1-8 play the base octave; hold Shift for the same eight notes one octave higher: sixteen notes total."
+      }
+    >
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="keyboard" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         Try it
       </h2>
       <div className="mt-4">
         <InstrumentKeyboard instrument={instrument} />
       </div>
 
-      <h2 className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
+      <h2 id="crafting" className="mt-8 font-[family-name:var(--font-fraunces)] text-xl text-[var(--tfmc-cream)]">
         How to craft
       </h2>
       {recipe ? (
         <div className="mt-4 max-w-sm">
           <CraftingGrid recipe={recipe} />
         </div>
-      ) : (
+      ): (
         <p className="mt-1 text-sm text-[var(--tfmc-mist)]">Not documented yet.</p>
       )}
-    </article>
+    </WikiPage>
   );
 }

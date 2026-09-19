@@ -1,18 +1,18 @@
 import * as THREE from "three";
-import { applyDisplayToObject, resolveDisplayTab } from "../../../frontend/lib/skins/displayTransform";
-import { buildExtrudedItemGroup } from "../../../frontend/lib/skins/extrudeItem";
+import { applyDisplayToObject, resolveDisplayTab } from "./skins/displayTransform";
+import { buildExtrudedItemGroup } from "./skins/extrudeItem";
 import {
   buildJavaModelGroup,
   parseJavaModelJson,
   type JavaModelJson,
-} from "../../../frontend/lib/skins/javaModel";
+} from "./skins/javaModel";
 import {
   applySteveArmPose,
   attachSteveArmorOverlay,
   createSteveMannequin,
   setArmorHelmetVisible,
   type SteveArmPose,
-} from "../../../frontend/lib/skins/steveMannequin";
+} from "./skins/steveMannequin";
 
 export type RenderJob = {
   kind: string;
