@@ -84,7 +84,7 @@ async def get_parchment_map(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     path = _resolve_base_map_path(map_name, "parchment")
     if not path:
         return JSONResponse({"error": "Map not found"}, 404)
@@ -105,7 +105,7 @@ async def get_map_preview(
     already WebP and must be served whatever the Accept header says, since its
     whole purpose is to render before the real map arrives.
     """
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     path = map_preview_path(map_name)
     if not os.path.exists(path):
         return JSONResponse({"error": "Map not found"}, 404)
@@ -136,7 +136,7 @@ async def get_base_map(
     if_none_match: str | None = Header(default=None),
     if_modified_since: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     path = _resolve_base_map_path(map_name, "satellite")
     if not path:
         return JSONResponse({"error": "Map not found"}, 404)
@@ -150,7 +150,7 @@ async def get_province(
     coords: str,
     authorization: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
     try:
         x, z = map(int, coords.split(","))
     except ValueError:
@@ -170,7 +170,7 @@ async def get_province_meta(
     coords: str,
     authorization: str | None = Header(default=None),
 ):
-    ensure_map_access(map_name, authorization)
+    map_name = ensure_map_access(map_name, authorization).id
 
     try:
         x, z = map(int, coords.split(","))

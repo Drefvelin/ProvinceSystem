@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from src.api.map_access import get_skin_session, require_site_staff
+from src.api.path_safety import is_safe_filename, is_safe_segment, resolve_within
 from src.skins.auth import (
     AuthError,
     HEADER_PLUGIN_KEY,
@@ -60,6 +61,7 @@ from src.skins.notifications import (
     ack_notification,
     list_undelivered,
 )
+from src.skins import db as skins_db
 from src.skins.db import SKINS_DIR
 from src.skins.preview_3d import read_preview_render_error
 from src.skins.review_sheet import ReviewSheetError, build_review_sheet
@@ -778,6 +780,20 @@ def staff_notification_ack(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+def _resolve_submission_file_safely(submission_id: str, filename: str):
+    """resolve_submission_file behind the shared path-parameter guards.
+
+    The submission id becomes a directory under SKINS_DIR, and a Windows `%5C`
+    in it would otherwise walk out of that tree before any row is looked up.
+    """
+    if not is_safe_segment(submission_id) or not is_safe_filename(filename):
+        return None
+    path = resolve_submission_file(submission_id, filename)
+    if path is None:
+        return None
+    return resolve_within(skins_db.SKINS_DIR / submission_id, path)
+
+
 @skins_router.get("/staff/submissions/{submission_id}/files/{filename}")
 def staff_file(
     submission_id: str,
@@ -785,7 +801,7 @@ def staff_file(
     x_staff_key: str | None = Header(default=None, alias=HEADER_STAFF_KEY),
 ):
     _require_staff(x_staff_key)
-    path = resolve_submission_file(submission_id, filename)
+    path = _resolve_submission_file_safely(submission_id, filename)
     if path is None:
         raise HTTPException(status_code=404, detail="File not found")
     media = (
@@ -858,7 +874,7 @@ def plugin_file(
     x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
 ):
     _require_plugin(x_plugin_key)
-    path = resolve_submission_file(submission_id, filename)
+    path = _resolve_submission_file_safely(submission_id, filename)
     if path is None:
         raise HTTPException(status_code=404, detail="File not found")
     media = (

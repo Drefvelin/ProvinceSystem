@@ -12,6 +12,7 @@ from .http_headers import (
 from .internal_access import require_localhost
 from .map_access import ensure_map_access
 from .map_registry import get_map_entry
+from .path_safety import is_safe_segment, resolve_within
 from .request_body import read_json_body
 from .editor_validation import (
     TITLE_TIERS,
@@ -64,6 +65,10 @@ UPLOAD_MAX_BODY_BYTES = 8 * 1024 * 1024
 # `maplock.DEFAULT_TIMEOUT`, which is how long `store_raw` already waited before
 # giving up, so the retry lands after roughly one more lock window.
 LEDGER_LOCK_RETRY_AFTER_SECONDS = 30
+
+def _map_dir(path_builder, map_name: str) -> str:
+    """The per-map directory `path_builder` (input_file / defines_file) writes to."""
+    return os.path.dirname(path_builder(map_name, "_"))
 
 def clear_province_cache(map_name: str) -> None:
     _province_cache.pop(map_name, None)
@@ -329,8 +334,12 @@ async def get_map_name_data(
     if_modified_since: str | None = Header(default=None),
 ):
     map_name = ensure_map_access(map_name, authorization).id
-    path = defines_file(map_name, f"{file}.json")
-    if not os.path.exists(path):
+    if not is_safe_segment(file):
+        return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
+    path = resolve_within(
+        _map_dir(defines_file, map_name), defines_file(map_name, f"{file}.json")
+    )
+    if path is None or not os.path.exists(path):
         return add_no_cache(JSONResponse({"error": "Data not found"}, 404))
 
     # Only the region modes carry overlays, and only they pay the parse. The
@@ -391,6 +400,8 @@ async def upload_region_data(
 ):
     require_localhost(request)
     validate_map(map_name)
+    if not is_safe_segment(mode):
+        raise HTTPException(status_code=400, detail="Invalid upload mode")
 
     mode_norm = (mode or "").strip().lower()
     is_ledger = mode_norm == LEDGER_UPLOAD_MODE
@@ -516,11 +527,14 @@ async def upload_region_data(
         except RegionsValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    path = (
-        input_file(map_name, f"{mode}.json")
+    builder = (
+        input_file
         if mode in {"nation", "guilds", "province_data", "queue", "map_markers", "infestation_data"}
-        else defines_file(map_name, f"{mode}.json")
+        else defines_file
     )
+    path = resolve_within(_map_dir(builder, map_name), builder(map_name, f"{mode}.json"))
+    if path is None:
+        raise HTTPException(status_code=400, detail="Invalid upload mode")
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:

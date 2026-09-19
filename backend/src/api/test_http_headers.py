@@ -120,7 +120,7 @@ class MapdataRevalidateTest(unittest.IsolatedAsyncioTestCase):
             png.write_bytes(b"fake-png-bytes")
 
             with patch.object(file_routes, "OUTPUT_BASE", Path(tmp)):
-                with patch("src.api.file_routes.ensure_map_access"):
+                with patch("src.api.file_routes.ensure_map_access", **_GATE):
                     response = await file_routes.get_map_file("main", "nation", None)
 
             self.assertIn("no-cache", response.headers["Cache-Control"])
@@ -321,7 +321,7 @@ class OverlayWebpTest(unittest.IsolatedAsyncioTestCase):
             webp.write_bytes(b"fake-webp-bytes")
 
             with patch.object(file_routes, "OUTPUT_BASE", Path(tmp)):
-                with patch("src.api.file_routes.ensure_map_access"):
+                with patch("src.api.file_routes.ensure_map_access", **_GATE):
                     with patch(
                         "src.api.file_routes.webp_variant", return_value=webp
                     ) as variant:
@@ -342,7 +342,7 @@ class OverlayWebpTest(unittest.IsolatedAsyncioTestCase):
             (regions / "lantan.png").write_bytes(b"fake-png-bytes")
 
             with patch.object(file_routes, "OUTPUT_BASE", Path(tmp)):
-                with patch("src.api.file_routes.ensure_map_access"):
+                with patch("src.api.file_routes.ensure_map_access", **_GATE):
                     with patch("src.api.file_routes.webp_variant", return_value=None):
                         response = await file_routes.get_region_file(
                             "main", "nation", "lantan", None, None
@@ -359,7 +359,7 @@ class OverlayWebpTest(unittest.IsolatedAsyncioTestCase):
             (maps_dir / "nation_map.png").write_bytes(b"fake-png-bytes")
 
             with patch.object(file_routes, "OUTPUT_BASE", Path(tmp)):
-                with patch("src.api.file_routes.ensure_map_access"):
+                with patch("src.api.file_routes.ensure_map_access", **_GATE):
                     with patch("src.api.file_routes.webp_variant") as variant:
                         response = await file_routes.get_map_file(
                             "main", "nation", None
