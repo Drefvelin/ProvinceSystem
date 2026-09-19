@@ -94,19 +94,25 @@ def attribute_spend(ranks: dict[str, int], cost_for_rank: list[int]) -> int:
 def _strip_injuries_replaced_by_prosthetics(
     trait_ids: list[str], traits_by_id: dict[str, dict]
 ) -> list[str]:
+    traits_by_id_lower = {
+        str(k).strip().lower(): v for k, v in traits_by_id.items() if k is not None
+    }
     injuries_to_remove: set[str] = set()
     for tid in trait_ids:
-        trait = traits_by_id.get(tid)
+        key = str(tid).strip().lower()
+        trait = traits_by_id.get(tid) or traits_by_id_lower.get(key)
         if not isinstance(trait, dict):
             continue
         if str(trait.get("key") or "").strip().lower() != "prosthetic":
             continue
-        replaces = str(trait.get("replaces_injury") or "").strip()
+        replaces = str(trait.get("replaces_injury") or "").strip().lower()
         if replaces:
             injuries_to_remove.add(replaces)
     if not injuries_to_remove:
         return trait_ids
-    return [tid for tid in trait_ids if tid not in injuries_to_remove]
+    return [
+        tid for tid in trait_ids if str(tid).strip().lower() not in injuries_to_remove
+    ]
 
 
 def expand_attribute_traits(

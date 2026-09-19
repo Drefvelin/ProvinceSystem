@@ -678,7 +678,7 @@ export function stripInjuriesReplacedByProsthetics(
     if (!trait || String(trait.key || "").trim().toLowerCase() !== "prosthetic") {
       continue;
     }
-    const replaces = String(trait.replaces_injury || "").trim();
+    const replaces = String(trait.replaces_injury || "").trim().toLowerCase();
     if (replaces) {
       injuriesToRemove.add(replaces);
     }
@@ -686,7 +686,9 @@ export function stripInjuriesReplacedByProsthetics(
   if (injuriesToRemove.size === 0) {
     return traitIds;
   }
-  return traitIds.filter((id) => !injuriesToRemove.has(id));
+  return traitIds.filter(
+    (id) => !injuriesToRemove.has(String(id || "").toLowerCase())
+  );
 }
 
 export function setTraitsForKey(
@@ -697,11 +699,10 @@ export function setTraitsForKey(
 ): WizardDraft {
   const allowed = new Set(traitsForKey(catalog, key).map((t) => t.id));
   const kept = draft.traitIds.filter((id) => !allowed.has(id));
-  let traitIds = [...kept, ...selected];
-  const normalizedKey = key.trim().toLowerCase();
-  if (normalizedKey === "prosthetic" || normalizedKey === "injury") {
-    traitIds = stripInjuriesReplacedByProsthetics(traitIds, catalog);
-  }
+  const traitIds = stripInjuriesReplacedByProsthetics(
+    [...kept, ...selected],
+    catalog
+  );
   return { ...draft, traitIds };
 }
 
@@ -879,11 +880,14 @@ export function stageCanContinue(
 
 export function toCreateBody(
   draft: WizardDraft,
-  opts?: { nameColourStops?: number }
+  opts?: { nameColourStops?: number; catalog?: CreationCatalog }
 ): CreateCharacterBody {
   const clues = draft.clues.map((c) => c.trim()).filter(Boolean);
   const gender = draft.gender.trim() || "unspecified";
   const age = Number(draft.age);
+  const traitIds = opts?.catalog
+    ? stripInjuriesReplacedByProsthetics(draft.traitIds, opts.catalog)
+    : [...draft.traitIds];
   const body: CreateCharacterBody = {
     client_request_id: draft.client_request_id,
     name: draft.name.trim(),
@@ -893,7 +897,7 @@ export function toCreateBody(
     race_id: draft.race_id,
     class_id: draft.class_id,
     attributes: { ...draft.attributes },
-    traits: [...draft.traitIds],
+    traits: traitIds,
     clues,
   };
   const birthday =

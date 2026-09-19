@@ -780,7 +780,7 @@ export default function CreationWizard({
       if (uiDev) {
         // eslint-disable-next-line no-console
         console.info("[character UI-dev] create draft", {
-          body: toCreateBody(draft, { nameColourStops }),
+          body: toCreateBody(draft, { nameColourStops, catalog }),
           wardrobeDraft,
         });
         setUiDevDone(true);
@@ -790,7 +790,7 @@ export default function CreationWizard({
       if (!createId) {
         const created = await createCharacter(
           sessionToken,
-          toCreateBody(draft, { nameColourStops })
+          toCreateBody(draft, { nameColourStops, catalog })
         );
         createId = String(created.id || "").trim();
         if (!createId) {

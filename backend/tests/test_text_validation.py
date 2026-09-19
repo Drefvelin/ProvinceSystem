@@ -290,6 +290,24 @@ class CreateValidationWireTests(unittest.TestCase):
             self.assertEqual(out["traits"], ["wooden_claw_arm"])
             self.assertEqual(out["all_traits"], ["wooden_claw_arm"])
 
+    def test_strips_injury_replaced_by_prosthetic_mixed_case(self) -> None:
+        from src.characters.creates import _strip_injuries_replaced_by_prosthetics
+
+        traits_by_id = {
+            "one_handed": {"id": "one_handed", "key": "injury", "cost": 0},
+            "wooden_claw_arm": {
+                "id": "wooden_claw_arm",
+                "key": "prosthetic",
+                "cost": 1,
+                "replaces_injury": "One_Handed",
+            },
+        }
+        kept = _strip_injuries_replaced_by_prosthetics(
+            ["One_Handed", "wooden_claw_arm", "blind"],
+            traits_by_id,
+        )
+        self.assertEqual(kept, ["wooden_claw_arm", "blind"])
+
 
 class SubmissionDisplayNameWireTests(unittest.TestCase):
     def test_rejects_script_before_slugify(self) -> None:
