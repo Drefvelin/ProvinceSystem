@@ -40,12 +40,12 @@
     14
   ],
   "/wiki/textures/bird-mail/mailbox.png": [
-    256,
-    256,
+    64,
+    64,
     0,
     0,
-    128,
-    132
+    64,
+    32
   ],
   "/wiki/textures/crop-plants/basil/basil_block.png": [
     96,
@@ -2957,7 +2957,7 @@
     0,
     0,
     64,
-    48
+   25
   ],
   "/wiki/textures/stations/recycling-station.png": [
     64,

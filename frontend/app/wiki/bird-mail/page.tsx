@@ -1,6 +1,5 @@
 import {
   Callout,
-  CommandTable,
   SeeAlso,
   StationLink,
   StatGrid,
@@ -8,7 +7,6 @@ import {
   WikiPage,
   WikiSectionHeading,
 } from "@/app/components/wiki";
-import { birdMailCommands } from "../data/bird-mail";
 import StationModelViewer from "@/app/components/wiki/StationModelViewer";
 
 export default function BirdMailPage() {
@@ -16,13 +14,6 @@ export default function BirdMailPage() {
     <WikiPage
       lastModified="2026-09-12"
       title="Bird Mail"
-      intro={
-        <>
-          BirdMessenger sends a written letter to another player&apos;s character, carried by a
-          bird over real time: there is no command to learn, just a block to find and a GUI to
-          use.
-        </>
-      }
     >
       <WikiSectionHeading id="how-it-works" intro="Everything here is block and GUI interaction: there is no /mail command.">
         Sending a letter
@@ -94,12 +85,6 @@ export default function BirdMailPage() {
         notification (without revealing the sender or the letter&apos;s contents) if the recipient
         has linked their account.
       </Callout>
-
-      <WikiSectionHeading id="commands">Commands</WikiSectionHeading>
-      <CommandTable
-        commands={birdMailCommands.commands}
-        excludedStaffCommands={birdMailCommands.excludedStaffCommands}
-      />
 
       <SeeAlso hrefs={["/wiki/server-features", "/wiki/characters"]} />
     </WikiPage>
