@@ -22,10 +22,10 @@ export const furniture: FurnitureRow[] = [
 ];
 
 export const furnitureRecipes = [
-  {pieces:"Frying Pan, Saucepan, Pot, Meat Hook, Sausage Maker, Liquid Container",station:"Meal Prep Station",cost:"1 Iron Ingot each",time:"2 s"},
-  {pieces:"Milling Stone",station:"Meal Prep Station",cost:"1 Stone",time:"2 s"},
+  {pieces:"Cutting Knife, Ladle, Masher, Frying Pan, Saucepan, Pot, Meat Hook, Sausage Maker, Liquid Container, Bread Tray",station:"Meal Prep Station",cost:"1 Iron Ingot each",time:"2 s"},
+  {pieces:"Oven Bottom, Oven Top, Milling Stone",station:"Meal Prep Station",cost:"1 Stone each",time:"2 s"},
   {pieces:"Trough",station:"Animal Station",cost:"1 Oak Planks",time:"2 s"},
-  {pieces:"Cutting Board, Butter Churn, Butter Plate, Plate, Bowl, Tool Shelf",station:"Meal Prep Station",cost:"1 Oak Planks each",time:"2 s"},
+  {pieces:"Tool Shelf, Fire Pit, Cutting Board, Butter Churn, Butter Plate, Mixing Bowl, Empty Cup, Plate, Bowl",station:"Meal Prep Station",cost:"1 Oak Planks each",time:"2 s"},
   {pieces:"Pedestal, Artifact Display",station:"Block Station",cost:"2 Cobblestone each",time:"5 s"},
   {pieces:"Lure",station:"Block Station",cost:"2 Oak Planks",time:"2 s"},
 ];

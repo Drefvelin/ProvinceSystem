@@ -35,7 +35,7 @@ const cropGalleryItems = crops.map(([name, profession, regrows]) => ({
 export default function FarmingPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-20"
       title="CustomCrops"
       width="lg"
       intro={
@@ -93,7 +93,7 @@ export default function FarmingPage() {
         </div>
       </div>
 
-      <SeeAlso hrefs={["/wiki/cooking", "/wiki/harvesting", "/wiki/materials", "/wiki/commands"]} />
+      <SeeAlso hrefs={["/wiki/animal-husbandry", "/wiki/cooking", "/wiki/harvesting", "/wiki/materials", "/wiki/commands"]} />
     </WikiPage>
   );
 }
