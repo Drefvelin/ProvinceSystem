@@ -479,7 +479,7 @@
         "wealth_breakdown": {
           "type": "object",
           "additionalProperties": { "type": "number" },
-          "description": "Keyed by modifier type (Bank, Expansions, Nodes, per-guild rollups). Wealth is liquid bank plus sunk capital, so a faction can be wealthy with an empty treasury."
+          "description": "Keyed by modifier type (Bank, Expansions, Nodes) and by guild id for non-base guild rollups. Wealth is liquid bank plus sunk capital, so a faction can be wealthy with an empty treasury."
         },
         "bank": { "type": "number", "description": "Liquid main-guild bank only" },
         "vassal_wealth": { "type": "number" },

@@ -8,6 +8,7 @@ import {
   buildStepPath,
   defaultLedgerFactionOption,
   diffConsecutive,
+  formatBreakdownBandLabel,
   formatLedgerFactionLabel,
   formatMoney,
   formatSignedMoney,
@@ -290,6 +291,25 @@ describe("buildStepPath", () => {
 
   it("draws a single point with no segment when only one value is present", () => {
     expect(buildStepPath([null, 42], xScale, yScale)).toBe("M 10 58");
+  });
+});
+
+describe("formatBreakdownBandLabel", () => {
+  it("turns a guild id into a readable name", () => {
+    expect(formatBreakdownBandLabel("The_Betriebsrat")).toBe("The Betriebsrat");
+  });
+
+  it("strips Minecraft color and a leftover (Guild) suffix", () => {
+    expect(
+      formatBreakdownBandLabel(
+        "§x§a§3§a§1§8§4The Betriebsrat #a39ba8(§x§b§d§a§4§6§4Guild#a39ba8)"
+      )
+    ).toBe("The Betriebsrat");
+  });
+
+  it("leaves component keys alone", () => {
+    expect(formatBreakdownBandLabel("Bank")).toBe("Bank");
+    expect(formatBreakdownBandLabel("Nodes")).toBe("Nodes");
   });
 });
 

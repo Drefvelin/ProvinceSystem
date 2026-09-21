@@ -5,6 +5,7 @@ import {
   buildLinePath,
   buildStepPath,
   diffConsecutive,
+  formatBreakdownBandLabel,
   formatMoney,
   formatSignedMoney,
   ledgerCursorReadout,
@@ -408,7 +409,7 @@ const WealthChart = memo(function WealthChart({
               className="h-2 w-2 rounded-sm"
               style={{ background: BAND_COLORS[i % BAND_COLORS.length] }}
             />
-            {key}
+            {formatBreakdownBandLabel(key)}
           </span>
         ))}
       </div>

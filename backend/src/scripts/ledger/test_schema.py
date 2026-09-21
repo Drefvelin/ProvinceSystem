@@ -20,6 +20,7 @@ from src.scripts.ledger.schema import (
     json_safe,
     normalize_snapshot,
     parse_instant,
+    remap_wealth_breakdown_keys,
     snapshot_day,
 )
 
@@ -314,6 +315,97 @@ def test_a_normal_breakdown_still_passes() -> None:
         "provinces": 800.0,
         "trade": 200.0,
     }
+
+
+_COLORED_GUILD_KEY = (
+    "§x§a§3§a§1§8§4The Betriebsrat #a39ba8(§x§b§d§a§4§6§4Guild#a39ba8)"
+)
+
+
+def test_a_colored_guild_wealth_key_is_rewritten_to_the_guild_id() -> None:
+    """Old SF jars keyed sub-guild wealth with a colored display name."""
+    snapshot = normalize_snapshot(
+        snapshot_payload(
+            factions=[
+                faction_payload(
+                    wealth_breakdown={
+                        "Bank": 163.8,
+                        _COLORED_GUILD_KEY: 224.71,
+                    }
+                )
+            ],
+            guilds=[
+                guild_payload(
+                    id="The_Betriebsrat",
+                    faction_id="alba",
+                    name="§x§a§3§a§1§8§4The Betriebsrat",
+                    type="§x§b§d§a§4§6§4Guild",
+                )
+            ],
+        ),
+        MAP,
+    )
+    assert snapshot["factions"][0]["wealth_breakdown"] == {
+        "Bank": 163.8,
+        "The_Betriebsrat": 224.71,
+    }
+
+
+def test_an_already_id_keyed_wealth_breakdown_is_a_noop() -> None:
+    snapshot = normalize_snapshot(
+        snapshot_payload(
+            factions=[
+                faction_payload(
+                    wealth_breakdown={"Bank": 1.0, "The_Betriebsrat": 2.0}
+                )
+            ],
+            guilds=[
+                guild_payload(
+                    id="The_Betriebsrat",
+                    faction_id="alba",
+                    name="§x§a§3§a§1§8§4The Betriebsrat",
+                    type="§x§b§d§a§4§6§4Guild",
+                )
+            ],
+        ),
+        MAP,
+    )
+    assert snapshot["factions"][0]["wealth_breakdown"] == {
+        "Bank": 1.0,
+        "The_Betriebsrat": 2.0,
+    }
+
+
+def test_an_unmatched_long_wealth_key_is_still_refused() -> None:
+    long_key = {"x" * (MAX_BREAKDOWN_KEY_CHARS + 1): 1.0}
+    with pytest.raises(LedgerPayloadError) as excinfo:
+        normalize_snapshot(
+            snapshot_payload(factions=[faction_payload(wealth_breakdown=long_key)]),
+            MAP,
+        )
+    assert "longer than" in excinfo.value.detail
+
+
+def test_remap_wealth_breakdown_keys_returns_how_many_changed() -> None:
+    snapshot = {
+        "factions": [
+            {
+                "id": "alba",
+                "wealth_breakdown": {"Bank": 1.0, _COLORED_GUILD_KEY: 2.0},
+            }
+        ],
+        "guilds": [
+            {
+                "id": "The_Betriebsrat",
+                "faction_id": "alba",
+                "name": "§x§a§3§a§1§8§4The Betriebsrat",
+                "type": "§x§b§d§a§4§6§4Guild",
+            }
+        ],
+    }
+    assert remap_wealth_breakdown_keys(snapshot) == 1
+    assert snapshot["factions"][0]["wealth_breakdown"]["The_Betriebsrat"] == 2.0
+    assert remap_wealth_breakdown_keys(snapshot) == 0
 
 
 # --- int range (finding 8) ---------------------------------------------------

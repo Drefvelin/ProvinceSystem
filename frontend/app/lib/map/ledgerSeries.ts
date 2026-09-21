@@ -421,6 +421,13 @@ export function formatLedgerFactionLabel(faction: LedgerRegistryFaction): string
   return cleanRegionName(faction.name);
 }
 
+/** Wealth/prestige stack legend: guild ids and leftover colored names. */
+export function formatBreakdownBandLabel(key: string): string {
+  let label = cleanRegionName(key).trim();
+  label = label.replace(/\s*\(.*[Gg]uild.*\)\s*$/, "").trim();
+  return label.replace(/_/g, " ");
+}
+
 /**
  * Every registry row folded into one dropdown option per exact name —
  * deleted nations included, since the entire point of keeping them in the

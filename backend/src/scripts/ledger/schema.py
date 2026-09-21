@@ -279,6 +279,69 @@ def _as_breakdown(value, what: str) -> dict[str, float]:
     return out
 
 
+def _legacy_guild_wealth_key(name: str, type_name: str) -> str:
+    """The colored `name (type)` string SimpleFactions used as a wealth key."""
+    return f"{name} #a39ba8({type_name}#a39ba8)"
+
+
+def remap_wealth_breakdown_keys(snapshot: dict) -> int:
+    """Rewrite display-name wealth keys to guild ids. Mutates `snapshot`.
+
+    SimpleFactions used to key sub-guild wealth as
+    `{name} #a39ba8({type}#a39ba8)`, which trips `MAX_BREAKDOWN_KEY_CHARS`.
+    The same snapshot already lists `guilds[]` with `id`/`name`/`type`/
+    `faction_id`, so the rewrite is exact, not fuzzy. Component keys (`Bank`,
+    `Nodes`) and already-id keys are left alone.
+
+    Returns how many keys were rewritten. Called on ingest *before* the
+    64-char cap so an old plugin jar still uploads, and by the daily rewrite
+    CLI so stored days join the same series.
+    """
+    guilds = snapshot.get("guilds")
+    factions = snapshot.get("factions")
+    if not isinstance(guilds, list) or not isinstance(factions, list):
+        return 0
+
+    by_faction: dict[str, dict[str, str]] = {}
+    for guild in guilds:
+        if not isinstance(guild, dict):
+            continue
+        guild_id = guild.get("id")
+        name = guild.get("name")
+        type_name = guild.get("type")
+        faction_id = guild.get("faction_id")
+        if not isinstance(guild_id, str) or not guild_id:
+            continue
+        if not isinstance(name, str) or not isinstance(type_name, str):
+            continue
+        if not isinstance(faction_id, str) or not faction_id:
+            continue
+        by_faction.setdefault(faction_id, {})[
+            _legacy_guild_wealth_key(name, type_name)
+        ] = guild_id
+
+    remapped = 0
+    for faction in factions:
+        if not isinstance(faction, dict):
+            continue
+        faction_id = faction.get("id")
+        lookup = by_faction.get(faction_id) if isinstance(faction_id, str) else None
+        if not lookup:
+            continue
+        blob = faction.get("wealth_breakdown")
+        if not isinstance(blob, dict):
+            continue
+        rewritten: dict = {}
+        for key, amount in blob.items():
+            text = str(key)
+            new_key = lookup.get(text, text)
+            if new_key != text:
+                remapped += 1
+            rewritten[new_key] = amount
+        faction["wealth_breakdown"] = rewritten
+    return remapped
+
+
 def _as_str_list(value) -> list[str]:
     if not isinstance(value, list):
         return []
@@ -432,6 +495,10 @@ def normalize_snapshot(payload, map_id: str) -> dict:
         raise LedgerPayloadError(
             f"Snapshot has {len(guilds_raw)} guilds, cap is {MAX_GUILDS}"
         )
+
+    # Before `_as_breakdown`'s 64-char cap: colored guild titles are not
+    # component ids, and the same snapshot already names each guild's id.
+    remap_wealth_breakdown_keys({"factions": factions_raw, "guilds": guilds_raw})
 
     factions: list[dict] = []
     seen_keys: set[str] = set()
