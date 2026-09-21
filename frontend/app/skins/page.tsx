@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import RedeemForm from "../components/skins/RedeemForm";
 import UploadForm from "../components/skins/UploadForm";
@@ -17,9 +17,11 @@ import { formatExpiresIn, formatLocal } from "../../lib/skins/formatTime";
 
 export default function SkinsPage() {
   const router = useRouter();
+  const newCodeTitleId = useId();
   const [ready, setReady] = useState(false);
   const [session, setSessionState] = useState<SkinsSession | null>(null);
   const [metaSynced, setMetaSynced] = useState(true);
+  const [confirmNewCode, setConfirmNewCode] = useState(false);
 
   useEffect(() => {
     const existing = getSession();
@@ -68,6 +70,12 @@ export default function SkinsPage() {
     setSessionState(next);
   }
 
+  function confirmUseNewCode() {
+    clearSession();
+    setSessionState(null);
+    setConfirmNewCode(false);
+  }
+
   if (!ready) {
     return (
       <main className="mx-auto flex min-h-[calc(100dvh-var(--tfmc-header-h))] max-w-lg flex-col justify-center px-6 py-16">
@@ -91,6 +99,13 @@ export default function SkinsPage() {
               <span className="ml-2 text-[var(--tfmc-accent)]">· Staff</span>
             ) : null}
           </p>
+          <button
+            type="button"
+            className="mt-2 text-xs text-[var(--tfmc-mist)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+            onClick={() => setConfirmNewCode(true)}
+          >
+            Use a new code
+          </button>
           <UploadForm
             sessionToken={session.session_token}
             staff={session.staff === true}
@@ -113,6 +128,50 @@ export default function SkinsPage() {
           <RedeemForm onRedeemed={onRedeemed} />
         </>
       )}
+
+      {confirmNewCode ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--tfmc-forest)_72%,black)]/80 p-4 backdrop-blur-[2px] sm:items-center"
+          role="presentation"
+          onClick={() => setConfirmNewCode(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={newCodeTitleId}
+            className="w-full max-w-sm rounded-sm border border-[color-mix(in_srgb,var(--tfmc-cream)_22%,transparent)] bg-[var(--tfmc-forest)] p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id={newCodeTitleId}
+              className="font-[family-name:var(--font-display)] text-lg text-[var(--tfmc-cream)]"
+            >
+              Use a new code?
+            </h2>
+            <p className="mt-2 text-sm text-[var(--tfmc-mist)]">
+              This ends your current skins session. You will need to redeem
+              another in-game code. If you have not submitted yet, this upload
+              session is discarded.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmNewCode(false)}
+                className="text-sm text-[var(--tfmc-stone)] underline-offset-2 hover:text-[var(--tfmc-cream)] hover:underline"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmUseNewCode}
+                className="rounded-sm bg-[var(--tfmc-accent)] px-4 py-2 text-sm font-semibold text-[var(--tfmc-forest-deep)] transition-opacity hover:opacity-90"
+              >
+                Use a new code
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
