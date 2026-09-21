@@ -102,6 +102,14 @@
     "sourceConfig": "tfmc_blocks/configs/blocks.yml",
     "sourceTexture": "tfmc_blocks/resourcepack/assets/tfmc_blocks/textures/block/elderwood_plank.png"
   },
+  "empty_cup": {
+    "name": "Empty Cup",
+    "material": "PAPER",
+    "texture": "itemsadder/empty_cup.png",
+    "sourceKind": "flat-sprite",
+    "sourceConfig": "tfmc_cooking/contents/intermediates.yml",
+    "sourceTexture": "tfmc_cooking/resourcepack/assets/tfmc_cooking/textures/item/intermediate/empty_cup.png"
+  },
   "frying_pan": {
     "name": "Frying Pan",
     "material": "PAPER"

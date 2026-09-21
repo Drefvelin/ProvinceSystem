@@ -9,6 +9,7 @@ import { classesSection } from "./classes";
 import { codexSection } from "./codex";
 import { commandIndexSection } from "./command-index";
 import { cookingSection } from "./cooking";
+import { animalHusbandrySection } from "./animal-husbandry";
 import { detectorSection } from "./detector";
 import { drinkBuilderSection } from "./drink-builder";
 import { economySection } from "./economy";
@@ -74,6 +75,7 @@ export const wikiSections: readonly WikiSection[] = [
   farmingSection,
   fishingSection,
   cookingSection,
+  animalHusbandrySection,
   brewingSection,
   drinkBuilderSection,
   magicSection,

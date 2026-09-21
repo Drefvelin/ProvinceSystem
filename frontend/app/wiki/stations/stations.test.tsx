@@ -40,7 +40,7 @@ describe("station registry and source coverage", () => {
       "block-station": 129, "copper-station": 118, "engineer-station": 12,
       "engineering-table": 16, "fishing-station": 8, "forester-station": 117,
       "gunsmithing-station": 21, "ingot-station": 61, "instrument-station": 16,
-      "magic-station": 10, "meal-prep-station": 16, "medicine-station": 35,
+      "magic-station": 10, "meal-prep-station": 22, "medicine-station": 35,
       dockyard: 5, "research-station": 28, "tool-station": 48,
     };
     for (const [slug, count] of Object.entries(expectedCounts)) {

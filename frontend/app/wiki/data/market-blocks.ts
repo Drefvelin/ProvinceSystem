@@ -1,4 +1,4 @@
-﻿import { V } from "./helpers";
+﻿import { empty, V } from "./helpers";
 import type { Recipe, WikiCommandSet, WikiSection } from "./types";
 
 // ---------- Market Block ----------
@@ -11,11 +11,15 @@ export const marketBlockRecipe: Recipe = {
   ingredients: [
     { name: "Ink Sac", qty: 1, texture: V("ink_sac.png") },
     { name: "Paper", qty: 1, texture: V("paper.png") },
+    empty,
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
-    { name: "Oak Planks", qty: 3, texture: V("oak_planks.png") },
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
+    { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
+    { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
+    empty,
     { name: "Oak Planks", qty: 1, texture: V("oak_planks.png") },
   ],
+  note: "Synthetic Ink can replace the Ink Sac. Use one Oak Plank in each of the five plank slots.",
   output: {
     name: "Market Block",
     qty: 1,

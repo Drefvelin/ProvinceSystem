@@ -24,6 +24,7 @@ export * from "./characters";
 export * from "./classes";
 export * from "./codex";
 export * from "./cooking";
+export * from "./animal-husbandry";
 export * from "./detector";
 export * from "./drink-builder";
 export * from "./economy";

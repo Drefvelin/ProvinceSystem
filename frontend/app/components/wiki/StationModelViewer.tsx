@@ -143,8 +143,24 @@ export default function StationModelViewer({
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      setVisible(entry.isIntersecting);
+    });
+    observer.observe(mount);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     let disposed = false;
     let cleanedUp = false;
     let renderer: THREE.WebGLRenderer | null = null;
@@ -359,7 +375,9 @@ export default function StationModelViewer({
       }
     }
 
-    void init();
+    void init().catch(() => {
+      if (!disposed) setError("Could not display 3D preview.");
+    });
 
     return () => {
       if (cleanedUp) return;
@@ -378,11 +396,12 @@ export default function StationModelViewer({
       loadedTextures.clear();
       if (renderer) {
         renderer.dispose();
+        renderer.forceContextLoss();
         renderer.domElement.remove();
         renderer = null;
       }
     };
-  }, [modelUrl, textureUrl, textureUrls, textureAnimationUrl, variant]);
+  }, [modelUrl, textureUrl, textureUrls, textureAnimationUrl, variant, visible]);
 
   if (variant === "thumb") {
     return (

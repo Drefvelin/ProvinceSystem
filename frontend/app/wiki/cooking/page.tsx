@@ -15,7 +15,7 @@ const itemLink = (name: string) => <WikiItemLink name={name}>{name}</WikiItemLin
 export default function CookingPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-20"
       title="Cooking"
       width="lg"
       intro={
@@ -32,8 +32,28 @@ export default function CookingPage() {
         <li>1. <WikiItemText text="Place the furniture you need: Frying Pan, Pot, Cutting Board, Fire Pit, Milling Stone, Mixing Bowl, Oven Bottom + Oven Top with a Bread Tray, Butter Churn, Sausage Maker, Meat Hook, or a plain vanilla Cauldron." /></li>
         <li>2. <strong>Right-click the furniture while holding an ingredient</strong> to place it into one of the furniture&apos;s slots.</li>
         <li>3. <strong>Right-click with an empty hand</strong> to take the item back out, or to operate the station (churn, turn the spit, stir).</li>
-        <li>4. Stations that need heat (the <WikiItemLink name="Frying Pan" />) only cook while a heat source sits underneath: the server&apos;s only configured chain is an <WikiItemLink name="Oven Bottom" /> (heat source) under an <WikiItemLink name="Oven Top" />.</li>
+        <li>4. Stations that need heat must sit above a heat source. For soup, place a <WikiItemLink name="Pot" /> directly on an <WikiItemLink name="Oven Bottom" />, add logs and light them.</li>
         <li>5. Cooking ticks once per second, so every time listed below is in real seconds, not ticks.</li>
+      </ol>
+
+      <WikiSectionHeading id="simple-soup" intro="A simple carrot and potato soup to get you started.">
+        Your first soup
+      </WikiSectionHeading>
+      <p className="mt-4 text-sm text-[var(--tfmc-mist)]">
+        <WikiItemText text="Ingredients: 2 Carrots, 2 Potatoes, a Water Bucket and wood logs for fuel. Equipment: Cutting Board, Cutting Knife, Oven Bottom, Pot, Flint and Steel, Masher, Ladle and a Bowl." />
+      </p>
+      <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[var(--tfmc-mist)]">
+        <li>Put 2 carrots on the <WikiItemLink name="Cutting Board" /> and cut them once with a <WikiItemLink name="Cutting Knife" />. Take the cut carrots off the board.</li>
+        <li>Put 2 potatoes on the cutting board and cut them once with the Cutting Knife. Take the cut potatoes off the board.</li>
+        <li>Craft an <WikiItemLink name="Oven Bottom" /> and place it, then put a <WikiItemLink name="Pot" /> on top.</li>
+        <li>Right-click the pot with a Water Bucket to fill it.</li>
+        <li>Right-click the Oven Bottom while holding wood logs to add fuel.</li>
+        <li>Right-click the logs inside the oven with Flint and Steel to light them.</li>
+        <li>Wait for the water to boil, then add either the cut carrots or the cut potatoes.</li>
+        <li>Right-click the vegetables in the pot with a <WikiItemLink name="Masher" /> to mash them into soup.</li>
+        <li>Add the other cut vegetables and mash them in the same way.</li>
+        <li>Once the soup has finished cooking, right-click it with a <WikiItemLink name="Ladle" /> to take a serving.</li>
+        <li>Pour the soup into a Bowl, then right-click to eat it.</li>
       </ol>
 
       <WikiSectionHeading id="stations" intro="What to hold and what happens at each station.">
@@ -146,7 +166,7 @@ export default function CookingPage() {
         ]}
       />
 
-      <SeeAlso hrefs={["/wiki/farming", "/wiki/drink-builder", "/wiki/materials", "/wiki/stations", "/wiki/commands"]} />
+      <SeeAlso hrefs={["/wiki/animal-husbandry", "/wiki/farming", "/wiki/drink-builder", "/wiki/materials", "/wiki/stations", "/wiki/commands"]} />
     </WikiPage>
   );
 }
