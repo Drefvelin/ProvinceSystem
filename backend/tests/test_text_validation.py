@@ -328,6 +328,21 @@ class SubmissionDisplayNameWireTests(unittest.TestCase):
             msg=msg,
         )
 
+    def test_rejects_name_over_24_characters(self) -> None:
+        from src.skins.submissions import SubmissionError, create_submission
+
+        session = type("S", (), {"player_uuid": "p", "code_id": None})()
+        with self.assertRaises(SubmissionError) as ctx:
+            create_submission(
+                session,
+                "handheld",
+                "a" * 25,
+                {"texture": b"x", "model": b"y"},
+                base_set="iron_sword",
+            )
+        msg = str(ctx.exception).lower()
+        self.assertIn("at most 24", msg)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,7 +47,7 @@ import {
 } from "../../../lib/skins/sizes";
 import { assertVanillaJavaBlockModelFile } from "../../../lib/skins/javaModel";
 
-const DISPLAY_NAME_MAX = 80;
+const DISPLAY_NAME_MAX = 24;
 
 const KNOWN_SKIN_KINDS = new Set<string>([
   "armor_set",

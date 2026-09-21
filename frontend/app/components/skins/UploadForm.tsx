@@ -401,7 +401,7 @@ export default function UploadForm({
     }
     const nameErr = displayNameError(name, {
       minLen: 1,
-      maxLen: 80,
+      maxLen: 24,
       field: "item name",
     });
     if (nameErr) {
@@ -757,19 +757,19 @@ export default function UploadForm({
           disabled={loading}
           onChange={(e) => setItemName(e.target.value)}
           className={inputClass}
-          maxLength={80}
+          maxLength={24}
           placeholder="Blue Knight"
         />
         {itemName.trim() &&
         displayNameError(itemName, {
           minLen: 1,
-          maxLen: 80,
+          maxLen: 24,
           field: "item name",
         }) ? (
           <span className="text-xs text-[#e8a0a0]">
             {displayNameError(itemName, {
               minLen: 1,
-              maxLen: 80,
+              maxLen: 24,
               field: "item name",
             })}
           </span>

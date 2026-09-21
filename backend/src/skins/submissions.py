@@ -99,7 +99,7 @@ GRIP_Y_MIN = 0.0
 GRIP_Y_MAX = 16.0
 # Legacy preset ids still accepted and mapped to Y.
 _GRIP_PRESET_Y = {"bottom": 2.5, "middle": 4.0, "top": 5.5}
-MAX_DISPLAY_NAME = 80
+MAX_DISPLAY_NAME = 24
 
 
 class SubmissionError(ValueError):
