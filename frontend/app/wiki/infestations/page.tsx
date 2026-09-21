@@ -2,7 +2,7 @@ import { Callout, SeeAlso, WikiItemLink, WikiPage, WikiSectionHeading } from "@/
 export default function InfestationsPage() {
   return (
     <WikiPage
-      lastModified="2026-09-12"
+      lastModified="2026-09-21"
       title="Infestations"
       intro={
         <>
@@ -49,7 +49,8 @@ export default function InfestationsPage() {
         </li>
         <li>
           Clear every mob and the infestation is cleared outright; dying, running
-          out the timer, or leaving means the infestation remains.
+          out the timer, or leaving means the infestation remains. After the fight
+          starts, right-click the <WikiItemLink name="Lure" /> to outline remaining wave mobs for 10 seconds.
         </li>
         <li>
           Logging out mid-<WikiItemLink name="Lure" /> does not save you: there is only a 300-second grace period, after
