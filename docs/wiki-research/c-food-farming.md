@@ -33,7 +33,7 @@ Station-specific interactions:
 |---|---|---|
 | **Cutting Board** | Hold **Cutting Knife** (`ia.tfmc_cooking:cutting_knife`) and interact | Runs a cutting/chopping recipe on up to 4 slots; all inputs must share one origin (`single-origin: true`, `max-slots: 4`) — `plugins/Cooking/crafting-stations.yml` |
 | **Frying Pan** | Place food, needs heat below; manual take only (`manual-add: false, manual-take: true`) | Cooks over time; burns if left on |
-| **Pot** | Accepts a **Water Bucket** (`pot-water-input: v.water_bucket`) and cut vegetables | Boiled foods / soups |
+| **Pot** | Accepts a **Water Bucket** (`pot-water-input: v.water_bucket`), then up to five mains: cut vegetables, steak, poultry filet, fish filet, jellyfish cubes, or octopus. After mashing, one garnish, one spice, salt, and pepper | A masher turns a main into soup at any time and marks it boiled. Extras are not shown in the pot. The bowl shows each boiled main. Shift-right-click carries the bowl. |
 | **Fire Pit** | Put a roast on the spit ("content" slot); right-click with the **Fire Pit Turner** | Rotates and roasts a whole joint |
 | **Meat Hook** + **Cutting Knife** | Carve a cooked roast | Yields the cuts in `plugins/Cooking/carve-sequences.yml` |
 | **Milling Stone** | Insert 8 Wheat, then perform 4 "revolutions" over 60 ticks | 1 batch of Flour — `plugins/Cooking/milling-recipes.yml` |
@@ -55,6 +55,7 @@ Station-specific interactions:
 | chop_pistachio | Pistachio | 1 | `garnish_chopped` Pistachio | `cut.1` |
 | chop_rhubarb | Rhubarb | 1 | `garnish_chopped` Rhubarb | `cut.1` |
 | chop_garlic | Garlic | 1 | `garnish_chopped` Garlic | `cut.1` |
+| cut_seafood | one `seafood_whole` | 1 fish per knife use | one filet, jellyfish cubes, or octopus. Food and nutrition stay the portion type levels. | freshness |
 
 `vegetable_1` (has a cut step): Carrot, Potato, Tomato, Onion, Lettuce, Cucumber, Corn, Beetroot, Pumpkin.
 `vegetable_chop_only` (no cut step, straight to chopped): Olive, Pistachio, Rhubarb, Garlic. (`plugins/Cooking/types.yml`)
@@ -79,6 +80,11 @@ Station-specific interactions:
 | `sausage` | frying_pan | 15 | 30 |
 | `vegetable_cut` | frying_pan | 15 | 30 |
 | `vegetable_cut` | pot | 15 | 30 |
+| `meat_poultry` (Chicken) | pot | 15 | 30 |
+| `meat_red_meat` (Steak / Beef / Venison) | pot | 15 | 30 |
+| `seafood_fish_filet` | pot | 15 | 30 |
+| `seafood_jellyfish` | pot | 15 | 30 |
+| `seafood_octopus` | pot | 15 | 30 |
 
 **Carving sequences** (`plugins/Cooking/carve-sequences.yml`) — each right-click with the knife takes one cut off, in order:
 
@@ -516,7 +522,8 @@ Replaces vanilla fishing with a skill minigame: when something bites you play a 
 4. **Cast.** Vanilla cast. Wait time is **100–600 ticks (5–30 s)** base, clamped to **50–1200 ticks (2.5–60 s)** after all modifiers (`plugins/CustomFishing/config.yml`, `mechanics.fishing-wait-time`).
 5. **Play the minigame.** When it bites, one of 17 minigames fires, at a difficulty tier set by your rod. Hold/Tension games prompt *"Press SNEAK to start"*; the Dance game maps ↑ = Jump, ↓ = Sneak, ← = Left-click, → = Right-click.
 6. **Win → you get the loot** (plus a title "GG!"/"Good Job!" and, for sized fish, an actionbar showing the fish's length in cm and your personal record). **Lose →** "The fish got away…".
-7. **Sell.** `/sellfish` opens the Fish Market GUI.
+7. **Cook it.** A configured TFMC fish becomes a Cooking `seafood_whole` you can eat raw (food 6, nutrition 6), the same way you can eat a raw carrot. Cooking quality comes from the rod band (basic 1-2, steel 2-3, abyssalite 3-4, mythril 4-5), not CustomFishing stars. Cut it on the cutting board, then boil the portion in the pot. Cook times are in the Cooking section above.
+8. **Sell.** `/sellfish` opens the Fish Market GUI.
 
 ### Content it adds ON THIS SERVER
 
