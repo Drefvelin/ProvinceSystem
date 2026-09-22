@@ -243,6 +243,26 @@ class ReviewSheetCacheTest(unittest.TestCase):
         preview.touch()
         self.assertTrue(_review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir))
 
+    def test_cache_stale_when_bundle_newer_than_tiles(self) -> None:
+        from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
+
+        submission_id = "testplayer-testitem"
+        slug = "testitem"
+        out_dir = self._submission_out_dir(submission_id)
+        (out_dir / f"{slug}.png").write_bytes(_tiny_png())
+        (out_dir / f"{slug}.json").write_text("{}", encoding="utf-8")
+        (out_dir / "preview_model.png").write_bytes(_tiny_png())
+        (out_dir / REVIEW_SHEET_NAME).write_bytes(TINY_PNG)
+        bundle = out_dir / "browser.js"
+        time.sleep(0.05)
+        bundle.write_text("rebuilt", encoding="utf-8")
+        time.sleep(0.05)
+        (out_dir / REVIEW_SHEET_NAME).touch()
+        with mock.patch("skins.preview_3d.BUNDLE", bundle):
+            self.assertTrue(
+                _review_sheet_cache_stale(_item_3d_row(submission_id, slug), out_dir)
+            )
+
     def test_cache_stale_when_preview_missing(self) -> None:
         from skins.review_sheet import REVIEW_SHEET_NAME, _review_sheet_cache_stale
 

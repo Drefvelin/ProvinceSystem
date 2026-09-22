@@ -18,6 +18,7 @@ from .preview_3d import (
     PREVIEW_NAMES,
     _inputs_newer_than_outputs,
     _job_for_kind,
+    _preview_inputs,
     clear_preview_render_error,
     ensure_preview_tiles,
     read_preview_render_error,
@@ -561,7 +562,7 @@ def _review_sheet_cache_stale(row, out_dir: Path) -> bool:
     if any(not path.is_file() for _, path in wanted):
         return True
 
-    inputs = [Path(p) for p in job["files"].values()]
+    inputs = _preview_inputs(job["files"])
     outputs = [path for _, path in wanted]
     if _inputs_newer_than_outputs(inputs, outputs):
         return True

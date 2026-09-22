@@ -96,6 +96,32 @@ class Preview3dJobTest(unittest.TestCase):
         self.assertIsNotNone(err)
         self.assertIn("node not found", err or "")
 
+    def test_newer_bundle_rerenders_existing_tiles(self) -> None:
+        import time
+
+        from skins.preview_3d import ensure_preview_tiles
+
+        os.environ.pop("SHEET_RENDER_DISABLE", None)
+        slug = "item3d"
+        (self.out / f"{slug}.png").write_bytes(_tiny_png())
+        (self.out / f"{slug}.json").write_text("{}", encoding="utf-8")
+        preview = self.out / "preview_model.png"
+        preview.write_bytes(_tiny_png())
+        bundle = self.out / "browser.js"
+        time.sleep(0.05)
+        bundle.write_text("rebuilt", encoding="utf-8")
+        fake_result = mock.Mock(returncode=0, stderr="", stdout="")
+        cli = mock.Mock()
+        cli.is_file.return_value = True
+        with (
+            mock.patch("skins.preview_3d._node_bin", return_value="node"),
+            mock.patch("skins.preview_3d.BUNDLE", bundle),
+            mock.patch("skins.preview_3d.CLI", cli),
+            mock.patch("skins.preview_3d.subprocess.run", return_value=fake_result) as run,
+        ):
+            ensure_preview_tiles("item_3d", slug, self.out)
+        run.assert_called_once()
+
     def test_subprocess_failure_propagates_error(self) -> None:
         from skins.preview_3d import ensure_preview_tiles
 

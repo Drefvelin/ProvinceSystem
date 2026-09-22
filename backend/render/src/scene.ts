@@ -10,6 +10,7 @@ import {
   applySteveArmPose,
   attachSteveArmorOverlay,
   createSteveMannequin,
+  HEAD_SOCKET,
   setArmorHelmetVisible,
   type SteveArmPose,
 } from "./skins/steveMannequin";
@@ -78,6 +79,34 @@ function setDefaultOrbit(
     focus.z + frameSize * 1.6
   );
   camera.lookAt(focus);
+}
+
+/** Extra orbit distance so a tight head/hat box is not clipped. */
+const FRAME_PAD = 1.35;
+
+function frameObject(camera: THREE.PerspectiveCamera, object: THREE.Object3D): void {
+  object.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const focus = box.getCenter(new THREE.Vector3());
+  const frameSize = Math.max(size.x, size.y, size.z, 1) * FRAME_PAD;
+  setDefaultOrbit(camera, focus, frameSize);
+}
+
+function wornHelmetGroup(
+  root: THREE.Object3D,
+  json: JavaModelJson | null
+): THREE.Group {
+  const socket = new THREE.Group();
+  socket.name = "helmetSocket";
+  socket.rotation.y = THREE.MathUtils.degToRad(HEAD_SOCKET.rotationY);
+  socket.scale.setScalar(HEAD_SOCKET.scale);
+  const held = new THREE.Group();
+  const tab = resolveDisplayTab(json ?? { elements: [] }, "head", "helmet_3d");
+  applyDisplayToObject(held, tab);
+  held.add(root);
+  socket.add(held);
+  return socket;
 }
 
 function isFlatKind(kind: string): boolean {
@@ -168,7 +197,15 @@ export async function renderPreviewJob(
   try {
     for (const view of job.views) {
       clearScene(scene);
-      if (view === "model") {
+      if (view === "model" && kind === "helmet_3d") {
+        const { root, json } = await buildItemRoot(kind, assets, {
+          center: false,
+        });
+        const worn = wornHelmetGroup(root, json);
+        scene.add(worn);
+        frameObject(camera, worn);
+        out[view] = capture(renderer, scene, camera);
+      } else if (view === "model") {
         const { root } = await buildItemRoot(kind, assets, {
           center: true,
           modelKey: kind === "gun" ? "carry" : "model",
@@ -204,7 +241,7 @@ export async function renderPreviewJob(
         held.add(root);
         steve.bones.itemSocketHead.add(held);
         scene.add(steve);
-        setDefaultOrbit(camera, new THREE.Vector3(0, 14, 0), 32);
+        frameObject(camera, steve.bones.head);
         out[view] = capture(renderer, scene, camera);
       } else if (view === "carry" || view === "aim" || view === "reload") {
         const steve = createSteveMannequin(null, "default");

@@ -96,6 +96,14 @@ def _mtime(path: Path) -> float:
         return 0.0
 
 
+def _preview_inputs(files: dict[str, str]) -> list[Path]:
+    """Model/texture paths plus the renderer bundle, so a rebuild refreshes tiles."""
+    inputs = [Path(p) for p in files.values()]
+    if isinstance(BUNDLE, Path):
+        inputs.append(BUNDLE)
+    return inputs
+
+
 def _inputs_newer_than_outputs(inputs: list[Path], outputs: list[Path]) -> bool:
     if not outputs or any(not p.is_file() for p in outputs):
         return True
@@ -208,16 +216,13 @@ def ensure_preview_tiles(
         if view in PREVIEW_NAMES
     ]
     outputs = [path for _, path in wanted]
-    inputs = [Path(p) for p in job["files"].values()]
+    inputs = _preview_inputs(job["files"])
 
     if not _inputs_newer_than_outputs(inputs, outputs):
         tiles = _existing_tiles(wanted)
         return tiles, _incomplete_error(wanted, tiles)
 
     tiles = _existing_tiles(wanted)
-    if len(tiles) == len(wanted):
-        return tiles, None
-
     if os.environ.get("SHEET_RENDER_DISABLE", "").strip() in ("1", "true", "yes"):
         return tiles, "3D preview disabled (SHEET_RENDER_DISABLE=1)"
 
